@@ -7,6 +7,7 @@ on:
 
 permissions:
   actions: write
+  pull-requests: read
 
 concurrency:
   group: cleanup-runs
@@ -16,22 +17,60 @@ jobs:
   cleanup:
     runs-on: ubuntu-latest
     steps:
-      - name: Keep only the latest 2 runs per workflow
+      - name: Keep the latest 2 runs per workflow, and everything an open pull request still needs
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
+          KEEP: '2'
         run: |
-          set -e
-          workflows=$(gh api "repos/$REPO/actions/workflows" --jq '.workflows[] | "\(.id)\t\(.name)"')
-          while IFS=$'\t' read -r wid wname; do
-            [ -z "$wid" ] && continue
+          set -euo pipefail
+
+          if ! open_prs=$(gh api --paginate "repos/$REPO/pulls?state=open&per_page=100" \
+                --jq '.[] | "\(.number)\u001f\(.head.ref)\u001f\(.head.sha)"'); then
+            echo "::error::could not list open pull requests, deleting nothing this run"
+            exit 1
+          fi
+
+          declare -A live_branch=() live_sha=() live_number=()
+          while IFS=$'\x1f' read -r num ref sha; do
+            [ -z "${num:-}" ] && continue
+            live_number["$num"]=1
+            live_branch["$ref"]=1
+            live_sha["$sha"]=1
+          done <<< "$open_prs"
+          echo "open pull requests: ${#live_number[@]}"
+
+          workflows=$(gh api --paginate "repos/$REPO/actions/workflows" --jq '.workflows[] | "\(.id)\u001f\(.name)"')
+          while IFS=$'\x1f' read -r wid wname; do
+            [ -z "${wid:-}" ] && continue
             echo "::group::$wname"
-            mapfile -t runs < <(gh api --paginate "repos/$REPO/actions/workflows/$wid/runs" --jq '.workflow_runs[].id')
+            mapfile -t runs < <(gh api --paginate "repos/$REPO/actions/workflows/$wid/runs?per_page=100" \
+              --jq '.workflow_runs[] | "\(.id)\u001f\(.head_branch // "")\u001f\(.head_sha // "")\u001f\([.pull_requests[]?.number] | join(","))"')
             kept=0
-            for run_id in "${runs[@]}"; do
+            for entry in "${runs[@]}"; do
+              IFS=$'\x1f' read -r run_id branch sha prs <<< "$entry"
+              [ -z "${run_id:-}" ] && continue
+
               kept=$((kept + 1))
-              if [ "$kept" -le 2 ]; then
-                echo "keep run $run_id"
+              reason=""
+              if [ "$kept" -le "$KEEP" ]; then
+                reason="recent"
+              elif [ -n "${branch:-}" ] && [ -n "${live_branch[$branch]:-}" ]; then
+                reason="open pr branch $branch"
+              elif [ -n "${sha:-}" ] && [ -n "${live_sha[$sha]:-}" ]; then
+                reason="open pr head commit"
+              else
+                IFS=',' read -ra pr_numbers <<< "${prs:-}"
+                for p in "${pr_numbers[@]}"; do
+                  if [ -n "${p:-}" ] && [ -n "${live_number[$p]:-}" ]; then
+                    reason="open pr #$p"
+                    break
+                  fi
+                done
+              fi
+
+              if [ -n "$reason" ]; then
+                echo "keep run $run_id ($reason)"
                 continue
               fi
               echo "delete run $run_id"
