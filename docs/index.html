@@ -1,389 +1,778 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Steam Manifest Downloader — From Lua to Playable in One Pipeline</title>
-  <meta name="description" content="Download Steam depots, create shortcuts, add to your Steam library and patch with the gbe_fork emulator — all in one Tauri-based desktop app.">
-  <meta property="og:title" content="Steam Manifest Downloader" />
-  <meta property="og:description" content="Download Steam depots, create shortcuts, integrate with your Steam library and patch with the gbe_fork emulator — a full pipeline in one desktop app built with Tauri v2 and Rust." />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://smd.mcbabel.de/" />
-  <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Steam Manifest Downloader" />
-  <meta name="twitter:description" content="Download Steam depots, create shortcuts, integrate with your Steam library and patch with the gbe_fork emulator — a full pipeline in one desktop app built with Tauri v2 and Rust." />
-  <link rel="stylesheet" href="style.css">
-  <link rel="icon" type="image/svg+xml" href="icon.svg">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Steam Manifest Downloader, resolve Steam depots and write them to disk</title>
+<meta name="description" content="SMD resolves depot IDs, manifest GIDs and depot keys from a .lua or .st file or an App ID, then writes the depot contents to a folder you pick. Built with Rust and Tauri v2 for Windows 10 and 11 and for Linux.">
+<meta name="theme-color" content="#06060A">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=Fraunces:opsz,wght,SOFT,WONK@9..144,100..900,0..100,0..1&family=IBM+Plex+Mono:wght@400;500;600&family=Karla:wght@300..700&display=swap">
+<link rel="stylesheet" href="./style.css">
 </head>
 <body>
-  <div class="page-bg" aria-hidden="true">
-    <div class="hero-gradient"></div>
-    <div class="hero-grid"></div>
-    <div class="hero-orb hero-orb-1"></div>
-    <div class="hero-orb hero-orb-2"></div>
-    <div class="hero-orb hero-orb-3"></div>
-  </div>
+<a class="skip" href="#main">Skip to content</a>
 
-  <nav class="nav" id="nav">
-    <div class="nav-inner">
-      <a href="#hero" class="nav-logo">
-        <img src="icon.svg" alt="Steam Manifest Downloader" class="nav-logo-icon" width="36" height="36" />
-        <span>SMD</span>
-      </a>
-      <div class="nav-links">
-        <a href="#hero">Home</a>
-        <a href="#features">Features</a>
-        <a href="#how-it-works">How It Works</a>
-        <a href="#tech-stack">Tech Stack</a>
-        <a href="documentation/">Docs</a>
-        <a href="changelog/">Changelog</a>
-        <a href="#download">Download</a>
-      </div>
-      <a href="https://github.com/MCbabel/Steam-Manifest-Downloader" class="nav-github" target="_blank" rel="noopener" aria-label="GitHub">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-      </a>
-      <button class="nav-hamburger" id="navHamburger" aria-label="Toggle menu">&#9776;</button>
-    </div>
-  </nav>
-
-  <div class="mobile-menu" id="mobileMenu">
-    <button class="mobile-menu-close" id="mobileMenuClose" aria-label="Close menu">&times;</button>
-    <a href="#hero">Home</a>
-    <a href="#features">Features</a>
-    <a href="#how-it-works">How It Works</a>
-    <a href="#tech-stack">Tech Stack</a>
-    <a href="documentation/">Docs</a>
-    <a href="changelog/">Changelog</a>
-    <a href="#download">Download</a>
-    <a href="https://github.com/MCbabel/Steam-Manifest-Downloader" class="mobile-github" target="_blank" rel="noopener">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-      GitHub
+<header class="topbar" id="top">
+  <div class="topbar__in">
+    <a class="brand" href="#top" aria-label="Steam Manifest Downloader, top of page">
+      <img src="./icon.svg" alt="" width="26" height="26" decoding="async">
+      <span class="brand__mark">SMD</span>
+      <span class="brand__ver">1.4.3</span>
     </a>
+    <nav class="nav" aria-label="Page sections">
+      <a href="#capabilities">What it does</a>
+      <a href="#pipeline">Pipeline</a>
+      <a href="#install">Install</a>
+      <a href="#questions">Questions</a>
+      <a href="./documentation/">Docs</a>
+    </nav>
+    <a class="btn btn--ghost btn--sm topbar__src" href="https://github.com/MCbabel/Steam-Manifest-Downloader">Source</a>
+  </div>
+</header>
+
+<main id="main">
+
+  <section class="band band--hero" aria-labelledby="h-hero">
+    <div class="plasma plasma--hero" aria-hidden="true">
+      <svg class="plasma__svg" viewBox="0 0 800 800" preserveAspectRatio="xMidYMid slice" focusable="false">
+        <defs>
+          <filter id="pl-a" x="-25%" y="-25%" width="150%" height="150%" color-interpolation-filters="sRGB">
+            <feTurbulence type="fractalNoise" baseFrequency="0.0034 0.0105" numOctaves="5" seed="21" result="t"></feTurbulence>
+            <feColorMatrix in="t" type="matrix" values="2.15 -0.45 0 0 -0.36 0 1.75 -0.5 0 -0.34 -0.3 0 2.4 0 -0.4 0 0 0 0 1" result="m"></feColorMatrix>
+            <feComponentTransfer in="m" result="c">
+              <feFuncR type="table" tableValues="0.02 0.62 1 0.88 0.22 0.03"></feFuncR>
+              <feFuncG type="table" tableValues="0.01 0.05 0.34 0.96 1 0.42"></feFuncG>
+              <feFuncB type="table" tableValues="0.16 0.82 0.9 0.4 0.66 0.08"></feFuncB>
+            </feComponentTransfer>
+            <feGaussianBlur in="c" stdDeviation="1.1"></feGaussianBlur>
+          </filter>
+        </defs>
+        <rect width="800" height="800" filter="url(#pl-a)"></rect>
+        <g fill="none" stroke="#C9FFEB" stroke-opacity="0.22" stroke-width="1">
+          <path d="M-40 206 C 130 148 250 300 410 266 S 690 170 850 234"></path>
+          <path d="M-40 258 C 142 204 258 346 418 314 S 700 224 860 286"></path>
+          <path d="M-40 314 C 152 262 268 396 428 366 S 712 280 872 342"></path>
+          <path d="M-40 376 C 162 328 280 454 440 426 S 724 342 884 404"></path>
+          <path d="M-40 444 C 172 398 292 518 452 492 S 736 410 896 470"></path>
+        </g>
+        <g fill="none" stroke="#B98CFF" stroke-opacity="0.24" stroke-width="1">
+          <path d="M118 -40 C 168 180 96 340 152 520 S 210 720 176 880"></path>
+          <path d="M420 -40 C 476 190 398 352 458 534 S 516 726 480 880"></path>
+          <path d="M700 -40 C 756 190 678 352 738 534 S 796 726 760 880"></path>
+        </g>
+      </svg>
+    </div>
+
+    <div class="wrap">
+      <p class="kicker hero__kicker"><span class="kicker__idx">00</span> Steam depot tool, Rust and Tauri v2</p>
+
+      <h1 id="h-hero" class="display">
+        <span class="ln ln-1">Steam depots</span>
+        <span class="ln ln-2"><span class="stroke">[ Resolved ]</span></span>
+        <span class="ln ln-3">and written to disk</span>
+      </h1>
+
+      <p class="lead hero__deck">Drag in a .lua or .st file, or search by App ID. SMD resolves the depot IDs, manifest GIDs and depot keys, then writes the depot contents to a folder you pick.</p>
+
+      <div class="hero__cta">
+        <a class="btn btn--primary" href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest">Download 1.4.3</a>
+        <a class="btn btn--ghost" href="#install">Install commands</a>
+        <a class="btn btn--bare" href="https://github.com/MCbabel/Steam-Manifest-Downloader">Read the source</a>
+      </div>
+
+      <ul class="hero__meta">
+        <li>Windows 10, 11 and Linux</li>
+        <li>Rust and Tauri v2</li>
+        <li>GPL-2.0</li>
+        <li>smd.mcbabel.de</li>
+      </ul>
+
+      <dl class="facts frame">
+        <div class="fact">
+          <dt>Current release</dt>
+          <dd>1.4.3</dd>
+        </div>
+        <div class="fact">
+          <dt>Download engines</dt>
+          <dd>02</dd>
+        </div>
+        <div class="fact">
+          <dt>Configurable source types</dt>
+          <dd>05</dd>
+        </div>
+        <div class="fact">
+          <dt>License</dt>
+          <dd>GPL-2.0</dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+  <div class="ticker">
+    <div class="ticker__track">
+      <ul class="ticker__list" aria-label="Technologies in use">
+        <li>Rust</li>
+        <li>Tauri v2</li>
+        <li>Steam PICS</li>
+        <li>Anonymous CDN session</li>
+        <li>Manifest request codes</li>
+        <li>Chunk download and decryption</li>
+        <li>.NET 9 desktop runtime</li>
+        <li>gbe_fork</li>
+        <li>Steamless</li>
+        <li>GitHub sources</li>
+        <li>archive.org items</li>
+        <li>HTTPS folder</li>
+        <li>Hubcap API</li>
+        <li>Ryuu API</li>
+        <li>WebKitGTK</li>
+        <li>AppImage</li>
+        <li>NSIS</li>
+        <li>GPL-2.0</li>
+      </ul>
+      <ul class="ticker__list" aria-hidden="true">
+        <li>Rust</li>
+        <li>Tauri v2</li>
+        <li>Steam PICS</li>
+        <li>Anonymous CDN session</li>
+        <li>Manifest request codes</li>
+        <li>Chunk download and decryption</li>
+        <li>.NET 9 desktop runtime</li>
+        <li>gbe_fork</li>
+        <li>Steamless</li>
+        <li>GitHub sources</li>
+        <li>archive.org items</li>
+        <li>HTTPS folder</li>
+        <li>Hubcap API</li>
+        <li>Ryuu API</li>
+        <li>WebKitGTK</li>
+        <li>AppImage</li>
+        <li>NSIS</li>
+        <li>GPL-2.0</li>
+      </ul>
+    </div>
   </div>
 
-  <section class="hero" id="hero">
-    <div class="hero-content">
-      <div class="hero-badge reveal">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-        Open Source &amp; Free
+  <section class="band band--art" id="capabilities" aria-labelledby="h-cap">
+    <div class="plasma plasma--side" aria-hidden="true">
+      <svg class="plasma__svg" viewBox="0 0 600 900" preserveAspectRatio="xMidYMid slice" focusable="false">
+        <defs>
+          <filter id="pl-b" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+            <feTurbulence type="turbulence" baseFrequency="0.0042 0.0092" numOctaves="4" seed="7" result="t"></feTurbulence>
+            <feColorMatrix in="t" type="matrix" values="1.9 0 -0.4 0 -0.22 -0.25 1.55 0 0 -0.12 0 -0.3 2.2 0 -0.26 0 0 0 0 1" result="m"></feColorMatrix>
+            <feComponentTransfer in="m">
+              <feFuncR type="discrete" tableValues="0.02 0.3 0.78 1 0.6 0.1"></feFuncR>
+              <feFuncG type="discrete" tableValues="0 0.06 0.16 0.52 1 0.4"></feFuncG>
+              <feFuncB type="discrete" tableValues="0.18 0.66 1 0.7 0.26 0.06"></feFuncB>
+            </feComponentTransfer>
+          </filter>
+        </defs>
+        <rect width="600" height="900" filter="url(#pl-b)"></rect>
+        <g fill="none" stroke="#06060A" stroke-opacity="0.55" stroke-width="1.5">
+          <path d="M-20 120 C 120 90 200 190 340 160 S 560 100 620 150"></path>
+          <path d="M-20 300 C 130 268 210 372 350 340 S 570 280 620 330"></path>
+          <path d="M-20 480 C 140 448 220 552 360 520 S 580 460 620 510"></path>
+          <path d="M-20 660 C 150 628 230 732 370 700 S 590 640 620 690"></path>
+        </g>
+      </svg>
+    </div>
+
+    <div class="wrap">
+      <div class="rail">
+        <p class="kicker"><span class="kicker__idx">01</span> Capability</p>
+        <span class="rail__rule" aria-hidden="true"></span>
+        <span class="chip">four blocks</span>
       </div>
-      <h1 class="hero-title reveal">
-        Steam Manifest<br><span class="gradient-text">Downloader</span>
-      </h1>
-      <p class="hero-subtitle reveal">
-        Download Steam depots, integrate with your Steam library<br>and run them via gbe_fork — all in one pipeline.
-      </p>
-      <div class="hero-buttons reveal">
-        <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest" id="hero-download-btn" class="btn btn-primary" target="_blank" rel="noopener">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          <span id="hero-download-label">Download</span>
-        </a>
-        <a href="https://github.com/MCbabel/Steam-Manifest-Downloader" class="btn btn-secondary" target="_blank" rel="noopener">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-          View on GitHub
-        </a>
-      </div>
-      <div class="hero-mockup reveal">
-        <div class="mockup-window">
-          <div class="mockup-titlebar">
-            <span class="mockup-dot" style="background:#ff5f57"></span>
-            <span class="mockup-dot" style="background:#febc2e"></span>
-            <span class="mockup-dot" style="background:#28c840"></span>
-            <span class="mockup-title">Steam Manifest Downloader</span>
+      <h2 id="h-cap" class="display-2">What it does</h2>
+      <p class="lead">One file or one App ID goes in. Depot IDs, manifest GIDs and depot keys come back, and the depot contents land in a folder you choose.</p>
+
+      <div class="row">
+        <div class="row__text">
+          <h3>Two download engines</h3>
+          <p>A pure Rust pipeline talks to Steam's CDN directly: anonymous login, manifest request codes, chunk download and chunk decryption, all in process, with no .NET involved. It is the default, and the app still labels it experimental. A bundled .NET engine, DepotDownloaderMod, is there when you would rather use that instead.</p>
+          <p>An interrupted download resumes by verifying the chunks already on disk, so a dropped connection costs you the remainder and not the whole run.</p>
+        </div>
+        <div class="row__media">
+          <div class="panel frame">
+            <div class="panel__bar"><span>engine</span><span>rust-cdn</span></div>
+            <ul class="readout">
+              <li><span>login</span><span>anonymous</span></li>
+              <li><span>request</span><span>manifest request code</span></li>
+              <li><span>transfer</span><span>chunk download</span></li>
+              <li><span>decrypt</span><span>chunk decryption, in process</span></li>
+              <li><span>dotnet</span><span class="ok">not required</span></li>
+              <li><span>resume</span><span class="ok">verifies chunks on disk</span></li>
+            </ul>
+            <div class="panel__bar panel__bar--mid"><span>engine</span><span>bundled dotnet</span></div>
+            <ul class="readout">
+              <li><span>bundled</span><span class="ok">yes</span></li>
+              <li><span>dotnet</span><span>.NET 9 desktop runtime</span></li>
+            </ul>
           </div>
-          <div class="mockup-body">
-            <div class="mockup-row">
-              <div class="mockup-label">App ID</div>
-              <div class="mockup-input">730</div>
+        </div>
+      </div>
+
+      <div class="row row--flip">
+        <div class="row__text">
+          <h3>Sources you configure</h3>
+          <p>Point SMD at GitHub repositories, archive.org items or a plain HTTPS folder. Add the Hubcap and Ryuu APIs as well if you hold a key for them.</p>
+          <p>Sources are queried in the order you set. The check for whether an App ID exists stops at the first source that answers, so the order you choose is the order that decides.</p>
+        </div>
+        <div class="row__media">
+          <div class="panel frame">
+            <div class="panel__bar"><span>sources</span><span>queried in order</span></div>
+            <ul class="readout">
+              <li><span>github</span><span>repositories you list</span></li>
+              <li><span>archive.org</span><span>items</span></li>
+              <li><span>https</span><span>plain folder</span></li>
+              <li><span>hubcap</span><span>api, key required</span></li>
+              <li><span>ryuu</span><span>api, key required</span></li>
+              <li><span>probe</span><span class="ok">stops at the first answer</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="row__text">
+          <h3>Live depot metadata</h3>
+          <p>Platform, architecture and language come from Steam PICS at the moment you look, so the depot list you select from is the one Steam is serving now.</p>
+          <p>For each depot the app shows the depot ID, the manifest ID, the platform and architecture it targets, and the size.</p>
+        </div>
+        <div class="row__media">
+          <figure class="panel frame panel--fig">
+            <div class="panel__bar"><span>depot list</span><span>recreation</span></div>
+            <div class="tablewrap" tabindex="0" role="region" aria-label="Depot list recreation, scrollable">
+              <table class="dtab">
+                <thead>
+                  <tr>
+                    <th scope="col">depot</th>
+                    <th scope="col">manifest</th>
+                    <th scope="col">os</th>
+                    <th scope="col">arch</th>
+                    <th scope="col">size</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td>100010</td><td>72057&#8230;93606</td><td>windows</td><td>x64</td><td>1.4 GB</td></tr>
+                  <tr><td>100011</td><td>72057&#8230;41288</td><td>windows</td><td>x86</td><td>640 MB</td></tr>
+                  <tr><td>100012</td><td>72057&#8230;07734</td><td>linux</td><td>x64</td><td>1.1 GB</td></tr>
+                  <tr><td>100013</td><td>72057&#8230;55019</td><td>linux</td><td>x64</td><td>212 MB</td></tr>
+                </tbody>
+              </table>
             </div>
-            <div class="mockup-row">
-              <div class="mockup-label">Depot</div>
-              <div class="mockup-input">731</div>
-            </div>
-            <div class="mockup-row">
-              <div class="mockup-label">Manifest</div>
-              <div class="mockup-input">298141579182...</div>
-            </div>
-            <div class="mockup-progress">
-              <div class="mockup-progress-bar"></div>
-            </div>
-            <div class="mockup-status">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3fb950" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-              Download complete — 2.4 GB
-            </div>
+            <figcaption>Recreation of the app's depot list, drawn in HTML rather than captured. The columns are fields the app shows for each depot. The values are placeholders.</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <div class="row row--flip">
+        <div class="row__text">
+          <h3>After the files land</h3>
+          <p>Patching is optional and separate from downloading. You can patch with the gbe_fork emulator, which has a variant picker, 21 settings and per file patch selection. You can detect and remove SteamStub DRM with the bundled Steamless, and install a Steam API check bypass.</p>
+          <p>You can also add the game to your Steam library as a non-Steam entry, with banner, hero, logo and icon.</p>
+        </div>
+        <div class="row__media">
+          <div class="panel frame">
+            <div class="panel__bar"><span>optional steps</span><span>post download</span></div>
+            <ul class="readout readout--num">
+              <li><span>01</span><span>gbe_fork patch, variant picker, 21 settings, per file selection</span></li>
+              <li><span>02</span><span>Steamless, detects and removes SteamStub DRM</span></li>
+              <li><span>03</span><span>Steam API check bypass</span></li>
+              <li><span>04</span><span>Steam library entry with banner, hero, logo, icon</span></li>
+            </ul>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <section class="features" id="features">
-    <div class="container">
-      <div class="section-header reveal">
-        <span class="section-tag">Features</span>
-        <h2>Everything You Need</h2>
-        <p>A comprehensive toolkit for Steam depot downloading, packed into a single lightweight application.</p>
+  <div class="artband">
+    <div class="artband__art" aria-hidden="true">
+      <svg viewBox="0 0 1400 420" preserveAspectRatio="xMidYMid slice" focusable="false">
+        <defs>
+          <filter id="pl-c" x="-15%" y="-30%" width="130%" height="160%" color-interpolation-filters="sRGB">
+            <feTurbulence type="fractalNoise" baseFrequency="0.0075 0.0036" numOctaves="4" seed="43" result="t"></feTurbulence>
+            <feColorMatrix in="t" type="matrix" values="1.5 0 0.3 0 -0.66 0 2.1 0 0 -0.55 0.4 0 1.7 0 -0.35 0 0 0 0 1" result="m"></feColorMatrix>
+            <feComponentTransfer in="m" result="c">
+              <feFuncR type="table" tableValues="0.02 0.1 0.34 0.86 0.55 0.08"></feFuncR>
+              <feFuncG type="table" tableValues="0.05 0.62 1 0.94 0.3 0.04"></feFuncG>
+              <feFuncB type="table" tableValues="0.3 0.86 0.44 0.72 0.95 0.14"></feFuncB>
+            </feComponentTransfer>
+            <feGaussianBlur in="c" stdDeviation="0.7"></feGaussianBlur>
+          </filter>
+        </defs>
+        <rect width="1400" height="420" filter="url(#pl-c)"></rect>
+        <g fill="none" stroke="#06060A" stroke-opacity="0.4" stroke-width="1.5">
+          <path d="M-20 70 C 220 26 420 128 700 96 S 1180 30 1420 78"></path>
+          <path d="M-20 152 C 230 108 430 212 710 180 S 1190 112 1420 160"></path>
+          <path d="M-20 240 C 240 196 440 300 720 268 S 1200 200 1420 248"></path>
+          <path d="M-20 334 C 250 290 450 394 730 362 S 1210 294 1420 342"></path>
+        </g>
+        <g fill="none" stroke="#DFFFF3" stroke-opacity="0.2" stroke-width="1">
+          <path d="M180 -20 C 214 120 168 230 206 440"></path>
+          <path d="M520 -20 C 554 120 508 230 546 440"></path>
+          <path d="M880 -20 C 914 120 868 230 906 440"></path>
+          <path d="M1240 -20 C 1274 120 1228 230 1266 440"></path>
+        </g>
+      </svg>
+    </div>
+    <p class="artband__cap"><span>fig. 01</span><span>generated artwork, not product data</span></p>
+  </div>
+
+  <section class="band" id="pipeline" aria-labelledby="h-pipe">
+    <div class="wrap">
+      <div class="rail">
+        <p class="kicker"><span class="kicker__idx">02</span> Sequence</p>
+        <span class="rail__rule" aria-hidden="true"></span>
+        <span class="chip">five steps</span>
       </div>
-      <div class="features-grid">
-        <div class="feature-card reveal">
-          <div class="feature-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.5 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
-          </div>
-          <div class="feature-text">
-            <h3>Lua File Parsing</h3>
-            <p>Drag &amp; drop .lua manifest files and instantly parse depot information.</p>
-          </div>
-        </div>
-        <div class="feature-card reveal">
-          <div class="feature-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/><line x1="11" y1="8" x2="11" y2="14"/></svg>
-          </div>
-          <div class="feature-text">
-            <h3>Configurable Depot Sources</h3>
-            <p>Plug in any depot source — GitHub, archive.org or a plain HTTPS folder — plus the Hubcap and Ryuu APIs if you have a key. The app queries them all in parallel and merges depots, keys and sizes so nothing slips through.</p>
-          </div>
-        </div>
-        <div class="feature-card reveal">
-          <div class="feature-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-          </div>
-          <div class="feature-text">
-            <h3>Auto Manifest Download</h3>
-            <p>Automatically fetch and download manifests with a single click.</p>
-          </div>
-        </div>
-        <div class="feature-card reveal">
-          <div class="feature-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/><circle cx="12" cy="16" r="1"/></svg>
-          </div>
-          <div class="feature-text">
-            <h3>Depot Keys Generation</h3>
-            <p>Generate depot decryption keys automatically for seamless access.</p>
-          </div>
-        </div>
-        <div class="feature-card reveal">
-          <div class="feature-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-          </div>
-          <div class="feature-text">
-            <h3>Native Download Engine</h3>
-            <p>Pure-Rust pipeline talks to Steam's CDN directly — anonymous login, manifest decryption and chunk decoding all in-process, no .NET required. Interrupted downloads resume by verifying existing chunks instead of starting over.</p>
-          </div>
-        </div>
-        <div class="feature-card reveal">
-          <div class="feature-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>
-          </div>
-          <div class="feature-text">
-            <h3>Live Progress Tracking</h3>
-            <p>Real-time progress bars, speed metrics, and ETA estimates.</p>
-          </div>
-        </div>
-        <div class="feature-card reveal">
-          <div class="feature-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          </div>
-          <div class="feature-text">
-            <h3>Emulator Patching</h3>
-            <p>Drop in the gbe_fork Steam emulator so downloaded games run without the Steam client. Variant picker, 21 configurable settings (account name, language, offline mode, overlay) and per-file patching so you choose exactly which <code>steam_api</code> binaries get swapped.</p>
-          </div>
-        </div>
-        <div class="feature-card reveal">
-          <div class="feature-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="9" y1="12" x2="15" y2="12"/></svg>
-          </div>
-          <div class="feature-text">
-            <h3>DRM Detection &amp; Removal</h3>
-            <p>Automatic SteamStub detection by scanning PE headers. One-click removal via the bundled Steamless integration, plus an optional Steam-API-Check bypass (<code>version.dll</code>/<code>winmm.dll</code>/<code>winhttp.dll</code> hijack) for games that resist the swap.</p>
-          </div>
-        </div>
-        <div class="feature-card reveal">
-          <div class="feature-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><circle cx="8" cy="14" r="1"/><line x1="11" y1="14" x2="17" y2="14"/><line x1="11" y1="17" x2="14" y2="17"/></svg>
-          </div>
-          <div class="feature-text">
-            <h3>Steam Library Integration</h3>
-            <p>Add downloaded games to your Steam library as non-Steam shortcuts with full grid art — banner, hero, logo and icon are pulled from the Steam CDN automatically. Works on both Linux (dedicated step) and Windows (toggle in the shortcut flow).</p>
-          </div>
-        </div>
-        <div class="feature-card reveal">
-          <div class="feature-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 3h12l4 6-10 13L2 9z"/><path d="M2 9h20"/><path d="M12 22L6 9"/><path d="M12 22l6-13"/><path d="M6 3l6 6 6-6"/></svg>
-          </div>
-          <div class="feature-text">
-            <h3>Steam Store Integration</h3>
-            <p>Fetch app details, images, and metadata directly from Steam.</p>
-          </div>
-        </div>
-        <div class="feature-card reveal">
-          <div class="feature-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
-          </div>
-          <div class="feature-text">
-            <h3>Dark / Light Theme</h3>
-            <p>Comfortable viewing with automatic theme detection and toggle.</p>
-          </div>
-        </div>
-        <div class="feature-card reveal">
-          <div class="feature-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
-          </div>
-          <div class="feature-text">
-            <h3>Self-Contained Binary</h3>
-            <p>Single executable with no dependencies — just download and run.</p>
-          </div>
-        </div>
-        <div class="feature-card reveal">
-          <div class="feature-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          </div>
-          <div class="feature-text">
-            <h3>Download History</h3>
-            <p>Re-download any past job in two clicks — selections, depots and target folder are preserved.</p>
-          </div>
-        </div>
-      </div>
+      <h2 id="h-pipe" class="display-2">From file to folder</h2>
+
+      <ol class="steps">
+        <li class="step">
+          <span class="step__idx" aria-hidden="true">01</span>
+          <h3>Upload or search</h3>
+          <p>Drag and drop a .lua or .st file onto the window, or search by App ID. Configured sources are queried in the order you set, and the check for an App ID stops at the first source that answers.</p>
+        </li>
+        <li class="step">
+          <span class="step__idx" aria-hidden="true">02</span>
+          <h3>Select depots</h3>
+          <p>SMD resolves depot IDs, manifest GIDs and depot keys, and reads platform, architecture and language from Steam PICS. You pick the depots you want.</p>
+        </li>
+        <li class="step">
+          <span class="step__idx" aria-hidden="true">03</span>
+          <h3>Download</h3>
+          <p>Run the pure Rust CDN pipeline or the bundled .NET engine. Contents are written to the folder you pick. An interrupted run resumes by verifying the chunks already on disk.</p>
+        </li>
+        <li class="step">
+          <span class="step__idx" aria-hidden="true">04</span>
+          <h3>Shortcuts and Steam library</h3>
+          <p>Add the game to your Steam library as a non-Steam entry, with banner, hero, logo and icon attached.</p>
+        </li>
+        <li class="step">
+          <span class="step__idx" aria-hidden="true">05</span>
+          <h3>Emulator</h3>
+          <p>Optionally patch with gbe_fork using the variant picker, its 21 settings and per file patch selection. Remove SteamStub DRM with the bundled Steamless, or install the Steam API check bypass.</p>
+        </li>
+      </ol>
     </div>
   </section>
 
-  <section class="how-it-works" id="how-it-works">
-    <div class="container">
-      <div class="section-header reveal">
-        <span class="section-tag">How It Works</span>
-        <h2>From Lua to Playable in 5 Steps</h2>
-        <p>A guided pipeline that goes beyond just downloading files — shortcuts, Steam library integration, and emulator patching are baked in.</p>
-      </div>
-      <div class="steps">
-        <div class="steps-line"></div>
-        <div class="step reveal">
-          <div class="step-number" data-count="1">1</div>
-          <div class="step-content">
-            <h3>Upload or Search</h3>
-            <p>Drop a .lua manifest file or search for your game by name across all configured depot sources at once.</p>
-          </div>
-        </div>
-        <div class="step reveal">
-          <div class="step-number" data-count="2">2</div>
-          <div class="step-content">
-            <h3>Select Depots &amp; Manifests</h3>
-            <p>Pick the depots you want. Each one shows its platform (Windows / Linux / macOS), architecture (32/64-bit) and language at a glance — pulled live from Steam's PICS info.</p>
-          </div>
-        </div>
-        <div class="step reveal">
-          <div class="step-number" data-count="3">3</div>
-          <div class="step-content">
-            <h3>Click Download</h3>
-            <p>Hit the button and watch the native engine stream every selected depot straight from Steam's CDN with live progress, ETA and per-depot status. Cancel and pick up later — already-downloaded chunks are verified and skipped.</p>
-          </div>
-        </div>
-        <div class="step reveal">
-          <div class="step-number" data-count="4">4</div>
-          <div class="step-content">
-            <h3>Shortcuts &amp; Steam Library</h3>
-            <p>On Windows: create Desktop / Start-Menu shortcuts and optionally add the game to Steam as a non-Steam entry with full grid art. On Linux: add directly to your Steam library with banner, hero, logo and icon — ready for Proton.</p>
-          </div>
-        </div>
-        <div class="step reveal">
-          <div class="step-number" data-count="5">5</div>
-          <div class="step-content">
-            <h3>Emulator (optional)</h3>
-            <p>Patch the game with the gbe_fork Steam emulator so it runs without the Steam client. DRM detection via Steamless, a one-click Steam-API-Check bypass, 21 configurable emulator settings and per-file patch selection — all in one step.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+  <div class="warmzone">
+    <p class="seam seam--in">
+      <span class="seam__idx">03</span>
+      <span class="seam__rule" aria-hidden="true"></span>
+      <span class="seam__name">Install</span>
+      <span class="seam__ground">paper ground</span>
+    </p>
 
-  <section class="tech-stack" id="tech-stack">
-    <div class="container">
-      <div class="section-header reveal">
-        <span class="section-tag">Tech Stack</span>
-        <h2>Built with Modern Tools</h2>
-        <p>Powered by cutting-edge technologies for performance and reliability.</p>
-      </div>
-      <div class="tech-scroll reveal">
-        <div class="tech-track">
-          <div class="tech-badge">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#DEA584" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-            <span>Rust</span>
-          </div>
-          <div class="tech-badge">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="15" cy="9" r="5.5" stroke="#24C8DB" stroke-width="1.5"/><circle cx="9" cy="15" r="5.5" stroke="#24C8DB" stroke-width="1.5"/><circle cx="15" cy="9" r="2" fill="#24C8DB"/><circle cx="9" cy="15" r="2" fill="#24C8DB"/></svg>
-            <span>Tauri v2</span>
-          </div>
-          <div class="tech-badge">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E44D26" stroke-width="2" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-            <span>HTML / CSS / JS</span>
-          </div>
-          <div class="tech-badge">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#58a6ff" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-            <span>reqwest</span>
-          </div>
-          <div class="tech-badge">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3fb950" stroke-width="1.8" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            <span>steam-vent</span>
-          </div>
-          <div class="tech-badge">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#bc8cff" stroke-width="1.8" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-            <span>gbe_fork</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+    <svg class="sky" viewBox="0 0 1600 620" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+      <defs>
+        <linearGradient id="w1-sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#F6F3EB"></stop>
+          <stop offset="0.32" stop-color="#F4EFE2"></stop>
+          <stop offset="0.6" stop-color="#F0E8D9"></stop>
+          <stop offset="0.82" stop-color="#EDE2D1"></stop>
+          <stop offset="1" stop-color="#EADDCC"></stop>
+        </linearGradient>
+        <radialGradient id="w1-glow" cx="0.7" cy="0.88" r="0.6">
+          <stop offset="0" stop-color="#F6DFCC" stop-opacity="0.9"></stop>
+          <stop offset="0.48" stop-color="#F0D3BE" stop-opacity="0.4"></stop>
+          <stop offset="1" stop-color="#F0D3BE" stop-opacity="0"></stop>
+        </radialGradient>
+        <linearGradient id="w1-haze" x1="0" y1="1" x2="1" y2="0">
+          <stop offset="0" stop-color="#C9D6DE" stop-opacity="0.22"></stop>
+          <stop offset="0.62" stop-color="#C9D6DE" stop-opacity="0"></stop>
+        </linearGradient>
+      </defs>
+      <rect width="1600" height="620" fill="url(#w1-sky)"></rect>
+      <rect width="1600" height="620" fill="url(#w1-haze)"></rect>
+      <rect width="1600" height="620" fill="url(#w1-glow)"></rect>
+    </svg>
 
-  <section class="download" id="download">
-    <div class="container">
-      <div class="download-card reveal">
-        <div class="download-glow"></div>
-        <div class="download-content">
-          <h2>Ready to Get Started?</h2>
-          <p>Download Steam Manifest Downloader and start managing your depots today.</p>
-          <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest" id="cta-download-btn" class="btn btn-primary btn-large" target="_blank" rel="noopener">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            <span id="cta-download-label">Download Latest Release</span>
-          </a>
-          <div class="download-meta">
-            <div class="download-info">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-              <span>Windows 10+ / Linux</span>
+    <svg class="ridge" viewBox="0 0 1600 320" preserveAspectRatio="xMidYMax slice" aria-hidden="true" focusable="false">
+      <defs>
+        <filter id="w1-soft" x="-15%" y="-25%" width="130%" height="160%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.011" numOctaves="3" seed="12" result="t"></feTurbulence>
+          <feDisplacementMap in="SourceGraphic" in2="t" scale="22" xChannelSelector="R" yChannelSelector="G"></feDisplacementMap>
+          <feGaussianBlur stdDeviation="0.7"></feGaussianBlur>
+        </filter>
+        <filter id="w1-grain" x="0" y="0" width="100%" height="100%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.82" numOctaves="3" stitchTiles="stitch"></feTurbulence>
+          <feColorMatrix type="saturate" values="0"></feColorMatrix>
+          <feComponentTransfer>
+            <feFuncA type="table" tableValues="0 0 0.05 0.11"></feFuncA>
+          </feComponentTransfer>
+        </filter>
+        <linearGradient id="w1-far" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#CBD8E0"></stop>
+          <stop offset="1" stop-color="#DBE0E0"></stop>
+        </linearGradient>
+        <linearGradient id="w1-mid" x1="0.1" y1="0" x2="0.9" y2="1">
+          <stop offset="0" stop-color="#DDB0A2"></stop>
+          <stop offset="1" stop-color="#CFA08F"></stop>
+        </linearGradient>
+        <linearGradient id="w1-near" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#ADB99F"></stop>
+          <stop offset="1" stop-color="#9AA88C"></stop>
+        </linearGradient>
+        <path id="w1-crest" d="M-60 244 C 210 208, 372 250, 604 224 S 1018 168, 1240 212 S 1512 246, 1660 216"></path>
+        <clipPath id="w1-clip">
+          <path d="M-60 244 C 210 208, 372 250, 604 224 S 1018 168, 1240 212 S 1512 246, 1660 216 L1660 380 L-60 380 Z"></path>
+        </clipPath>
+      </defs>
+      <g filter="url(#w1-soft)">
+        <path fill="url(#w1-far)" d="M-60 196 C 190 138, 330 190, 528 160 S 906 88, 1128 134 S 1478 184, 1660 146 L1660 380 L-60 380 Z"></path>
+        <path fill="url(#w1-mid)" d="M-60 244 C 210 208, 372 250, 604 224 S 1018 168, 1240 212 S 1512 246, 1660 216 L1660 380 L-60 380 Z"></path>
+        <g clip-path="url(#w1-clip)" fill="none" stroke="#B98B7C" stroke-width="1.1" opacity="0.45">
+          <use href="#w1-crest" transform="translate(0,15)"></use>
+          <use href="#w1-crest" transform="translate(0,30)"></use>
+          <use href="#w1-crest" transform="translate(0,45)"></use>
+          <use href="#w1-crest" transform="translate(0,60)"></use>
+          <use href="#w1-crest" transform="translate(0,75)"></use>
+        </g>
+        <path fill="url(#w1-near)" d="M-60 282 C 248 256, 470 292, 752 272 S 1196 240, 1418 268 C 1520 281, 1584 276, 1660 266 L1660 380 L-60 380 Z"></path>
+        <path fill="#F6F3EB" d="M-60 306 C 300 292, 618 318, 940 302 S 1418 292, 1660 302 L1660 380 L-60 380 Z"></path>
+      </g>
+      <rect width="1600" height="320" fill="none" filter="url(#w1-grain)"></rect>
+    </svg>
+
+    <section class="band band--paper" id="install" aria-labelledby="h-install">
+      <div class="wrap">
+        <div class="rail">
+          <p class="kicker"><span class="kicker__idx">03</span> Install</p>
+          <span class="rail__rule" aria-hidden="true"></span>
+          <span class="chip chip--key">three routes</span>
+        </div>
+        <h2 id="h-install" class="h2-paper">Three ways in, depending on what you run.</h2>
+        <p class="lead-paper">Arch based distributions have packages in the AUR. Everywhere else on Linux there is an AppImage, and Windows 10 and 11 have an installer.</p>
+
+        <div class="routes">
+          <article class="route">
+            <p class="route__tag">Arch, CachyOS, Manjaro</p>
+            <h3>From the AUR</h3>
+            <p>Two packages are available. The first installs the released binary, the second builds locally. They conflict with each other, so only one can be installed.</p>
+            <div class="cmd">
+              <code>paru -S steam-manifest-downloader-bin</code>
+              <button class="copy" type="button" data-copy="paru -S steam-manifest-downloader-bin" aria-label="Copy the paru command for the released binary package"><span class="copy__label">Copy</span></button>
             </div>
-            <div class="download-info">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
-              <span>~5 MB installer</span>
+            <p class="cmd__note">Released binary.</p>
+            <div class="cmd">
+              <code>paru -S steam-manifest-downloader</code>
+              <button class="copy" type="button" data-copy="paru -S steam-manifest-downloader" aria-label="Copy the paru command that builds the package locally"><span class="copy__label">Copy</span></button>
             </div>
-            <div class="download-info">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-              <span>No dependencies</span>
+            <p class="cmd__note">Builds locally.</p>
+          </article>
+
+          <article class="route">
+            <p class="route__tag">Other Linux</p>
+            <h3>AppImage</h3>
+            <p>Take the AppImage from the <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest">latest release</a>. It uses WebKitGTK from your system rather than bundling it. On Arch the dependencies are:</p>
+            <div class="cmd">
+              <code>sudo pacman -S webkit2gtk-4.1 libayatana-appindicator librsvg</code>
+              <button class="copy" type="button" data-copy="sudo pacman -S webkit2gtk-4.1 libayatana-appindicator librsvg" aria-label="Copy the pacman command for the WebKitGTK dependencies on Arch"><span class="copy__label">Copy</span></button>
             </div>
-          </div>
+            <p class="cmd__note">Arch example. The Debian, Fedora and openSUSE equivalents are in the <a href="./documentation/">documentation</a>.</p>
+          </article>
+
+          <article class="route">
+            <p class="route__tag">Windows 10 and 11</p>
+            <h3>NSIS installer</h3>
+            <p>The installer sits on the same <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest">releases page</a>. It installs per user and does not ask for admin rights.</p>
+            <ul class="rows">
+              <li><span class="rows__k">installer</span><span class="rows__v">NSIS, per user</span></li>
+              <li><span class="rows__k">admin</span><span class="rows__v">not needed</span></li>
+              <li><span class="rows__k">runtime</span><span class="rows__v"><a href="https://dotnet.microsoft.com/en-us/download/dotnet/9.0">.NET 9 Desktop Runtime</a></span></li>
+            </ul>
+            <p class="cmd__note">The bundled .NET engine needs that runtime, and the app checks for it on first launch. The Rust pipeline does not need it.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <p class="seam seam--out">
+    <span class="seam__idx">04</span>
+    <span class="seam__rule" aria-hidden="true"></span>
+    <span class="seam__name">Inside the app</span>
+    <span class="seam__ground">dark ground</span>
+  </p>
+
+  <section class="band" id="app" aria-labelledby="h-app">
+    <div class="wrap">
+      <div class="rail">
+        <p class="kicker"><span class="kicker__idx">04</span> The rest of the app</p>
+        <span class="rail__rule" aria-hidden="true"></span>
+        <span class="chip">local by default</span>
+      </div>
+      <h2 id="h-app" class="display-2">Inside the app</h2>
+
+      <div class="cells">
+        <div class="cell frame">
+          <span class="cell__tag">history</span>
+          <h3>Run a past download again</h3>
+          <p>Downloads are kept in a history list, and one click repeats any of them.</p>
+        </div>
+        <div class="cell frame">
+          <span class="cell__tag">interface</span>
+          <h3>Two themes, two languages</h3>
+          <p>Dark and light themes ship together. The interface is available in English and in German.</p>
+        </div>
+        <div class="cell frame">
+          <span class="cell__tag">telemetry</span>
+          <h3>Off unless you turn it on</h3>
+          <p>Opt in and off by default. If you switch it on, the payload is sealed on the client before it leaves the machine.</p>
+        </div>
+        <div class="cell frame">
+          <span class="cell__tag">license</span>
+          <h3>GPL-2.0, source in the open</h3>
+          <p>Released under GPL-2.0, with the full source in the repository.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <footer class="footer">
-    <div class="container">
-      <div class="footer-inner">
-        <div class="footer-left">
-          <a href="#hero" class="footer-logo">
-            <img src="icon.svg" alt="Steam Manifest Downloader" class="footer-logo-icon" width="32" height="32" />
-            Steam Manifest Downloader
-          </a>
-          <p>Download Steam depots effortlessly.</p>
+  <div class="warmzone">
+    <p class="seam seam--in">
+      <span class="seam__idx">05</span>
+      <span class="seam__rule" aria-hidden="true"></span>
+      <span class="seam__name">Questions</span>
+      <span class="seam__ground">paper ground</span>
+    </p>
+
+    <svg class="sky" viewBox="0 0 1600 620" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+      <defs>
+        <linearGradient id="w2-sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#F6F3EB"></stop>
+          <stop offset="0.34" stop-color="#F4F1E3"></stop>
+          <stop offset="0.64" stop-color="#EFEEDA"></stop>
+          <stop offset="0.86" stop-color="#E9E7D2"></stop>
+          <stop offset="1" stop-color="#E4E3CE"></stop>
+        </linearGradient>
+        <radialGradient id="w2-glow" cx="0.24" cy="0.9" r="0.58">
+          <stop offset="0" stop-color="#F3E4D2" stop-opacity="0.82"></stop>
+          <stop offset="0.5" stop-color="#EFDCC8" stop-opacity="0.3"></stop>
+          <stop offset="1" stop-color="#EFDCC8" stop-opacity="0"></stop>
+        </radialGradient>
+      </defs>
+      <rect width="1600" height="620" fill="url(#w2-sky)"></rect>
+      <rect width="1600" height="620" fill="url(#w2-glow)"></rect>
+    </svg>
+
+    <svg class="ridge" viewBox="0 0 1600 320" preserveAspectRatio="xMidYMax slice" aria-hidden="true" focusable="false">
+      <defs>
+        <filter id="w2-soft" x="-15%" y="-25%" width="130%" height="160%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.013" numOctaves="3" seed="31" result="t"></feTurbulence>
+          <feDisplacementMap in="SourceGraphic" in2="t" scale="20" xChannelSelector="R" yChannelSelector="G"></feDisplacementMap>
+          <feGaussianBlur stdDeviation="0.7"></feGaussianBlur>
+        </filter>
+        <filter id="w2-grain" x="0" y="0" width="100%" height="100%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.82" numOctaves="3" stitchTiles="stitch"></feTurbulence>
+          <feColorMatrix type="saturate" values="0"></feColorMatrix>
+          <feComponentTransfer>
+            <feFuncA type="table" tableValues="0 0 0.05 0.11"></feFuncA>
+          </feComponentTransfer>
+        </filter>
+        <linearGradient id="w2-far" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#E0C0B2"></stop>
+          <stop offset="1" stop-color="#D9B7AB"></stop>
+        </linearGradient>
+        <linearGradient id="w2-mid" x1="0.9" y1="0" x2="0.1" y2="1">
+          <stop offset="0" stop-color="#E0CBA4"></stop>
+          <stop offset="1" stop-color="#D2BD97"></stop>
+        </linearGradient>
+        <linearGradient id="w2-near" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#B0BBA2"></stop>
+          <stop offset="1" stop-color="#9CAA8E"></stop>
+        </linearGradient>
+        <path id="w2-crest" d="M-60 240 C 190 214, 400 248, 640 220 S 1040 176, 1256 214 S 1520 240, 1660 212"></path>
+        <clipPath id="w2-clip">
+          <path d="M-60 240 C 190 214, 400 248, 640 220 S 1040 176, 1256 214 S 1520 240, 1660 212 L1660 380 L-60 380 Z"></path>
+        </clipPath>
+      </defs>
+      <g filter="url(#w2-soft)">
+        <path fill="url(#w2-far)" d="M-60 190 C 220 152, 400 196, 600 164 S 940 96, 1160 140 S 1500 178, 1660 150 L1660 380 L-60 380 Z"></path>
+        <path fill="url(#w2-mid)" d="M-60 240 C 190 214, 400 248, 640 220 S 1040 176, 1256 214 S 1520 240, 1660 212 L1660 380 L-60 380 Z"></path>
+        <g clip-path="url(#w2-clip)" fill="none" stroke="#B8A37C" stroke-width="1.1" opacity="0.42">
+          <use href="#w2-crest" transform="translate(0,16)"></use>
+          <use href="#w2-crest" transform="translate(0,32)"></use>
+          <use href="#w2-crest" transform="translate(0,48)"></use>
+          <use href="#w2-crest" transform="translate(0,64)"></use>
+        </g>
+        <path fill="url(#w2-near)" d="M-60 278 C 268 254, 452 288, 736 268 S 1180 238, 1408 264 C 1512 277, 1588 272, 1660 262 L1660 380 L-60 380 Z"></path>
+        <path fill="#F6F3EB" d="M-60 304 C 320 290, 600 316, 928 300 S 1400 290, 1660 300 L1660 380 L-60 380 Z"></path>
+      </g>
+      <rect width="1600" height="320" fill="none" filter="url(#w2-grain)"></rect>
+    </svg>
+
+    <section class="band band--paper" id="questions" aria-labelledby="h-q">
+      <div class="wrap wrap--narrow">
+        <div class="rail">
+          <p class="kicker"><span class="kicker__idx">05</span> Questions</p>
+          <span class="rail__rule" aria-hidden="true"></span>
+          <span class="chip chip--key">nine answers</span>
         </div>
-        <div class="footer-right">
-          <a href="https://github.com/MCbabel/Steam-Manifest-Downloader" target="_blank" rel="noopener">GitHub</a>
-          <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases" target="_blank" rel="noopener">Releases</a>
-          <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/blob/main/LICENSE" target="_blank" rel="noopener">GPL-2.0 License</a>
+        <h2 id="h-q" class="h2-paper">Questions</h2>
+        <p class="lead-paper">Short answers here, with the longer versions in the documentation.</p>
+
+        <div class="faq">
+          <details class="qa">
+            <summary><span>Which files can I drop in?</span></summary>
+            <div class="qa__body">
+              <p>A .lua or .st file. The file picker filters on those two extensions, and anything else is turned away with the message Please select a .lua or .st file. You can skip the file entirely and search by App ID instead.</p>
+            </div>
+          </details>
+          <details class="qa">
+            <summary><span>Which systems does it run on?</span></summary>
+            <div class="qa__body">
+              <p>Windows 10 and 11, and Linux. On Windows there is an NSIS installer that installs per user with no admin rights. On Arch, CachyOS and Manjaro there are two AUR packages, and everywhere else on Linux there is an AppImage that uses system WebKitGTK.</p>
+            </div>
+          </details>
+          <details class="qa">
+            <summary><span>Do I need .NET installed?</span></summary>
+            <div class="qa__body">
+              <p>Only for the bundled .NET engine, which wants the <a href="https://dotnet.microsoft.com/en-us/download/dotnet/9.0">.NET 9 Desktop Runtime</a>. The app checks for it on first launch. The pure Rust pipeline does chunk download and decryption in process and needs nothing extra.</p>
+            </div>
+          </details>
+          <details class="qa">
+            <summary><span>Where do the depot keys come from?</span></summary>
+            <div class="qa__body">
+              <p>From the sources you configure: GitHub repositories, archive.org items, a plain HTTPS folder, and the Hubcap and Ryuu APIs if you hold a key. They are queried in the order you set, and the check for whether an App ID exists stops at the first source that answers.</p>
+            </div>
+          </details>
+          <details class="qa">
+            <summary><span>What happens if a download is interrupted?</span></summary>
+            <div class="qa__body">
+              <p>Start it again and it resumes. The app verifies the chunks already on disk rather than pulling everything a second time.</p>
+            </div>
+          </details>
+          <details class="qa">
+            <summary><span>Which AUR package should I pick?</span></summary>
+            <div class="qa__body">
+              <p>Use steam-manifest-downloader-bin for the released binary, or steam-manifest-downloader if you would rather build locally. The two conflict, so install one or the other.</p>
+            </div>
+          </details>
+          <details class="qa">
+            <summary><span>What is the emulator step for?</span></summary>
+            <div class="qa__body">
+              <p>It is optional work after the download. You can patch with gbe_fork, which has a variant picker, 21 settings and per file patch selection. The bundled Steamless can detect and remove SteamStub DRM, and a Steam API check bypass can be installed. None of it is needed to get a depot onto disk.</p>
+            </div>
+          </details>
+          <details class="qa">
+            <summary><span>Does it send anything back?</span></summary>
+            <div class="qa__body">
+              <p>Telemetry is opt in and off by default. If you switch it on, the payload is sealed on the client before it leaves the machine.</p>
+            </div>
+          </details>
+          <details class="qa">
+            <summary><span>Can it download a beta or private branch?</span></summary>
+            <div class="qa__body">
+              <p>No. It signs in anonymously, which reaches the public branch only. Anything behind a password needs a tool that can pass those credentials, such as SteamRE's DepotDownloader.</p>
+            </div>
+          </details>
         </div>
       </div>
-      <div class="footer-bottom">
-        <p>Made with ❤️ and 🦀</p>
+    </section>
+
+    <section class="band band--paper band--close" id="get" aria-labelledby="h-get">
+      <div class="wrap wrap--narrow">
+        <div class="rail">
+          <p class="kicker"><span class="kicker__idx">06</span> Download</p>
+          <span class="rail__rule" aria-hidden="true"></span>
+          <span class="chip chip--key">1.4.3</span>
+        </div>
+        <h2 id="h-get" class="h2-close">Version 1.4.3 is on the releases page.</h2>
+        <p class="lead-paper">Windows installer, Linux AppImage, and AUR packages for Arch, CachyOS and Manjaro. Source under GPL-2.0.</p>
+        <div class="close__actions">
+          <a class="pbtn pbtn--solid" href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest">Get the latest release</a>
+          <a class="pbtn pbtn--line" href="./documentation/">Read the documentation</a>
+        </div>
+      </div>
+    </section>
+  </div>
+
+</main>
+
+<p class="seam seam--out">
+  <span class="seam__rule" aria-hidden="true"></span>
+  <span class="seam__name">Colophon</span>
+  <span class="seam__ground">dark ground</span>
+</p>
+
+<footer class="foot">
+  <div class="wrap foot__in">
+    <div class="foot__brand">
+      <img src="./icon.svg" alt="" width="34" height="34" decoding="async">
+      <p class="foot__name">Steam Manifest Downloader</p>
+      <p class="foot__site">smd.mcbabel.de</p>
+    </div>
+
+    <div class="foot__cols">
+      <div class="foot__col">
+        <p class="kicker" id="f-proj">Project</p>
+        <ul aria-labelledby="f-proj">
+          <li><a href="https://github.com/MCbabel/Steam-Manifest-Downloader">Source</a></li>
+          <li><a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest">Releases</a></li>
+          <li><a href="https://github.com/MCbabel/Steam-Manifest-Downloader/issues">Issues</a></li>
+        </ul>
+      </div>
+      <div class="foot__col">
+        <p class="kicker" id="f-read">Reading</p>
+        <ul aria-labelledby="f-read">
+          <li><a href="./documentation/">Documentation</a></li>
+          <li><a href="./changelog/">Changelog</a></li>
+          <li><a href="#questions">Questions</a></li>
+        </ul>
+      </div>
+      <div class="foot__col">
+        <p class="kicker" id="f-legal">Legal</p>
+        <ul aria-labelledby="f-legal">
+          <li><a href="https://github.com/MCbabel/Steam-Manifest-Downloader/blob/main/LICENSE">GPL-2.0</a></li>
+        </ul>
+        <p class="foot__legal">Intended for content you own. Does not bypass ownership.</p>
       </div>
     </div>
-  </footer>
+  </div>
+  <div class="wrap foot__bar">
+    <span>Version 1.4.3</span>
+    <span>GPL-2.0</span>
+    <span>Rust and Tauri v2</span>
+  </div>
+</footer>
 
-  <script src="script.js"></script>
+<p class="sr" role="status" aria-live="polite" id="copy-status"></p>
+
+<script>
+(function () {
+  var status = document.getElementById('copy-status');
+  var buttons = document.querySelectorAll('[data-copy]');
+  buttons.forEach(function (btn) {
+    var label = btn.querySelector('.copy__label');
+    var timer = null;
+    btn.addEventListener('click', function () {
+      var text = btn.getAttribute('data-copy');
+      var done = function (ok) {
+        label.textContent = ok ? 'Copied' : 'Failed';
+        btn.setAttribute('data-state', ok ? 'ok' : 'fail');
+        status.textContent = ok ? 'Copied to clipboard: ' + text : 'Copy failed. Select the command and copy it manually.';
+        window.clearTimeout(timer);
+        timer = window.setTimeout(function () {
+          label.textContent = 'Copy';
+          btn.removeAttribute('data-state');
+        }, 2200);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(false); });
+      } else {
+        done(false);
+      }
+    });
+  });
+})();
+</script>
 </body>
 </html>
