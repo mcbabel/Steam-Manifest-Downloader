@@ -1,959 +1,1243 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Documentation — Steam Manifest Downloader</title>
-  <meta name="description" content="Comprehensive documentation for Steam Manifest Downloader. Learn how to install, configure, and use the app to download Steam depots effortlessly.">
-  <meta property="og:title" content="Documentation — Steam Manifest Downloader" />
-  <meta property="og:description" content="A sleek desktop app for downloading Steam game depots using manifest data. Built with Tauri v2 and Rust." />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://smd.mcbabel.de/" />
-  <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Documentation — Steam Manifest Downloader" />
-  <meta name="twitter:description" content="A sleek desktop app for downloading Steam game depots using manifest data. Built with Tauri v2 and Rust." />
-  <link rel="stylesheet" href="../style.css">
-  <link rel="stylesheet" href="../docs.css">
-  <link rel="icon" type="image/svg+xml" href="../icon.svg">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Documentation, Steam Manifest Downloader</title>
+<meta name="description" content="Install, use, configure and build Steam Manifest Downloader 1.4.3. System requirements, the five step pipeline, file formats, settings, depot sources, build instructions and troubleshooting.">
+<meta name="theme-color" content="#06060A">
+<meta property="og:title" content="Documentation, Steam Manifest Downloader">
+<meta property="og:description" content="Install, use, configure and build Steam Manifest Downloader 1.4.3. Built with Rust and Tauri v2 for Windows 10 and 11 and for Linux.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://smd.mcbabel.de/documentation/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Documentation, Steam Manifest Downloader">
+<meta name="twitter:description" content="Install, use, configure and build Steam Manifest Downloader 1.4.3.">
+<link rel="icon" href="../icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=Fraunces:opsz,wght,SOFT,WONK@9..144,100..900,0..100,0..1&family=IBM+Plex+Mono:wght@400;500;600&family=Karla:wght@300..700&display=swap">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../pages.css">
 </head>
-<body>
-  <div class="page-bg" aria-hidden="true">
-    <div class="hero-gradient"></div>
-    <div class="hero-grid"></div>
-    <div class="hero-orb hero-orb-1"></div>
-    <div class="hero-orb hero-orb-2"></div>
-    <div class="hero-orb hero-orb-3"></div>
-  </div>
+<body class="docpage">
+<a class="skip" href="#main">Skip to content</a>
 
-  <nav class="nav" id="nav">
-    <div class="nav-inner">
-      <a href="../" class="nav-logo">
-        <img src="../icon.svg" alt="Steam Manifest Downloader" class="nav-logo-icon" width="36" height="36" />
-        <span>SMD</span>
-      </a>
-      <div class="nav-links">
-        <a href="../">Home</a>
-        <a href="../#features">Features</a>
-        <a href="../#how-it-works">How It Works</a>
-        <a href="../#tech-stack">Tech Stack</a>
-        <a href="./" class="nav-link-active">Docs</a>
-        <a href="../changelog/">Changelog</a>
-        <a href="../#download">Download</a>
-      </div>
-      <a href="https://github.com/MCbabel/Steam-Manifest-Downloader" class="nav-github" target="_blank" rel="noopener" aria-label="GitHub">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-      </a>
-      <button class="nav-hamburger" id="navHamburger" aria-label="Toggle menu">&#9776;</button>
-    </div>
-  </nav>
-
-  <div class="mobile-menu" id="mobileMenu">
-    <button class="mobile-menu-close" id="mobileMenuClose" aria-label="Close menu">&times;</button>
-    <a href="../">Home</a>
-    <a href="../#features">Features</a>
-    <a href="../#how-it-works">How It Works</a>
-    <a href="../#tech-stack">Tech Stack</a>
-    <a href="./">Docs</a>
-    <a href="../changelog/">Changelog</a>
-    <a href="../#download">Download</a>
-    <a href="https://github.com/MCbabel/Steam-Manifest-Downloader" class="mobile-github" target="_blank" rel="noopener">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-      GitHub
+<header class="topbar">
+  <div class="topbar__in">
+    <a class="brand" href="../" aria-label="Steam Manifest Downloader, home">
+      <img src="../icon.svg" alt="" width="26" height="26" decoding="async">
+      <span class="brand__mark">SMD</span>
+      <span class="brand__ver">1.4.3</span>
     </a>
+    <nav class="nav" aria-label="Documentation">
+      <a href="../">Home</a>
+      <a href="#contents">Contents</a>
+      <a href="#installation">Install</a>
+      <a href="#usage-guide">Usage</a>
+      <a href="#building-from-source">Build</a>
+      <a href="#troubleshooting">Help</a>
+      <a href="../changelog/">Changelog</a>
+    </nav>
+    <a class="btn btn--ghost btn--sm topbar__src" href="https://github.com/MCbabel/Steam-Manifest-Downloader">Source</a>
   </div>
+</header>
 
-  <button class="docs-sidebar-toggle" id="sidebarToggle" aria-label="Toggle navigation">
-    <svg id="sidebarToggleIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22" aria-hidden="true">
-      <line x1="3" y1="6" x2="21" y2="6"/>
-      <line x1="3" y1="12" x2="21" y2="12"/>
-      <line x1="3" y1="18" x2="21" y2="18"/>
+<main id="main">
+
+  <section class="band band--hero" aria-labelledby="h-doc">
+    <div class="plasma plasma--hero" aria-hidden="true">
+      <svg class="plasma__svg" viewBox="0 0 800 800" preserveAspectRatio="xMidYMid slice" focusable="false">
+        <defs>
+          <filter id="pl-doc" x="-25%" y="-25%" width="150%" height="150%" color-interpolation-filters="sRGB">
+            <feTurbulence type="fractalNoise" baseFrequency="0.0036 0.0098" numOctaves="5" seed="17" result="t"></feTurbulence>
+            <feColorMatrix in="t" type="matrix" values="2.1 -0.42 0 0 -0.35 0 1.68 -0.48 0 -0.33 -0.3 0 2.32 0 -0.4 0 0 0 0 1" result="m"></feColorMatrix>
+            <feComponentTransfer in="m" result="c">
+              <feFuncR type="table" tableValues="0.02 0.6 1 0.86 0.22 0.03"></feFuncR>
+              <feFuncG type="table" tableValues="0.01 0.05 0.33 0.95 1 0.4"></feFuncG>
+              <feFuncB type="table" tableValues="0.17 0.83 0.9 0.4 0.65 0.08"></feFuncB>
+            </feComponentTransfer>
+            <feGaussianBlur in="c" stdDeviation="1.1"></feGaussianBlur>
+          </filter>
+        </defs>
+        <rect width="800" height="800" filter="url(#pl-doc)"></rect>
+        <g fill="none" stroke="#C9FFEB" stroke-opacity="0.21" stroke-width="1">
+          <path d="M-40 210 C 132 152 252 300 412 268 S 692 174 852 236"></path>
+          <path d="M-40 266 C 144 212 260 354 420 322 S 702 232 862 294"></path>
+          <path d="M-40 330 C 154 278 270 412 430 380 S 714 294 874 356"></path>
+          <path d="M-40 402 C 164 350 282 474 442 446 S 726 362 886 424"></path>
+        </g>
+        <g fill="none" stroke="#B98CFF" stroke-opacity="0.23" stroke-width="1">
+          <path d="M128 -40 C 178 184 106 346 164 526 S 220 724 186 880"></path>
+          <path d="M432 -40 C 488 190 410 352 470 534 S 528 726 492 880"></path>
+          <path d="M722 -40 C 778 190 700 352 760 534 S 818 726 782 880"></path>
+        </g>
+      </svg>
+    </div>
+
+    <div class="wrap">
+      <p class="kicker hero__kicker"><span class="kicker__idx">00</span> Reference, version 1.4.3</p>
+
+      <h1 id="h-doc" class="display">
+        <span class="ln ln-1">Documentation</span>
+        <span class="ln ln-2"><span class="stroke">[ Reference ]</span></span>
+        <span class="ln ln-3">install, use, configure, build</span>
+      </h1>
+
+      <p class="lead hero__deck">Everything the app does, written out. Requirements and installation, the five step pipeline, the file formats it reads, every setting, how depot sources are queried, how to build from source, and what to do when something breaks.</p>
+
+      <div class="hero__cta">
+        <a class="btn btn--primary" href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest">Download 1.4.3</a>
+        <a class="btn btn--ghost" href="#installation">Installation</a>
+        <a class="btn btn--bare" href="#troubleshooting">Troubleshooting</a>
+      </div>
+
+      <ul class="hero__meta">
+        <li>Windows 10, 11 and Linux</li>
+        <li>Rust and Tauri v2</li>
+        <li>GPL-2.0</li>
+        <li>Eight sections</li>
+      </ul>
+
+      <div class="panel frame toc" id="contents">
+        <div class="panel__bar"><span>contents</span><span>eight sections</span></div>
+
+        <div class="toc__group">
+          <p class="kicker" id="toc-1"><span class="kicker__idx">01</span> Getting started</p>
+          <ul class="toc__list" aria-labelledby="toc-1">
+            <li><a href="#getting-started">Overview</a></li>
+            <li class="sub"><a href="#system-requirements">System requirements</a></li>
+            <li class="sub"><a href="#installation">Installation</a></li>
+            <li class="sub"><a href="#first-launch">First launch</a></li>
+          </ul>
+        </div>
+
+        <div class="toc__group">
+          <p class="kicker" id="toc-2"><span class="kicker__idx">02</span> Usage guide</p>
+          <ul class="toc__list" aria-labelledby="toc-2">
+            <li><a href="#usage-guide">Overview</a></li>
+            <li class="sub"><a href="#step-upload">Step 1, upload a file</a></li>
+            <li class="sub"><a href="#step-select">Step 2, select manifests</a></li>
+            <li class="sub"><a href="#step-download">Step 3, download</a></li>
+            <li class="sub"><a href="#step-shortcuts">Step 4, shortcuts and Steam library</a></li>
+            <li class="sub"><a href="#step-emulator">Step 5, emulator</a></li>
+            <li class="sub"><a href="#step-cancel">Cancel a download</a></li>
+          </ul>
+        </div>
+
+        <div class="toc__group">
+          <p class="kicker" id="toc-3"><span class="kicker__idx">03</span> File formats</p>
+          <ul class="toc__list" aria-labelledby="toc-3">
+            <li><a href="#file-formats">Supported formats</a></li>
+            <li class="sub"><a href="#format-lua">.lua files</a></li>
+            <li class="sub"><a href="#format-st">.st files</a></li>
+            <li class="sub"><a href="#format-vdf">key.vdf from a source</a></li>
+          </ul>
+        </div>
+
+        <div class="toc__group">
+          <p class="kicker" id="toc-4"><span class="kicker__idx">04</span> Configuration</p>
+          <ul class="toc__list" aria-labelledby="toc-4">
+            <li><a href="#settings">Settings</a></li>
+            <li class="sub"><a href="#settings-advanced">Advanced settings</a></li>
+            <li class="sub"><a href="#download-options">Download page options</a></li>
+            <li><a href="#manifest-sources">Manifest sources</a></li>
+          </ul>
+        </div>
+
+        <div class="toc__group">
+          <p class="kicker" id="toc-5"><span class="kicker__idx">05</span> Development</p>
+          <ul class="toc__list" aria-labelledby="toc-5">
+            <li><a href="#building-from-source">Building from source</a></li>
+            <li class="sub"><a href="#build-prerequisites">Prerequisites</a></li>
+            <li class="sub"><a href="#build-ddm">Building DepotDownloaderMod</a></li>
+            <li class="sub"><a href="#build-tauri">Building the Tauri app</a></li>
+            <li class="sub"><a href="#build-project-structure">Project structure</a></li>
+          </ul>
+        </div>
+
+        <div class="toc__group">
+          <p class="kicker" id="toc-6"><span class="kicker__idx">06</span> Help</p>
+          <ul class="toc__list" aria-labelledby="toc-6">
+            <li><a href="#troubleshooting">Troubleshooting and FAQ</a></li>
+            <li><a href="#legal-notice">Legal notice</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="warmzone">
+    <p class="seam seam--in">
+      <span class="seam__idx">01</span>
+      <span class="seam__rule" aria-hidden="true"></span>
+      <span class="seam__name">Reference</span>
+      <span class="seam__ground">paper ground</span>
+    </p>
+
+    <svg class="sky" viewBox="0 0 1600 620" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+      <defs>
+        <linearGradient id="wd-sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#F6F3EB"></stop>
+          <stop offset="0.4" stop-color="#F5F1E6"></stop>
+          <stop offset="0.72" stop-color="#F2ECDF"></stop>
+          <stop offset="1" stop-color="#EEE6D6"></stop>
+        </linearGradient>
+        <radialGradient id="wd-glow" cx="0.78" cy="0.95" r="0.62">
+          <stop offset="0" stop-color="#F6E2D0" stop-opacity="0.78"></stop>
+          <stop offset="0.52" stop-color="#F1D8C4" stop-opacity="0.3"></stop>
+          <stop offset="1" stop-color="#F1D8C4" stop-opacity="0"></stop>
+        </radialGradient>
+      </defs>
+      <rect width="1600" height="620" fill="url(#wd-sky)"></rect>
+      <rect width="1600" height="620" fill="url(#wd-glow)"></rect>
     </svg>
-  </button>
-  <div class="docs-sidebar-overlay" id="sidebarOverlay"></div>
 
-  <div class="docs-layout">
-    <aside class="docs-sidebar" id="docsSidebar">
-      <div class="sidebar-section">
-        <div class="sidebar-title">Getting Started</div>
-        <ul class="sidebar-links">
-          <li><a href="#getting-started">Overview</a></li>
-          <li class="sub"><a href="#system-requirements">System Requirements</a></li>
-          <li class="sub"><a href="#installation">Installation</a></li>
-          <li class="sub"><a href="#first-launch">First Launch</a></li>
-        </ul>
-      </div>
-      <div class="sidebar-section">
-        <div class="sidebar-title">Usage Guide</div>
-        <ul class="sidebar-links">
-          <li><a href="#usage-guide">Overview</a></li>
-          <li class="sub"><a href="#step-upload">1 · Upload a File</a></li>
-          <li class="sub"><a href="#step-select">2 · Select Manifests</a></li>
-          <li class="sub"><a href="#step-download">3 · Download</a></li>
-          <li class="sub"><a href="#step-shortcuts">4 · Shortcuts &amp; Steam Library</a></li>
-          <li class="sub"><a href="#step-emulator">5 · Emulator (optional)</a></li>
-          <li class="sub"><a href="#step-cancel">Cancel a Download</a></li>
-        </ul>
-      </div>
-      <div class="sidebar-section">
-        <div class="sidebar-title">File Formats</div>
-        <ul class="sidebar-links">
-          <li><a href="#file-formats">Supported Formats</a></li>
-          <li class="sub"><a href="#format-lua">.lua Files</a></li>
-          <li class="sub"><a href="#format-vdf">.vdf / Key.vdf Files</a></li>
-          <li class="sub"><a href="#format-st">.st Files</a></li>
-        </ul>
-      </div>
-      <div class="sidebar-section">
-        <div class="sidebar-title">Configuration</div>
-        <ul class="sidebar-links">
-          <li><a href="#settings">Settings</a></li>
-          <li><a href="#manifest-sources">Manifest Sources</a></li>
-        </ul>
-      </div>
-      <div class="sidebar-section">
-        <div class="sidebar-title">Development</div>
-        <ul class="sidebar-links">
-          <li><a href="#building-from-source">Building from Source</a></li>
-          <li class="sub"><a href="#build-prerequisites">Prerequisites</a></li>
-          <li class="sub"><a href="#build-ddm">Building DepotDownloaderMod</a></li>
-          <li class="sub"><a href="#build-tauri">Building the Tauri App</a></li>
-          <li class="sub"><a href="#build-project-structure">Project Structure</a></li>
-        </ul>
-      </div>
-      <div class="sidebar-section">
-        <div class="sidebar-title">Help</div>
-        <ul class="sidebar-links">
-          <li><a href="#troubleshooting">Troubleshooting / FAQ</a></li>
-          <li><a href="#legal-notice">Legal Notice</a></li>
-        </ul>
-      </div>
-    </aside>
+    <svg class="ridge" viewBox="0 0 1600 320" preserveAspectRatio="xMidYMax slice" aria-hidden="true" focusable="false">
+      <defs>
+        <filter id="wd-soft" x="-15%" y="-25%" width="130%" height="160%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.0115" numOctaves="3" seed="52" result="t"></feTurbulence>
+          <feDisplacementMap in="SourceGraphic" in2="t" scale="22" xChannelSelector="R" yChannelSelector="G"></feDisplacementMap>
+          <feGaussianBlur stdDeviation="0.7"></feGaussianBlur>
+        </filter>
+        <filter id="wd-grain" x="0" y="0" width="100%" height="100%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.82" numOctaves="3" stitchTiles="stitch"></feTurbulence>
+          <feColorMatrix type="saturate" values="0"></feColorMatrix>
+          <feComponentTransfer>
+            <feFuncA type="table" tableValues="0 0 0.05 0.11"></feFuncA>
+          </feComponentTransfer>
+        </filter>
+        <linearGradient id="wd-far" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#C8D5DD"></stop>
+          <stop offset="1" stop-color="#D9DEDD"></stop>
+        </linearGradient>
+        <linearGradient id="wd-mid" x1="0.2" y1="0" x2="0.8" y2="1">
+          <stop offset="0" stop-color="#DCB2A3"></stop>
+          <stop offset="1" stop-color="#CB9C8C"></stop>
+        </linearGradient>
+        <linearGradient id="wd-near" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#ABB79E"></stop>
+          <stop offset="1" stop-color="#96A489"></stop>
+        </linearGradient>
+        <path id="wd-crest" d="M-60 246 C 220 212, 400 252, 632 224 S 1042 174, 1258 216 S 1520 246, 1660 216"></path>
+        <clipPath id="wd-clip">
+          <path d="M-60 246 C 220 212, 400 252, 632 224 S 1042 174, 1258 216 S 1520 246, 1660 216 L1660 380 L-60 380 Z"></path>
+        </clipPath>
+      </defs>
+      <g filter="url(#wd-soft)">
+        <path fill="url(#wd-far)" d="M-60 198 C 210 150, 370 200, 570 168 S 930 96, 1152 142 S 1496 184, 1660 152 L1660 380 L-60 380 Z"></path>
+        <path fill="url(#wd-mid)" d="M-60 246 C 220 212, 400 252, 632 224 S 1042 174, 1258 216 S 1520 246, 1660 216 L1660 380 L-60 380 Z"></path>
+        <g clip-path="url(#wd-clip)" fill="none" stroke="#B68979" stroke-width="1.1" opacity="0.42">
+          <use href="#wd-crest" transform="translate(0,16)"></use>
+          <use href="#wd-crest" transform="translate(0,32)"></use>
+          <use href="#wd-crest" transform="translate(0,48)"></use>
+          <use href="#wd-crest" transform="translate(0,64)"></use>
+        </g>
+        <path fill="url(#wd-near)" d="M-60 284 C 262 258, 466 292, 748 272 S 1192 242, 1416 268 C 1518 281, 1590 276, 1660 266 L1660 380 L-60 380 Z"></path>
+        <path fill="#F6F3EB" d="M-60 307 C 316 293, 616 319, 940 303 S 1414 293, 1660 303 L1660 380 L-60 380 Z"></path>
+      </g>
+      <rect width="1600" height="320" fill="none" filter="url(#wd-grain)"></rect>
+    </svg>
 
-    <main class="docs-content">
-
-      <section class="doc-section" id="getting-started">
-        <span class="doc-tag">Getting Started</span>
-        <h2>Getting Started</h2>
-        <p>Steam Manifest Downloader (SMD) is a modern Tauri v2 desktop application built with Rust and WebView. It walks you through five steps:</p>
-        <ol>
-          <li>Parse a <code>.lua</code> / <code>.vdf</code> / <code>.st</code> file or search by Steam App ID across all configured sources</li>
-          <li>Pick the depots you want, with platform / arch / language tags pulled live from Steam's PICS info</li>
-          <li>Download the selected depots with the native Rust engine, straight from Steam's CDN</li>
-          <li>Optionally: create Desktop / Start-Menu shortcuts (Windows) or add the game to your Steam library with grid art (Linux + Windows)</li>
-          <li>Optionally: patch the game with the gbe_fork emulator so it runs without the Steam client — including DRM detection via Steamless and an API-check bypass</li>
-        </ol>
-
-        <h3 id="system-requirements">System Requirements</h3>
-        <ul>
-          <li><strong>.NET 9.0 Desktop Runtime</strong> <span style="color:var(--text-muted);font-size:0.85rem;font-weight:400;">(Windows, optional)</span> — Only needed if you switch <strong>Settings → Download engine</strong> back to the legacy DepotDownloaderMod path. The default native engine is pure Rust and needs no runtime. <a href="https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.16-windows-x64-installer" target="_blank" rel="noopener">Download .NET 9.0 Desktop Runtime</a></li>
-          <li><strong>Mono</strong> <span style="color:var(--text-muted);font-size:0.85rem;font-weight:400;">(Linux/macOS, optional)</span> — Only needed if you want to use step 5's DRM removal feature, since Steamless is a .NET Framework tool: <code>pacman -S mono</code> / <code>apt install mono-runtime</code> / <code>brew install mono</code></li>
-          <li><strong>Windows 10+</strong> — Windows 10 version 1803 or later (with WebView2)</li>
-          <li><strong>Linux</strong> — Most modern distributions with GTK3 and WebKit2GTK (for AppImage: FUSE support or <code>APPIMAGE_EXTRACT_AND_RUN=1</code>)</li>
-          <li><strong>Internet connection</strong> — Required for searching and downloading manifests</li>
-          <li><strong>Disk space</strong> — ~20 MB for the app itself; additional space for downloaded depots</li>
-        </ul>
-
-        <hr class="doc-divider">
-
-        <h3 id="installation">Installation</h3>
-
-        <h4>Windows (NSIS Installer)</h4>
-        <ol>
-          <li>Download the latest <code>.exe</code> installer from the <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases" target="_blank" rel="noopener">Releases page</a></li>
-          <li>Run the installer and follow the setup wizard</li>
-          <li>Launch <strong>Steam Manifest Downloader</strong> from your Start Menu or Desktop</li>
-        </ol>
-
-        <h4>Linux (AppImage)</h4>
-        <ol>
-          <li>Download the latest <code>.AppImage</code> file from the <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases" target="_blank" rel="noopener">Releases page</a></li>
-          <li>Make it executable:</li>
-        </ol>
-        <div class="code-block">
-          <div class="code-block-header">
-            <span class="code-block-lang">bash</span>
-            <button class="code-block-copy" onclick="copyCode(this)">Copy</button>
+    <div class="docgrid">
+      <nav class="docnav" aria-labelledby="docnav-title">
+        <details class="docnav__d" id="docnav-d" open>
+          <summary class="docnav__sum">
+            <span class="docnav__lab" id="docnav-title">On this page</span>
+            <span class="docnav__hint">01 to 09</span>
+          </summary>
+          <div class="docnav__panel">
+            <ol class="docnav__secs">
+              <li class="docnav__sec">
+                <a class="docnav__h2" href="#getting-started"><span class="docnav__n">01</span><span class="docnav__t">Getting started</span></a>
+                <ul class="docnav__subs">
+                  <li><a href="#system-requirements">System requirements</a></li>
+                  <li><a href="#installation">Installation</a></li>
+                  <li><a href="#first-launch">First launch</a></li>
+                </ul>
+              </li>
+              <li class="docnav__sec">
+                <a class="docnav__h2" href="#usage-guide"><span class="docnav__n">02</span><span class="docnav__t">Usage guide</span></a>
+                <ul class="docnav__subs">
+                  <li><a href="#step-upload">Step 1: upload a file</a></li>
+                  <li><a href="#step-select">Step 2: select manifests</a></li>
+                  <li><a href="#step-download">Step 3: download</a></li>
+                  <li><a href="#step-shortcuts">Step 4: shortcuts and Steam library</a></li>
+                  <li><a href="#step-emulator">Step 5: emulator</a></li>
+                  <li><a href="#step-cancel">Cancel a download</a></li>
+                </ul>
+              </li>
+              <li class="docnav__sec">
+                <a class="docnav__h2" href="#file-formats"><span class="docnav__n">03</span><span class="docnav__t">Supported file formats</span></a>
+                <ul class="docnav__subs">
+                  <li><a href="#format-lua">.lua files</a></li>
+                  <li><a href="#format-st">.st files</a></li>
+                  <li><a href="#format-vdf">key.vdf from a depot source</a></li>
+                </ul>
+              </li>
+              <li class="docnav__sec">
+                <a class="docnav__h2" href="#settings"><span class="docnav__n">04</span><span class="docnav__t">Settings and configuration</span></a>
+                <ul class="docnav__subs">
+                  <li><a href="#settings-top">Top level settings</a></li>
+                  <li><a href="#settings-advanced">Advanced settings</a></li>
+                  <li><a href="#download-options">Download page options</a></li>
+                  <li><a href="#settings-emulator">Emulator settings persistence</a></li>
+                </ul>
+              </li>
+              <li class="docnav__sec">
+                <a class="docnav__h2" href="#manifest-sources"><span class="docnav__n">05</span><span class="docnav__t">Manifest sources</span></a>
+                <ul class="docnav__subs">
+                  <li><a href="#source-formats">Supported source formats</a></li>
+                  <li><a href="#source-fetched">What gets fetched</a></li>
+                  <li><a href="#source-metadata">Depot metadata</a></li>
+                </ul>
+              </li>
+              <li class="docnav__sec">
+                <a class="docnav__h2" href="#building-from-source"><span class="docnav__n">06</span><span class="docnav__t">Building from source</span></a>
+                <ul class="docnav__subs">
+                  <li><a href="#build-prerequisites">Prerequisites</a></li>
+                  <li><a href="#build-ddm">Step 1: building DepotDownloaderMod</a></li>
+                  <li><a href="#build-tauri">Step 2: building the Tauri app</a></li>
+                  <li><a href="#build-project-structure">Step 3: project structure</a></li>
+                </ul>
+              </li>
+              <li class="docnav__sec">
+                <a class="docnav__h2" href="#troubleshooting"><span class="docnav__n">07</span><span class="docnav__t">Troubleshooting and FAQ</span></a>
+              </li>
+              <li class="docnav__sec">
+                <a class="docnav__h2" href="#legal-notice"><span class="docnav__n">08</span><span class="docnav__t">Legal notice</span></a>
+                <ul class="docnav__subs">
+                  <li><a href="#legal-intent">Intended use</a></li>
+                  <li><a href="#legal-terms">Terms of service</a></li>
+                  <li><a href="#legal-disclaimer">Disclaimer</a></li>
+                </ul>
+              </li>
+              <li class="docnav__sec">
+                <a class="docnav__h2" href="#next"><span class="docnav__n">09</span><span class="docnav__t">Download</span></a>
+              </li>
+            </ol>
           </div>
-          <pre><code><span class="code-fn">chmod</span> +x SteamManifestDownloader_*.AppImage
-./<span class="code-fn">SteamManifestDownloader_*.AppImage</span></code></pre>
-        </div>
+        </details>
+      </nav>
 
-        <div class="doc-callout info">
-          <span class="doc-callout-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
-          <p>If FUSE is not available on your system, you can run the AppImage with the environment variable <code>APPIMAGE_EXTRACT_AND_RUN=1</code> set.</p>
-        </div>
+      <div class="docbody">
+        <section class="band band--paper" id="getting-started" aria-labelledby="h-start">
+          <div class="wrap wrap--narrow">
+            <div class="rail">
+              <p class="kicker"><span class="kicker__idx">01</span> Getting started</p>
+              <span class="rail__rule" aria-hidden="true"></span>
+              <span class="chip chip--key">three parts</span>
+            </div>
+            <h2 id="h-start" class="h2-paper">Getting started <a class="alink" href="#getting-started" aria-label="Permalink to Getting started">#</a></h2>
+            <p class="lead-paper">Steam Manifest Downloader (SMD) is a Tauri v2 desktop application built with Rust and a WebView front end.</p>
+            <nav class="qidx" aria-label="Inside Getting started">
+              <p class="qidx__lab">In this section</p>
+              <ul class="qidx__list">
+                <li><a href="#system-requirements">System requirements</a></li>
+                <li><a href="#installation">Installation</a></li>
+                <li><a href="#first-launch">First launch</a></li>
+              </ul>
+            </nav>
 
-        <hr class="doc-divider">
+            <div class="prose">
+              <p>It walks you through five steps:</p>
+              <ol>
+                <li>Parse a <code>.lua</code> or <code>.st</code> file, or search by Steam App ID across your configured sources</li>
+                <li>Pick the depots you want, with platform, architecture and language tags pulled live from Steam's PICS info</li>
+                <li>Download the selected depots with the native Rust engine, straight from Steam's CDN</li>
+                <li>Optionally create desktop and start menu shortcuts (Windows), or add the game to your Steam library with grid art (Linux and Windows)</li>
+                <li>Optionally patch the game with the gbe_fork emulator so it runs without the Steam client, including DRM detection via Steamless and an API check bypass</li>
+              </ol>
 
-        <h3 id="first-launch">First Launch</h3>
-        <p>The very first time you start SMD, two small prompts appear before the main interface:</p>
-        <ol>
-          <li><strong>Language picker</strong> — pick between English and German. Before you make the choice the UI is already auto-localised based on your OS / browser language (so a German system starts in German); if neither matches, English is used as the fallback. The picker just lets you override that. Saved immediately; you can change it later via <strong>Settings → Language</strong> (a restart prompt appears so the new translation applies cleanly)</li>
-          <li><strong>Anonymous telemetry consent</strong> — opt-in or decline. Telemetry counters are end-to-end encrypted with an embedded public key; you can change your choice anytime under <strong>Settings → Advanced Settings</strong></li>
-        </ol>
-        <p>If you installed a build with the bundled archive.org sources (the default for GitHub / installer / AUR-source builds), two depot-source URLs are seeded automatically so search works out of the box. The Flatpak build does <em>not</em> seed them — there you need to add at least one source manually under <strong>Settings → Advanced Settings → Manifest Sources</strong>.</p>
-        <p>After the prompts the main interface is ready. Optional next steps:</p>
-        <ul>
-          <li>Set a custom <strong>download location</strong> on the download page (Step 3) before your first download</li>
-          <li>Configure a <strong>ManifestHub API key</strong> on the download page for additional manifest sources</li>
-          <li>Open <strong>Settings → Advanced Settings</strong> to tune retry count, speed limit, proxy, or to add/remove depot sources</li>
-        </ul>
-      </section>
+              <h3 id="system-requirements">System requirements <a class="alink" href="#system-requirements" aria-label="Permalink to System requirements">#</a></h3>
+              <ul class="rows">
+                <li>
+                  <span class="rows__k">.net 9</span>
+                  <span class="rows__v"><strong>.NET 9.0 Desktop Runtime</strong>, Windows, optional. Only needed if you switch <strong>Settings, Download engine</strong> back to the legacy DepotDownloaderMod path. The default native engine is pure Rust and needs no runtime. <a href="https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.16-windows-x64-installer">Download the .NET 9.0 Desktop Runtime</a></span>
+                </li>
+                <li>
+                  <span class="rows__k">mono</span>
+                  <span class="rows__v"><strong>Mono</strong>, Linux, optional. Only needed if you want to use the DRM removal in step 5, since Steamless is a .NET Framework tool: <code>pacman -S mono</code> or <code>apt install mono-runtime</code></span>
+                </li>
+                <li>
+                  <span class="rows__k">windows</span>
+                  <span class="rows__v">Windows 10 version 1803 or later, with WebView2. Windows 11 is supported as well.</span>
+                </li>
+                <li>
+                  <span class="rows__k">linux</span>
+                  <span class="rows__v">Most modern distributions with GTK3 and WebKit2GTK. For the AppImage: FUSE support, or <code>APPIMAGE_EXTRACT_AND_RUN=1</code></span>
+                </li>
+                <li>
+                  <span class="rows__k">network</span>
+                  <span class="rows__v">An internet connection is required for searching and downloading manifests.</span>
+                </li>
+                <li>
+                  <span class="rows__k">disk</span>
+                  <span class="rows__v">About 20 MB for the app itself, plus space for the depots you download.</span>
+                </li>
+              </ul>
 
-      <section class="doc-section" id="usage-guide">
-        <span class="doc-tag">Usage Guide</span>
-        <h2>Usage Guide</h2>
-        <p>The pipeline has five steps. Steps 1–3 (upload, select, download) are always required; steps 4 (shortcuts &amp; Steam library) and 5 (emulator patch) are optional and only appear when relevant for your platform / game.</p>
+              <h3 id="installation">Installation <a class="alink" href="#installation" aria-label="Permalink to Installation">#</a></h3>
 
-        <hr class="doc-divider">
+              <h4 id="windows-nsis-installer">Windows, NSIS installer <a class="alink" href="#windows-nsis-installer" aria-label="Permalink to Windows, NSIS installer">#</a></h4>
+              <ol>
+                <li>Download the latest <code>.exe</code> installer from the <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases">releases page</a></li>
+                <li>Run the installer and follow the setup wizard</li>
+                <li>Launch <strong>Steam Manifest Downloader</strong> from your start menu or desktop</li>
+              </ol>
 
-        <h3 id="step-upload">Step 1: Upload a File</h3>
-        <p>Start by providing a manifest data file. You can either:</p>
-        <ul>
-          <li><strong>Drag &amp; drop</strong> a <code>.lua</code>, <code>.vdf</code>, or <code>.st</code> file onto the upload area</li>
-          <li><strong>Click</strong> the upload area to open a file picker</li>
-        </ul>
-        <p>The application will parse the file and extract all depot IDs, manifest IDs, app IDs, and depot keys contained within.</p>
+              <h4 id="linux-appimage">Linux, AppImage <a class="alink" href="#linux-appimage" aria-label="Permalink to Linux, AppImage">#</a></h4>
+              <ol>
+                <li>Download the latest <code>.AppImage</code> file from the <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases">releases page</a></li>
+                <li>Make it executable, then run it</li>
+              </ol>
+              <div class="snip">
+                <div class="snip__bar">
+                  <p class="snip__lang">bash</p>
+                  <button class="copy" type="button" aria-label="Copy the commands that make the AppImage executable and run it"><span class="copy__label">Copy</span></button>
+                </div>
+                <pre tabindex="0"><code>chmod +x SteamManifestDownloader_*.AppImage
+./SteamManifestDownloader_*.AppImage</code></pre>
+              </div>
+              <div class="note">
+                <p class="note__tag">Note</p>
+                <p>If FUSE is not available on your system, you can run the AppImage with the environment variable <code>APPIMAGE_EXTRACT_AND_RUN=1</code> set.</p>
+              </div>
 
-        <div class="doc-callout tip">
-          <span class="doc-callout-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" aria-hidden="true"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.5.5.8 1.1.9 1.8h6.2c.1-.7.4-1.3.9-1.8A7 7 0 0 0 12 2z"/></svg></span>
-          <p>You can upload multiple files — each new upload merges its data with any previously loaded depots.</p>
-        </div>
-
-        <hr class="doc-divider">
-
-        <h3 id="step-select">Step 2: Select Manifests</h3>
-        <p>After parsing, the app displays a list of all discovered depots and their manifest IDs. From here you can:</p>
-        <ul>
-          <li><strong>Select / deselect</strong> individual depots using the checkboxes</li>
-          <li>Use <strong>Select All</strong> or <strong>Deselect All</strong> for bulk actions</li>
-          <li><strong>Search / filter</strong> depots by ID or name using the search bar</li>
-          <li>View <strong>app details</strong> fetched from the Steam Store API (game name, icon, etc.)</li>
-        </ul>
-        <p>Each depot entry shows the depot ID, the associated manifest ID, whether a depot key was found, and a row of metadata tags pulled live from Steam's PICS info via <code>api.steamcmd.net</code>:</p>
-        <ul>
-          <li><strong>OS tag</strong> — <span style="color:#509eff;">Windows</span> / <span style="color:#ffa940;">Linux</span> / macOS</li>
-          <li><strong>Arch tag</strong> — 32-bit or 64-bit</li>
-          <li><strong>Language tag</strong> — only shown for language-specific depots (e.g. <code>German</code>, <code>French</code>)</li>
-        </ul>
-        <p>The metadata is cached per app ID for 7 days in your app-data dir, so subsequent visits are instant. If <code>api.steamcmd.net</code> is unreachable the tags simply don't appear — the rest of the UI is unaffected.</p>
-
-        <div class="doc-callout info">
-          <span class="doc-callout-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
-          <p>The search step queries <em>all</em> configured depot sources in parallel and merges their depots, keys and sizes. If source A only has half the depots and source B has the rest, you see the union.</p>
-        </div>
-
-        <hr class="doc-divider">
-
-        <h3 id="step-download">Step 3: Download</h3>
-        <p>Click the <strong>Download</strong> button to begin. Behind the scenes, the application performs several operations:</p>
-        <ol>
-          <li><strong>Steam session</strong> — Signs in to Steam anonymously and pulls app / depot metadata via PICS</li>
-          <li><strong>Manifest fetch</strong> — Requests each depot's manifest from Steam directly. If that fails, SMD falls back to your configured depot sources / Hubcap, then to the ManifestHub API if you have a key set</li>
-          <li><strong>Manifest decode</strong> — Unwraps the ZIP container, decrypts with AES-256 and parses the protobuf payload (encrypted filenames included)</li>
-          <li><strong>Depot keys generation</strong> — Creates a <code>steam.keys</code> file containing all known depot decryption keys</li>
-          <li><strong>Chunk download</strong> — Fetches up to 32 chunks in parallel from Steam's CDN, decodes VZ1 (LZMA) or VSZTD (zstd) payloads and verifies each one against its CRC32 and SHA-1 before writing. Failed chunks retry up to 8 times with exponential backoff, rotating CDN servers between attempts</li>
-        </ol>
-        <p>Chunks that already match on disk are verified and skipped, so a restarted download picks up where it left off instead of starting over.</p>
-
-        <div class="doc-callout info">
-          <span class="doc-callout-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
-          <p>This is the <strong>native engine</strong> and it's the default. If you switch <strong>Settings → Download engine</strong> back to DepotDownloaderMod, SMD instead collects the manifests and hands them to the embedded DDM binary — which requires the .NET runtime on Windows.</p>
-        </div>
-        <p>You'll see real-time progress tracking with:</p>
-        <ul>
-          <li>A progress bar showing overall completion</li>
-          <li>Download speed (MB/s)</li>
-          <li>ETA estimates</li>
-          <li>Per-depot status updates</li>
-        </ul>
-
-        <div class="doc-callout info">
-          <span class="doc-callout-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
-          <p>The downloaded files are saved to your configured download location (default: <code>Documents/SteamDownloads</code>). Each download creates a subdirectory named after the app ID.</p>
-        </div>
-
-        <p>When the download succeeds the app automatically progresses to step 4 (or step 5 on Linux without Steam installed). The history entry is only persisted once you reach <strong>"Go to Home"</strong> — closing the app mid-flow leaves no trace.</p>
-
-        <hr class="doc-divider">
-
-        <h3 id="step-shortcuts">Step 4: Shortcuts &amp; Steam Library <span style="color:var(--text-muted);font-size:0.85rem;font-weight:400;">(optional)</span></h3>
-        <p>Step 4 has two platform-specific variants. SMD picks the right one automatically based on whether you're on Windows or Linux and whether Steam is detected.</p>
-
-        <h4>Windows: Create Desktop / Start-Menu Shortcuts</h4>
-        <p>The app scans the download folder for executables, scores them (size + name match against the folder hint + blacklist of installers / redistributables) and suggests the most likely game executable. You can:</p>
-        <ul>
-          <li>Browse manually for the <code>.exe</code> if auto-detection picked the wrong one</li>
-          <li>Toggle <strong>Desktop Shortcut</strong> and <strong>Start Menu Shortcut</strong> independently</li>
-          <li>Toggle <strong>Also add to Steam library</strong> to chain the Steam integration (see next section)</li>
-        </ul>
-        <p>Shortcuts are created via PowerShell using the <code>WScript.Shell</code> COM object, with user-derived values passed through environment variables (no string interpolation, no script injection).</p>
-
-        <h4>Linux: Add to Steam Library</h4>
-        <p>The app detects your Steam installation (<code>~/.steam/steam/</code>, <code>~/.local/share/Steam/</code> or the Flatpak path) and the active user (via <code>loginusers.vdf</code>'s <code>MostRecent=1</code> flag). When you click <strong>Add to Steam</strong> it will:</p>
-        <ol>
-          <li>Download <strong>banner</strong>, <strong>hero</strong>, <strong>logo</strong> and <strong>icon</strong> images from the Steam CDN (using the icon hash from <code>api.steamcmd.net</code>)</li>
-          <li>Save them into <code>~/.steam/steam/userdata/&lt;user&gt;/config/grid/</code> with the correct naming Steam expects (<code>&lt;shortcutid&gt;.jpg</code>, <code>&lt;shortcutid&gt;p.jpg</code>, <code>&lt;shortcutid&gt;_hero.jpg</code>, <code>&lt;shortcutid&gt;_logo.png</code>, <code>&lt;shortcutid&gt;_icon.jpg</code>)</li>
-          <li>Parse the existing binary <code>shortcuts.vdf</code> file (with backup), append a new shortcut entry, and write it back</li>
-          <li>Generate the shortcut AppID as <code>CRC32(exe_path + app_name) | 0x80000000</code> — Steam-compatible and deterministic</li>
-        </ol>
-        <p>The Linux step also supports <strong>launch options</strong> (e.g. <code>%command%</code>) and a <strong>display name</strong> field. After adding, restart Steam fully (right-click tray → Exit) for the new entry to appear. For Windows games on Linux: right-click the new entry in Steam → Properties → Compatibility → enable Proton.</p>
-
-        <p>Footer buttons are minimal: <strong>Skip</strong> (proceed without adding) and <strong>Add to Steam</strong> (which switches to a single <strong>Next</strong> button after success).</p>
-
-        <hr class="doc-divider">
-
-        <h3 id="step-emulator">Step 5: Emulator <span style="color:var(--text-muted);font-size:0.85rem;font-weight:400;">(optional)</span></h3>
-        <p>Step 5 patches the game with the <a href="https://github.com/Detanup01/gbe_fork" target="_blank" rel="noopener">gbe_fork</a> Steam emulator so it can run without the Steam client. The whole feature is bundled — no manual setup. It only appears when the app finds <code>steam_api*.dll</code> (Windows) or <code>libsteam_api.so</code> (Linux) in the download folder.</p>
-
-        <h4>Variant Picker</h4>
-        <p>Two gbe_fork variants are offered side-by-side:</p>
-        <ul>
-          <li><strong>Regular</strong> — stable build, recommended for most games</li>
-          <li><strong>Experimental</strong> — newer features, may be unstable</li>
-        </ul>
-        <p>The chosen variant's DLL is fetched from the latest gbe_fork GitHub release, extracted into the app-data cache (<code>$APP_DATA/gbe_fork_cache/&lt;release-tag&gt;/</code>) and copied over the game's <code>steam_api*.dll</code>. The original is backed up as <code>steam_api*.dll.steam.bak</code>. <code>steam_interfaces.txt</code> is generated natively in Rust by pattern-matching against 37 known Steam interface names — no external <code>generate_interfaces.exe</code> required.</p>
-
-        <h4>DRM Detection &amp; Removal (via Steamless)</h4>
-        <p>Before applying the emulator, SMD scans the game folder for executables protected by Steam DRM (SteamStub). Detection is a fast PE-header scan looking for a <code>.bind</code> section — no execution required.</p>
-        <p>If DRM is found, a yellow warning banner appears with the affected files. Clicking <strong>Remove DRM (via Steamless)</strong>:</p>
-        <ul>
-          <li>Downloads <a href="https://github.com/atom0s/Steamless" target="_blank" rel="noopener">Steamless v3.1.0.5</a> once into the app-data cache</li>
-          <li>On Windows: runs <code>Steamless.CLI.exe</code> directly</li>
-          <li>On Linux: runs it via <code>mono</code> (install via <code>pacman -S mono</code> / <code>apt install mono-runtime</code> / <code>brew install mono</code>); <code>MONO_PATH</code> is set to the <code>Plugins/</code> dir so plugin assemblies resolve correctly</li>
-          <li>Replaces the original <code>.exe</code> with the unpacked version, keeps the original as <code>.exe.drm.bak</code></li>
-        </ul>
-        <p>The full Steamless log is shown inline if anything fails, with a one-click copy button.</p>
-
-        <h4>Steam API Check Bypass <span style="color:var(--text-muted);font-size:0.85rem;font-weight:400;">(optional toggle)</span></h4>
-        <p>Some games perform additional integrity / size checks on <code>steam_api*.dll</code> at runtime — those reject the gbe_fork swap even when it loaded. Enabling the bypass toggle installs <a href="https://github.com/MCbabel/Steam-API-Check-Bypass" target="_blank" rel="noopener">Steam-API-Check-Bypass</a> alongside gbe_fork:</p>
-        <ul>
-          <li>The matching arch DLL (x64 for <code>steam_api64.dll</code>, x32 for <code>steam_api.dll</code>) is copied next to <code>game.exe</code> under <strong>three</strong> hijack names: <code>version.dll</code>, <code>winmm.dll</code> and <code>winhttp.dll</code>. Whichever the game imports gets loaded; the others sit harmless</li>
-          <li>A <code>SteamAPICheckBypass.json</code> file is written next to <code>game.exe</code> with a <code>file_redirect</code> rule that points the first 3 <code>CreateFile</code> reads of <code>steam_api*.dll</code> to the <code>.steam.bak</code> file gbe_fork created — so integrity checks see the original bytes while the game uses the emulator</li>
-          <li>Any pre-existing <code>version.dll</code> / <code>winmm.dll</code> / <code>winhttp.dll</code> is backed up as <code>&lt;name&gt;.bypass.bak</code> and restored on revert</li>
-        </ul>
-        <p>The bypass is only relevant for Windows games (Linux <code>libsteam_api.so</code> targets are skipped automatically).</p>
-
-        <h4>21 Emulator Settings (Accordion)</h4>
-        <p>Below the variant picker is a collapsible accordion with 5 sections of user-tunable gbe_fork options. Only fields you actually fill in are written to disk — the rest stays at gbe_fork's defaults. The values are saved to <code>localStorage</code> and pre-filled on your next visit.</p>
-        <ul>
-          <li><strong>Account</strong> — display name, 64-bit Steam ID, game language, IP country (ISO 3166-1)</li>
-          <li><strong>Saves</strong> — local save path, per-game folder name</li>
-          <li><strong>Network &amp; Compatibility</strong> — offline mode, Steam Deck mode, disable networking, disable LAN-only</li>
-          <li><strong>Stats &amp; Achievements</strong> — record playtime, achievements bypass, force SteamHTTP success, Steam pre-owned IDs, free-weekend flag</li>
-          <li><strong>Overlay</strong> — enable experimental overlay, hide popups, always show FPS / playtime, hotkey, font size</li>
-        </ul>
-        <p>Settings are written as INI files (<code>configs.user.ini</code>, <code>configs.main.ini</code>, <code>configs.overlay.ini</code>) into a <code>steam_settings/</code> folder next to the patched DLL, alongside <code>steam_interfaces.txt</code>, <code>steam_appid.txt</code> and <code>installed_app_ids.txt</code>.</p>
-
-        <h4>History Actions (per game)</h4>
-        <p>After applying, the game appears in your Download History (via <strong>Go to Home</strong>) with two extra action buttons:</p>
-        <ul>
-          <li><strong>Edit emulator settings</strong> (⚙) — re-opens step 5 in edit mode: variant picker hidden, the accordion is populated from the existing INI files, the Apply button becomes <strong>Save Settings</strong> and a red <strong>Revert Patch</strong> button appears. Reverting restores the original DLL, deletes <code>steam_settings/</code> and is gated by a confirmation modal</li>
-        </ul>
-        <p>If you delete the game folder externally, the Edit action shows an inline error banner in the History modal instead of crashing.</p>
-
-        <hr class="doc-divider">
-
-        <h3 id="step-cancel">Cancel a Download</h3>
-        <p>You can cancel an in-progress download at any time by clicking the <strong>Cancel</strong> button. When a download is canceled:</p>
-        <ul>
-          <li>All in-flight chunk downloads stop immediately — queued chunks bail out without waiting for a slot (on the DepotDownloaderMod path, the DDM process is terminated instead)</li>
-          <li><strong>Partially downloaded files are deleted</strong> to avoid incomplete or corrupted data — unless you enabled <strong>Keep downloaded files when cancelling</strong> in Settings</li>
-          <li>The UI returns to the selection screen so you can start a new download</li>
-        </ul>
-
-        <div class="doc-callout warning">
-          <span class="doc-callout-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
-          <p>By default, canceling a download deletes all partially downloaded files for that session. Turn on <strong>Cancel behaviour → Keep downloaded files when cancelling</strong> if you'd rather resume later — the job then lands in your history as <em>Resumable</em> with a <strong>Resume</strong> button.</p>
-        </div>
-      </section>
-
-      <section class="doc-section" id="file-formats">
-        <span class="doc-tag">File Formats</span>
-        <h2>Supported File Formats</h2>
-        <p>SMD can parse three different file formats to extract depot and manifest information.</p>
-
-        <hr class="doc-divider">
-
-        <h3 id="format-lua">.lua Files</h3>
-        <p>Lua script files are the most common format. They contain function calls that define app IDs, depot keys, and manifest IDs. The parser recognizes the following patterns:</p>
-
-        <div class="code-block">
-          <div class="code-block-header">
-            <span class="code-block-lang">lua</span>
-            <button class="code-block-copy" onclick="copyCode(this)">Copy</button>
+              <h3 id="first-launch">First launch <a class="alink" href="#first-launch" aria-label="Permalink to First launch">#</a></h3>
+              <p>The very first time you start SMD, two small prompts appear before the main interface:</p>
+              <ol>
+                <li><strong>Language picker.</strong> Pick between English and German. Before you make the choice the interface is already localised from your OS or browser language, so a German system starts in German, and if neither matches, English is the fallback. The picker just lets you override that. It is saved immediately, and you can change it later under <strong>Settings, Language</strong>, where a restart prompt appears so the new translation applies cleanly.</li>
+                <li><strong>Anonymous telemetry consent.</strong> Opt in or decline. Telemetry counters are end to end encrypted with an embedded public key, and you can change your choice anytime under <strong>Settings, Advanced settings</strong>.</li>
+              </ol>
+              <p>If you installed a build with the bundled archive.org sources, which is the default for the GitHub, installer and AUR source builds, two depot source URLs are seeded automatically so search works out of the box. The Flatpak build does not seed them, so there you need to add at least one source manually under <strong>Settings, Advanced settings, Manifest sources</strong>.</p>
+              <p>After the prompts the main interface is ready. Optional next steps:</p>
+              <ul>
+                <li>Set a custom <strong>download location</strong> on the download page (step 3) before your first download</li>
+                <li>Configure a <strong>ManifestHub API key</strong> on the download page for additional manifest sources</li>
+                <li>Open <strong>Settings, Advanced settings</strong> to tune the retry count, speed limit or proxy, or to add and remove depot sources</li>
+              </ul>
+            </div>
           </div>
-          <pre><code><span class="code-cm">-- Register an app ID (no depot key)</span>
-<span class="code-fn">addappid</span>(<span class="code-num">1995890</span>)
+        </section>
 
-<span class="code-cm">-- Register a depot with a hex decryption key</span>
-<span class="code-fn">addappid</span>(<span class="code-num">1995891</span>, <span class="code-num">0</span>, <span class="code-str">"a1b2c3d4e5f6..."</span>)
+        <section class="band band--paper" id="usage-guide" aria-labelledby="h-usage">
+          <div class="wrap wrap--narrow">
+            <div class="rail">
+              <p class="kicker"><span class="kicker__idx">02</span> Usage guide</p>
+              <span class="rail__rule" aria-hidden="true"></span>
+              <span class="chip chip--key">five steps</span>
+            </div>
+            <h2 id="h-usage" class="h2-paper">Usage guide <a class="alink" href="#usage-guide" aria-label="Permalink to Usage guide">#</a></h2>
+            <p class="lead-paper">The pipeline has five steps. Steps 1 to 3, upload, select and download, are always required. Step 4, shortcuts and Steam library, and step 5, the emulator patch, are optional and only appear when they are relevant for your platform and game.</p>
+            <nav class="qidx" aria-label="Inside Usage guide">
+              <p class="qidx__lab">In this section</p>
+              <ul class="qidx__list">
+                <li><a href="#step-upload">Step 1: upload a file</a></li>
+                <li><a href="#step-select">Step 2: select manifests</a></li>
+                <li><a href="#step-download">Step 3: download</a></li>
+                <li><a href="#step-shortcuts">Step 4: shortcuts and Steam library</a></li>
+                <li><a href="#step-emulator">Step 5: emulator</a></li>
+                <li><a href="#step-cancel">Cancel a download</a></li>
+              </ul>
+            </nav>
 
-<span class="code-cm">-- Set the manifest ID for a depot</span>
-<span class="code-fn">setManifestid</span>(<span class="code-num">1995891</span>, <span class="code-str">"3438272076824159257"</span>)</code></pre>
-        </div>
+            <div class="prose">
+              <h3 id="step-upload">Step 1: upload a file <a class="alink" href="#step-upload" aria-label="Permalink to Step 1: upload a file">#</a></h3>
+              <p>Start by providing a manifest data file. You can either:</p>
+              <ul>
+                <li><strong>Drag and drop</strong> a <code>.lua</code> or <code>.st</code> file onto the upload area</li>
+                <li><strong>Click</strong> the upload area to open a file picker</li>
+              </ul>
+              <p>The file picker filters on those two extensions, and anything else is turned away with the message Please select a .lua or .st file.</p>
+              <p>The application then parses the file and extracts all depot IDs, manifest IDs, app IDs and depot keys contained within.</p>
+              <div class="note">
+                <p class="note__tag">Tip</p>
+                <p>You can upload multiple files. Each new upload merges its data with any previously loaded depots.</p>
+              </div>
 
-        <ul>
-          <li><code>addappid(depotId)</code> — Registers a depot ID</li>
-          <li><code>addappid(depotId, 0, "hexKey")</code> — Registers a depot with a decryption key</li>
-          <li><code>setManifestid(depotId, "manifestId")</code> — Associates a manifest ID with a depot</li>
-          <li><code>setManifestid(depotId, "manifestId", sizeBytes)</code> — Same as above, plus an explicit install-size hint; SMD picks up the size and shows it next to the depot in step 2 if no <code>.json</code> sidecar is present</li>
-        </ul>
-        <div class="code-block">
-          <div class="code-block-header">
-            <span class="code-block-lang">lua (3-arg variant with size)</span>
-            <button class="code-block-copy" onclick="copyCode(this)">Copy</button>
+              <h3 id="step-select">Step 2: select manifests <a class="alink" href="#step-select" aria-label="Permalink to Step 2: select manifests">#</a></h3>
+              <p>After parsing, the app displays a list of all discovered depots and their manifest IDs. From here you can:</p>
+              <ul>
+                <li><strong>Select and deselect</strong> individual depots using the checkboxes</li>
+                <li>Use <strong>Select all</strong> or <strong>Deselect all</strong> for bulk actions</li>
+                <li><strong>Search and filter</strong> depots by ID or name using the search bar</li>
+                <li>View <strong>app details</strong> fetched from the Steam Store API, such as the game name and icon</li>
+              </ul>
+              <p>Each depot entry shows the depot ID, the associated manifest ID, whether a depot key was found, and a row of metadata tags pulled live from Steam's PICS info via <code>api.steamcmd.net</code>:</p>
+              <ul>
+                <li><strong>OS tag</strong>, Windows, Linux or macOS</li>
+                <li><strong>Arch tag</strong>, 32-bit or 64-bit</li>
+                <li><strong>Language tag</strong>, only shown for language specific depots, for example <code>German</code> or <code>French</code></li>
+              </ul>
+              <p>The metadata is cached per app ID for 7 days in your app data directory, so later visits are instant. If <code>api.steamcmd.net</code> is unreachable the tags simply do not appear, and the rest of the interface is unaffected.</p>
+              <div class="note">
+                <p class="note__tag">How sources are asked</p>
+                <p>The search asks your configured depot sources in the order you set. The check for whether an App ID exists stops at the first source that answers, so the order you choose is the order that decides which source supplies the depots, keys and sizes.</p>
+              </div>
+
+              <h3 id="step-download">Step 3: download <a class="alink" href="#step-download" aria-label="Permalink to Step 3: download">#</a></h3>
+              <p>Click the <strong>Download</strong> button to begin. Behind the scenes the application performs several operations:</p>
+              <ol>
+                <li><strong>Steam session.</strong> Signs in to Steam anonymously and pulls app and depot metadata via PICS</li>
+                <li><strong>Manifest fetch.</strong> Requests each depot's manifest from Steam directly. If that fails, SMD falls back to your configured depot sources or Hubcap, then to the ManifestHub API if you have a key set</li>
+                <li><strong>Manifest decode.</strong> Unwraps the ZIP container, decrypts with AES-256 and parses the protobuf payload, encrypted filenames included</li>
+                <li><strong>Depot keys generation.</strong> Creates a <code>steam.keys</code> file containing all known depot decryption keys</li>
+                <li><strong>Chunk download.</strong> Keeps up to 32 chunk fetches in flight against Steam's CDN, decodes VZ1 (LZMA) or VSZTD (zstd) payloads and verifies each one against its CRC32 and SHA-1 before writing. Failed chunks retry up to 8 times with exponential backoff, rotating CDN servers between attempts</li>
+              </ol>
+              <p>Chunks that already match on disk are verified and skipped, so a restarted download picks up where it left off instead of starting over.</p>
+              <div class="note">
+                <p class="note__tag">Engines</p>
+                <p>This is the <strong>native engine</strong> and it is the default. If you switch <strong>Settings, Download engine</strong> back to DepotDownloaderMod, SMD instead collects the manifests and hands them to the embedded DDM binary, which requires the .NET runtime on Windows.</p>
+              </div>
+              <p>You will see real time progress tracking with:</p>
+              <ul>
+                <li>A progress bar showing overall completion</li>
+                <li>Download speed in MB/s</li>
+                <li>ETA estimates</li>
+                <li>Per depot status updates</li>
+              </ul>
+              <div class="note">
+                <p class="note__tag">Where files land</p>
+                <p>The downloaded files are saved to your configured download location, by default <code>Documents/SteamDownloads</code>. Each download creates a subdirectory named after the app ID.</p>
+              </div>
+              <p>When the download succeeds the app automatically progresses to step 4, or to step 5 on Linux without Steam installed. The history entry is only persisted once you reach <strong>Go to home</strong>, so closing the app mid flow leaves no trace.</p>
+
+              <h3 id="step-shortcuts">Step 4: shortcuts and Steam library, optional <a class="alink" href="#step-shortcuts" aria-label="Permalink to Step 4: shortcuts and Steam library, optional">#</a></h3>
+              <p>Step 4 has two platform specific variants. SMD picks the right one automatically based on whether you are on Windows or Linux and whether Steam is detected.</p>
+
+              <h4 id="windows-create-desktop-and-start-menu-shortcuts">Windows: create desktop and start menu shortcuts <a class="alink" href="#windows-create-desktop-and-start-menu-shortcuts" aria-label="Permalink to Windows: create desktop and start menu shortcuts">#</a></h4>
+              <p>The app scans the download folder for executables, scores them by size and by name match against the folder hint, against a blacklist of installers and redistributables, and suggests the most likely game executable. You can:</p>
+              <ul>
+                <li>Browse manually for the <code>.exe</code> if auto detection picked the wrong one</li>
+                <li>Toggle <strong>Desktop shortcut</strong> and <strong>Start menu shortcut</strong> independently</li>
+                <li>Toggle <strong>Also add to Steam library</strong> to chain the Steam integration, described in the next part</li>
+              </ul>
+              <p>Shortcuts are created via PowerShell using the <code>WScript.Shell</code> COM object, with user derived values passed through environment variables, so there is no string interpolation and no script injection.</p>
+
+              <h4 id="linux-add-to-steam-library">Linux: add to Steam library <a class="alink" href="#linux-add-to-steam-library" aria-label="Permalink to Linux: add to Steam library">#</a></h4>
+              <p>The app detects your Steam installation, at <code>~/.steam/steam/</code>, <code>~/.local/share/Steam/</code> or the Flatpak path, and the active user, via the <code>MostRecent=1</code> flag in <code>loginusers.vdf</code>. When you click <strong>Add to Steam</strong> it will:</p>
+              <ol>
+                <li>Download the <strong>banner</strong>, <strong>hero</strong>, <strong>logo</strong> and <strong>icon</strong> images from the Steam CDN, using the icon hash from <code>api.steamcmd.net</code></li>
+                <li>Save them into <code>~/.steam/steam/userdata/&lt;user&gt;/config/grid/</code> with the naming Steam expects: <code>&lt;shortcutid&gt;.jpg</code>, <code>&lt;shortcutid&gt;p.jpg</code>, <code>&lt;shortcutid&gt;_hero.jpg</code>, <code>&lt;shortcutid&gt;_logo.png</code> and <code>&lt;shortcutid&gt;_icon.jpg</code></li>
+                <li>Parse the existing binary <code>shortcuts.vdf</code> file, with a backup, append a new shortcut entry, and write it back</li>
+                <li>Generate the shortcut AppID as <code>CRC32(exe_path + app_name) | 0x80000000</code>, which is Steam compatible and deterministic</li>
+              </ol>
+              <p>The Linux step also supports <strong>launch options</strong>, for example <code>%command%</code>, and a <strong>display name</strong> field. After adding, restart Steam fully, by right clicking the tray icon and choosing Exit, for the new entry to appear. For Windows games on Linux: right click the new entry in Steam, open Properties, then Compatibility, then enable Proton.</p>
+              <p>Footer buttons are minimal: <strong>Skip</strong> proceeds without adding, and <strong>Add to Steam</strong> switches to a single <strong>Next</strong> button after success.</p>
+
+              <h3 id="step-emulator">Step 5: emulator, optional <a class="alink" href="#step-emulator" aria-label="Permalink to Step 5: emulator, optional">#</a></h3>
+              <p>Step 5 patches the game with the <a href="https://github.com/Detanup01/gbe_fork">gbe_fork</a> Steam emulator so it can run without the Steam client. The whole feature is bundled, with no manual setup. It only appears when the app finds <code>steam_api*.dll</code> on Windows or <code>libsteam_api.so</code> on Linux in the download folder.</p>
+
+              <h4 id="variant-picker">Variant picker <a class="alink" href="#variant-picker" aria-label="Permalink to Variant picker">#</a></h4>
+              <p>Two gbe_fork variants are offered side by side:</p>
+              <ul>
+                <li><strong>Regular</strong>, the stable build, recommended for most games</li>
+                <li><strong>Experimental</strong>, newer features, may be unstable</li>
+              </ul>
+              <p>The chosen variant's DLL is fetched from the latest gbe_fork GitHub release, extracted into the app data cache at <code>$APP_DATA/gbe_fork_cache/&lt;release-tag&gt;/</code> and copied over the game's <code>steam_api*.dll</code>. The original is backed up as <code>steam_api*.dll.steam.bak</code>. <code>steam_interfaces.txt</code> is generated natively in Rust by pattern matching against 37 known Steam interface names, so no external <code>generate_interfaces.exe</code> is required.</p>
+
+              <h4 id="drm-detection-and-removal-via-steamless">DRM detection and removal, via Steamless <a class="alink" href="#drm-detection-and-removal-via-steamless" aria-label="Permalink to DRM detection and removal, via Steamless">#</a></h4>
+              <p>Before applying the emulator, SMD scans the game folder for executables protected by Steam DRM (SteamStub). Detection is a fast PE header scan looking for a <code>.bind</code> section, with no execution required.</p>
+              <p>If DRM is found, a yellow warning banner appears with the affected files. Clicking <strong>Remove DRM (via Steamless)</strong>:</p>
+              <ul>
+                <li>Downloads <a href="https://github.com/atom0s/Steamless">Steamless v3.1.0.5</a> once into the app data cache</li>
+                <li>On Windows: runs <code>Steamless.CLI.exe</code> directly</li>
+                <li>On Linux: runs it via <code>mono</code>, installed with <code>pacman -S mono</code> or <code>apt install mono-runtime</code>, and <code>MONO_PATH</code> is set to the <code>Plugins/</code> directory so plugin assemblies resolve correctly</li>
+                <li>Replaces the original <code>.exe</code> with the unpacked version and keeps the original as <code>.exe.drm.bak</code></li>
+              </ul>
+              <p>The full Steamless log is shown inline if anything fails, with a one-click copy button.</p>
+
+              <h4 id="steam-api-check-bypass-optional-toggle">Steam API check bypass, optional toggle <a class="alink" href="#steam-api-check-bypass-optional-toggle" aria-label="Permalink to Steam API check bypass, optional toggle">#</a></h4>
+              <p>Some games perform additional integrity or size checks on <code>steam_api*.dll</code> at runtime, and those reject the gbe_fork swap even when it loaded. Enabling the bypass toggle installs <a href="https://github.com/MCbabel/Steam-API-Check-Bypass">Steam-API-Check-Bypass</a> alongside gbe_fork:</p>
+              <ul>
+                <li>The matching arch DLL, x64 for <code>steam_api64.dll</code> and x32 for <code>steam_api.dll</code>, is copied next to <code>game.exe</code> under <strong>three</strong> hijack names: <code>version.dll</code>, <code>winmm.dll</code> and <code>winhttp.dll</code>. Whichever the game imports gets loaded, and the others sit harmless</li>
+                <li>A <code>SteamAPICheckBypass.json</code> file is written next to <code>game.exe</code> with a <code>file_redirect</code> rule that points the first 3 <code>CreateFile</code> reads of <code>steam_api*.dll</code> to the <code>.steam.bak</code> file gbe_fork created, so integrity checks see the original bytes while the game uses the emulator</li>
+                <li>Any pre-existing <code>version.dll</code>, <code>winmm.dll</code> or <code>winhttp.dll</code> is backed up as <code>&lt;name&gt;.bypass.bak</code> and restored on revert</li>
+              </ul>
+              <p>The bypass is only relevant for Windows games. Linux <code>libsteam_api.so</code> targets are skipped automatically.</p>
+
+              <h4 id="the-21-emulator-settings-in-an-accordion">The 21 emulator settings, in an accordion <a class="alink" href="#the-21-emulator-settings-in-an-accordion" aria-label="Permalink to The 21 emulator settings, in an accordion">#</a></h4>
+              <p>Below the variant picker is a collapsible accordion with 5 sections of tunable gbe_fork options. Only fields you actually fill in are written to disk, and the rest stays at gbe_fork's defaults. The values are saved to <code>localStorage</code> and pre-filled on your next visit.</p>
+              <ul>
+                <li><strong>Account</strong>, display name, 64-bit Steam ID, game language, IP country (ISO 3166-1)</li>
+                <li><strong>Saves</strong>, local save path, per game folder name</li>
+                <li><strong>Network and compatibility</strong>, offline mode, Steam Deck mode, disable networking, disable LAN only</li>
+                <li><strong>Stats and achievements</strong>, record playtime, achievements bypass, force SteamHTTP success, Steam pre-owned IDs, free weekend flag</li>
+                <li><strong>Overlay</strong>, enable the experimental overlay, hide popups, always show FPS and playtime, hotkey, font size</li>
+              </ul>
+              <p>Settings are written as INI files, <code>configs.user.ini</code>, <code>configs.main.ini</code> and <code>configs.overlay.ini</code>, into a <code>steam_settings/</code> folder next to the patched DLL, alongside <code>steam_interfaces.txt</code>, <code>steam_appid.txt</code> and <code>installed_app_ids.txt</code>.</p>
+
+              <h4 id="history-actions-per-game">History actions, per game <a class="alink" href="#history-actions-per-game" aria-label="Permalink to History actions, per game">#</a></h4>
+              <p>After applying, the game appears in your download history, reachable via <strong>Go to home</strong>, with an extra action button:</p>
+              <ul>
+                <li><strong>Edit emulator settings</strong>, the gear button, re-opens step 5 in edit mode. The variant picker is hidden, the accordion is populated from the existing INI files, the Apply button becomes <strong>Save settings</strong> and a red <strong>Revert patch</strong> button appears. Reverting restores the original DLL, deletes <code>steam_settings/</code> and is gated by a confirmation modal</li>
+              </ul>
+              <p>If you delete the game folder externally, the Edit action shows an inline error banner in the history modal instead of crashing.</p>
+
+              <h3 id="step-cancel">Cancel a download <a class="alink" href="#step-cancel" aria-label="Permalink to Cancel a download">#</a></h3>
+              <p>You can cancel an in-progress download at any time by clicking the <strong>Cancel</strong> button. When a download is cancelled:</p>
+              <ul>
+                <li>All in-flight chunk downloads stop immediately, and queued chunks bail out without waiting for a slot. On the DepotDownloaderMod path, the DDM process is terminated instead</li>
+                <li><strong>Partially downloaded files are deleted</strong> to avoid incomplete or corrupted data, unless you enabled <strong>Keep downloaded files when cancelling</strong> in Settings</li>
+                <li>The interface returns to the selection screen so you can start a new download</li>
+              </ul>
+              <div class="note note--key">
+                <p class="note__tag">Careful</p>
+                <p>By default, cancelling a download deletes all partially downloaded files for that session. Turn on <strong>Cancel behaviour, Keep downloaded files when cancelling</strong> if you would rather resume later. The job then lands in your history as Resumable, with a <strong>Resume</strong> button.</p>
+              </div>
+            </div>
           </div>
-          <pre><code><span class="code-cm">-- 3-arg setManifestid carries the install size in bytes</span>
-<span class="code-fn">setManifestid</span>(<span class="code-num">1392863</span>, <span class="code-str">"4398981003384795747"</span>, <span class="code-num">13789896785</span>)</code></pre>
-        </div>
+        </section>
 
-        <hr class="doc-divider">
+        <section class="band band--paper" id="file-formats" aria-labelledby="h-formats">
+          <div class="wrap wrap--narrow">
+            <div class="rail">
+              <p class="kicker"><span class="kicker__idx">03</span> File formats</p>
+              <span class="rail__rule" aria-hidden="true"></span>
+              <span class="chip chip--key">two inputs</span>
+            </div>
+            <h2 id="h-formats" class="h2-paper">Supported file formats <a class="alink" href="#file-formats" aria-label="Permalink to Supported file formats">#</a></h2>
+            <p class="lead-paper">SMD accepts two input files, <code>.lua</code> and <code>.st</code>. A third format, <code>key.vdf</code>, is not something you drop in: SMD reads it from a configured depot source during a search.</p>
+            <nav class="qidx" aria-label="Inside Supported file formats">
+              <p class="qidx__lab">In this section</p>
+              <ul class="qidx__list">
+                <li><a href="#format-lua">.lua files</a></li>
+                <li><a href="#format-st">.st files</a></li>
+                <li><a href="#format-vdf">key.vdf from a depot source</a></li>
+              </ul>
+            </nav>
 
-        <h3 id="format-vdf">.vdf / Key.vdf Files</h3>
-        <p>Valve Data Format (VDF) files use a nested key-value structure. The <code>Key.vdf</code> file typically contains depot keys in the following format:</p>
+            <div class="prose">
+              <h3 id="format-lua">.lua files <a class="alink" href="#format-lua" aria-label="Permalink to .lua files">#</a></h3>
+              <p>Lua script files are the most common format. They contain function calls that define app IDs, depot keys and manifest IDs. The parser recognises the following patterns:</p>
+              <div class="snip">
+                <div class="snip__bar">
+                  <p class="snip__lang">lua</p>
+                  <button class="copy" type="button" aria-label="Copy the example lua manifest file"><span class="copy__label">Copy</span></button>
+                </div>
+                <pre tabindex="0"><code><span class="cm">-- Register an app ID (no depot key)</span>
+addappid(1995890)
 
-        <div class="code-block">
-          <div class="code-block-header">
-            <span class="code-block-lang">vdf</span>
-            <button class="code-block-copy" onclick="copyCode(this)">Copy</button>
-          </div>
-          <pre><code><span class="code-str">"depots"</span>
+<span class="cm">-- Register a depot with a hex decryption key</span>
+addappid(1995891, 0, "a1b2c3d4e5f6...")
+
+<span class="cm">-- Set the manifest ID for a depot</span>
+setManifestid(1995891, "3438272076824159257")</code></pre>
+              </div>
+              <ul>
+                <li><code>addappid(depotId)</code> registers a depot ID</li>
+                <li><code>addappid(depotId, 0, "hexKey")</code> registers a depot with a decryption key</li>
+                <li><code>setManifestid(depotId, "manifestId")</code> associates a manifest ID with a depot</li>
+                <li><code>setManifestid(depotId, "manifestId", sizeBytes)</code> is the same as above plus an explicit install size hint. SMD picks up the size and shows it next to the depot in step 2 if no <code>.json</code> sidecar is present</li>
+              </ul>
+              <div class="snip">
+                <div class="snip__bar">
+                  <p class="snip__lang">lua, 3-arg variant with size</p>
+                  <button class="copy" type="button" aria-label="Copy the three argument setManifestid example"><span class="copy__label">Copy</span></button>
+                </div>
+                <pre tabindex="0"><code><span class="cm">-- 3-arg setManifestid carries the install size in bytes</span>
+setManifestid(1392863, "4398981003384795747", 13789896785)</code></pre>
+              </div>
+
+              <h3 id="format-st">.st files <a class="alink" href="#format-st" aria-label="Permalink to .st files">#</a></h3>
+              <p>The <code>.st</code> format is a binary file format used by certain sources. SMD includes a dedicated binary parser that can read and extract depot IDs, manifest IDs and depot keys from these files.</p>
+              <div class="note">
+                <p class="note__tag">Note</p>
+                <p><code>.st</code> files are detected automatically by their binary signature. Drag and drop them like any other supported file.</p>
+              </div>
+
+              <h3 id="format-vdf">key.vdf from a depot source <a class="alink" href="#format-vdf" aria-label="Permalink to key.vdf from a depot source">#</a></h3>
+              <p>Valve Data Format (VDF) files use a nested key and value structure. The <code>key.vdf</code> file that SMD fetches from a configured depot source holds depot keys in the following shape:</p>
+              <div class="snip">
+                <div class="snip__bar">
+                  <p class="snip__lang">vdf</p>
+                  <button class="copy" type="button" aria-label="Copy the example key.vdf structure"><span class="copy__label">Copy</span></button>
+                </div>
+                <pre tabindex="0"><code>"depots"
 {
-    <span class="code-str">"1995891"</span>
+    "1995891"
     {
-        <span class="code-key">"DecryptionKey"</span>    <span class="code-str">"a1b2c3d4e5f6..."</span>
+        "DecryptionKey"    "a1b2c3d4e5f6..."
     }
-    <span class="code-str">"1995892"</span>
+    "1995892"
     {
-        <span class="code-key">"DecryptionKey"</span>    <span class="code-str">"f6e5d4c3b2a1..."</span>
+        "DecryptionKey"    "f6e5d4c3b2a1..."
     }
 }</code></pre>
-        </div>
-
-        <p>The parser extracts each depot ID and its associated decryption key from the VDF structure.</p>
-
-        <hr class="doc-divider">
-
-        <h3 id="format-st">.st Files</h3>
-        <p>The <code>.st</code> format is a binary file format used by certain sources. SMD includes a dedicated binary parser that can read and extract depot IDs, manifest IDs, and depot keys from these files.</p>
-
-        <div class="doc-callout info">
-          <span class="doc-callout-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
-          <p><code>.st</code> files are automatically detected by their binary signature. Simply drag and drop them like any other supported file.</p>
-        </div>
-      </section>
-
-      <section class="doc-section" id="settings">
-        <span class="doc-tag">Configuration</span>
-        <h2>Settings &amp; Configuration</h2>
-        <p>Open the Settings modal via the <strong>⚙ gear icon</strong> in the header. All values are persisted to the app's settings file between sessions. Emulator-specific settings live in step 5 (see <a href="#step-emulator">Step 5: Emulator</a>) and are remembered in <code>localStorage</code>.</p>
-
-        <h3>Top-Level Settings</h3>
-        <ul>
-          <li><strong>Language</strong> — UI language. English and German are bundled; the picker also runs on first launch</li>
-          <li><strong>Auto-Update</strong> — toggle whether SMD checks GitHub for new releases on startup and offers an in-app update prompt</li>
-        </ul>
-
-        <hr class="doc-divider">
-
-        <h3>Advanced Settings (collapsible)</h3>
-        <p>Click "Advanced Settings" to expand the section. It contains:</p>
-
-        <h4>Download Engine</h4>
-        <p><strong>Download directly from Steam (native, recommended)</strong> is on by default: an anonymous Steam login fetches manifests and chunks from Steam's CDN in-process, with ManifestHub only as a fallback. Turn it off to force the legacy DepotDownloaderMod path, which needs the .NET runtime on Windows.</p>
-
-        <h4>Cancel Behaviour</h4>
-        <p><strong>Keep downloaded files when cancelling</strong> is off by default. Enable it and cancelling leaves the partial files on disk — the job appears in your history as <em>Resumable</em> and restarting it skips every chunk that already verifies.</p>
-
-        <h4>DepotDownloader Arguments <span style="color:var(--text-muted);font-size:0.85rem;font-weight:400;">(DepotDownloaderMod path only)</span></h4>
-        <ul>
-          <li><strong>Extra Arguments</strong> — appended verbatim to the DepotDownloaderMod CLI. Internal default is <code>-max-downloads 8 -verify-all</code>; your input is added on top</li>
-          <li><strong>Max Retries on Error</strong> — how often a failed depot is retried before SMD gives up</li>
-          <li><strong>Download Speed Limit (MB/s)</strong> — optional global cap</li>
-          <li><strong>HTTP Proxy</strong> — proxy URL forwarded to DepotDownloaderMod for environments that require one</li>
-        </ul>
-
-        <h4>Manifest Sources</h4>
-        <p>The list of depot sources searched in step 2. Add a URL (auto-detected formats: GitHub repo, archive.org, plain HTTPS folder) and click <strong>Add</strong>; remove by clicking the ✕. Sources installed by the app are tracked separately — removing a default source triggers a confirmation modal warning that <em>"Search by App ID will stop working"</em>. Adding the same URL again clears that warning.</p>
-
-        <h4>API Keys <span style="color:var(--text-muted);font-size:0.85rem;font-weight:400;">(optional)</span></h4>
-        <ul>
-          <li><strong>Hubcap API Key</strong> — when set, Hubcap shows up as a selectable App ID manifest source whenever it has data for the app you searched</li>
-          <li><strong>Ryuu API Key</strong> — same deal for Ryuu</li>
-        </ul>
-        <p>The <strong>ManifestHub</strong> key is separate and lives on the download page — see <a href="#settings">ManifestHub API Key</a> under Download Page Options below.</p>
-
-        <h4>Notification Sound</h4>
-        <p>Toggles a short system notification sound when a download completes (separate from the OS desktop notification itself).</p>
-
-        <h4>Anonymous Telemetry <span style="color:var(--text-muted);font-size:0.85rem;font-weight:400;">(opt-in)</span></h4>
-        <p>SMD can send anonymous usage counters (which features get used) to the maintainer's server to help prioritise development. Events are end-to-end encrypted with an embedded public key — only the maintainer's server can decrypt. Disabled by default; the choice is asked on first launch and can be changed here anytime. Never sent: game IDs, depot IDs, file contents, your manifest source URLs, IP addresses, account info.</p>
-        <p>Download events additionally carry a failure diagnosis: whether the job finished completely or only partially, which pipeline step failed (manifest lookup, request code, CDN, chunk verification, disk…), what class of error it was (not found, rate limited, timeout…), and which <em>kind</em> of source served the manifest. Every one of those is a label from a fixed list compiled into the binary, so none of them can carry a name, an ID or an address. The full field list is in <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/blob/main/PRIVACY.md" target="_blank" rel="noopener">PRIVACY.md</a>.</p>
-        <p>Emulator patch events work the same way: whether applying, reverting or saving settings succeeded, where it was started from (download flow, Patch Existing Folder, or the history editor), which emulator build was chosen, whether Windows or Linux libraries were targeted, how many files were touched as a range, and why it failed — from a fixed list such as <code>emu_binary_missing</code>, <code>backup_failed</code> or <code>av_blocked</code>. The folder you patch and the files inside it are never sent.</p>
-
-        <hr class="doc-divider">
-
-        <h3>Download Page Options</h3>
-        <p>These options appear on the download page (Step 3) just above the download button.</p>
-
-        <h4>Download Location</h4>
-        <p>Where downloaded depot files are saved. Default: <code>Documents/SteamDownloads</code> inside your home folder. Each download creates a subdirectory named after the app ID. The path is remembered between sessions.</p>
-
-        <h4>ManifestHub API Key <span style="color:var(--text-muted);font-size:0.85rem;font-weight:400;">(optional)</span></h4>
-        <p>If you have a <a href="https://manifesthub2.filegear-sg.me/" target="_blank" rel="noopener">ManifestHub</a> API key, paste it here. With the native engine it acts as the last fallback — used only when neither Steam directly nor your configured depot sources can supply a manifest. It's also required if you enter a <strong>custom manifest ID</strong> by hand.</p>
-
-        <hr class="doc-divider">
-
-        <h3>Emulator Settings Persistence</h3>
-        <p>The 21 emulator options in step 5 (display name, language, offline mode, overlay tweaks, etc.) are not stored in the global settings file. Instead they're saved to the browser's <code>localStorage</code> after each successful Apply and pre-filled the next time you reach step 5. Settings opened via History (Edit mode) read live from the game's <code>steam_settings/</code> INI files instead.</p>
-      </section>
-
-      <section class="doc-section" id="manifest-sources">
-        <span class="doc-tag">Configuration</span>
-        <h2>Manifest Sources</h2>
-        <p>SMD lets you plug in any number of depot sources via <strong>Settings → Advanced Settings → Manifest Sources</strong>. Every search hits all configured sources in parallel and merges their results — if source A has depots 1–10 and source B has 5–15, you see the union (1–15) with keys / sizes / manifest IDs deduplicated.</p>
-
-        <h3>Supported Source Formats</h3>
-        <ul>
-          <li><strong>GitHub repos</strong> — auto-detected from <code>https://github.com/&lt;owner&gt;/&lt;repo&gt;</code> URLs; fetched via the Contents API with a <code>branches/&lt;appid&gt;/</code> layout</li>
-          <li><strong>archive.org items</strong> — detected from <code>archive.org/download/...</code> or <code>view_archive.php?file=...</code> URLs; SMD treats the zip's basename as a path prefix automatically</li>
-          <li><strong>Plain HTTPS folders</strong> — any base URL that serves <code>&lt;appid&gt;.lua</code>, <code>key.vdf</code>, <code>&lt;appid&gt;.json</code> and <code>&lt;depot&gt;_&lt;manifest&gt;.manifest</code> files</li>
-        </ul>
-
-        <hr class="doc-divider">
-
-        <h3>What Gets Fetched</h3>
-        <p>For each app ID, SMD fetches (from each source that has them) and merges:</p>
-        <ul>
-          <li><code>&lt;appid&gt;.lua</code> — depot IDs, manifest IDs, depot keys and optional install-size hints</li>
-          <li><code>key.vdf</code> — additional depot decryption keys</li>
-          <li><code>&lt;appid&gt;.json</code> — depot manifest metadata + per-manifest install / download sizes</li>
-          <li><code>&lt;depot&gt;_&lt;manifest&gt;.manifest</code> — the actual manifest payload, only downloaded for the depots you select</li>
-        </ul>
-
-        <div class="doc-callout info">
-          <span class="doc-callout-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
-          <p>GitHub API has rate limits — unauthenticated requests are capped at 60/hour per IP. SMD doesn't ship a token field for this; if you hit the cap, wait an hour or add a different source (archive.org / plain HTTPS) which has no such limit.</p>
-        </div>
-
-        <hr class="doc-divider">
-
-        <h3>Depot Metadata (Step 2 Tags)</h3>
-        <p>Independent of the manifest sources, SMD queries the public Steam PICS mirror at <code>api.steamcmd.net/v1/info/&lt;appid&gt;</code> to render the OS / arch / language tags shown next to each depot in step 2. Results are cached per app ID for 7 days in <code>$APP_DATA/depot_info_cache/</code>.</p>
-
-      </section>
-
-      <section class="doc-section" id="building-from-source">
-        <span class="doc-tag">Development</span>
-        <h2>Building from Source</h2>
-        <p>This guide covers how to compile Steam Manifest Downloader from source. The project uses <strong>Tauri v2</strong> with a <strong>Rust</strong> backend and an embedded <strong>.NET</strong> tool (DepotDownloaderMod).</p>
-
-        <hr class="doc-divider">
-
-        <h3 id="build-prerequisites">Prerequisites</h3>
-        <ul>
-          <li><strong>Rust</strong> (latest stable) + <strong>Cargo</strong> — <a href="https://rustup.rs/" target="_blank" rel="noopener">Install via rustup</a></li>
-          <li><strong>Tauri CLI</strong> — Install via Cargo:</li>
-        </ul>
-        <div class="code-block">
-          <div class="code-block-header">
-            <span class="code-block-lang">bash</span>
-            <button class="code-block-copy" onclick="copyCode(this)">Copy</button>
+              </div>
+              <p>The parser extracts each depot ID and its associated decryption key from the VDF structure.</p>
+              <div class="note note--key">
+                <p class="note__tag">Not an input format</p>
+                <p>A <code>.vdf</code> file cannot be dropped into the app. The file picker filters on <code>.lua</code> and <code>.st</code> only, and anything else is rejected with the message Please select a .lua or .st file. <code>key.vdf</code> reaches SMD only through a configured depot source.</p>
+              </div>
+            </div>
           </div>
-          <pre><code><span class="code-fn">cargo</span> install tauri-cli</code></pre>
-        </div>
-        <ul>
-          <li><strong>.NET 9.0 Desktop Runtime</strong> — Required to run the embedded DepotDownloaderMod. <a href="https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.16-windows-x64-installer" target="_blank" rel="noopener">Download .NET 9.0 Desktop Runtime</a></li>
-        </ul>
+        </section>
 
-        <h4>Linux Additional Dependencies</h4>
-        <div class="code-block">
-          <div class="code-block-header">
-            <span class="code-block-lang">bash</span>
-            <button class="code-block-copy" onclick="copyCode(this)">Copy</button>
+        <section class="band band--paper" id="settings" aria-labelledby="h-settings">
+          <div class="wrap wrap--narrow">
+            <div class="rail">
+              <p class="kicker"><span class="kicker__idx">04</span> Configuration</p>
+              <span class="rail__rule" aria-hidden="true"></span>
+              <span class="chip chip--key">settings</span>
+            </div>
+            <h2 id="h-settings" class="h2-paper">Settings and configuration <a class="alink" href="#settings" aria-label="Permalink to Settings and configuration">#</a></h2>
+            <p class="lead-paper">Open the settings modal via the gear icon in the header. All values are persisted to the app's settings file between sessions.</p>
+            <nav class="qidx" aria-label="Inside Settings and configuration">
+              <p class="qidx__lab">In this section</p>
+              <ul class="qidx__list">
+                <li><a href="#settings-top">Top level settings</a></li>
+                <li><a href="#settings-advanced">Advanced settings</a></li>
+                <li><a href="#download-options">Download page options</a></li>
+                <li><a href="#settings-emulator">Emulator settings persistence</a></li>
+              </ul>
+            </nav>
+
+            <div class="prose">
+              <p>Emulator specific settings live in step 5, see <a href="#step-emulator">Step 5: emulator</a>, and are remembered in <code>localStorage</code>.</p>
+
+              <h3 id="settings-top">Top level settings <a class="alink" href="#settings-top" aria-label="Permalink to Top level settings">#</a></h3>
+              <ul>
+                <li><strong>Language</strong>, the interface language. English and German are bundled, and the picker also runs on first launch</li>
+                <li><strong>Auto-update</strong>, toggles whether SMD checks GitHub for new releases on startup and offers an in-app update prompt</li>
+              </ul>
+
+              <h3 id="settings-advanced">Advanced settings, collapsible <a class="alink" href="#settings-advanced" aria-label="Permalink to Advanced settings, collapsible">#</a></h3>
+              <p>Click Advanced settings to expand the section. It contains the following.</p>
+
+              <h4 id="download-engine">Download engine <a class="alink" href="#download-engine" aria-label="Permalink to Download engine">#</a></h4>
+              <p><strong>Download directly from Steam (native, recommended)</strong> is on by default: an anonymous Steam login fetches manifests and chunks from Steam's CDN in process, with ManifestHub only as a fallback. Turn it off to force the legacy DepotDownloaderMod path, which needs the .NET runtime on Windows.</p>
+
+              <h4 id="cancel-behaviour">Cancel behaviour <a class="alink" href="#cancel-behaviour" aria-label="Permalink to Cancel behaviour">#</a></h4>
+              <p><strong>Keep downloaded files when cancelling</strong> is off by default. Enable it and cancelling leaves the partial files on disk. The job appears in your history as Resumable, and restarting it skips every chunk that already verifies.</p>
+
+              <h4 id="depotdownloader-arguments-depotdownloadermod-path-only">DepotDownloader arguments, DepotDownloaderMod path only <a class="alink" href="#depotdownloader-arguments-depotdownloadermod-path-only" aria-label="Permalink to DepotDownloader arguments, DepotDownloaderMod path only">#</a></h4>
+              <ul>
+                <li><strong>Extra arguments</strong>, appended verbatim to the DepotDownloaderMod CLI. The internal default is <code>-max-downloads 8 -verify-all</code>, and your input is added on top</li>
+                <li><strong>Max retries on error</strong>, how often a failed depot is retried before SMD gives up</li>
+                <li><strong>Download speed limit (MB/s)</strong>, an optional global cap</li>
+                <li><strong>HTTP proxy</strong>, a proxy URL forwarded to DepotDownloaderMod for environments that require one</li>
+              </ul>
+
+              <h4 id="settings-manifest-sources">Manifest sources <a class="alink" href="#settings-manifest-sources" aria-label="Permalink to Manifest sources">#</a></h4>
+              <p>The list of depot sources searched in step 2. Add a URL, with the format auto detected as a GitHub repo, an archive.org item or a plain HTTPS folder, and click <strong>Add</strong>. Remove one with its close button. Sources installed by the app are tracked separately, so removing a default source triggers a confirmation modal warning that Search by App ID will stop working. Adding the same URL again clears that warning.</p>
+
+              <h4 id="api-keys-optional">API keys, optional <a class="alink" href="#api-keys-optional" aria-label="Permalink to API keys, optional">#</a></h4>
+              <ul>
+                <li><strong>Hubcap API key</strong>, when set, Hubcap shows up as a selectable App ID manifest source whenever it has data for the app you searched</li>
+                <li><strong>Ryuu API key</strong>, the same for Ryuu</li>
+              </ul>
+              <p>The <strong>ManifestHub</strong> key is separate and lives on the download page, see <a href="#download-options">ManifestHub API key</a> under Download page options below.</p>
+
+              <h4 id="notification-sound">Notification sound <a class="alink" href="#notification-sound" aria-label="Permalink to Notification sound">#</a></h4>
+              <p>Toggles a short system notification sound when a download completes. This is separate from the OS desktop notification itself.</p>
+
+              <h4 id="anonymous-telemetry-opt-in">Anonymous telemetry, opt in <a class="alink" href="#anonymous-telemetry-opt-in" aria-label="Permalink to Anonymous telemetry, opt in">#</a></h4>
+              <p>SMD can send anonymous usage counters, meaning which features get used, to the maintainer's server to help prioritise development. Events are end to end encrypted with an embedded public key, so only the maintainer's server can decrypt them. It is disabled by default, the choice is asked on first launch, and it can be changed here anytime. Never sent: game IDs, depot IDs, file contents, IP addresses, account info.</p>
+
+              <h3 id="download-options">Download page options <a class="alink" href="#download-options" aria-label="Permalink to Download page options">#</a></h3>
+              <p>These options appear on the download page, step 3, just above the download button.</p>
+
+              <h4 id="download-location">Download location <a class="alink" href="#download-location" aria-label="Permalink to Download location">#</a></h4>
+              <p>Where downloaded depot files are saved. The default is <code>Documents/SteamDownloads</code> inside your home folder. Each download creates a subdirectory named after the app ID, and the path is remembered between sessions.</p>
+
+              <h4 id="manifesthub-api-key-optional">ManifestHub API key, optional <a class="alink" href="#manifesthub-api-key-optional" aria-label="Permalink to ManifestHub API key, optional">#</a></h4>
+              <p>If you have a <a href="https://manifesthub2.filegear-sg.me/">ManifestHub</a> API key, paste it here. With the native engine it acts as the last fallback, used only when neither Steam directly nor your configured depot sources can supply a manifest. It is also required if you enter a <strong>custom manifest ID</strong> by hand.</p>
+
+              <h3 id="settings-emulator">Emulator settings persistence <a class="alink" href="#settings-emulator" aria-label="Permalink to Emulator settings persistence">#</a></h3>
+              <p>The 21 emulator options in step 5, such as display name, language, offline mode and the overlay tweaks, are not stored in the global settings file. Instead they are saved to the browser's <code>localStorage</code> after each successful Apply and pre-filled the next time you reach step 5. Settings opened via history, in edit mode, read live from the game's <code>steam_settings/</code> INI files instead.</p>
+            </div>
           </div>
-          <pre><code><span class="code-cm"># Debian/Ubuntu</span>
-<span class="code-fn">sudo</span> apt install libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+        </section>
 
-<span class="code-cm"># Arch/CachyOS</span>
-<span class="code-fn">sudo</span> pacman -S webkit2gtk-4.1 libappindicator-gtk3 librsvg patchelf</code></pre>
-        </div>
+        <section class="band band--paper" id="manifest-sources" aria-labelledby="h-sources">
+          <div class="wrap wrap--narrow">
+            <div class="rail">
+              <p class="kicker"><span class="kicker__idx">05</span> Configuration</p>
+              <span class="rail__rule" aria-hidden="true"></span>
+              <span class="chip chip--key">order decides</span>
+            </div>
+            <h2 id="h-sources" class="h2-paper">Manifest sources <a class="alink" href="#manifest-sources" aria-label="Permalink to Manifest sources">#</a></h2>
+            <p class="lead-paper">SMD lets you plug in any number of depot sources under <strong>Settings, Advanced settings, Manifest sources</strong>.</p>
+            <nav class="qidx" aria-label="Inside Manifest sources">
+              <p class="qidx__lab">In this section</p>
+              <ul class="qidx__list">
+                <li><a href="#source-formats">Supported source formats</a></li>
+                <li><a href="#source-fetched">What gets fetched</a></li>
+                <li><a href="#source-metadata">Depot metadata</a></li>
+              </ul>
+            </nav>
 
-        <hr class="doc-divider">
+            <div class="prose">
+              <p>Every search asks those sources in the order you set. The check for whether an App ID exists stops at the first source that answers, so the order you choose is the order that decides.</p>
 
-        <h3 id="build-ddm">Step 1: Building DepotDownloaderMod <span style="color:var(--text-muted);font-size:0.85rem;font-weight:400;">(optional)</span></h3>
-        <p>The project embeds DepotDownloaderMod binaries at compile time. <strong>Pre-built versions are already included</strong> in the repository, so this step is only needed if you want to build them yourself.</p>
+              <h3 id="source-formats">Supported source formats <a class="alink" href="#source-formats" aria-label="Permalink to Supported source formats">#</a></h3>
+              <ul>
+                <li><strong>GitHub repos</strong>, auto detected from <code>https://github.com/&lt;owner&gt;/&lt;repo&gt;</code> URLs and fetched via the Contents API with a <code>branches/&lt;appid&gt;/</code> layout</li>
+                <li><strong>archive.org items</strong>, detected from <code>archive.org/download/...</code> or <code>view_archive.php?file=...</code> URLs. SMD treats the zip's basename as a path prefix automatically</li>
+                <li><strong>Plain HTTPS folders</strong>, any base URL that serves <code>&lt;appid&gt;.lua</code>, <code>key.vdf</code>, <code>&lt;appid&gt;.json</code> and <code>&lt;depot&gt;_&lt;manifest&gt;.manifest</code> files</li>
+              </ul>
 
-        <div class="doc-callout info">
-          <span class="doc-callout-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
-          <p>Pre-built binaries are located in <code>DepotDownloaderMod-Windows/</code> (framework-dependent, requires .NET runtime) and <code>DepotDownloaderMod-linux-full/</code> (self-contained, no runtime needed). You can skip this step if you don't need to modify them.</p>
-        </div>
+              <h3 id="source-fetched">What gets fetched <a class="alink" href="#source-fetched" aria-label="Permalink to What gets fetched">#</a></h3>
+              <p>For each app ID, SMD fetches and merges the following files from the source that answers:</p>
+              <ul>
+                <li><code>&lt;appid&gt;.lua</code>, depot IDs, manifest IDs, depot keys and optional install size hints</li>
+                <li><code>key.vdf</code>, additional depot decryption keys</li>
+                <li><code>&lt;appid&gt;.json</code>, depot manifest metadata plus per manifest install and download sizes</li>
+                <li><code>&lt;depot&gt;_&lt;manifest&gt;.manifest</code>, the actual manifest payload, only downloaded for the depots you select</li>
+              </ul>
+              <div class="note">
+                <p class="note__tag">GitHub rate limit</p>
+                <p>The GitHub API has rate limits, and unauthenticated requests are capped at 60 per hour per IP. SMD does not ship a token field for this. If you hit the cap, wait an hour or add a different source, such as archive.org or a plain HTTPS folder, which has no such limit.</p>
+              </div>
 
-        <p><strong>Source:</strong> <a href="https://github.com/SteamAutoCracks/DepotDownloaderMod" target="_blank" rel="noopener">github.com/SteamAutoCracks/DepotDownloaderMod</a></p>
-
-        <h4>Windows (framework-dependent)</h4>
-        <div class="code-block">
-          <div class="code-block-header">
-            <span class="code-block-lang">bash</span>
-            <button class="code-block-copy" onclick="copyCode(this)">Copy</button>
+              <h3 id="source-metadata">Depot metadata, the step 2 tags <a class="alink" href="#source-metadata" aria-label="Permalink to Depot metadata, the step 2 tags">#</a></h3>
+              <p>Independent of the manifest sources, SMD queries the public Steam PICS mirror at <code>api.steamcmd.net/v1/info/&lt;appid&gt;</code> to render the OS, arch and language tags shown next to each depot in step 2. Results are cached per app ID for 7 days in <code>$APP_DATA/depot_info_cache/</code>.</p>
+            </div>
           </div>
-          <pre><code><span class="code-fn">git</span> clone https://github.com/SteamAutoCracks/DepotDownloaderMod.git
-<span class="code-fn">cd</span> DepotDownloaderMod
-<span class="code-fn">dotnet</span> publish -c Release -o ./publish-windows</code></pre>
-        </div>
-        <p>Then copy <strong>all</strong> files from <code>publish-windows/</code> to <code>DepotDownloaderMod-Windows/</code> in the project:</p>
-        <ul>
-          <li><code>DepotDownloaderMod.exe</code></li>
-          <li><code>DepotDownloaderMod.dll</code></li>
-          <li><code>DepotDownloaderMod.deps.json</code></li>
-          <li><code>DepotDownloaderMod.runtimeconfig.json</code></li>
-          <li><code>SteamKit2.dll</code></li>
-          <li><code>protobuf-net.Core.dll</code></li>
-          <li><code>protobuf-net.dll</code></li>
-          <li><code>QRCoder.dll</code></li>
-          <li><code>System.IO.Hashing.dll</code></li>
-          <li><code>ZstdSharp.dll</code></li>
-        </ul>
+        </section>
 
-        <h4>Linux (self-contained, NO trimming)</h4>
-        <div class="code-block">
-          <div class="code-block-header">
-            <span class="code-block-lang">bash</span>
-            <button class="code-block-copy" onclick="copyCode(this)">Copy</button>
-          </div>
-          <pre><code><span class="code-fn">git</span> clone https://github.com/SteamAutoCracks/DepotDownloaderMod.git
-<span class="code-fn">cd</span> DepotDownloaderMod
-<span class="code-fn">dotnet</span> publish -c Release -r linux-x64 --self-contained true \
+        <section class="band band--paper" id="building-from-source" aria-labelledby="h-build">
+          <div class="wrap wrap--narrow">
+            <div class="rail">
+              <p class="kicker"><span class="kicker__idx">06</span> Development</p>
+              <span class="rail__rule" aria-hidden="true"></span>
+              <span class="chip chip--key">three steps</span>
+            </div>
+            <h2 id="h-build" class="h2-paper">Building from source <a class="alink" href="#building-from-source" aria-label="Permalink to Building from source">#</a></h2>
+            <p class="lead-paper">This guide covers how to compile Steam Manifest Downloader from source. The project uses Tauri v2 with a Rust backend and an embedded .NET tool, DepotDownloaderMod.</p>
+            <nav class="qidx" aria-label="Inside Building from source">
+              <p class="qidx__lab">In this section</p>
+              <ul class="qidx__list">
+                <li><a href="#build-prerequisites">Prerequisites</a></li>
+                <li><a href="#build-ddm">Step 1: building DepotDownloaderMod</a></li>
+                <li><a href="#build-tauri">Step 2: building the Tauri app</a></li>
+                <li><a href="#build-project-structure">Step 3: project structure</a></li>
+              </ul>
+            </nav>
+
+            <div class="prose">
+              <h3 id="build-prerequisites">Prerequisites <a class="alink" href="#build-prerequisites" aria-label="Permalink to Prerequisites">#</a></h3>
+              <ul>
+                <li><strong>Rust</strong>, latest stable, and <strong>Cargo</strong>. <a href="https://rustup.rs/">Install via rustup</a></li>
+                <li><strong>Tauri CLI</strong>, installed via Cargo</li>
+              </ul>
+              <div class="snip">
+                <div class="snip__bar">
+                  <p class="snip__lang">bash</p>
+                  <button class="copy" type="button" aria-label="Copy the command that installs the Tauri CLI"><span class="copy__label">Copy</span></button>
+                </div>
+                <pre tabindex="0"><code>cargo install tauri-cli</code></pre>
+              </div>
+              <ul>
+                <li><strong>.NET 9.0 Desktop Runtime</strong>, required to run the embedded DepotDownloaderMod. <a href="https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.16-windows-x64-installer">Download the .NET 9.0 Desktop Runtime</a></li>
+              </ul>
+
+              <h4 id="linux-additional-dependencies">Linux additional dependencies <a class="alink" href="#linux-additional-dependencies" aria-label="Permalink to Linux additional dependencies">#</a></h4>
+              <div class="snip">
+                <div class="snip__bar">
+                  <p class="snip__lang">bash</p>
+                  <button class="copy" type="button" aria-label="Copy the Linux build dependency commands for Debian, Ubuntu, Arch and CachyOS"><span class="copy__label">Copy</span></button>
+                </div>
+                <pre tabindex="0"><code><span class="cm"># Debian/Ubuntu</span>
+sudo apt install libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+<span class="cm"># Arch/CachyOS</span>
+sudo pacman -S webkit2gtk-4.1 libappindicator-gtk3 librsvg patchelf</code></pre>
+              </div>
+
+              <h3 id="build-ddm">Step 1: building DepotDownloaderMod, optional <a class="alink" href="#build-ddm" aria-label="Permalink to Step 1: building DepotDownloaderMod, optional">#</a></h3>
+              <p>The project embeds DepotDownloaderMod binaries at compile time. <strong>Pre-built versions are already included</strong> in the repository, so this step is only needed if you want to build them yourself.</p>
+              <div class="note">
+                <p class="note__tag">Note</p>
+                <p>Pre-built binaries are located in <code>DepotDownloaderMod-Windows/</code>, which is framework dependent and requires the .NET runtime, and <code>DepotDownloaderMod-linux-full/</code>, which is self contained and needs no runtime. You can skip this step if you do not need to modify them.</p>
+              </div>
+              <p>Source: <a href="https://github.com/SteamAutoCracks/DepotDownloaderMod">github.com/SteamAutoCracks/DepotDownloaderMod</a></p>
+
+              <h4 id="windows-framework-dependent">Windows, framework dependent <a class="alink" href="#windows-framework-dependent" aria-label="Permalink to Windows, framework dependent">#</a></h4>
+              <div class="snip">
+                <div class="snip__bar">
+                  <p class="snip__lang">bash</p>
+                  <button class="copy" type="button" aria-label="Copy the commands that build DepotDownloaderMod for Windows"><span class="copy__label">Copy</span></button>
+                </div>
+                <pre tabindex="0"><code>git clone https://github.com/SteamAutoCracks/DepotDownloaderMod.git
+cd DepotDownloaderMod
+dotnet publish -c Release -o ./publish-windows</code></pre>
+              </div>
+              <p>Then copy <strong>all</strong> files from <code>publish-windows/</code> to <code>DepotDownloaderMod-Windows/</code> in the project:</p>
+              <ul>
+                <li><code>DepotDownloaderMod.exe</code></li>
+                <li><code>DepotDownloaderMod.dll</code></li>
+                <li><code>DepotDownloaderMod.deps.json</code></li>
+                <li><code>DepotDownloaderMod.runtimeconfig.json</code></li>
+                <li><code>SteamKit2.dll</code></li>
+                <li><code>protobuf-net.Core.dll</code></li>
+                <li><code>protobuf-net.dll</code></li>
+                <li><code>QRCoder.dll</code></li>
+                <li><code>System.IO.Hashing.dll</code></li>
+                <li><code>ZstdSharp.dll</code></li>
+              </ul>
+
+              <h4 id="linux-self-contained-no-trimming">Linux, self contained, no trimming <a class="alink" href="#linux-self-contained-no-trimming" aria-label="Permalink to Linux, self contained, no trimming">#</a></h4>
+              <div class="snip">
+                <div class="snip__bar">
+                  <p class="snip__lang">bash</p>
+                  <button class="copy" type="button" aria-label="Copy the commands that build DepotDownloaderMod for Linux"><span class="copy__label">Copy</span></button>
+                </div>
+                <pre tabindex="0"><code>git clone https://github.com/SteamAutoCracks/DepotDownloaderMod.git
+cd DepotDownloaderMod
+dotnet publish -c Release -r linux-x64 --self-contained true \
     -p:PublishSingleFile=true -o ./publish-linux</code></pre>
-        </div>
+              </div>
+              <div class="note note--key">
+                <p class="note__tag">Important</p>
+                <p>Do not use <code>-p:PublishTrimmed=true</code>. .NET trimming removes reflection metadata needed by SteamKit2 and protobuf-net, which causes "A task was canceled" errors at runtime.</p>
+              </div>
+              <p>Then copy <code>publish-linux/DepotDownloaderMod</code> to <code>DepotDownloaderMod-linux-full/DepotDownloaderMod</code> in the project.</p>
 
-        <div class="doc-callout danger">
-          <span class="doc-callout-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
-          <p><strong>Do NOT use <code>-p:PublishTrimmed=true</code></strong> — .NET trimming removes reflection metadata needed by SteamKit2/protobuf-net, causing "A task was canceled" errors at runtime.</p>
-        </div>
+              <h3 id="build-tauri">Step 2: building the Tauri app <a class="alink" href="#build-tauri" aria-label="Permalink to Step 2: building the Tauri app">#</a></h3>
 
-        <p>Then copy <code>publish-linux/DepotDownloaderMod</code> to <code>DepotDownloaderMod-linux-full/DepotDownloaderMod</code> in the project.</p>
+              <h4 id="build-tauri-windows">Windows <a class="alink" href="#build-tauri-windows" aria-label="Permalink to Windows">#</a></h4>
+              <div class="snip">
+                <div class="snip__bar">
+                  <p class="snip__lang">bash</p>
+                  <button class="copy" type="button" aria-label="Copy the Windows Tauri build command"><span class="copy__label">Copy</span></button>
+                </div>
+                <pre tabindex="0"><code>cargo tauri build</code></pre>
+              </div>
+              <p>Output locations:</p>
+              <ul class="rows">
+                <li>
+                  <span class="rows__k">nsis</span>
+                  <span class="rows__v">The installer lands in <code>src-tauri/target/release/bundle/nsis/</code></span>
+                </li>
+                <li>
+                  <span class="rows__k">portable</span>
+                  <span class="rows__v">The portable executable is <code>src-tauri/target/release/steam-manifest-downloader.exe</code></span>
+                </li>
+              </ul>
 
-        <hr class="doc-divider">
+              <h4 id="linux-arch-cachyos-and-similar">Linux, Arch, CachyOS and similar <a class="alink" href="#linux-arch-cachyos-and-similar" aria-label="Permalink to Linux, Arch, CachyOS and similar">#</a></h4>
+              <div class="snip">
+                <div class="snip__bar">
+                  <p class="snip__lang">bash</p>
+                  <button class="copy" type="button" aria-label="Copy the Linux Tauri build command"><span class="copy__label">Copy</span></button>
+                </div>
+                <pre tabindex="0"><code>NO_STRIP=true APPIMAGE_EXTRACT_AND_RUN=1 cargo tauri build</code></pre>
+              </div>
+              <p>Output: <code>src-tauri/target/release/bundle/appimage/Steam Manifest Downloader_&lt;version&gt;_amd64.AppImage</code></p>
+              <div class="note">
+                <p class="note__tag">Tip</p>
+                <p><code>NO_STRIP=true</code> prevents stripping symbols from the embedded .NET binary. <code>APPIMAGE_EXTRACT_AND_RUN=1</code> is needed on some distributions for the AppImage bundler to work correctly.</p>
+              </div>
 
-        <h3 id="build-tauri">Step 2: Building the Tauri App</h3>
-
-        <h4>Windows</h4>
-        <div class="code-block">
-          <div class="code-block-header">
-            <span class="code-block-lang">bash</span>
-            <button class="code-block-copy" onclick="copyCode(this)">Copy</button>
+              <h3 id="build-project-structure">Step 3: project structure, for reference <a class="alink" href="#build-project-structure" aria-label="Permalink to Step 3: project structure, for reference">#</a></h3>
+              <p>The <code>include_bytes!</code> macro in <code>src-tauri/src/services/embedded_tools.rs</code> embeds the DDM binaries at compile time:</p>
+              <ul class="rows">
+                <li>
+                  <span class="rows__k">windows</span>
+                  <span class="rows__v">The Windows build reads from <code>DepotDownloaderMod-Windows/</code></span>
+                </li>
+                <li>
+                  <span class="rows__k">linux</span>
+                  <span class="rows__v">The Linux build reads from <code>DepotDownloaderMod-linux-full/</code></span>
+                </li>
+              </ul>
+              <div class="note note--key">
+                <p class="note__tag">Careful</p>
+                <p>The DDM binary files <strong>must be in place before</strong> you run <code>cargo tauri build</code>. The Rust compiler reads them via <code>include_bytes!</code> at compile time, so if the files are missing, the build fails.</p>
+              </div>
+            </div>
           </div>
-          <pre><code><span class="code-fn">cargo</span> tauri build</code></pre>
-        </div>
-        <p>Output locations:</p>
-        <ul>
-          <li><strong>NSIS installer:</strong> <code>src-tauri/target/release/bundle/nsis/</code></li>
-          <li><strong>Portable executable:</strong> <code>src-tauri/target/release/steam-manifest-downloader.exe</code></li>
-        </ul>
+        </section>
 
-        <h4>Linux (Arch/CachyOS/etc.)</h4>
-        <div class="code-block">
-          <div class="code-block-header">
-            <span class="code-block-lang">bash</span>
-            <button class="code-block-copy" onclick="copyCode(this)">Copy</button>
+        <section class="band band--paper" id="troubleshooting" aria-labelledby="h-help">
+          <div class="wrap wrap--narrow">
+            <div class="rail">
+              <p class="kicker"><span class="kicker__idx">07</span> Help</p>
+              <span class="rail__rule" aria-hidden="true"></span>
+              <span class="chip chip--key">eleven answers</span>
+            </div>
+            <h2 id="h-help" class="h2-paper">Troubleshooting and FAQ <a class="alink" href="#troubleshooting" aria-label="Permalink to Troubleshooting and FAQ">#</a></h2>
+            <p class="lead-paper">Common issues and how to resolve them.</p>
+
+            <div class="faq">
+              <details class="qa">
+                <summary><span>".NET not found" error on launch</span></summary>
+                <div class="qa__body">
+                  <p>The embedded DepotDownloaderMod requires the <strong>.NET 9.0 Desktop Runtime</strong>. Direct installer: <a href="https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.16-windows-x64-installer">.NET 9.0.16 Desktop Runtime, Windows x64</a>. After installing, restart SMD and the warning banner should disappear automatically.</p>
+                </div>
+              </details>
+              <details class="qa">
+                <summary><span>"Connection timeout" during download</span></summary>
+                <div class="qa__body">
+                  <p>This usually happens when the number of open connections overwhelms your network, or when Steam servers are under heavy load. Check whether a VPN or proxy is interfering with the connection. The app uses <code>-max-downloads 8</code> by default, which works well for most connections.</p>
+                </div>
+              </details>
+              <details class="qa">
+                <summary><span>Download stuck at 0%</span></summary>
+                <div class="qa__body">
+                  <p>First, check your internet connection. If your connection is fine, make sure your firewall or antivirus is not blocking <code>DepotDownloaderMod.exe</code>. You may need to add an exception for the application. Also verify that the .NET 9.0 Desktop Runtime is properly installed.</p>
+                </div>
+              </details>
+              <details class="qa">
+                <summary><span>Linux: the AppImage will not launch</span></summary>
+                <div class="qa__body">
+                  <p>AppImages require FUSE to run. If FUSE is not available on your system, set the environment variable before launching:</p>
+                  <p><code>APPIMAGE_EXTRACT_AND_RUN=1 ./SteamManifestDownloader_*.AppImage</code></p>
+                  <p>Also make sure the file is executable: <code>chmod +x SteamManifestDownloader_*.AppImage</code></p>
+                </div>
+              </details>
+              <details class="qa">
+                <summary><span>No manifests found for my game</span></summary>
+                <div class="qa__body">
+                  <p>Not all games have manifests available in the searched sources. Make sure your <code>.lua</code> or <code>.st</code> file contains the correct depot and manifest IDs. You can also try adding a ManifestHub API key on the download page for access to additional sources.</p>
+                </div>
+              </details>
+              <details class="qa">
+                <summary><span>The app crashes or shows a white screen</span></summary>
+                <div class="qa__body">
+                  <p>On Windows, make sure the <strong>Microsoft Edge WebView2 Runtime</strong> is installed. It is included with Windows 10 1803 and later and with Windows 11. On Linux, make sure <strong>WebKit2GTK</strong> is installed, with <code>sudo apt install libwebkit2gtk-4.1-0</code> on Debian and Ubuntu.</p>
+                </div>
+              </details>
+              <details class="qa">
+                <summary><span>Step 5 says "Removing DRM" but Steamless fails on Linux</span></summary>
+                <div class="qa__body">
+                  <p>Steamless is a .NET Framework 4.5.2 tool, so on Linux it needs <code>mono</code>. Install it via your package manager: <code>sudo pacman -S mono</code> on Arch, or <code>sudo apt install mono-runtime</code> on Debian and Ubuntu. After that, retry the DRM removal. SMD passes <code>MONO_PATH</code> automatically so Steamless's plugin assemblies resolve.</p>
+                </div>
+              </details>
+              <details class="qa">
+                <summary><span>The patched game still refuses to start, gbe_fork applied but the game checks the API DLL</span></summary>
+                <div class="qa__body">
+                  <p>Some games verify the size or hash of <code>steam_api*.dll</code> at runtime and reject the gbe_fork swap. Open step 5 again via history, choose <strong>Edit emulator settings</strong>, scroll up and enable the <strong>Steam API check bypass</strong> toggle, then click Save. This installs the <code>version.dll</code>, <code>winmm.dll</code> and <code>winhttp.dll</code> hijacks next to <code>game.exe</code>, plus a <code>SteamAPICheckBypass.json</code> that redirects integrity check reads to the original <code>.steam.bak</code>.</p>
+                </div>
+              </details>
+              <details class="qa">
+                <summary><span>Linux: "Add to Steam" added the game but no banner or hero is showing</span></summary>
+                <div class="qa__body">
+                  <p>Steam only re-reads <code>shortcuts.vdf</code> and the <code>grid/</code> folder on a <strong>full restart</strong>. Closing the window is not enough: right click the Steam tray icon, choose <strong>Exit</strong>, then start Steam again. If the game has no Linux build, also right click the new entry in Steam, open Properties, then Compatibility, then enable a Proton version.</p>
+                </div>
+              </details>
+              <details class="qa">
+                <summary><span>Edit emulator settings says "Folder not found"</span></summary>
+                <div class="qa__body">
+                  <p>The game folder was moved or deleted after SMD recorded it in history. Restore the folder or remove the history entry, which leaves disk files untouched. For partial cleanups, the history modal's confirm dialogs make destructive actions explicit.</p>
+                </div>
+              </details>
+              <details class="qa">
+                <summary><span>No depot tags, Windows, Linux or 64-bit, appear in step 2</span></summary>
+                <div class="qa__body">
+                  <p>The tags come from <code>api.steamcmd.net</code>. If that service is rate limited or down, the request fails silently and the tags do not appear, and the rest of the interface is unaffected. Results are cached for 7 days in <code>$APP_DATA/depot_info_cache/</code>, so once they appear they stick.</p>
+                </div>
+              </details>
+            </div>
           </div>
-          <pre><code><span class="code-kw">NO_STRIP</span>=true <span class="code-kw">APPIMAGE_EXTRACT_AND_RUN</span>=1 <span class="code-fn">cargo</span> tauri build</code></pre>
-        </div>
-        <p>Output: <code>src-tauri/target/release/bundle/appimage/Steam Manifest Downloader_&lt;version&gt;_amd64.AppImage</code></p>
+        </section>
 
-        <div class="doc-callout tip">
-          <span class="doc-callout-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" aria-hidden="true"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.5.5.8 1.1.9 1.8h6.2c.1-.7.4-1.3.9-1.8A7 7 0 0 0 12 2z"/></svg></span>
-          <p><code>NO_STRIP=true</code> prevents stripping symbols from the embedded .NET binary. <code>APPIMAGE_EXTRACT_AND_RUN=1</code> is needed on some distros for the AppImage bundler to work correctly.</p>
-        </div>
+        <section class="band band--paper" id="legal-notice" aria-labelledby="h-legal">
+          <div class="wrap wrap--narrow">
+            <div class="rail">
+              <p class="kicker"><span class="kicker__idx">08</span> Legal</p>
+              <span class="rail__rule" aria-hidden="true"></span>
+              <span class="chip chip--key">GPL-2.0</span>
+            </div>
+            <h2 id="h-legal" class="h2-paper">Legal notice <a class="alink" href="#legal-notice" aria-label="Permalink to Legal notice">#</a></h2>
+            <p class="lead-paper">This tool does not support piracy. SMD is intended to be used only with legally obtained Steam depot keys and manifests that you have the right to access.</p>
+            <nav class="qidx" aria-label="Inside Legal notice">
+              <p class="qidx__lab">In this section</p>
+              <ul class="qidx__list">
+                <li><a href="#legal-intent">Intended use</a></li>
+                <li><a href="#legal-terms">Terms of service</a></li>
+                <li><a href="#legal-disclaimer">Disclaimer</a></li>
+              </ul>
+            </nav>
 
-        <hr class="doc-divider">
+            <div class="prose">
+              <h3 id="legal-intent">Intended use <a class="alink" href="#legal-intent" aria-label="Permalink to Intended use">#</a></h3>
+              <p>This application is designed as a convenience tool for managing Steam depot downloads. It is the user's responsibility to ensure they comply with all applicable laws and terms of service.</p>
 
-        <h3 id="build-project-structure">Step 3: Project Structure (for reference)</h3>
-        <p>The <code>include_bytes!</code> macro in <code>src-tauri/src/services/embedded_tools.rs</code> embeds the DDM binaries at compile time:</p>
-        <ul>
-          <li><strong>Windows build</strong> reads from <code>DepotDownloaderMod-Windows/</code></li>
-          <li><strong>Linux build</strong> reads from <code>DepotDownloaderMod-linux-full/</code></li>
-        </ul>
+              <h3 id="legal-terms">Terms of service <a class="alink" href="#legal-terms" aria-label="Permalink to Terms of service">#</a></h3>
+              <ul>
+                <li><strong>Only use with your own legally obtained Steam keys.</strong> Do not use this tool to download content you do not own or have a license to access.</li>
+                <li><strong>Comply with Steam's terms of service.</strong> Your use of this tool must not violate Valve's <a href="https://store.steampowered.com/subscriber_agreement/">Steam Subscriber Agreement</a>.</li>
+                <li><strong>Comply with all applicable laws.</strong> Downloading copyrighted content without authorization is illegal in most jurisdictions.</li>
+              </ul>
 
-        <div class="doc-callout warning">
-          <span class="doc-callout-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
-          <p>The DDM binary files <strong>must be in place before</strong> running <code>cargo tauri build</code>. The Rust compiler reads them via <code>include_bytes!</code> at compile time — if the files are missing, the build will fail.</p>
-        </div>
-      </section>
-
-      <section class="doc-section" id="troubleshooting">
-        <span class="doc-tag">Help</span>
-        <h2>Troubleshooting / FAQ</h2>
-        <p>Common issues and how to resolve them.</p>
-
-        <div class="faq-item">
-          <div class="faq-q">".NET not found" error on launch</div>
-          <div class="faq-a">
-            The embedded DepotDownloaderMod requires the <strong>.NET 9.0 Desktop Runtime</strong>. Direct installer:
-            <a href="https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.16-windows-x64-installer" target="_blank" rel="noopener">.NET 9.0.16 Desktop Runtime (Windows x64)</a>.
-            After installing, restart SMD — the warning banner should disappear automatically.
+              <h3 id="legal-disclaimer">Disclaimer <a class="alink" href="#legal-disclaimer" aria-label="Permalink to Disclaimer">#</a></h3>
+              <p>The developers of Steam Manifest Downloader are not responsible for any misuse of this tool. By using this application, you agree that you are solely responsible for ensuring your use complies with all applicable laws, regulations and terms of service.</p>
+              <p>This project is licensed under the <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/blob/main/LICENSE">GPL-2.0 license</a>.</p>
+            </div>
           </div>
-        </div>
+        </section>
 
-        <div class="faq-item">
-          <div class="faq-q">"Connection timeout" during download</div>
-          <div class="faq-a">
-            This usually happens when too many concurrent connections overwhelm your network or when Steam servers are under heavy load. Check if a VPN or proxy is interfering with the connection. The app uses <code>-max-downloads 8</code> by default, which works well for most connections.
+        <section class="band band--paper band--close" id="next" aria-labelledby="h-next">
+          <div class="wrap wrap--narrow">
+            <div class="rail">
+              <p class="kicker"><span class="kicker__idx">09</span> Download</p>
+              <span class="rail__rule" aria-hidden="true"></span>
+              <span class="chip chip--key">1.4.3</span>
+            </div>
+            <h2 id="h-next" class="h2-close">Version 1.4.3 is on the releases page. <a class="alink" href="#next" aria-label="Permalink to Version 1.4.3 is on the releases page.">#</a></h2>
+            <p class="lead-paper">Windows installer, Linux AppImage, and AUR packages for Arch, CachyOS and Manjaro. Source under GPL-2.0.</p>
+            <div class="close__actions">
+              <a class="pbtn pbtn--solid" href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest">Get the latest release</a>
+              <a class="pbtn pbtn--line" href="../changelog/">Read the changelog</a>
+            </div>
           </div>
-        </div>
-
-        <div class="faq-item">
-          <div class="faq-q">Download stuck at 0%</div>
-          <div class="faq-a">
-            First, check your internet connection. If your connection is fine, ensure your firewall or antivirus is not blocking <code>DepotDownloaderMod.exe</code>. You may need to add an exception for the application. Also verify that the .NET 9.0 Desktop Runtime is properly installed.
-          </div>
-        </div>
-
-        <div class="faq-item">
-          <div class="faq-q">Linux: AppImage won't launch</div>
-          <div class="faq-a">
-            AppImages require FUSE to run. If FUSE is not available on your system, set the environment variable before launching:
-            <br><br>
-            <code>APPIMAGE_EXTRACT_AND_RUN=1 ./SteamManifestDownloader_*.AppImage</code>
-            <br><br>
-            Also ensure the file is executable: <code>chmod +x SteamManifestDownloader_*.AppImage</code>
-          </div>
-        </div>
-
-        <div class="faq-item">
-          <div class="faq-q">No manifests found for my game</div>
-          <div class="faq-a">
-            Not all games have manifests available in the searched repositories. Ensure your <code>.lua</code> / <code>.vdf</code> / <code>.st</code> file contains the correct depot and manifest IDs. You can also try adding a ManifestHub API key on the download page for access to additional sources.
-          </div>
-        </div>
-
-        <div class="faq-item">
-          <div class="faq-q">App crashes or shows a white screen</div>
-          <div class="faq-a">
-            On Windows, ensure <strong>Microsoft Edge WebView2 Runtime</strong> is installed (it's included with Windows 10 1803+ and Windows 11). On Linux, ensure <strong>WebKit2GTK</strong> is installed (<code>sudo apt install libwebkit2gtk-4.1-0</code> on Debian/Ubuntu).
-          </div>
-        </div>
-
-        <div class="faq-item">
-          <div class="faq-q">Step 5 says "Removing DRM" but Steamless fails on Linux</div>
-          <div class="faq-a">
-            Steamless is a .NET Framework 4.5.2 tool, so on Linux/macOS it needs <strong><code>mono</code></strong>. Install it via your package manager: <code>sudo pacman -S mono</code> (Arch), <code>sudo apt install mono-runtime</code> (Debian/Ubuntu) or <code>brew install mono</code> (macOS). After that, retry the DRM removal — SMD passes <code>MONO_PATH</code> automatically so Steamless's plugin assemblies resolve.
-          </div>
-        </div>
-
-        <div class="faq-item">
-          <div class="faq-q">Patched game still refuses to start (gbe_fork applied but game checks the API DLL)</div>
-          <div class="faq-a">
-            Some games verify the size or hash of <code>steam_api*.dll</code> at runtime and reject the gbe_fork swap. Open step 5 again via History → <strong>Edit emulator settings</strong>, scroll up and enable the <strong>Steam API Check Bypass</strong> toggle, then click Save. This installs <code>version.dll</code> / <code>winmm.dll</code> / <code>winhttp.dll</code> hijacks next to <code>game.exe</code> plus a <code>SteamAPICheckBypass.json</code> that redirects integrity-check reads to the original <code>.steam.bak</code>.
-          </div>
-        </div>
-
-        <div class="faq-item">
-          <div class="faq-q">Linux: "Add to Steam" added the game but no banner / hero is showing</div>
-          <div class="faq-a">
-            Steam only re-reads <code>shortcuts.vdf</code> and the <code>grid/</code> folder on a <strong>full restart</strong>. Closing the window isn't enough — right-click the Steam tray icon → <strong>Exit</strong>, then start Steam again. If the game has no Linux build, also right-click the new entry in Steam → Properties → Compatibility → enable a Proton version.
-          </div>
-        </div>
-
-        <div class="faq-item">
-          <div class="faq-q">Edit emulator settings says "Folder not found"</div>
-          <div class="faq-a">
-            The game folder was moved or deleted after SMD recorded it in history. Restore the folder or remove the history entry (it leaves disk files untouched). For partial cleanups, the History modal's confirm dialogs make destructive actions explicit.
-          </div>
-        </div>
-
-        <div class="faq-item">
-          <div class="faq-q">No depot tags (Windows/Linux/64-bit) appear in step 2</div>
-          <div class="faq-a">
-            The tags come from <code>api.steamcmd.net</code>. If that service is rate-limited or down, the request fails silently and tags don't appear — the rest of the UI is unaffected. Results are cached for 7 days in <code>$APP_DATA/depot_info_cache/</code>, so once they appear they stick.
-          </div>
-        </div>
-      </section>
-
-      <section class="doc-section" id="legal-notice">
-        <span class="doc-tag">Legal</span>
-        <h2>Legal Notice</h2>
-
-        <div class="doc-callout danger">
-          <span class="doc-callout-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" aria-hidden="true"><path d="M16 16l3-8 3 8c-2 1-4 1-6 0z"/><path d="M2 16l3-8 3 8c-2 1-4 1-6 0z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg></span>
-          <p><strong>This tool does NOT support piracy.</strong> Steam Manifest Downloader is intended to be used only with legally obtained Steam depot keys and manifests that you have the right to access.</p>
-        </div>
-
-        <h3>Intended Use</h3>
-        <p>This application is designed as a convenience tool for managing Steam depot downloads. It is the user's responsibility to ensure they comply with all applicable laws and terms of service.</p>
-
-        <h3>Terms of Service</h3>
-        <ul>
-          <li><strong>Only use with your own legally obtained Steam keys</strong> — Do not use this tool to download content you do not own or have a license to access.</li>
-          <li><strong>Comply with Steam's Terms of Service</strong> — Your use of this tool must not violate Valve's <a href="https://store.steampowered.com/subscriber_agreement/" target="_blank" rel="noopener">Steam Subscriber Agreement</a>.</li>
-          <li><strong>Comply with all applicable laws</strong> — Downloading copyrighted content without authorization is illegal in most jurisdictions.</li>
-        </ul>
-
-        <h3>Disclaimer</h3>
-        <p>The developers of Steam Manifest Downloader are not responsible for any misuse of this tool. By using this application, you agree that you are solely responsible for ensuring your use complies with all applicable laws, regulations, and terms of service.</p>
-
-        <p>This project is licensed under the <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/blob/main/LICENSE" target="_blank" rel="noopener">GPL-2.0 License</a>.</p>
-      </section>
-
-    </main>
-  </div>
-
-  <footer class="footer">
-    <div class="container">
-      <div class="footer-inner">
-        <div class="footer-left">
-          <a href="../" class="footer-logo">
-            <img src="../icon.svg" alt="Steam Manifest Downloader" class="footer-logo-icon" width="32" height="32" />
-            Steam Manifest Downloader
-          </a>
-          <p>Download Steam depots effortlessly.</p>
-        </div>
-        <div class="footer-right">
-          <a href="https://github.com/MCbabel/Steam-Manifest-Downloader" target="_blank" rel="noopener">GitHub</a>
-          <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases" target="_blank" rel="noopener">Releases</a>
-          <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/blob/main/LICENSE" target="_blank" rel="noopener">GPL-2.0 License</a>
-        </div>
-      </div>
-      <div class="footer-bottom">
-        <p>Made with ❤️ and 🦀</p>
+        </section>
       </div>
     </div>
-  </footer>
+  </div>
 
-  <script src="../script.js"></script>
-  <script>
-    /* Documentation-specific scripts */
-    (function () {
-      'use strict';
+</main>
 
-      // --- Sidebar toggle (mobile) ---
-      const sidebar = document.getElementById('docsSidebar');
-      const toggle = document.getElementById('sidebarToggle');
-      const overlay = document.getElementById('sidebarOverlay');
-      const toggleIcon = document.getElementById('sidebarToggleIcon');
-      const mobileMenuEl = document.getElementById('mobileMenu');
-      const navHamburgerEl = document.getElementById('navHamburger');
+<p class="seam seam--out">
+  <span class="seam__rule" aria-hidden="true"></span>
+  <span class="seam__name">Colophon</span>
+  <span class="seam__ground">dark ground</span>
+</p>
 
-      function closeMobileMenuFromDocs() {
-        if (mobileMenuEl) {
-          mobileMenuEl.classList.remove('open');
-          document.body.style.overflow = '';
-        }
+<footer class="foot">
+  <div class="wrap foot__in">
+    <div class="foot__brand">
+      <img src="../icon.svg" alt="" width="34" height="34" decoding="async">
+      <p class="foot__name">Steam Manifest Downloader</p>
+      <p class="foot__site">smd.mcbabel.de</p>
+    </div>
+
+    <div class="foot__cols">
+      <div class="foot__col">
+        <p class="kicker" id="f-proj">Project</p>
+        <ul aria-labelledby="f-proj">
+          <li><a href="https://github.com/MCbabel/Steam-Manifest-Downloader">Source</a></li>
+          <li><a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest">Releases</a></li>
+          <li><a href="https://github.com/MCbabel/Steam-Manifest-Downloader/issues">Issues</a></li>
+        </ul>
+      </div>
+      <div class="foot__col">
+        <p class="kicker" id="f-read">Reading</p>
+        <ul aria-labelledby="f-read">
+          <li><a href="#contents">Contents</a></li>
+          <li><a href="../changelog/">Changelog</a></li>
+          <li><a href="../">Home</a></li>
+        </ul>
+      </div>
+      <div class="foot__col">
+        <p class="kicker" id="f-legal">Legal</p>
+        <ul aria-labelledby="f-legal">
+          <li><a href="https://github.com/MCbabel/Steam-Manifest-Downloader/blob/main/LICENSE">GPL-2.0</a></li>
+        </ul>
+        <p class="foot__legal">Intended for content you own. Does not bypass ownership.</p>
+      </div>
+    </div>
+  </div>
+  <div class="wrap foot__bar">
+    <span>Version 1.4.3</span>
+    <span>GPL-2.0</span>
+    <span>Rust and Tauri v2</span>
+  </div>
+</footer>
+
+<p class="sr" role="status" aria-live="polite" id="copy-status"></p>
+
+<script>
+(function () {
+  var status = document.getElementById('copy-status');
+  var buttons = document.querySelectorAll('.copy');
+  buttons.forEach(function (btn) {
+    var label = btn.querySelector('.copy__label');
+    var block = btn.closest('.snip');
+    var timer = null;
+    btn.addEventListener('click', function () {
+      var source = block ? block.querySelector('code') : null;
+      var text = source ? source.textContent : '';
+      var done = function (ok) {
+        label.textContent = ok ? 'Copied' : 'Failed';
+        btn.setAttribute('data-state', ok ? 'ok' : 'fail');
+        status.textContent = ok ? 'Copied to clipboard.' : 'Copy failed. Select the text and copy it manually.';
+        window.clearTimeout(timer);
+        timer = window.setTimeout(function () {
+          label.textContent = 'Copy';
+          btn.removeAttribute('data-state');
+        }, 2200);
+      };
+      if (text && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(false); });
+      } else {
+        done(false);
       }
+    });
+  });
+})();
+</script>
+<script>
+(function () {
+  var d = document.getElementById('docnav-d');
+  if (!d || !window.matchMedia || !('IntersectionObserver' in window)) { return; }
+  var wide = window.matchMedia('(min-width: 1040px)');
+  var sync = function () { d.open = wide.matches; };
+  sync();
+  if (wide.addEventListener) { wide.addEventListener('change', sync); }
+  d.addEventListener('click', function (e) {
+    if (!wide.matches && e.target.closest && e.target.closest('.docnav__panel a')) { d.open = false; }
+  });
 
-      const ICON_BARS = '<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>';
-      const ICON_XMARK = '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>';
+  var links = [], watched = [];
+  Array.prototype.forEach.call(d.querySelectorAll('.docnav__panel a[href^="#"]'), function (a) {
+    var el = document.getElementById(a.getAttribute('href').slice(1));
+    if (!el) { return; }
+    links.push(a);
+    watched.push(el);
+  });
+  if (!watched.length) { return; }
+  watched.sort(function (x, y) {
+    return (x.compareDocumentPosition(y) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1;
+  });
 
-      function openSidebar() {
-        closeMobileMenuFromDocs();
-        sidebar.classList.add('open');
-        overlay.classList.add('show');
-        toggleIcon.innerHTML = ICON_XMARK;
+  var groups = Array.prototype.slice.call(d.querySelectorAll('.docnav__sec'));
+  var last = '';
+  var mark = function (id) {
+    if (id === last) { return; }
+    last = id;
+    var live = null;
+    links.forEach(function (a) {
+      if (a.getAttribute('href') === '#' + id) {
+        a.setAttribute('aria-current', 'true');
+        live = a;
+      } else {
+        a.removeAttribute('aria-current');
       }
+    });
+    groups.forEach(function (g) {
+      if (live && g.contains(live)) { g.setAttribute('data-here', ''); }
+      else { g.removeAttribute('data-here'); }
+    });
+  };
 
-      function closeSidebar() {
-        sidebar.classList.remove('open');
-        overlay.classList.remove('show');
-        toggleIcon.innerHTML = ICON_BARS;
-      }
-
-      if (toggle) {
-        toggle.addEventListener('click', function () {
-          if (sidebar.classList.contains('open')) {
-            closeSidebar();
-          } else {
-            openSidebar();
-          }
-        });
-      }
-
-      if (overlay) {
-        overlay.addEventListener('click', closeSidebar);
-      }
-
-      // Close sidebar when nav hamburger opens the mobile menu
-      if (navHamburgerEl) {
-        navHamburgerEl.addEventListener('click', function () {
-          closeSidebar();
-        });
-      }
-
-      // Sidebar link click: scroll to section, then close sidebar (mobile)
-      document.querySelectorAll('.sidebar-links a').forEach(function (link) {
-        link.addEventListener('click', function (e) {
-          e.stopPropagation();
-          if (window.innerWidth <= 900) {
-            var href = this.getAttribute('href');
-            if (href && href.charAt(0) === '#') {
-              var target = document.querySelector(href);
-              if (target) {
-                e.preventDefault();
-                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              }
-            }
-            setTimeout(closeSidebar, 150);
-          }
-        });
-      });
-
-      // --- Active sidebar link on scroll ---
-      var sidebarLinks = document.querySelectorAll('.sidebar-links a');
-
-      // Build ordered list of targets from sidebar links
-      var targets = [];
-      sidebarLinks.forEach(function (link) {
-        var href = link.getAttribute('href');
-        if (href && href.charAt(0) === '#') {
-          var el = document.querySelector(href);
-          if (el) {
-            targets.push({ id: href.substring(1), el: el, link: link });
-          }
-        }
-      });
-
-      function getAbsoluteTop(el) {
-        var rect = el.getBoundingClientRect();
-        return rect.top + window.pageYOffset;
-      }
-
-      function highlightSidebarLink() {
-        var scrollPos = window.pageYOffset + 140;
-        var current = null;
-
-        // Find the last target whose top is above the scroll position
-        for (var i = 0; i < targets.length; i++) {
-          var top = getAbsoluteTop(targets[i].el);
-          if (scrollPos >= top) {
-            current = targets[i];
-          }
-        }
-
-        sidebarLinks.forEach(function (link) {
-          link.classList.remove('active');
-        });
-
-        if (current) {
-          current.link.classList.add('active');
-        }
-      }
-
-      window.addEventListener('scroll', highlightSidebarLink, { passive: true });
-      highlightSidebarLink();
-    })();
-
-    /* Copy code block */
-    function copyCode(btn) {
-      var code = btn.closest('.code-block').querySelector('code');
-      var text = code.textContent || code.innerText;
-      navigator.clipboard.writeText(text).then(function () {
-        btn.textContent = 'Copied!';
-        setTimeout(function () {
-          btn.textContent = 'Copy';
-        }, 2000);
-      });
+  var pick = function () {
+    var off = wide.matches ? 96 : 124;
+    var cur = watched[0];
+    for (var i = 0; i < watched.length; i++) {
+      if (watched[i].getBoundingClientRect().top - off <= 0) { cur = watched[i]; }
     }
-  </script>
+    mark(cur.id);
+  };
+
+  document.documentElement.className += (document.documentElement.className ? ' ' : '') + 'jsnav';
+  var obs = new IntersectionObserver(pick, { rootMargin: '-88px 0px -55% 0px', threshold: 0 });
+  watched.forEach(function (el) { obs.observe(el); });
+
+  var queued = false;
+  var later = function () {
+    if (queued) { return; }
+    queued = true;
+    window.requestAnimationFrame(function () { queued = false; pick(); });
+  };
+  window.addEventListener('scroll', later, { passive: true });
+  window.addEventListener('resize', later, { passive: true });
+  window.addEventListener('hashchange', pick);
+})();
+</script>
 </body>
 </html>

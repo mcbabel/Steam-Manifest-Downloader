@@ -1,178 +1,174 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>404 — Page Not Found | Steam Manifest Downloader</title>
-  <meta name="description" content="The page you're looking for doesn't exist or has been moved.">
-  <meta property="og:title" content="404 — Page Not Found | Steam Manifest Downloader" />
-  <meta property="og:description" content="A sleek desktop app for downloading Steam game depots using manifest data. Built with Tauri v2 and Rust." />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://smd.mcbabel.de/" />
-  <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="404 — Page Not Found | Steam Manifest Downloader" />
-  <meta name="twitter:description" content="A sleek desktop app for downloading Steam game depots using manifest data. Built with Tauri v2 and Rust." />
-  <link rel="stylesheet" href="style.css">
-  <link rel="icon" type="image/svg+xml" href="icon.svg">
-  <style>
-    .error-section {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 120px 24px 80px;
-    }
-    .error-content {
-      animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) both;
-    }
-    .error-code {
-      font-size: clamp(6rem, 20vw, 12rem);
-      font-weight: 800;
-      background: var(--gradient);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      line-height: 1;
-      margin-bottom: 8px;
-    }
-    .error-title {
-      font-size: clamp(1.5rem, 4vw, 2rem);
-      font-weight: 600;
-      color: var(--text);
-      margin-bottom: 12px;
-    }
-    .error-message {
-      font-size: 1.05rem;
-      color: var(--text-muted);
-      max-width: 440px;
-      margin: 0 auto 32px;
-      line-height: 1.7;
-    }
-    @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(30px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    /* --- 404 Page Responsive --- */
-    @media (max-width: 768px) {
-      .error-section {
-        padding: 100px 20px 60px;
-      }
-      .error-code {
-        font-size: clamp(4rem, 16vw, 8rem);
-      }
-      .error-title {
-        font-size: 1.4rem;
-      }
-      .error-message {
-        font-size: 0.95rem;
-        margin-bottom: 24px;
-      }
-    }
-
-    @media (max-width: 480px) {
-      .error-section {
-        padding: 80px 16px 40px;
-      }
-      .error-code {
-        font-size: clamp(3rem, 14vw, 6rem);
-      }
-      .error-title {
-        font-size: 1.2rem;
-      }
-      .error-message {
-        font-size: 0.88rem;
-      }
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Page not found, Steam Manifest Downloader</title>
+<meta name="description" content="This address is not part of smd.mcbabel.de. The home page, the documentation and the changelog are all one click away.">
+<meta name="theme-color" content="#06060A">
+<meta property="og:title" content="Page not found, Steam Manifest Downloader">
+<meta property="og:description" content="This address is not part of smd.mcbabel.de. The home page, the documentation and the changelog are all one click away.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://smd.mcbabel.de/404.html">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Page not found, Steam Manifest Downloader">
+<meta name="twitter:description" content="This address is not part of smd.mcbabel.de.">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=Fraunces:opsz,wght,SOFT,WONK@9..144,100..900,0..100,0..1&family=IBM+Plex+Mono:wght@400;500;600&family=Karla:wght@300..700&display=swap">
+<link rel="stylesheet" href="./style.css">
+<link rel="stylesheet" href="./pages.css">
 </head>
 <body>
-  <div class="page-bg" aria-hidden="true">
-    <div class="hero-gradient"></div>
-    <div class="hero-grid"></div>
-    <div class="hero-orb hero-orb-1"></div>
-    <div class="hero-orb hero-orb-2"></div>
-    <div class="hero-orb hero-orb-3"></div>
-  </div>
+<a class="skip" href="#main">Skip to content</a>
 
-  <nav class="nav" id="nav">
-    <div class="nav-inner">
-      <a href="./" class="nav-logo">
-        <img src="icon.svg" alt="Steam Manifest Downloader" class="nav-logo-icon" width="36" height="36" />
-        <span>SMD</span>
-      </a>
-      <div class="nav-links">
-        <a href="./">Home</a>
-        <a href="./#features">Features</a>
-        <a href="./#how-it-works">How It Works</a>
-        <a href="./#tech-stack">Tech Stack</a>
-        <a href="documentation/">Docs</a>
-        <a href="changelog/">Changelog</a>
-        <a href="./#download">Download</a>
-      </div>
-      <a href="https://github.com/MCbabel/Steam-Manifest-Downloader" class="nav-github" target="_blank" rel="noopener" aria-label="GitHub">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-      </a>
-      <button class="nav-hamburger" id="navHamburger" aria-label="Toggle menu">&#9776;</button>
-    </div>
-  </nav>
-
-  <div class="mobile-menu" id="mobileMenu">
-    <button class="mobile-menu-close" id="mobileMenuClose" aria-label="Close menu">&times;</button>
-    <a href="./">Home</a>
-    <a href="./#features">Features</a>
-    <a href="./#how-it-works">How It Works</a>
-    <a href="./#tech-stack">Tech Stack</a>
-    <a href="documentation/">Docs</a>
-    <a href="changelog/">Changelog</a>
-    <a href="./#download">Download</a>
-    <a href="https://github.com/MCbabel/Steam-Manifest-Downloader" class="mobile-github" target="_blank" rel="noopener">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-      GitHub
+<header class="topbar">
+  <div class="topbar__in">
+    <a class="brand" href="./" aria-label="Steam Manifest Downloader, home">
+      <img src="./icon.svg" alt="" width="26" height="26" decoding="async">
+      <span class="brand__mark">SMD</span>
+      <span class="brand__ver">1.4.3</span>
     </a>
+    <nav class="nav" aria-label="Site">
+      <a href="./">Home</a>
+      <a href="./#capabilities">What it does</a>
+      <a href="./documentation/">Docs</a>
+      <a href="./changelog/">Changelog</a>
+    </nav>
+    <a class="btn btn--ghost btn--sm topbar__src" href="https://github.com/MCbabel/Steam-Manifest-Downloader">Source</a>
   </div>
+</header>
 
-  <section class="error-section">
-    <div class="error-content">
-      <div class="error-code">404</div>
-      <h1 class="error-title">Page Not Found</h1>
-      <p class="error-message">The page you're looking for doesn't exist or has been moved.</p>
-      <a href="./" class="btn btn-primary">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        Back to Home
-      </a>
+<main id="main">
+
+  <section class="band band--hero" aria-labelledby="h-404">
+    <div class="plasma plasma--hero" aria-hidden="true">
+      <svg class="plasma__svg" viewBox="0 0 800 800" preserveAspectRatio="xMidYMid slice" focusable="false">
+        <defs>
+          <filter id="pl-404" x="-25%" y="-25%" width="150%" height="150%" color-interpolation-filters="sRGB">
+            <feTurbulence type="fractalNoise" baseFrequency="0.0041 0.0092" numOctaves="5" seed="64" result="t"></feTurbulence>
+            <feColorMatrix in="t" type="matrix" values="2.05 -0.4 0 0 -0.34 0 1.6 -0.45 0 -0.36 -0.28 0 2.3 0 -0.42 0 0 0 0 1" result="m"></feColorMatrix>
+            <feComponentTransfer in="m" result="c">
+              <feFuncR type="table" tableValues="0.02 0.58 1 0.84 0.2 0.03"></feFuncR>
+              <feFuncG type="table" tableValues="0.01 0.06 0.3 0.92 1 0.38"></feFuncG>
+              <feFuncB type="table" tableValues="0.18 0.8 0.88 0.38 0.62 0.07"></feFuncB>
+            </feComponentTransfer>
+            <feGaussianBlur in="c" stdDeviation="1.2"></feGaussianBlur>
+          </filter>
+        </defs>
+        <rect width="800" height="800" filter="url(#pl-404)"></rect>
+        <g fill="none" stroke="#C9FFEB" stroke-opacity="0.2" stroke-width="1">
+          <path d="M-40 224 C 134 164 254 312 414 280 S 694 186 854 248"></path>
+          <path d="M-40 286 C 146 228 262 372 422 340 S 704 250 864 312"></path>
+          <path d="M-40 356 C 158 300 274 438 434 406 S 716 318 876 378"></path>
+          <path d="M-40 432 C 170 380 288 508 448 478 S 730 394 890 454"></path>
+        </g>
+        <g fill="none" stroke="#B98CFF" stroke-opacity="0.22" stroke-width="1">
+          <path d="M156 -40 C 206 186 132 348 190 528 S 246 726 212 880"></path>
+          <path d="M470 -40 C 526 190 448 352 508 534 S 566 726 530 880"></path>
+          <path d="M760 -40 C 816 190 738 352 798 534 S 856 726 820 880"></path>
+        </g>
+      </svg>
+    </div>
+
+    <div class="wrap">
+      <p class="kicker hero__kicker"><span class="kicker__idx">404</span> Requested address not on this site</p>
+
+      <h1 id="h-404" class="display">
+        <span class="ln ln-1">Not found</span>
+        <span class="ln ln-2"><span class="stroke">[ 404 ]</span></span>
+        <span class="ln ln-3">nothing is served at this address</span>
+      </h1>
+
+      <p class="lead hero__deck">The page you asked for does not exist here, or it moved. Everything the site holds is listed below, so pick the one you were after.</p>
+
+      <div class="hero__cta">
+        <a class="btn btn--primary" href="./">Back to the home page</a>
+        <a class="btn btn--ghost" href="./documentation/">Read the documentation</a>
+        <a class="btn btn--bare" href="./changelog/">See the changelog</a>
+      </div>
+
+      <ul class="hero__meta">
+        <li>Steam Manifest Downloader 1.4.3</li>
+        <li>Rust and Tauri v2</li>
+        <li>GPL-2.0</li>
+        <li>smd.mcbabel.de</li>
+      </ul>
     </div>
   </section>
 
-  <footer class="footer">
-    <div class="container">
-      <div class="footer-inner">
-        <div class="footer-left">
-          <a href="./" class="footer-logo">
-            <img src="icon.svg" alt="Steam Manifest Downloader" class="footer-logo-icon" width="32" height="32" />
-            Steam Manifest Downloader
-          </a>
-          <p>Download Steam depots effortlessly.</p>
-        </div>
-        <div class="footer-right">
-          <a href="https://github.com/MCbabel/Steam-Manifest-Downloader" target="_blank" rel="noopener">GitHub</a>
-          <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases" target="_blank" rel="noopener">Releases</a>
-          <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/blob/main/LICENSE" target="_blank" rel="noopener">GPL-2.0 License</a>
-        </div>
+  <section class="band" id="where" aria-labelledby="h-where">
+    <div class="wrap wrap--narrow">
+      <div class="rail">
+        <p class="kicker"><span class="kicker__idx">01</span> Index</p>
+        <span class="rail__rule" aria-hidden="true"></span>
+        <span class="chip">six destinations</span>
       </div>
-      <div class="footer-bottom">
-        <p>Made with ❤️ and 🦀</p>
+      <h2 id="h-where" class="display-2">Where things are</h2>
+      <p class="lead">Six addresses, and that is the whole site. Two of them live on GitHub.</p>
+
+      <div class="panel frame">
+        <div class="panel__bar"><span>site index</span><span>smd.mcbabel.de</span></div>
+        <ul class="readout">
+          <li><span>home</span><span><a href="./">What SMD does, the pipeline and install commands</a></span></li>
+          <li><span>docs</span><span><a href="./documentation/">Installation, usage, settings, build and troubleshooting</a></span></li>
+          <li><span>changelog</span><span><a href="./changelog/">Every release from 1.0.0 to 1.4.3</a></span></li>
+          <li><span>install</span><span><a href="./#install">AUR packages, AppImage and the Windows installer</a></span></li>
+          <li><span>releases</span><span><a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest">Latest build on GitHub</a></span></li>
+          <li><span>source</span><span><a href="https://github.com/MCbabel/Steam-Manifest-Downloader">Repository, issues and the GPL-2.0 license</a></span></li>
+        </ul>
       </div>
     </div>
-  </footer>
+  </section>
 
-  <script src="script.js"></script>
+</main>
+
+<p class="seam seam--out">
+  <span class="seam__rule" aria-hidden="true"></span>
+  <span class="seam__name">Colophon</span>
+  <span class="seam__ground">dark ground</span>
+</p>
+
+<footer class="foot">
+  <div class="wrap foot__in">
+    <div class="foot__brand">
+      <img src="./icon.svg" alt="" width="34" height="34" decoding="async">
+      <p class="foot__name">Steam Manifest Downloader</p>
+      <p class="foot__site">smd.mcbabel.de</p>
+    </div>
+
+    <div class="foot__cols">
+      <div class="foot__col">
+        <p class="kicker" id="f-proj">Project</p>
+        <ul aria-labelledby="f-proj">
+          <li><a href="https://github.com/MCbabel/Steam-Manifest-Downloader">Source</a></li>
+          <li><a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest">Releases</a></li>
+          <li><a href="https://github.com/MCbabel/Steam-Manifest-Downloader/issues">Issues</a></li>
+        </ul>
+      </div>
+      <div class="foot__col">
+        <p class="kicker" id="f-read">Reading</p>
+        <ul aria-labelledby="f-read">
+          <li><a href="./documentation/">Documentation</a></li>
+          <li><a href="./changelog/">Changelog</a></li>
+          <li><a href="./#questions">Questions</a></li>
+        </ul>
+      </div>
+      <div class="foot__col">
+        <p class="kicker" id="f-legal">Legal</p>
+        <ul aria-labelledby="f-legal">
+          <li><a href="https://github.com/MCbabel/Steam-Manifest-Downloader/blob/main/LICENSE">GPL-2.0</a></li>
+        </ul>
+        <p class="foot__legal">Intended for content you own. Does not bypass ownership.</p>
+      </div>
+    </div>
+  </div>
+  <div class="wrap foot__bar">
+    <span>Version 1.4.3</span>
+    <span>GPL-2.0</span>
+    <span>Rust and Tauri v2</span>
+  </div>
+</footer>
 </body>
 </html>

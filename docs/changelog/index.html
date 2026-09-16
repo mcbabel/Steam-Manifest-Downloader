@@ -1,666 +1,646 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Changelog — Steam Manifest Downloader</title>
-  <meta name="description" content="Track all changes and updates to Steam Manifest Downloader. View the full version history, new features, bug fixes, and improvements.">
-  <meta property="og:title" content="Changelog — Steam Manifest Downloader" />
-  <meta property="og:description" content="Track all changes and updates to Steam Manifest Downloader." />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://smd.mcbabel.de/changelog/" />
-  <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Changelog — Steam Manifest Downloader" />
-  <meta name="twitter:description" content="Track all changes and updates to Steam Manifest Downloader." />
-  <link rel="stylesheet" href="../style.css">
-  <link rel="icon" type="image/svg+xml" href="../icon.svg">
-  <style>
-    table {
-      border-collapse: separate;
-      border-spacing: 0.5em 1em;
-    }
-    td {
-      min-width: 90px;
-    }
-
-    .changelog-section {
-      padding: 140px 24px 80px;
-      max-width: 820px;
-      margin: 0 auto;
-    }
-    .changelog-header {
-      text-align: center;
-      margin-bottom: 56px;
-      animation: fadeInUp 0.7s cubic-bezier(0.4, 0, 0.2, 1) both;
-    }
-    .changelog-header .section-tag {
-      display: inline-block;
-      font-size: 0.8rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--blue);
-      background: rgba(88, 166, 255, 0.1);
-      border: 1px solid rgba(88, 166, 255, 0.2);
-      padding: 6px 16px;
-      border-radius: 999px;
-      margin-bottom: 16px;
-    }
-    .changelog-header h1 {
-      font-size: clamp(2rem, 5vw, 2.75rem);
-      font-weight: 700;
-      margin-bottom: 12px;
-    }
-    .changelog-header p {
-      font-size: 1.1rem;
-      color: var(--text-muted);
-    }
-    .changelog-entry {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      padding: 32px;
-      margin-bottom: 32px;
-      animation: fadeInUp 0.7s cubic-bezier(0.4, 0, 0.2, 1) both;
-      animation-delay: 0.15s;
-    }
-    .changelog-entry-header {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 24px;
-      flex-wrap: wrap;
-    }
-    .changelog-version {
-      font-size: 1.5rem;
-      font-weight: 700;
-      background: var(--gradient);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .changelog-date {
-      font-size: 0.9rem;
-      color: var(--text-muted);
-      background: rgba(139, 148, 158, 0.1);
-      border: 1px solid rgba(139, 148, 158, 0.15);
-      padding: 4px 12px;
-      border-radius: 999px;
-    }
-    .changelog-changes {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .changelog-changes li {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      font-size: 0.95rem;
-      line-height: 1.6;
-      color: var(--text);
-    }
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      font-size: 0.7rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      padding: 3px 10px;
-      border-radius: 999px;
-      white-space: nowrap;
-      flex-shrink: 0;
-      margin-top: 3px;
-      text-align: left;
-    }
-    .badge-added {
-      color: #3fb950;
-      background: rgba(63, 185, 80, 0.12);
-      border: 1px solid rgba(63, 185, 80, 0.25);
-    }
-    .badge-changed {
-      color: #58a6ff;
-      background: rgba(88, 166, 255, 0.12);
-      border: 1px solid rgba(88, 166, 255, 0.25);
-    }
-    .badge-fixed {
-      color: #d29922;
-      background: rgba(210, 153, 34, 0.12);
-      border: 1px solid rgba(210, 153, 34, 0.25);
-    }
-    .badge-removed {
-      color: #f85149;
-      background: rgba(248, 81, 73, 0.12);
-      border: 1px solid rgba(248, 81, 73, 0.25);
-    }
-    .badge-platform {
-      color: #bc8cff;
-      background: rgba(188, 140, 255, 0.12);
-      border: 1px solid rgba(188, 140, 255, 0.25);
-    }
-    @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(30px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    /* --- Changelog Responsive --- */
-    @media (max-width: 768px) {
-      .changelog-section {
-        padding: 110px 16px 60px;
-      }
-      .changelog-header {
-        margin-bottom: 36px;
-      }
-      .changelog-header h1 {
-        font-size: 1.8rem;
-      }
-      .changelog-header p {
-        font-size: 0.95rem;
-      }
-      .changelog-entry {
-        padding: 24px 20px;
-        margin-bottom: 24px;
-      }
-      .changelog-version {
-        font-size: 1.25rem;
-      }
-      .changelog-changes li {
-        font-size: 0.88rem;
-      }
-    }
-
-    @media (max-width: 480px) {
-      .changelog-section {
-        padding: 90px 12px 40px;
-      }
-      .changelog-header h1 {
-        font-size: 1.5rem;
-      }
-      .changelog-header p {
-        font-size: 0.88rem;
-      }
-      .changelog-entry {
-        padding: 20px 16px;
-        border-radius: var(--radius);
-      }
-      .changelog-entry-header {
-        gap: 10px;
-      }
-      .changelog-version {
-        font-size: 1.1rem;
-      }
-      .changelog-date {
-        font-size: 0.78rem;
-        padding: 3px 10px;
-      }
-      .changelog-changes li {
-        font-size: 0.82rem;
-        gap: 8px;
-      }
-      .badge {
-        font-size: 0.62rem;
-        padding: 2px 8px;
-      }
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Changelog, Steam Manifest Downloader</title>
+<meta name="description" content="Every release of Steam Manifest Downloader from 1.0.0 to 1.4.3, with what was added, changed, fixed and removed in each one.">
+<meta name="theme-color" content="#06060A">
+<meta property="og:title" content="Changelog, Steam Manifest Downloader">
+<meta property="og:description" content="Every release of Steam Manifest Downloader from 1.0.0 to 1.4.3, with what was added, changed, fixed and removed in each one.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://smd.mcbabel.de/changelog/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Changelog, Steam Manifest Downloader">
+<meta name="twitter:description" content="Every release from 1.0.0 to 1.4.3.">
+<link rel="icon" href="../icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=Fraunces:opsz,wght,SOFT,WONK@9..144,100..900,0..100,0..1&family=IBM+Plex+Mono:wght@400;500;600&family=Karla:wght@300..700&display=swap">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../pages.css">
 </head>
 <body>
-  <div class="page-bg" aria-hidden="true">
-    <div class="hero-gradient"></div>
-    <div class="hero-grid"></div>
-    <div class="hero-orb hero-orb-1"></div>
-    <div class="hero-orb hero-orb-2"></div>
-    <div class="hero-orb hero-orb-3"></div>
-  </div>
+<a class="skip" href="#main">Skip to content</a>
 
-  <nav class="nav" id="nav">
-    <div class="nav-inner">
-      <a href="../" class="nav-logo">
-        <img src="../icon.svg" alt="Steam Manifest Downloader" class="nav-logo-icon" width="36" height="36" />
-        <span>SMD</span>
-      </a>
-      <div class="nav-links">
-        <a href="../">Home</a>
-        <a href="../#features">Features</a>
-        <a href="../#how-it-works">How It Works</a>
-        <a href="../#tech-stack">Tech Stack</a>
-        <a href="../documentation/">Docs</a>
-        <a href="./" class="nav-link-active">Changelog</a>
-        <a href="../#download">Download</a>
-      </div>
-      <a href="https://github.com/MCbabel/Steam-Manifest-Downloader" class="nav-github" target="_blank" rel="noopener" aria-label="GitHub">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-      </a>
-      <button class="nav-hamburger" id="navHamburger" aria-label="Toggle menu">&#9776;</button>
-    </div>
-  </nav>
-
-  <div class="mobile-menu" id="mobileMenu">
-    <button class="mobile-menu-close" id="mobileMenuClose" aria-label="Close menu">&times;</button>
-    <a href="../">Home</a>
-    <a href="../#features">Features</a>
-    <a href="../#how-it-works">How It Works</a>
-    <a href="../#tech-stack">Tech Stack</a>
-    <a href="../documentation/">Docs</a>
-    <a href="./">Changelog</a>
-    <a href="../#download">Download</a>
-    <a href="https://github.com/MCbabel/Steam-Manifest-Downloader" class="mobile-github" target="_blank" rel="noopener">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-      GitHub
+<header class="topbar">
+  <div class="topbar__in">
+    <a class="brand" href="../" aria-label="Steam Manifest Downloader, home">
+      <img src="../icon.svg" alt="" width="26" height="26" decoding="async">
+      <span class="brand__mark">SMD</span>
+      <span class="brand__ver">1.4.3</span>
     </a>
+    <nav class="nav" aria-label="Site">
+      <a href="../">Home</a>
+      <a href="#releases">Releases</a>
+      <a href="#v143">Latest</a>
+      <a href="../documentation/">Docs</a>
+      <a href="#get">Download</a>
+    </nav>
+    <a class="btn btn--ghost btn--sm topbar__src" href="https://github.com/MCbabel/Steam-Manifest-Downloader">Source</a>
   </div>
+</header>
 
-  <section class="changelog-section">
-    <div class="changelog-header">
-      <span class="section-tag">Version History</span>
-      <h1>Changelog</h1>
-      <p>Track all changes and updates</p>
+<main id="main">
+
+  <section class="band band--hero" aria-labelledby="h-log">
+    <div class="plasma plasma--hero" aria-hidden="true">
+      <svg class="plasma__svg" viewBox="0 0 800 800" preserveAspectRatio="xMidYMid slice" focusable="false">
+        <defs>
+          <filter id="pl-log" x="-25%" y="-25%" width="150%" height="150%" color-interpolation-filters="sRGB">
+            <feTurbulence type="fractalNoise" baseFrequency="0.0029 0.0114" numOctaves="5" seed="38" result="t"></feTurbulence>
+            <feColorMatrix in="t" type="matrix" values="2.2 -0.5 0 0 -0.38 0 1.7 -0.5 0 -0.32 -0.32 0 2.35 0 -0.4 0 0 0 0 1" result="m"></feColorMatrix>
+            <feComponentTransfer in="m" result="c">
+              <feFuncR type="table" tableValues="0.02 0.6 1 0.86 0.24 0.03"></feFuncR>
+              <feFuncG type="table" tableValues="0.01 0.05 0.32 0.94 1 0.4"></feFuncG>
+              <feFuncB type="table" tableValues="0.16 0.84 0.9 0.42 0.64 0.08"></feFuncB>
+            </feComponentTransfer>
+            <feGaussianBlur in="c" stdDeviation="1"></feGaussianBlur>
+          </filter>
+        </defs>
+        <rect width="800" height="800" filter="url(#pl-log)"></rect>
+        <g fill="none" stroke="#C9FFEB" stroke-opacity="0.21" stroke-width="1">
+          <path d="M-40 196 C 128 140 248 288 408 256 S 688 162 848 224"></path>
+          <path d="M-40 252 C 140 198 256 342 416 310 S 698 220 858 282"></path>
+          <path d="M-40 316 C 150 264 266 400 426 368 S 710 282 870 344"></path>
+          <path d="M-40 388 C 160 336 278 462 438 434 S 722 350 882 412"></path>
+        </g>
+        <g fill="none" stroke="#B98CFF" stroke-opacity="0.23" stroke-width="1">
+          <path d="M140 -40 C 190 182 118 344 176 524 S 232 722 198 880"></path>
+          <path d="M446 -40 C 502 188 424 350 484 532 S 542 724 506 880"></path>
+          <path d="M736 -40 C 792 188 714 350 774 532 S 832 724 796 880"></path>
+        </g>
+      </svg>
     </div>
-  
-    <div class="changelog-entry">
-      <div class="changelog-entry-header">
-        <span class="changelog-version">v1.4.3</span>
-        <span class="changelog-date">July 23, 2026</span>
-      </div>
-      <table class="changelog-changes">
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-fixed">Fixed </span></td>
-          <td>ManifestHub API moved to a new host — the old <code>api.manifesthub1.filegear-sg.me</code> subdomain went dead (NXDOMAIN) and broke every ManifestHub lookup. Requests now go to <code>api.manifesthub2.filegear-sg.me</code>. <strong>Existing API keys keep working</strong>, nothing to re-enter.</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added </span></td>
-          <td>Native Steam download engine, on by default — a pure-Rust pipeline with anonymous Steam login, manifest decryption, VZ1/zstd chunk decoding and 32 parallel chunk fetches straight from Steam's CDN. No .NET runtime needed. The legacy DepotDownloaderMod path is still there under <strong>Settings → Download engine</strong> if you want it.</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added </span></td>
-          <td>Resumable downloads — enable <strong>Keep downloaded files when cancelling</strong> in Settings and a cancelled job can be restarted later; existing chunks are SHA-1 verified and skipped instead of re-downloaded. Per-depot fallback chain: Steam direct → your configured depot sources / Hubcap → ManifestHub.</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added </span></td>
-          <td>Ryuu and Hubcap as selectable App&nbsp;ID manifest sources — paste an API key in Settings and each one shows up as its own source whenever it has data for the app you're searching.</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added </span></td>
-          <td>Per-file emulator patching — step 5 now lists every detected <code>steam_api</code> binary with a checkbox, pre-selecting the depot that best matches your OS and preferring 64-bit. Depots shipping their own executable are no longer merged as DLC.</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-changed">Changed </span></td>
-          <td>Resuming a large depot (50k+ chunks) is an order of magnitude faster — the verify pass now reads each file once in offset order instead of re-seeking per chunk, and progress events are throttled to 150&nbsp;ms so Cancel / Pause stay responsive throughout. Progress text also shows GB done / GB total, not just a percentage.</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-changed">Changed </span></td>
-          <td>Chunk downloads retry up to 8 times with exponential backoff (250&nbsp;ms → 15&nbsp;s), rotating CDN servers between attempts. A single <code>503</code> from Steam's CDN no longer kills the whole depot.</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-fixed">Fixed </span></td>
-          <td>Deleting a history entry with <strong>delete files</strong> now only removes that entry's depot folders — previously it wiped the entire game folder, taking sibling depots from other entries with it.</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-fixed">Fixed </span></td>
-          <td>No more phantom completion sound from a job you already navigated away from, and abandoned background downloads are actually cancelled when you reset the app.</td>
-        </tr>
-         <tr>
-          <td style="text-align: center;"> <span class="badge badge-platform">Linux </span></td>
-          <td>Native ELF binaries are detected as executables even without the exec bit (Steam depots don't preserve Unix permissions), and the Proton hint only shows up for actual <code>.exe</code> files now.</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-removed">Removed </span></td>
-          <td>The <code>lobby_connect</code> launcher — it never left the work-in-progress state and caused more confusion than it solved.</td>
-        </tr>
-      </table>
-    </div>
-  
-    <div class="changelog-entry">
-      <div class="changelog-entry-header">
-        <span class="changelog-version">v1.4.2</span>
-        <span class="changelog-date">May 14, 2026</span>
-      </div>
-      <table class="changelog-changes">
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added </span></td>
-          <td>Pre-configured archive.org depot sources on first launch so the app is usable out of the box — the two sources sit in Settings → Depot Sources and can be removed anytime. Flatpak/Flathub builds intentionally ship without defaults (compliance).</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added </span></td>
-          <td>Confirmation prompt when removing a pre-installed source, with a heads-up that <strong>Search by App ID will stop working</strong> until you add your own. The prompt only fires once per default source — if you re-add it manually later, removing it stays quiet.</td>
-        </tr>
-      </table>
-    </div>
-  
-    <div class="changelog-entry">
-      <div class="changelog-entry-header">
-        <span class="changelog-version">v1.4.1</span>
-        <span class="changelog-date">May 13, 2026</span>
-      </div>
-      <table class="changelog-changes">
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-fixed">Fixed </span></td>
-          <td>First-launch flow no longer overlaps modals — language picker, telemetry consent and the auto-update check now run in strict sequence</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-fixed">Fixed </span></td>
-          <td>Depot source resolver auto-detects the in-archive root folder from any URL ending in <code>.zip</code> / <code>.tar.gz</code> — works for <code>archive.org/download/&lt;item&gt;/&lt;file&gt;.zip/</code> URLs and not just <code>view_archive.php</code></td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-fixed">Fixed </span></td>
-          <td>Error messages (red banners) are selectable again so you can copy them into bug reports</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-fixed">Fixed </span></td>
-          <td>CI workflows: build date is now populated when releases are triggered via <code>workflow_dispatch</code> (was previously empty in the Debug Info panel)</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-changed">Changed </span></td>
-          <td>Removed the hardcoded <code>branches/</code> path prefix from generic and GitHub depot sources — paste the URL that points directly at the directory containing the <code>&lt;appid&gt;/</code> folders</td>
-        </tr>
-      </table>
-    </div>
-  
-    <div class="changelog-entry">
-      <div class="changelog-entry-header">
-        <span class="changelog-version">v1.4.0</span>
-        <span class="changelog-date">May 12, 2026</span>
-      </div>
-      <table class="changelog-changes">
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added</span></td>
-          <td>Multi-language UI — English and German with a first-launch language picker (flag cards) and an in-app switcher in Settings that restarts the app on apply</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added</span></td>
-          <td>Opt-in anonymous telemetry with end-to-end encrypted transport — disabled by default, can be reviewed and toggled in Settings, no game IDs or file contents are ever sent</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added</span></td>
-          <td>Step 4: shortcut creation — generate desktop and start menu shortcuts for downloaded games automatically (Windows)</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added</span></td>
-          <td>Download history with re-download and open-folder actions per entry, plus a one-click clear</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added</span></td>
-          <td>User-configurable depot sources — paste any GitHub repo or archive.org URL, or any HTTPS folder following the <code>branches/&lt;appid&gt;/</code> layout</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added</span></td>
-          <td>Flatpak packaging and a per-install-method updater (binary auto-update vs. package-manager hint)</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added</span></td>
-          <td>Debug info panel in Settings — channel, version, commit, build date, profile, platform — with one-click copy for bug reports</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-changed">Changed</span></td>
-          <td>All UI icons are now consistent inline Lucide-style stroke SVGs (gear, moon/sun, alert-triangle, folder, search, etc.) — same look on every OS, theme-aware, no emoji rendering drift</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-changed">Changed</span></td>
-          <td>Accessibility pass — aria-label on icon-only buttons, role="dialog" + aria-modal on all six modals, Tab/Esc focus trap, role="progressbar" on the workflow stepper</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-changed">Changed</span></td>
-          <td>Text selection disabled app-wide so the desktop app no longer feels like a webpage; opt-in only on inputs, terminal output and code blocks</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-changed">Changed</span></td>
-          <td>Light-mode buttons no longer disappear on hover (CSS specificity fix) and the hover glow is themed via shadow tokens</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-removed">Removed</span></td>
-          <td>Hardcoded Internet Archive source — replaced by the user-configured sources list (legacy <code>archive.org/view_archive.php</code> URLs still work, you just paste them yourself)</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-removed">Removed</span></td>
-          <td>GitHub personal access token field — no longer needed since GitHub is just one of many configurable sources</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-removed">Removed</span></td>
-          <td>Alternative sources (kernelos, printedwaste) — replaced by the user-configured sources model</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-fixed">Fixed</span></td>
-          <td>Docs site dropped FontAwesome, fixed outdated marketing copy, and the obsolete GitHub rate-limit FAQ</td>
-        </tr>
-      </table>
-    </div>
-  
-    <div class="changelog-entry">
-      <div class="changelog-entry-header">
-        <span class="changelog-version">v1.3.0</span>
-        <span class="changelog-date">April 7, 2026</span>
-      </div>
-      <table class="changelog-changes">
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added</span></td>
-          <td>Game name search with autocomplete — search by name instead of just App ID, powered by Steam Store Search API</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added</span></td>
-          <td>Depot size display — see how large each depot is before downloading, with total size in the download button</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added</span></td>
-          <td>Download speed &amp; ETA display — real-time MB/s speed, estimated time remaining, and elapsed timer for large files</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added</span></td>
-          <td>Advanced Settings panel — configure DepotDownloader arguments, max retries, speed limit, proxy, and notification sound</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added</span></td>
-          <td>.NET Runtime warning banner — visible alert with download link when .NET is missing (Windows only)</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added</span></td>
-          <td>Folder picker button — browse for download location using native OS dialog instead of typing paths manually</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-changed">Changed</span></td>
-          <td>Migrated manifest source from GitHub repos to Internet Archive — all original ManifestHub data preserved as a permanent archive</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-changed">Changed</span></td>
-          <td>"Start Over" button now returns to the depot selection screen with previous selections preserved</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-removed">Removed</span></td>
-          <td>Export .bat/.sh feature removed — simplified UI focus on direct downloads</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-removed">Removed</span></td>
-          <td>GitHub repository search — replaced by Internet Archive as the sole manifest source</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-fixed">Fixed</span></td>
-          <td>Unused Rust import warning in depot_runner.rs</td>
-        </tr>
-      </table>
-    </div>
-  
-    <div class="changelog-entry">
-      <div class="changelog-entry-header">
-        <span class="changelog-version">v1.2.0</span>
-        <span class="changelog-date">March 18, 2026</span>
-      </div>
-      <table class="changelog-changes">
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added</span></td>
-          <td>Built-in auto-update system — checks for new releases on GitHub at startup with configurable toggle</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added</span></td>
-          <td>One-click update on Windows — downloads and installs the latest version automatically</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added</span></td>
-          <td>Custom title bar with minimize, maximize, close controls on all platforms</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added</span></td>
-          <td>Settings panel with update toggle and version display</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added</span></td>
-          <td>Windows code signing with SignTool in the CI/CD pipeline</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added</span></td>
-          <td>Enhanced release workflow with customizable release name, description, and pre-release option</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added</span></td>
-          <td>Separate test workflows for Linux (Arch) and Windows builds</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-platform">Linux</span></td>
-          <td>Custom title bar with full window dragging support on Linux</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-platform">Linux</span></td>
-          <td>Rounded window corners matching the Windows appearance</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-platform">Linux</span></td>
-          <td>Double-click title bar to maximize/restore window</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-changed">Changed</span></td>
-          <td>GitHub Pages deployment now only triggers when documentation changes</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-changed">Changed</span></td>
-          <td>Faster CI builds with cargo-binstall for Tauri CLI installation</td>
-        </tr>
-      </table>
-    </div>
-  
-    <div class="changelog-entry">
-      <div class="changelog-entry-header">
-        <span class="changelog-version">v1.1.0</span>
-        <span class="changelog-date">February 20, 2026</span>
-      </div>
-      <table class="changelog-changes">
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-changed">Changed</span></td>
-          <td>Complete UI redesign with glassmorphism design language — blur effects, blue/purple gradients, transparent borders, animated hover states</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-changed">Changed</span></td>
-          <td>Inter font now bundled locally as .woff2 — removed Google Fonts CDN dependency for better privacy and offline support</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added</span></td>
-          <td>GitHub Actions CI/CD workflow for automated cross-platform builds and releases</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added</span></td>
-          <td>Two-stage Linux build pipeline — Arch Linux compilation for WebKitGTK ABI compatibility + Ubuntu AppImage bundling</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-fixed">Fixed</span></td>
-          <td>Simplified Content Security Policy after removing external font dependency</td>
-        </tr>
-      </table>
-    </div>
-  
-    <div class="changelog-entry">
-      <div class="changelog-entry-header">
-        <span class="changelog-version">v1.0.0</span>
-        <span class="changelog-date">February 16, 2026</span>
-      </div>
-      <table class="changelog-changes">
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added</span></td>
-          <td>Drag &amp; drop .lua file upload with automatic parsing</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added</span></td>
-          <td>Multi-repo search across 5+ GitHub repositories</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added</span></td>
-          <td>Automatic manifest download from ManifestHub API</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added</span></td>
-          <td>Automatic depot keys generation (steam.keys)</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added</span></td>
-          <td>Integrated DepotDownloaderMod — embedded in the app</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added</span></td>
-          <td>Real-time download progress tracking with cancel support</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added</span></td>
-          <td>Steam Store API integration — game names &amp; cover art</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added</span></td>
-          <td>Dark / Light theme toggle</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added</span></td>
-          <td>Configurable settings — download location, GitHub token, extra args</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added</span></td>
-          <td>Batch script export (.bat) for manual execution</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-added">Added</span></td>
-          <td>Safe cancel — automatically cleans up partial downloads</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-platform">Linux</span></td>
-          <td>Linux AppImage build now available alongside Windows binaries</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-platform">Linux</span></td>
-          <td>Uses native window decorations on Linux (custom title bar added in v1.2.0)</td>
-        </tr>
-        <tr>
-          <td style="text-align: center;"> <span class="badge badge-platform">Linux</span></td>
-          <td>Self-contained binary — no .NET runtime required</td>
-        </tr>
-      </table>
+
+    <div class="wrap">
+      <p class="kicker hero__kicker"><span class="kicker__idx">00</span> Version history, 1.0.0 to 1.4.3</p>
+
+      <h1 id="h-log" class="display">
+        <span class="ln ln-1">Changelog</span>
+        <span class="ln ln-2"><span class="stroke">[ 8 Releases ]</span></span>
+        <span class="ln ln-3">every change, newest first</span>
+      </h1>
+
+      <p class="lead hero__deck">What was added, changed, fixed and removed in each release, plus the Linux specific entries. Dates are release dates.</p>
+
+      <nav class="hero__cta" aria-label="Jump to a release">
+        <a class="btn btn--ghost btn--sm" href="#v143">1.4.3</a>
+        <a class="btn btn--ghost btn--sm" href="#v142">1.4.2</a>
+        <a class="btn btn--ghost btn--sm" href="#v141">1.4.1</a>
+        <a class="btn btn--ghost btn--sm" href="#v140">1.4.0</a>
+        <a class="btn btn--ghost btn--sm" href="#v130">1.3.0</a>
+        <a class="btn btn--ghost btn--sm" href="#v120">1.2.0</a>
+        <a class="btn btn--ghost btn--sm" href="#v110">1.1.0</a>
+        <a class="btn btn--ghost btn--sm" href="#v100">1.0.0</a>
+      </nav>
+
+      <dl class="facts frame">
+        <div class="fact">
+          <dt>Current release</dt>
+          <dd>1.4.3</dd>
+        </div>
+        <div class="fact">
+          <dt>Releases listed</dt>
+          <dd>08</dd>
+        </div>
+        <div class="fact">
+          <dt>First release</dt>
+          <dd>1.0.0</dd>
+        </div>
+        <div class="fact">
+          <dt>License</dt>
+          <dd>GPL-2.0</dd>
+        </div>
+      </dl>
     </div>
   </section>
-  <footer class="footer">
-    <div class="container">
-      <div class="footer-inner">
-        <div class="footer-left">
-          <a href="../" class="footer-logo">
-            <img src="../icon.svg" alt="Steam Manifest Downloader" class="footer-logo-icon" width="32" height="32" />
-            Steam Manifest Downloader
-          </a>
-          <p>Download Steam depots effortlessly.</p>
-        </div>
-        <div class="footer-right">
-          <a href="https://github.com/MCbabel/Steam-Manifest-Downloader" target="_blank" rel="noopener">GitHub</a>
-          <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases" target="_blank" rel="noopener">Releases</a>
-          <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/blob/main/LICENSE" target="_blank" rel="noopener">GPL-2.0 License</a>
-        </div>
+
+  <section class="band" id="releases" aria-labelledby="h-rel">
+    <div class="wrap">
+      <div class="rail">
+        <p class="kicker"><span class="kicker__idx">01</span> Release log</p>
+        <span class="rail__rule" aria-hidden="true"></span>
+        <span class="chip">newest first</span>
       </div>
-      <div class="footer-bottom">
-        <p>Made with ❤️ and 🦀</p>
+      <h2 id="h-rel" class="display-2">Every release</h2>
+      <p class="lead">Each card is one release. The label on each line says whether the entry was added, changed, fixed or removed, or whether it applies to Linux.</p>
+
+      <div class="relist">
+
+        <article class="rel frame" id="v143">
+          <div class="rel__head">
+            <h3 class="rel__ver">v1.4.3</h3>
+            <p class="rel__date">July 23, 2026</p>
+          </div>
+          <ul class="log">
+            <li>
+              <span class="tag tag--fix">Fixed</span>
+              <p class="log__d">ManifestHub API moved to a new host. The old <code>api.manifesthub1.filegear-sg.me</code> subdomain went dead (NXDOMAIN) and broke every ManifestHub lookup. Requests now go to <code>api.manifesthub2.filegear-sg.me</code>. <strong>Existing API keys keep working</strong>, nothing to re-enter.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Native Steam download engine, on by default. A pure Rust pipeline with anonymous Steam login, manifest decryption, VZ1 and zstd chunk decoding and up to 32 chunk fetches in flight straight from Steam's CDN. No .NET runtime needed. The legacy DepotDownloaderMod path is still there under <strong>Settings, Download engine</strong> if you want it.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Resumable downloads. Enable <strong>Keep downloaded files when cancelling</strong> in Settings and a cancelled job can be restarted later, with existing chunks SHA-1 verified and skipped instead of downloaded again. Per depot fallback chain: Steam direct, then your configured depot sources or Hubcap, then ManifestHub.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Ryuu and Hubcap as selectable App ID manifest sources. Paste an API key in Settings and each one shows up as its own source whenever it has data for the app you are searching.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Per file emulator patching. Step 5 now lists every detected <code>steam_api</code> binary with a checkbox, pre-selecting the depot that best matches your OS and preferring 64-bit. Depots shipping their own executable are no longer merged as DLC.</p>
+            </li>
+            <li>
+              <span class="tag tag--chg">Changed</span>
+              <p class="log__d">Resuming a large depot (50k+ chunks) is an order of magnitude faster. The verify pass now reads each file once in offset order instead of re-seeking per chunk, and progress events are throttled to 150 ms so Cancel and Pause stay responsive throughout. Progress text also shows GB done and GB total, not just a percentage.</p>
+            </li>
+            <li>
+              <span class="tag tag--chg">Changed</span>
+              <p class="log__d">Chunk downloads retry up to 8 times with exponential backoff, from 250 ms up to 15 s, rotating CDN servers between attempts. A single <code>503</code> from Steam's CDN no longer kills the whole depot.</p>
+            </li>
+            <li>
+              <span class="tag tag--fix">Fixed</span>
+              <p class="log__d">Deleting a history entry with <strong>delete files</strong> now only removes that entry's depot folders. Previously it wiped the entire game folder, taking sibling depots from other entries with it.</p>
+            </li>
+            <li>
+              <span class="tag tag--fix">Fixed</span>
+              <p class="log__d">No more phantom completion sound from a job you already navigated away from, and abandoned background downloads are actually cancelled when you reset the app.</p>
+            </li>
+            <li>
+              <span class="tag tag--os">Linux</span>
+              <p class="log__d">Native ELF binaries are detected as executables even without the exec bit, since Steam depots do not preserve Unix permissions, and the Proton hint only shows up for actual <code>.exe</code> files now.</p>
+            </li>
+            <li>
+              <span class="tag">Removed</span>
+              <p class="log__d">The <code>lobby_connect</code> launcher. It never left the work in progress state and caused more confusion than it solved.</p>
+            </li>
+          </ul>
+        </article>
+
+        <article class="rel frame" id="v142">
+          <div class="rel__head">
+            <h3 class="rel__ver">v1.4.2</h3>
+            <p class="rel__date">May 14, 2026</p>
+          </div>
+          <ul class="log">
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Pre-configured archive.org depot sources on first launch so the app is usable out of the box. The two sources sit in Settings, Depot Sources and can be removed anytime. Flatpak and Flathub builds intentionally ship without defaults, for compliance.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Confirmation prompt when removing a pre-installed source, with a heads-up that <strong>Search by App ID will stop working</strong> until you add your own. The prompt only fires once per default source, so if you re-add it manually later, removing it stays quiet.</p>
+            </li>
+          </ul>
+        </article>
+
+        <article class="rel frame" id="v141">
+          <div class="rel__head">
+            <h3 class="rel__ver">v1.4.1</h3>
+            <p class="rel__date">May 13, 2026</p>
+          </div>
+          <ul class="log">
+            <li>
+              <span class="tag tag--fix">Fixed</span>
+              <p class="log__d">First launch flow no longer overlaps modals. The language picker, telemetry consent and the auto-update check now run in strict sequence.</p>
+            </li>
+            <li>
+              <span class="tag tag--fix">Fixed</span>
+              <p class="log__d">Depot source resolver auto-detects the in-archive root folder from any URL ending in <code>.zip</code> or <code>.tar.gz</code>. It works for <code>archive.org/download/&lt;item&gt;/&lt;file&gt;.zip/</code> URLs and not just <code>view_archive.php</code>.</p>
+            </li>
+            <li>
+              <span class="tag tag--fix">Fixed</span>
+              <p class="log__d">Error messages (the red banners) are selectable again so you can copy them into bug reports.</p>
+            </li>
+            <li>
+              <span class="tag tag--fix">Fixed</span>
+              <p class="log__d">CI workflows: the build date is now populated when releases are triggered via <code>workflow_dispatch</code>. It was previously empty in the Debug Info panel.</p>
+            </li>
+            <li>
+              <span class="tag tag--chg">Changed</span>
+              <p class="log__d">Removed the hardcoded <code>branches/</code> path prefix from generic and GitHub depot sources. Paste the URL that points directly at the directory containing the <code>&lt;appid&gt;/</code> folders.</p>
+            </li>
+          </ul>
+        </article>
+
+        <article class="rel frame" id="v140">
+          <div class="rel__head">
+            <h3 class="rel__ver">v1.4.0</h3>
+            <p class="rel__date">May 12, 2026</p>
+          </div>
+          <ul class="log">
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Multi-language UI, English and German, with a first launch language picker using flag cards and an in-app switcher in Settings that restarts the app on apply.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Opt-in anonymous telemetry with end to end encrypted transport. Disabled by default, reviewable and toggleable in Settings, and no game IDs or file contents are ever sent.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Step 4: shortcut creation. Generate desktop and start menu shortcuts for downloaded games automatically (Windows).</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Download history with re-download and open-folder actions per entry, plus a one-click clear.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">User-configurable depot sources. Paste any GitHub repo or archive.org URL, or any HTTPS folder following the <code>branches/&lt;appid&gt;/</code> layout.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Flatpak packaging and a per-install-method updater, binary auto-update against a package manager hint.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Debug info panel in Settings, showing channel, version, commit, build date, profile and platform, with one-click copy for bug reports.</p>
+            </li>
+            <li>
+              <span class="tag tag--chg">Changed</span>
+              <p class="log__d">All UI icons are now consistent inline Lucide-style stroke SVGs, such as gear, moon and sun, alert triangle, folder and search. Same look on every OS, theme aware, no emoji rendering drift.</p>
+            </li>
+            <li>
+              <span class="tag tag--chg">Changed</span>
+              <p class="log__d">Accessibility pass: aria-label on icon-only buttons, role="dialog" and aria-modal on all six modals, a Tab and Esc focus trap, and role="progressbar" on the workflow stepper.</p>
+            </li>
+            <li>
+              <span class="tag tag--chg">Changed</span>
+              <p class="log__d">Text selection disabled app-wide so the desktop app no longer feels like a webpage. It stays opt-in on inputs, terminal output and code blocks.</p>
+            </li>
+            <li>
+              <span class="tag tag--chg">Changed</span>
+              <p class="log__d">Light mode buttons no longer disappear on hover, a CSS specificity fix, and the hover glow is themed via shadow tokens.</p>
+            </li>
+            <li>
+              <span class="tag">Removed</span>
+              <p class="log__d">Hardcoded Internet Archive source, replaced by the user-configured sources list. Legacy <code>archive.org/view_archive.php</code> URLs still work, you just paste them yourself.</p>
+            </li>
+            <li>
+              <span class="tag">Removed</span>
+              <p class="log__d">GitHub personal access token field, no longer needed since GitHub is just one of many configurable sources.</p>
+            </li>
+            <li>
+              <span class="tag">Removed</span>
+              <p class="log__d">Alternative sources, kernelos and printedwaste, replaced by the user-configured sources model.</p>
+            </li>
+            <li>
+              <span class="tag tag--fix">Fixed</span>
+              <p class="log__d">Docs site dropped FontAwesome, fixed outdated marketing copy, and removed the obsolete GitHub rate limit FAQ.</p>
+            </li>
+          </ul>
+        </article>
+
+        <article class="rel frame" id="v130">
+          <div class="rel__head">
+            <h3 class="rel__ver">v1.3.0</h3>
+            <p class="rel__date">April 7, 2026</p>
+          </div>
+          <ul class="log">
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Game name search with autocomplete. Search by name instead of just App ID, powered by the Steam Store Search API.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Depot size display. See how large each depot is before downloading, with the total size in the download button.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Download speed and ETA display: real-time MB/s speed, estimated time remaining, and an elapsed timer for large files.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Advanced Settings panel. Configure DepotDownloader arguments, max retries, speed limit, proxy and notification sound.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">.NET runtime warning banner. A visible alert with a download link when .NET is missing (Windows only).</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Folder picker button. Browse for the download location using the native OS dialog instead of typing paths manually.</p>
+            </li>
+            <li>
+              <span class="tag tag--chg">Changed</span>
+              <p class="log__d">Migrated the manifest source from GitHub repos to the Internet Archive. All original ManifestHub data is preserved as a permanent archive.</p>
+            </li>
+            <li>
+              <span class="tag tag--chg">Changed</span>
+              <p class="log__d">The "Start Over" button now returns to the depot selection screen with previous selections preserved.</p>
+            </li>
+            <li>
+              <span class="tag">Removed</span>
+              <p class="log__d">Export .bat and .sh feature removed, simplifying the UI focus onto direct downloads.</p>
+            </li>
+            <li>
+              <span class="tag">Removed</span>
+              <p class="log__d">GitHub repository search, replaced by the Internet Archive as the sole manifest source.</p>
+            </li>
+            <li>
+              <span class="tag tag--fix">Fixed</span>
+              <p class="log__d">Unused Rust import warning in <code>depot_runner.rs</code>.</p>
+            </li>
+          </ul>
+        </article>
+
+        <article class="rel frame" id="v120">
+          <div class="rel__head">
+            <h3 class="rel__ver">v1.2.0</h3>
+            <p class="rel__date">March 18, 2026</p>
+          </div>
+          <ul class="log">
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Built-in auto-update system. It checks GitHub for new releases at startup, with a configurable toggle.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">One-click update on Windows. Downloads and installs the latest version automatically.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Custom title bar with minimize, maximize and close controls on all platforms.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Settings panel with an update toggle and a version display.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Windows code signing with SignTool in the CI and CD pipeline.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Enhanced release workflow with a customizable release name, description and pre-release option.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Separate test workflows for Linux (Arch) and Windows builds.</p>
+            </li>
+            <li>
+              <span class="tag tag--os">Linux</span>
+              <p class="log__d">Custom title bar with full window dragging support on Linux.</p>
+            </li>
+            <li>
+              <span class="tag tag--os">Linux</span>
+              <p class="log__d">Rounded window corners matching the Windows appearance.</p>
+            </li>
+            <li>
+              <span class="tag tag--os">Linux</span>
+              <p class="log__d">Double-click the title bar to maximize or restore the window.</p>
+            </li>
+            <li>
+              <span class="tag tag--chg">Changed</span>
+              <p class="log__d">GitHub Pages deployment now only triggers when documentation changes.</p>
+            </li>
+            <li>
+              <span class="tag tag--chg">Changed</span>
+              <p class="log__d">Faster CI builds with cargo-binstall for the Tauri CLI installation.</p>
+            </li>
+          </ul>
+        </article>
+
+        <article class="rel frame" id="v110">
+          <div class="rel__head">
+            <h3 class="rel__ver">v1.1.0</h3>
+            <p class="rel__date">February 20, 2026</p>
+          </div>
+          <ul class="log">
+            <li>
+              <span class="tag tag--chg">Changed</span>
+              <p class="log__d">Complete UI redesign with a glassmorphism design language: blur effects, blue and purple gradients, transparent borders and animated hover states.</p>
+            </li>
+            <li>
+              <span class="tag tag--chg">Changed</span>
+              <p class="log__d">The Inter font is now bundled locally as .woff2, removing the Google Fonts CDN dependency for better privacy and offline support.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">GitHub Actions CI and CD workflow for automated cross-platform builds and releases.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Two-stage Linux build pipeline: Arch Linux compilation for WebKitGTK ABI compatibility, then Ubuntu AppImage bundling.</p>
+            </li>
+            <li>
+              <span class="tag tag--fix">Fixed</span>
+              <p class="log__d">Simplified the Content Security Policy after removing the external font dependency.</p>
+            </li>
+          </ul>
+        </article>
+
+        <article class="rel frame" id="v100">
+          <div class="rel__head">
+            <h3 class="rel__ver">v1.0.0</h3>
+            <p class="rel__date">February 16, 2026</p>
+          </div>
+          <ul class="log">
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Drag and drop .lua file upload with automatic parsing.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Multi-repo search across 5+ GitHub repositories.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Automatic manifest download from the ManifestHub API.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Automatic depot keys generation, written to <code>steam.keys</code>.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Integrated DepotDownloaderMod, embedded in the app.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Real-time download progress tracking with cancel support.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Steam Store API integration for game names and cover art.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Dark and light theme toggle.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Configurable settings: download location, GitHub token and extra arguments.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Batch script export (.bat) for manual execution.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Safe cancel, which automatically cleans up partial downloads.</p>
+            </li>
+            <li>
+              <span class="tag tag--os">Linux</span>
+              <p class="log__d">Linux AppImage build now available alongside the Windows binaries.</p>
+            </li>
+            <li>
+              <span class="tag tag--os">Linux</span>
+              <p class="log__d">Uses native window decorations on Linux. The custom title bar arrived in v1.2.0.</p>
+            </li>
+            <li>
+              <span class="tag tag--os">Linux</span>
+              <p class="log__d">Self-contained binary, no .NET runtime required.</p>
+            </li>
+          </ul>
+        </article>
+
       </div>
     </div>
-  </footer>
+  </section>
 
-  <script src="../script.js"></script>
+  <div class="warmzone">
+    <p class="seam seam--in">
+      <span class="seam__idx">02</span>
+      <span class="seam__rule" aria-hidden="true"></span>
+      <span class="seam__name">Download</span>
+      <span class="seam__ground">paper ground</span>
+    </p>
+
+    <svg class="sky" viewBox="0 0 1600 620" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+      <defs>
+        <linearGradient id="w3-sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#F6F3EB"></stop>
+          <stop offset="0.35" stop-color="#F4F0E4"></stop>
+          <stop offset="0.66" stop-color="#F0EADB"></stop>
+          <stop offset="0.86" stop-color="#ECE4D3"></stop>
+          <stop offset="1" stop-color="#E8DECD"></stop>
+        </linearGradient>
+        <radialGradient id="w3-glow" cx="0.62" cy="0.92" r="0.58">
+          <stop offset="0" stop-color="#F5E1CE" stop-opacity="0.86"></stop>
+          <stop offset="0.5" stop-color="#F0D6C1" stop-opacity="0.34"></stop>
+          <stop offset="1" stop-color="#F0D6C1" stop-opacity="0"></stop>
+        </radialGradient>
+      </defs>
+      <rect width="1600" height="620" fill="url(#w3-sky)"></rect>
+      <rect width="1600" height="620" fill="url(#w3-glow)"></rect>
+    </svg>
+
+    <svg class="ridge" viewBox="0 0 1600 320" preserveAspectRatio="xMidYMax slice" aria-hidden="true" focusable="false">
+      <defs>
+        <filter id="w3-soft" x="-15%" y="-25%" width="130%" height="160%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="3" seed="24" result="t"></feTurbulence>
+          <feDisplacementMap in="SourceGraphic" in2="t" scale="21" xChannelSelector="R" yChannelSelector="G"></feDisplacementMap>
+          <feGaussianBlur stdDeviation="0.7"></feGaussianBlur>
+        </filter>
+        <filter id="w3-grain" x="0" y="0" width="100%" height="100%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.82" numOctaves="3" stitchTiles="stitch"></feTurbulence>
+          <feColorMatrix type="saturate" values="0"></feColorMatrix>
+          <feComponentTransfer>
+            <feFuncA type="table" tableValues="0 0 0.05 0.11"></feFuncA>
+          </feComponentTransfer>
+        </filter>
+        <linearGradient id="w3-far" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#CFD9DF"></stop>
+          <stop offset="1" stop-color="#DCDEDC"></stop>
+        </linearGradient>
+        <linearGradient id="w3-mid" x1="0.15" y1="0" x2="0.85" y2="1">
+          <stop offset="0" stop-color="#DFB4A4"></stop>
+          <stop offset="1" stop-color="#CE9E8D"></stop>
+        </linearGradient>
+        <linearGradient id="w3-near" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#AFBAA0"></stop>
+          <stop offset="1" stop-color="#99A78B"></stop>
+        </linearGradient>
+        <path id="w3-crest" d="M-60 242 C 200 210, 384 250, 620 222 S 1030 172, 1248 214 S 1516 244, 1660 214"></path>
+        <clipPath id="w3-clip">
+          <path d="M-60 242 C 200 210, 384 250, 620 222 S 1030 172, 1248 214 S 1516 244, 1660 214 L1660 380 L-60 380 Z"></path>
+        </clipPath>
+      </defs>
+      <g filter="url(#w3-soft)">
+        <path fill="url(#w3-far)" d="M-60 192 C 200 146, 366 194, 564 162 S 922 92, 1144 138 S 1490 180, 1660 148 L1660 380 L-60 380 Z"></path>
+        <path fill="url(#w3-mid)" d="M-60 242 C 200 210, 384 250, 620 222 S 1030 172, 1248 214 S 1516 244, 1660 214 L1660 380 L-60 380 Z"></path>
+        <g clip-path="url(#w3-clip)" fill="none" stroke="#B78A7B" stroke-width="1.1" opacity="0.44">
+          <use href="#w3-crest" transform="translate(0,15)"></use>
+          <use href="#w3-crest" transform="translate(0,30)"></use>
+          <use href="#w3-crest" transform="translate(0,45)"></use>
+          <use href="#w3-crest" transform="translate(0,60)"></use>
+        </g>
+        <path fill="url(#w3-near)" d="M-60 280 C 258 255, 460 290, 744 270 S 1188 239, 1412 266 C 1516 279, 1586 274, 1660 264 L1660 380 L-60 380 Z"></path>
+        <path fill="#F6F3EB" d="M-60 305 C 310 291, 610 317, 934 301 S 1410 291, 1660 301 L1660 380 L-60 380 Z"></path>
+      </g>
+      <rect width="1600" height="320" fill="none" filter="url(#w3-grain)"></rect>
+    </svg>
+
+    <section class="band band--paper band--close" id="get" aria-labelledby="h-get">
+      <div class="wrap wrap--narrow">
+        <div class="rail">
+          <p class="kicker"><span class="kicker__idx">02</span> Download</p>
+          <span class="rail__rule" aria-hidden="true"></span>
+          <span class="chip chip--key">1.4.3</span>
+        </div>
+        <h2 id="h-get" class="h2-close">Version 1.4.3 is on the releases page.</h2>
+        <p class="lead-paper">Windows installer, Linux AppImage, and AUR packages for Arch, CachyOS and Manjaro. Source under GPL-2.0.</p>
+        <div class="close__actions">
+          <a class="pbtn pbtn--solid" href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest">Get the latest release</a>
+          <a class="pbtn pbtn--line" href="../documentation/">Read the documentation</a>
+        </div>
+      </div>
+    </section>
+  </div>
+
+</main>
+
+<p class="seam seam--out">
+  <span class="seam__rule" aria-hidden="true"></span>
+  <span class="seam__name">Colophon</span>
+  <span class="seam__ground">dark ground</span>
+</p>
+
+<footer class="foot">
+  <div class="wrap foot__in">
+    <div class="foot__brand">
+      <img src="../icon.svg" alt="" width="34" height="34" decoding="async">
+      <p class="foot__name">Steam Manifest Downloader</p>
+      <p class="foot__site">smd.mcbabel.de</p>
+    </div>
+
+    <div class="foot__cols">
+      <div class="foot__col">
+        <p class="kicker" id="f-proj">Project</p>
+        <ul aria-labelledby="f-proj">
+          <li><a href="https://github.com/MCbabel/Steam-Manifest-Downloader">Source</a></li>
+          <li><a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest">Releases</a></li>
+          <li><a href="https://github.com/MCbabel/Steam-Manifest-Downloader/issues">Issues</a></li>
+        </ul>
+      </div>
+      <div class="foot__col">
+        <p class="kicker" id="f-read">Reading</p>
+        <ul aria-labelledby="f-read">
+          <li><a href="../documentation/">Documentation</a></li>
+          <li><a href="../">Home</a></li>
+          <li><a href="../#questions">Questions</a></li>
+        </ul>
+      </div>
+      <div class="foot__col">
+        <p class="kicker" id="f-legal">Legal</p>
+        <ul aria-labelledby="f-legal">
+          <li><a href="https://github.com/MCbabel/Steam-Manifest-Downloader/blob/main/LICENSE">GPL-2.0</a></li>
+        </ul>
+        <p class="foot__legal">Intended for content you own. Does not bypass ownership.</p>
+      </div>
+    </div>
+  </div>
+  <div class="wrap foot__bar">
+    <span>Version 1.4.3</span>
+    <span>GPL-2.0</span>
+    <span>Rust and Tauri v2</span>
+  </div>
+</footer>
 </body>
 </html>
