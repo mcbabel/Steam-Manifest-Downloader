@@ -5,7 +5,7 @@ use base64::engine::general_purpose::STANDARD as B64;
 use base64::Engine;
 use byteorder::{LittleEndian, ReadBytesExt};
 use cbc::cipher::block_padding::{NoPadding, Pkcs7};
-use cbc::cipher::{BlockDecryptMut, KeyInit, KeyIvInit};
+use cbc::cipher::{BlockModeDecrypt, KeyInit, KeyIvInit};
 use protobuf::Message;
 use steam_vent_proto::content_manifest::{
     ContentManifestMetadata, ContentManifestPayload, ContentManifestSignature,
@@ -122,14 +122,14 @@ pub fn symmetric_decrypt(ciphertext: &[u8], key: &[u8; 32]) -> Result<Vec<u8>, S
     let ecb = <Aes256EcbDec as KeyInit>::new_from_slice(key)
         .map_err(|e| format!("AES-256-ECB init failed: {}", e))?;
     let mut iv_buf = iv;
-    ecb.decrypt_padded_mut::<NoPadding>(&mut iv_buf)
+    ecb.decrypt_padded::<NoPadding>(&mut iv_buf)
         .map_err(|e| format!("AES-256-ECB IV decrypt failed: {}", e))?;
 
     let mut buf = body.to_vec();
     let cbc = <Aes256CbcDec as KeyIvInit>::new_from_slices(key, &iv_buf)
         .map_err(|e| format!("AES-256-CBC init failed: {}", e))?;
     let plain = cbc
-        .decrypt_padded_mut::<Pkcs7>(&mut buf)
+        .decrypt_padded::<Pkcs7>(&mut buf)
         .map_err(|e| format!("AES-256-CBC decrypt failed: {}", e))?;
     Ok(plain.to_vec())
 }
@@ -149,4 +149,52 @@ fn unzip_single_entry(zip_bytes: &[u8]) -> Result<Vec<u8>, String> {
         .read_to_end(&mut out)
         .map_err(|e| format!("manifest zip entry decompress failed: {}", e))?;
     Ok(out)
+}
+
+#[cfg(test)]
+mod symmetric_decrypt_tests {
+    use super::*;
+
+    const GOLDEN_KEY: [u8; 32] = [7u8; 32];
+    const GOLDEN_CIPHERTEXT: &str = "7c8c709c1cb19dd3ad88f73e01685647137dc98e95ef3bbbc48263ed59aa86a82527c6c8fcc1ccf2a7c099790b6d99a2";
+    const GOLDEN_PLAINTEXT: &[u8] = b"steam manifest golden vector 42";
+
+    fn unhex(s: &str) -> Vec<u8> {
+        (0..s.len())
+            .step_by(2)
+            .map(|i| u8::from_str_radix(&s[i..i + 2], 16).unwrap())
+            .collect()
+    }
+
+    #[test]
+    fn a_known_steam_ciphertext_still_decrypts_to_the_same_bytes() {
+        let out = symmetric_decrypt(&unhex(GOLDEN_CIPHERTEXT), &GOLDEN_KEY).unwrap();
+        assert_eq!(out, GOLDEN_PLAINTEXT);
+    }
+
+    #[test]
+    fn a_wrong_key_does_not_yield_the_plaintext() {
+        let mut key = GOLDEN_KEY;
+        key[0] ^= 0xff;
+        match symmetric_decrypt(&unhex(GOLDEN_CIPHERTEXT), &key) {
+            Ok(out) => assert_ne!(out, GOLDEN_PLAINTEXT),
+            Err(_) => {}
+        }
+    }
+
+    #[test]
+    fn a_truncated_ciphertext_is_rejected_instead_of_panicking() {
+        assert!(symmetric_decrypt(&[0u8; 8], &GOLDEN_KEY).is_err());
+    }
+
+    #[test]
+    fn a_tampered_body_never_returns_the_original_plaintext() {
+        let mut ct = unhex(GOLDEN_CIPHERTEXT);
+        let last = ct.len() - 1;
+        ct[last] ^= 0x01;
+        match symmetric_decrypt(&ct, &GOLDEN_KEY) {
+            Ok(out) => assert_ne!(out, GOLDEN_PLAINTEXT),
+            Err(_) => {}
+        }
+    }
 }

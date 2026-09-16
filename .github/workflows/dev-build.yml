@@ -24,7 +24,7 @@ jobs:
     outputs:
       in-main: ${{ steps.check.outputs.in-main }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - id: check
@@ -46,7 +46,7 @@ jobs:
     if: needs.check.outputs.in-main == 'false'
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
@@ -61,7 +61,7 @@ jobs:
     if: needs.check.outputs.in-main == 'false'
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
@@ -80,7 +80,7 @@ jobs:
           cargo tauri build
 
       - name: Upload portable EXE
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: windows-portable
           path: src-tauri/target/release/steam-manifest-downloader.exe
@@ -90,7 +90,7 @@ jobs:
     if: needs.check.outputs.in-main == 'false'
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Build binary in Arch Linux container
         env:
@@ -163,7 +163,7 @@ jobs:
           ARCH=x86_64 ./appimagetool AppDir "${APP_NAME}_${VERSION}_amd64.AppImage"
 
       - name: Upload AppImage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: linux-appimage
           path: "Steam Manifest Downloader_*_amd64.AppImage"
@@ -175,10 +175,10 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: artifacts
 
@@ -209,7 +209,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create dev pre-release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: dev-latest
           name: "Dev Build v${{ steps.info.outputs.version }} (${{ steps.info.outputs.short_sha }})"

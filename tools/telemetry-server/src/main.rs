@@ -139,7 +139,7 @@ fn keypair_from_secret(secret: &[u8; 32]) -> KeyPair {
 }
 
 fn gen_keypair() -> Result<()> {
-    let kp = KeyPair::gen();
+    let kp = KeyPair::generate();
     let priv_hex = hex::encode(kp.secret_key.as_array());
     let pub_bytes = kp.public_key.as_array();
 
