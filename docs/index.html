@@ -22,15 +22,21 @@
       <span class="brand__mark">SMD</span>
       <span class="brand__ver">1.4.3</span>
     </a>
-    <nav class="nav" aria-label="Page sections">
+    <nav class="nav" aria-label="Site">
+      <a href="./" aria-current="page">Home</a>
+      <a href="./documentation/">Documentation</a>
+      <a href="./changelog/">Changelog</a>
+    </nav>
+    <a class="btn btn--ghost btn--sm topbar__src" href="https://github.com/MCbabel/Steam-Manifest-Downloader">Source</a>
+  </div>
+  <nav class="subnav" aria-label="On this page">
+    <div class="wrap subnav__in">
       <a href="#capabilities">What it does</a>
       <a href="#pipeline">Pipeline</a>
       <a href="#install">Install</a>
       <a href="#questions">Questions</a>
-      <a href="./documentation/">Docs</a>
-    </nav>
-    <a class="btn btn--ghost btn--sm topbar__src" href="https://github.com/MCbabel/Steam-Manifest-Downloader">Source</a>
-  </div>
+    </div>
+  </nav>
 </header>
 
 <main id="main">
@@ -70,15 +76,15 @@
       <p class="kicker hero__kicker"><span class="kicker__idx">00</span> Steam depot tool, Rust and Tauri v2</p>
 
       <h1 id="h-hero" class="display">
-        <span class="ln ln-1">Steam depots</span>
-        <span class="ln ln-2"><span class="stroke">[ Resolved ]</span></span>
-        <span class="ln ln-3">and written to disk</span>
+        <span class="ln ln-1">Steam Manifest</span>
+        <span class="ln ln-2"><span class="stroke">[ Downloader ]</span></span>
+        <span class="ln ln-3">depots to disk</span>
       </h1>
 
       <p class="lead hero__deck">Drag in a .lua or .st file, or search by App ID. SMD resolves the depot IDs, manifest GIDs and depot keys, then writes the depot contents to a folder you pick.</p>
 
       <div class="hero__cta">
-        <a class="btn btn--primary" href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest">Download 1.4.3</a>
+        <a id="dl-btn" class="btn btn--primary" href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest">Download 1.4.3</a>
         <a class="btn btn--ghost" href="#install">Install commands</a>
         <a class="btn btn--bare" href="https://github.com/MCbabel/Steam-Manifest-Downloader">Read the source</a>
       </div>
@@ -367,7 +373,6 @@
       <span class="seam__idx">03</span>
       <span class="seam__rule" aria-hidden="true"></span>
       <span class="seam__name">Install</span>
-      <span class="seam__ground">paper ground</span>
     </p>
 
     <svg class="sky" viewBox="0 0 1600 620" preserveAspectRatio="none" aria-hidden="true" focusable="false">
@@ -499,7 +504,6 @@
     <span class="seam__idx">04</span>
     <span class="seam__rule" aria-hidden="true"></span>
     <span class="seam__name">Inside the app</span>
-    <span class="seam__ground">dark ground</span>
   </p>
 
   <section class="band" id="app" aria-labelledby="h-app">
@@ -541,7 +545,6 @@
       <span class="seam__idx">05</span>
       <span class="seam__rule" aria-hidden="true"></span>
       <span class="seam__name">Questions</span>
-      <span class="seam__ground">paper ground</span>
     </p>
 
     <svg class="sky" viewBox="0 0 1600 620" preserveAspectRatio="none" aria-hidden="true" focusable="false">
@@ -700,7 +703,6 @@
 <p class="seam seam--out">
   <span class="seam__rule" aria-hidden="true"></span>
   <span class="seam__name">Colophon</span>
-  <span class="seam__ground">dark ground</span>
 </p>
 
 <footer class="foot">
@@ -733,7 +735,6 @@
         <ul aria-labelledby="f-legal">
           <li><a href="https://github.com/MCbabel/Steam-Manifest-Downloader/blob/main/LICENSE">GPL-2.0</a></li>
         </ul>
-        <p class="foot__legal">Intended for content you own. Does not bypass ownership.</p>
       </div>
     </div>
   </div>
@@ -772,6 +773,44 @@
       }
     });
   });
+(function () {
+  var btn = document.getElementById('dl-btn');
+  if (!btn) return;
+  var ua = navigator.userAgent || '';
+  if (/Android/i.test(ua)) return;
+  var wantExe = /Windows/i.test(ua);
+  var wantAppImage = /Linux/i.test(ua);
+  if (!wantExe && !wantAppImage) return;
+  fetch('https://api.github.com/repos/MCbabel/Steam-Manifest-Downloader/releases/latest')
+    .then(function (res) {
+      if (!res.ok) throw new Error('release lookup failed');
+      return res.json();
+    })
+    .then(function (rel) {
+      var assets = rel.assets || [];
+      var pick = null;
+      var i;
+      if (wantExe) {
+        for (i = 0; i < assets.length; i++) {
+          if (/-setup\.exe$/i.test(assets[i].name)) { pick = assets[i]; break; }
+        }
+        if (!pick) {
+          for (i = 0; i < assets.length; i++) {
+            if (/\.exe$/i.test(assets[i].name)) { pick = assets[i]; break; }
+          }
+        }
+      } else {
+        for (i = 0; i < assets.length; i++) {
+          if (/\.AppImage$/i.test(assets[i].name)) { pick = assets[i]; break; }
+        }
+      }
+      if (!pick || !pick.browser_download_url) return;
+      btn.href = pick.browser_download_url;
+      var tag = (rel.tag_name || '').replace(/^v/, '');
+      if (tag) btn.textContent = 'Download ' + tag;
+    })
+    .catch(function () {});
+})();
 })();
 </script>
 </body>
