@@ -1167,8 +1167,9 @@ mod dll_source_tests {
     fn missing_binary_names_paths_from_both_trees() {
         let cache = cache_with("missingboth", "x64", "unrelated.dll");
         let err = dll_source(&cache, Variant::Regular, true, Platform::Windows).unwrap_err();
-        assert!(err.contains("release/regular/x64"), "{}", err);
-        assert!(err.contains("debug/regular/x64"), "{}", err);
+        let norm = err.replace('\\', "/");
+        assert!(norm.contains("release/regular/x64"), "{}", err);
+        assert!(norm.contains("debug/regular/x64"), "{}", err);
         let _ = fs::remove_dir_all(&cache);
     }
 }
