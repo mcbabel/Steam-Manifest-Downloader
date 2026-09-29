@@ -214,6 +214,13 @@
       "no": "Patch behalten",
       "scope": "Betrifft die {count} bereits gepatchte(n) Datei(en) in diesem Ordner. Nicht gepatchte Dateien bleiben unberührt."
     },
+    "emuDownload": {
+      "title": "gbe_fork-Emulator herunterladen?",
+      "body": "Zum Patchen werden die Emulator-Dateien vom <a href=\"https://github.com/Detanup01/gbe_fork/releases/latest\">gbe_fork-Projekt auf GitHub</a> benötigt. Sie werden einmal heruntergeladen und für zukünftige Patches lokal zwischengespeichert.",
+      "yes": "Laden & anwenden",
+      "no": "Abbrechen",
+      "scope": "gbe_fork {tag}: {items}"
+    },
     "folderMissing": {
       "title": "Ordner nicht gefunden",
       "body": "Der Download-Ordner existiert nicht mehr. Er wurde möglicherweise verschoben oder gelöscht.",
@@ -226,6 +233,8 @@
     "releaseLoading": "Lade Emulator-Release-Infos...",
     "releaseReady": "gbe_fork {tag} — bereit zum Anwenden.",
     "releaseDownloading": "Lade gbe_fork {tag} herunter ({platform})...",
+    "emuDownloading": "Lade gbe_fork ({progress})",
+    "emuExtracting": "Entpacke gbe_fork{platform}…",
     "variantLabel": "Emulator-Variante",
     "variantRegular": "Regulär",
     "variantRegularHint": "Stabile Variante, empfohlen für die meisten Spiele.",
@@ -243,6 +252,7 @@
     "applySuccess": "Patch erfolgreich angewendet ({count}/{total} Dateien).",
     "applyPartial": "Patch teilweise angewendet: {success} erfolgreich, {failed} fehlgeschlagen.",
     "applyError": "Patch konnte nicht angewendet werden: {message}",
+    "applyCancelled": "Patch vor dem Emulator-Download abgebrochen.",
     "applyReasonUnknown": "kein Grund gemeldet",
     "avBlockedTitle": "Dein Antivirus scheint gbe_fork zu blockieren.",
     "avBlockedHint": "Windows Defender (oder ein anderes Antivirenprogramm) hat das Emulator-Archiv beim Entpacken in Quarantäne verschoben. Füge eine Ausnahme für den gbe_fork-Cache-Ordner in deinen Antivirus-Einstellungen hinzu und versuche es dann erneut.",
@@ -437,6 +447,8 @@
     "ddExtraArgsHint": "Zusätzliche Kommandozeilen-Argumente für DepotDownloaderMod",
     "maxRetries": "Maximale Wiederholungen bei Fehler",
     "maxRetriesHint": "Anzahl der Wiederholungsversuche bei fehlgeschlagenem Depot-Download",
+    "chunkConcurrency": "Max. gleichzeitige Chunks (native Engine)",
+    "chunkConcurrencyHint": "Wie viele Chunks die native Engine gleichzeitig lädt und entschlüsselt. Verringern wenn Downloads das System zum Laggen bringen.",
     "speedLimit": "Download-Geschwindigkeitslimit (MB/s)",
     "speedLimitPlaceholder": "Unbegrenzt",
     "speedLimitHint": "Leer lassen für unbegrenzt. Wird als DDM-Argument übergeben.",

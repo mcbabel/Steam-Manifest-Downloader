@@ -478,7 +478,7 @@
                 <li><strong>Manifest fetch.</strong> Requests each depot's manifest from Steam directly. If that fails, SMD falls back to your configured depot sources or Hubcap, then to the ManifestHub API if you have a key set</li>
                 <li><strong>Manifest decode.</strong> Unwraps the ZIP container, decrypts with AES-256 and parses the protobuf payload, encrypted filenames included</li>
                 <li><strong>Depot keys generation.</strong> Creates a <code>steam.keys</code> file containing all known depot decryption keys</li>
-                <li><strong>Chunk download.</strong> Keeps up to 32 chunk fetches in flight against Steam's CDN, decodes VZ1 (LZMA) or VSZTD (zstd) payloads and verifies each one against its CRC32 and SHA-1 before writing. Failed chunks retry up to 8 times with exponential backoff, rotating CDN servers between attempts</li>
+                <li><strong>Chunk download.</strong> Keeps up to 8 chunk fetches in flight against Steam's CDN (configurable under Settings, 1 to 64), decodes VZ1 (LZMA) or VSZTD (zstd) payloads and verifies each one against its CRC32 and SHA-1 before writing. Writes to the same file are serialized so concurrent chunks do not interleave. Failed chunks retry up to 8 times with exponential backoff, rotating CDN servers between attempts</li>
               </ol>
               <p>Chunks that already match on disk are verified and skipped, so a restarted download picks up where it left off instead of starting over.</p>
               <div class="note">

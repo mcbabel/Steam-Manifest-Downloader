@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use tauri::{command, AppHandle, Emitter};
+use tauri::{command, AppHandle, Emitter, Manager};
 
 use crate::services::steam_downloader::{
     download_depot_from_local_manifest, download_depot_native, NativeDownloadProgress,
@@ -88,6 +88,13 @@ pub async fn native_download_depot(
 
     let cancel = Arc::new(std::sync::atomic::AtomicBool::new(false));
     let pause = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .unwrap_or_else(|_| PathBuf::from("."));
+    let chunk_concurrency = crate::services::settings::load_settings(&app_data_dir)
+        .await
+        .native_chunk_concurrency;
     let outcome = if let Some(path) = request.manifest_path.as_deref() {
         let bytes = tokio::fs::read(path)
             .await
@@ -103,6 +110,7 @@ pub async fn native_download_depot(
             cancel,
             pause,
             progress_cb,
+            chunk_concurrency,
         )
         .await
     } else {
@@ -117,6 +125,7 @@ pub async fn native_download_depot(
             cancel,
             pause,
             progress_cb,
+            chunk_concurrency,
         )
         .await
     };

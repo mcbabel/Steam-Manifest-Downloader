@@ -1,5 +1,5 @@
 use std::path::{Path, PathBuf};
-use tauri::{command, AppHandle, Manager};
+use tauri::{command, AppHandle, Emitter, Manager};
 
 use crate::services::emulator::{
     self, EmuSettings, Platform, ReleaseInfo, ReplaceResult, ScannedFile, Variant,
@@ -27,7 +27,7 @@ pub async fn emu_ensure_cached(
 ) -> Result<ReleaseInfo, String> {
     let dir = app_data_dir(&app);
     let info = emulator::fetch_release_info(&state.http_client, &dir).await?;
-    emulator::ensure_cached(&state.http_client, &info, platform).await?;
+    emulator::ensure_cached(&state.http_client, &info, platform, |_, _| {}).await?;
     let refreshed = emulator::fetch_release_info(&state.http_client, &dir).await?;
     Ok(refreshed)
 }
@@ -433,6 +433,7 @@ fn merge_dir_into<'a>(
 }
 
 #[command]
+#[allow(clippy::too_many_arguments)]
 pub async fn emu_apply_replacement(
     state: tauri::State<'_, AppState>,
     app: AppHandle,
@@ -441,6 +442,7 @@ pub async fn emu_apply_replacement(
     app_id: String,
     installed_app_ids: Vec<String>,
     emu_settings: Option<EmuSettings>,
+    allow_download: bool,
 ) -> Result<Vec<ReplaceResult>, String> {
     let dir = app_data_dir(&app);
     let info = emulator::fetch_release_info(&state.http_client, &dir).await?;
@@ -455,11 +457,69 @@ pub async fn emu_apply_replacement(
 
     let need_windows = targets.iter().any(|t| t.platform == Platform::Windows);
     let need_linux = targets.iter().any(|t| t.platform == Platform::Linux);
+    let mut missing = Vec::new();
+    if need_windows && !emulator::platform_cached(&info, Platform::Windows) {
+        missing.push(("windows", info.windows_size));
+    }
+    if need_linux && !emulator::platform_cached(&info, Platform::Linux) {
+        missing.push(("linux", info.linux_size));
+    }
+    if !missing.is_empty() && !allow_download {
+        let platforms: Vec<serde_json::Value> = missing
+            .iter()
+            .map(|(platform, size)| serde_json::json!({ "platform": platform, "size": size }))
+            .collect();
+        crate::dlog!(
+            "emu",
+            "apply_replacement needs download consent for {}",
+            platforms
+                .iter()
+                .map(|p| p.get("platform").and_then(|v| v.as_str()).unwrap_or("?"))
+                .collect::<Vec<_>>()
+                .join(",")
+        );
+        return Err(format!(
+            "EMU_DOWNLOAD_CONFIRM_REQUIRED:{}",
+            serde_json::json!({ "tag": info.tag, "platforms": platforms })
+        ));
+    }
     if need_windows {
-        emulator::ensure_cached(&state.http_client, &info, Platform::Windows).await?;
+        let app_handle = app.clone();
+        emulator::ensure_cached(
+            &state.http_client,
+            &info,
+            Platform::Windows,
+            move |downloaded, total| {
+                let _ = app_handle.emit(
+                    "emu-download-progress",
+                    serde_json::json!({
+                        "platform": "windows",
+                        "downloaded": downloaded,
+                        "total": total,
+                    }),
+                );
+            },
+        )
+        .await?;
     }
     if need_linux {
-        emulator::ensure_cached(&state.http_client, &info, Platform::Linux).await?;
+        let app_handle = app.clone();
+        emulator::ensure_cached(
+            &state.http_client,
+            &info,
+            Platform::Linux,
+            move |downloaded, total| {
+                let _ = app_handle.emit(
+                    "emu-download-progress",
+                    serde_json::json!({
+                        "platform": "linux",
+                        "downloaded": downloaded,
+                        "total": total,
+                    }),
+                );
+            },
+        )
+        .await?;
     }
     let cache_root = PathBuf::from(&info.cache_root);
 

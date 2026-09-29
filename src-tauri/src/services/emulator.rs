@@ -38,8 +38,21 @@ pub enum Platform {
 impl Platform {
     fn asset_name(self) -> &'static str {
         match self {
-            Platform::Windows => "emu-win-release.7z",
+            Platform::Windows => "emu-win-release-vs26.7z",
             Platform::Linux => "emu-linux-release.tar.bz2",
+        }
+    }
+    fn asset_match(
+        self,
+    ) -> (
+        &'static str,
+        &'static str,
+        &'static [&'static str],
+        &'static [&'static str],
+    ) {
+        match self {
+            Platform::Windows => ("win", ".7z", &["release"], &["debug"]),
+            Platform::Linux => ("linux", ".tar.bz2", &["release"], &["debug"]),
         }
     }
     pub fn cache_subdir(self) -> &'static str {
@@ -341,6 +354,81 @@ fn cache_root(app_data_dir: &Path) -> PathBuf {
     app_data_dir.join("gbe_fork_cache")
 }
 
+fn vs_number(name: &str) -> Option<u32> {
+    let lower = name.to_lowercase();
+    let mut best: Option<u32> = None;
+    let mut search = lower.as_str();
+    while let Some(pos) = search.find("vs") {
+        let rest = &search[pos + 2..];
+        let digits: String = rest.chars().take_while(|c| c.is_ascii_digit()).collect();
+        if let Ok(n) = digits.parse::<u32>() {
+            best = Some(best.map_or(n, |b| b.max(n)));
+        }
+        search = rest;
+    }
+    best
+}
+
+fn pick_asset<'a>(
+    assets: &'a [serde_json::Value],
+    name: &str,
+    keyword: &str,
+    extension: &str,
+    required: &[&str],
+    excluded: &[&str],
+) -> Result<&'a serde_json::Value, String> {
+    let mut candidates: Vec<&serde_json::Value> = assets
+        .iter()
+        .filter(|a| {
+            a.get("name").and_then(|v| v.as_str()).is_some_and(|n| {
+                let lower = n.to_lowercase();
+                lower.contains(keyword)
+                    && lower.ends_with(extension)
+                    && required.iter().all(|r| lower.contains(r))
+                    && !excluded.iter().any(|x| lower.contains(x))
+            })
+        })
+        .collect();
+    candidates.sort_by_key(|a| {
+        let n = a.get("name").and_then(|v| v.as_str()).and_then(vs_number);
+        (n.is_none(), n.map(std::cmp::Reverse))
+    });
+    if let Some(a) = candidates.iter().find(|a| {
+        a.get("name")
+            .and_then(|v| v.as_str())
+            .and_then(vs_number)
+            .is_some()
+    }) {
+        return Ok(a);
+    }
+    if let Some(a) = assets
+        .iter()
+        .find(|a| a.get("name").and_then(|v| v.as_str()) == Some(name))
+    {
+        return Ok(a);
+    }
+    if let Some(a) = candidates.into_iter().next() {
+        return Ok(a);
+    }
+    let available: Vec<String> = assets
+        .iter()
+        .filter_map(|a| {
+            a.get("name")
+                .and_then(|v| v.as_str())
+                .map(str::to_string)
+        })
+        .collect();
+    Err(format!(
+        "Asset {} not present in release (available: {})",
+        name,
+        if available.is_empty() {
+            "none".to_string()
+        } else {
+            available.join(", ")
+        }
+    ))
+}
+
 pub async fn fetch_release_info(client: &Client, app_data_dir: &Path) -> Result<ReleaseInfo, String> {
     let resp = client
         .get(RELEASES_API)
@@ -376,11 +464,10 @@ pub async fn fetch_release_info(client: &Client, app_data_dir: &Path) -> Result<
         .and_then(|v| v.as_array())
         .ok_or("Missing assets array")?;
 
-    let pick = |name: &str| -> Result<(String, u64), String> {
-        let a = assets
-            .iter()
-            .find(|a| a.get("name").and_then(|v| v.as_str()) == Some(name))
-            .ok_or_else(|| format!("Asset {} not present in release", name))?;
+    let pick = |platform: Platform| -> Result<(String, u64), String> {
+        let name = platform.asset_name();
+        let (keyword, extension, required, excluded) = platform.asset_match();
+        let a = pick_asset(assets, name, keyword, extension, required, excluded)?;
         let url = a
             .get("browser_download_url")
             .and_then(|v| v.as_str())
@@ -390,8 +477,8 @@ pub async fn fetch_release_info(client: &Client, app_data_dir: &Path) -> Result<
         Ok((url, size))
     };
 
-    let (windows_url, windows_size) = pick(Platform::Windows.asset_name())?;
-    let (linux_url, linux_size) = pick(Platform::Linux.asset_name())?;
+    let (windows_url, windows_size) = pick(Platform::Windows)?;
+    let (linux_url, linux_size) = pick(Platform::Linux)?;
 
     let root = cache_root(app_data_dir).join(&tag);
     let windows_cached = root.join(Platform::Windows.cache_subdir()).join(".extracted").exists();
@@ -410,14 +497,53 @@ pub async fn fetch_release_info(client: &Client, app_data_dir: &Path) -> Result<
     })
 }
 
+pub fn platform_cached(info: &ReleaseInfo, platform: Platform) -> bool {
+    PathBuf::from(&info.cache_root)
+        .join(platform.cache_subdir())
+        .join(".extracted")
+        .exists()
+}
+
+fn prune_keep(name: &str) -> bool {
+    let lower = name.to_lowercase();
+    lower == ".extracted"
+        || lower.ends_with(".dll")
+        || lower.ends_with(".so")
+        || lower.contains(".so.")
+}
+
+fn prune_platform_dir(dir: &Path) {
+    for entry in WalkDir::new(dir)
+        .min_depth(1)
+        .contents_first(true)
+        .into_iter()
+        .flatten()
+    {
+        let path = entry.path();
+        if path.is_file() {
+            let keep = path
+                .file_name()
+                .and_then(|n| n.to_str())
+                .is_some_and(prune_keep);
+            if !keep {
+                let _ = fs::remove_file(path);
+            }
+        } else if path != dir {
+            let _ = fs::remove_dir(path);
+        }
+    }
+}
+
 pub async fn ensure_cached(
     client: &Client,
     info: &ReleaseInfo,
     platform: Platform,
+    on_progress: impl Fn(u64, u64) + Send + Sync,
 ) -> Result<PathBuf, String> {
     let platform_dir = PathBuf::from(&info.cache_root).join(platform.cache_subdir());
     let extracted_marker = platform_dir.join(".extracted");
     if extracted_marker.exists() {
+        prune_platform_dir(&platform_dir);
         return Ok(platform_dir);
     }
 
@@ -440,14 +566,26 @@ pub async fn ensure_cached(
         if !resp.status().is_success() {
             return Err(format!("download returned HTTP {}", resp.status()));
         }
+        let total = match platform {
+            Platform::Windows => info.windows_size,
+            Platform::Linux => info.linux_size,
+        };
         let tmp_path = platform_dir.join(format!("{}.part", asset_name));
         {
             let mut file =
                 BufWriter::new(File::create(&tmp_path).map_err(|e| format!("create archive: {}", e))?);
+            let mut downloaded: u64 = 0;
+            let mut next_emit_at: u64 = 1024 * 1024;
             while let Some(chunk) = resp.chunk().await.map_err(|e| format!("chunk: {}", e))? {
                 file.write_all(&chunk).map_err(|e| format!("write archive: {}", e))?;
+                downloaded += chunk.len() as u64;
+                if downloaded >= next_emit_at {
+                    next_emit_at += 1024 * 1024;
+                    on_progress(downloaded, total);
+                }
             }
             file.flush().map_err(|e| format!("flush archive: {}", e))?;
+            on_progress(downloaded, total);
         }
         fs::rename(&tmp_path, &archive_path).map_err(|e| format!("finalize archive: {}", e))?;
     }
@@ -458,6 +596,8 @@ pub async fn ensure_cached(
         }
         return Err(e);
     }
+    let _ = fs::remove_file(&archive_path);
+    prune_platform_dir(&platform_dir);
     fs::write(&extracted_marker, info.tag.as_bytes())
         .map_err(|e| format!("write extracted marker: {}", e))?;
 
@@ -502,10 +642,6 @@ fn is_antivirus_block(msg: &str) -> bool {
         || lower.contains("unwanted software")
 }
 
-fn release_root(platform_cache: &Path) -> PathBuf {
-    platform_cache.join("release")
-}
-
 fn arch_dirs(x64: bool) -> &'static [&'static str] {
     if x64 {
         &["x64"]
@@ -514,21 +650,27 @@ fn arch_dirs(x64: bool) -> &'static [&'static str] {
     }
 }
 
+fn build_trees() -> &'static [&'static str] {
+    &["release", "debug"]
+}
+
 pub fn dll_source(
     platform_cache: &Path,
     variant: Variant,
     x64: bool,
     platform: Platform,
 ) -> Result<PathBuf, String> {
-    let root = release_root(platform_cache).join(variant.folder());
     let filename = platform.emu_filename(x64);
     let mut tried = Vec::new();
-    for dir in arch_dirs(x64) {
-        let p = root.join(dir).join(filename);
-        if p.exists() {
-            return Ok(p);
+    for tree in build_trees() {
+        let root = platform_cache.join(tree).join(variant.folder());
+        for dir in arch_dirs(x64) {
+            let p = root.join(dir).join(filename);
+            if p.exists() {
+                return Ok(p);
+            }
+            tried.push(p.display().to_string());
         }
-        tried.push(p.display().to_string());
     }
     Err(format!("emulator binary not found, tried: {}", tried.join(", ")))
 }
@@ -988,5 +1130,304 @@ mod dll_source_tests {
         assert!(err.contains("x86"), "{}", err);
         assert!(err.contains("x32"), "{}", err);
         let _ = fs::remove_dir_all(&cache);
+    }
+
+    fn cache_with_tree(name: &str, tree: &str, arch: &str, file: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("smd-dllsrc-{}", name));
+        let _ = fs::remove_dir_all(&dir);
+        let leaf = dir.join(tree).join("regular").join(arch);
+        fs::create_dir_all(&leaf).unwrap();
+        fs::write(leaf.join(file), b"emu").unwrap();
+        dir
+    }
+
+    #[test]
+    fn resolves_debug_tree_when_release_tree_is_absent() {
+        let cache = cache_with_tree("debugonly", "debug", "x64", "steam_api64.dll");
+        let got = dll_source(&cache, Variant::Regular, true, Platform::Windows).unwrap();
+        assert_eq!(got, cache.join("debug/regular/x64/steam_api64.dll"));
+        let _ = fs::remove_dir_all(&cache);
+    }
+
+    #[test]
+    fn release_tree_wins_over_debug_tree() {
+        let dir = std::env::temp_dir().join("smd-dllsrc-bothtrees");
+        let _ = fs::remove_dir_all(&dir);
+        for tree in ["release", "debug"] {
+            let leaf = dir.join(tree).join("regular").join("x64");
+            fs::create_dir_all(&leaf).unwrap();
+            fs::write(leaf.join("steam_api64.dll"), b"emu").unwrap();
+        }
+        let got = dll_source(&dir, Variant::Regular, true, Platform::Windows).unwrap();
+        assert_eq!(got, dir.join("release/regular/x64/steam_api64.dll"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn missing_binary_names_paths_from_both_trees() {
+        let cache = cache_with("missingboth", "x64", "unrelated.dll");
+        let err = dll_source(&cache, Variant::Regular, true, Platform::Windows).unwrap_err();
+        assert!(err.contains("release/regular/x64"), "{}", err);
+        assert!(err.contains("debug/regular/x64"), "{}", err);
+        let _ = fs::remove_dir_all(&cache);
+    }
+}
+
+#[cfg(test)]
+mod prune_tests {
+    use super::*;
+
+    #[test]
+    fn only_runtime_files_survive() {
+        let dir = std::env::temp_dir().join("smd-prune");
+        let _ = fs::remove_dir_all(&dir);
+        let dll_dir = dir.join("release").join("regular").join("x64");
+        fs::create_dir_all(&dll_dir).unwrap();
+        fs::write(dll_dir.join("steam_api64.dll"), b"emu").unwrap();
+        fs::write(dll_dir.join("steam_api64.pdb"), b"debug").unwrap();
+        fs::write(dir.join("emu-win-release-vs26.7z"), b"archive").unwrap();
+        fs::write(dir.join(".extracted"), b"tag").unwrap();
+        let tools = dir.join("tools");
+        fs::create_dir_all(&tools).unwrap();
+        fs::write(tools.join("generate_interfaces_x64.exe"), b"tool").unwrap();
+        fs::write(dir.join("README.md"), b"docs").unwrap();
+
+        prune_platform_dir(&dir);
+
+        assert!(dll_dir.join("steam_api64.dll").exists());
+        assert!(dir.join(".extracted").exists());
+        assert!(!dll_dir.join("steam_api64.pdb").exists());
+        assert!(!dir.join("emu-win-release-vs26.7z").exists());
+        assert!(!tools.join("generate_interfaces_x64.exe").exists());
+        assert!(!dir.join("README.md").exists());
+        assert!(!tools.exists());
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn linux_libraries_survive() {
+        let dir = std::env::temp_dir().join("smd-prune-linux");
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(dir.join("libsteam_api.so"), b"emu").unwrap();
+        fs::write(dir.join("notes.txt"), b"docs").unwrap();
+
+        prune_platform_dir(&dir);
+
+        assert!(dir.join("libsteam_api.so").exists());
+        assert!(!dir.join("notes.txt").exists());
+        let _ = fs::remove_dir_all(&dir);
+    }
+}
+
+mod asset_pick_tests {
+    use super::*;
+
+    fn release_assets(names: &[&str]) -> Vec<serde_json::Value> {
+        names
+            .iter()
+            .map(|n| {
+                serde_json::json!({
+                    "name": n,
+                    "browser_download_url": format!("https://example.invalid/{}", n),
+                    "size": 42,
+                })
+            })
+            .collect()
+    }
+
+    #[test]
+    fn an_exact_asset_name_wins_over_pattern_candidates() {
+        let assets = release_assets(&["emu-win-release-x64.7z", "emu-win-release.7z"]);
+        let got = pick_asset(
+            &assets,
+            "emu-win-release.7z",
+            "win",
+            ".7z",
+            &["release"],
+            &["debug"],
+        )
+        .unwrap();
+        assert_eq!(
+            got.get("name").and_then(|v| v.as_str()),
+            Some("emu-win-release.7z")
+        );
+    }
+
+    #[test]
+    fn a_release_asset_wins_over_debug_candidates() {
+        let assets = release_assets(&[
+            "emu-win-debug-vs22.7z",
+            "emu-win-debug-vs26.7z",
+            "emu-win-release-vs22.7z",
+            "emu-win-release-vs26.7z",
+            "migrate_gse-win-vs22.7z",
+            "migrate_gse-win.7z",
+        ]);
+        let got = pick_asset(
+            &assets,
+            "emu-win-release-vs26.7z",
+            "win",
+            ".7z",
+            &["release"],
+            &["debug"],
+        )
+        .unwrap();
+        assert_eq!(
+            got.get("name").and_then(|v| v.as_str()),
+            Some("emu-win-release-vs26.7z")
+        );
+    }
+
+    #[test]
+    fn the_newer_toolchain_wins_over_the_older_one() {
+        let assets = release_assets(&["emu-win-release-vs22.7z", "emu-win-release-vs26.7z"]);
+        let got = pick_asset(
+            &assets,
+            "emu-win-release-vs26.7z",
+            "win",
+            ".7z",
+            &["release"],
+            &["debug"],
+        )
+        .unwrap();
+        assert_eq!(
+            got.get("name").and_then(|v| v.as_str()),
+            Some("emu-win-release-vs26.7z")
+        );
+    }
+
+    #[test]
+    fn a_future_toolchain_wins_without_code_changes() {
+        let assets = release_assets(&["emu-win-release-vs22.7z", "emu-win-release-vs26.7z", "emu-win-release-vs28.7z"]);
+        let got = pick_asset(
+            &assets,
+            "emu-win-release-vs26.7z",
+            "win",
+            ".7z",
+            &["release"],
+            &["debug"],
+        )
+        .unwrap();
+        assert_eq!(
+            got.get("name").and_then(|v| v.as_str()),
+            Some("emu-win-release-vs28.7z")
+        );
+    }
+
+    #[test]
+    fn the_older_toolchain_is_used_when_the_newer_one_is_missing() {
+        let assets = release_assets(&["emu-win-debug-vs26.7z", "emu-win-release-vs22.7z"]);
+        let got = pick_asset(
+            &assets,
+            "emu-win-release-vs26.7z",
+            "win",
+            ".7z",
+            &["release"],
+            &["debug"],
+        )
+        .unwrap();
+        assert_eq!(
+            got.get("name").and_then(|v| v.as_str()),
+            Some("emu-win-release-vs22.7z")
+        );
+    }
+
+    #[test]
+    fn a_linux_release_asset_is_found() {
+        let assets = release_assets(&["emu-linux-debug.tar.bz2", "emu-linux-release.tar.bz2"]);
+        let got = pick_asset(
+            &assets,
+            "emu-linux-release.tar.bz2",
+            "linux",
+            ".tar.bz2",
+            &["release"],
+            &["debug"],
+        )
+        .unwrap();
+        assert_eq!(
+            got.get("name").and_then(|v| v.as_str()),
+            Some("emu-linux-release.tar.bz2")
+        );
+    }
+
+    #[test]
+    fn matching_is_case_insensitive() {
+        let assets = release_assets(&["EMU-WIN-RELEASE-VS26.7Z"]);
+        let got = pick_asset(
+            &assets,
+            "emu-win-release-vs26.7z",
+            "win",
+            ".7z",
+            &["release"],
+            &["debug"],
+        )
+        .unwrap();
+        assert_eq!(
+            got.get("name").and_then(|v| v.as_str()),
+            Some("EMU-WIN-RELEASE-VS26.7Z")
+        );
+    }
+
+    #[test]
+    fn a_wrong_extension_is_never_matched() {
+        let assets = release_assets(&["emu-win-release-vs26.zip"]);
+        let err = pick_asset(
+            &assets,
+            "emu-win-release-vs26.7z",
+            "win",
+            ".7z",
+            &["release"],
+            &["debug"],
+        )
+        .unwrap_err();
+        assert!(err.contains("emu-win-release-vs26.zip"), "{}", err);
+    }
+
+    #[test]
+    fn a_debug_only_release_is_reported_as_missing() {
+        let assets = release_assets(&["emu-win-debug-vs26.7z", "emu-linux-release.tar.bz2"]);
+        let err = pick_asset(
+            &assets,
+            "emu-win-release-vs26.7z",
+            "win",
+            ".7z",
+            &["release"],
+            &["debug"],
+        )
+        .unwrap_err();
+        assert!(err.contains("emu-win-release-vs26.7z"), "{}", err);
+        assert!(err.contains("emu-win-debug-vs26.7z"), "{}", err);
+    }
+
+    #[test]
+    fn a_missing_asset_names_everything_the_release_has() {
+        let assets = release_assets(&["README.md", "emu-linux-release.tar.bz2"]);
+        let err = pick_asset(
+            &assets,
+            "emu-win-release-vs26.7z",
+            "win",
+            ".7z",
+            &["release"],
+            &["debug"],
+        )
+        .unwrap_err();
+        assert!(err.contains("emu-win-release-vs26.7z"), "{}", err);
+        assert!(err.contains("README.md"), "{}", err);
+        assert!(err.contains("emu-linux-release.tar.bz2"), "{}", err);
+    }
+
+    #[test]
+    fn an_empty_release_reports_that_nothing_is_available() {
+        let err = pick_asset(
+            &[],
+            "emu-win-release-vs26.7z",
+            "win",
+            ".7z",
+            &["release"],
+            &["debug"],
+        )
+        .unwrap_err();
+        assert!(err.contains("available: none"), "{}", err);
     }
 }

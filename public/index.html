@@ -955,6 +955,28 @@
     </div>
   </div>
 
+  <div id="emu-download-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="emu-download-modal-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content">
+      <div class="modal__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+      </div>
+      <h3 class="modal__title" id="emu-download-modal-title" data-i18n="modals.emuDownload.title">Download the gbe_fork emulator?</h3>
+      <p class="modal__text" data-i18n-html="modals.emuDownload.body">
+        Patching needs the emulator files from the <a href="https://github.com/Detanup01/gbe_fork/releases/latest">gbe_fork project on GitHub</a>. They are downloaded once and cached locally for future patches.
+      </p>
+      <p class="modal__text" id="emu-download-scope"></p>
+      <div class="modal__actions">
+        <button id="btn-emu-download-no" class="btn btn--outline" data-modal-cancel data-i18n="modals.emuDownload.no">Cancel</button>
+        <button id="btn-emu-download-yes" class="btn btn--primary" data-i18n="modals.emuDownload.yes">Download &amp; apply</button>
+      </div>
+    </div>
+  </div>
+
   <div id="history-clear-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="history-clear-modal-title" aria-hidden="true">
     <div class="modal__backdrop"></div>
     <div class="modal__content">
@@ -1086,6 +1108,12 @@
             <label for="max-retries-input" class="settings-field__label" data-i18n="settings.maxRetries">Max Retries on Error</label>
             <input type="number" id="max-retries-input" class="dd-path__input" min="0" max="10" value="3">
             <p class="dd-path__hint" data-i18n="settings.maxRetriesHint">Number of retry attempts when a depot download fails</p>
+          </div>
+
+          <div class="settings-field">
+            <label for="chunk-concurrency-input" class="settings-field__label" data-i18n="settings.chunkConcurrency">Max concurrent chunks (native engine)</label>
+            <input type="number" id="chunk-concurrency-input" class="dd-path__input" min="1" max="64" value="8">
+            <p class="dd-path__hint" data-i18n="settings.chunkConcurrencyHint">How many chunks the native engine downloads and decrypts at once. Lower this if downloads make the system lag.</p>
           </div>
 
           <div class="settings-field">

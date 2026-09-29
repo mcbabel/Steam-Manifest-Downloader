@@ -20,8 +20,26 @@ use crate::services::steam_session::{
     SteamSession,
 };
 
-const CHUNK_CONCURRENCY: usize = 32;
 const CHUNK_RETRY_COUNT: usize = 8;
+
+pub const DEFAULT_CHUNK_CONCURRENCY: u32 = 8;
+pub const MAX_CHUNK_CONCURRENCY: u32 = 64;
+
+fn effective_chunk_concurrency(setting: u32) -> usize {
+    setting.clamp(1, MAX_CHUNK_CONCURRENCY) as usize
+}
+
+type FileLocks = Arc<Mutex<HashMap<PathBuf, Arc<Mutex<()>>>>>;
+
+async fn file_lock_for(locks: &FileLocks, path: &Path) -> Arc<Mutex<()>> {
+    let mut guard = locks.lock().await;
+    if let Some(existing) = guard.get(path) {
+        return existing.clone();
+    }
+    let lock = Arc::new(Mutex::new(()));
+    guard.insert(path.to_path_buf(), lock.clone());
+    lock
+}
 
 #[derive(Clone, Debug)]
 pub struct NativeDownloadProgress {
@@ -52,6 +70,7 @@ pub async fn download_depot_native(
     cancel: Arc<AtomicBool>,
     pause: Arc<AtomicBool>,
     progress: impl Fn(NativeDownloadProgress) + Send + Sync + 'static,
+    chunk_concurrency: u32,
 ) -> Result<NativeDownloadOutcome, String> {
     let servers = discover_cdn_servers(session.clone(), 0, 20).await?;
     if servers.is_empty() {
@@ -98,6 +117,7 @@ pub async fn download_depot_native(
         cancel,
         pause,
         progress,
+        chunk_concurrency,
     )
     .await
 }
@@ -113,6 +133,7 @@ pub async fn download_depot_from_local_manifest(
     cancel: Arc<AtomicBool>,
     pause: Arc<AtomicBool>,
     progress: impl Fn(NativeDownloadProgress) + Send + Sync + 'static,
+    chunk_concurrency: u32,
 ) -> Result<NativeDownloadOutcome, String> {
     let servers = discover_cdn_servers(session.clone(), 0, 20).await?;
     if servers.is_empty() {
@@ -131,6 +152,7 @@ pub async fn download_depot_from_local_manifest(
         cancel,
         pause,
         progress,
+        chunk_concurrency,
     )
     .await
 }
@@ -147,6 +169,7 @@ async fn download_chunks_from_manifest(
     cancel: Arc<AtomicBool>,
     pause: Arc<AtomicBool>,
     progress: impl Fn(NativeDownloadProgress) + Send + Sync + 'static,
+    chunk_concurrency: u32,
 ) -> Result<NativeDownloadOutcome, String> {
     crate::dlog!(
         "native",
@@ -182,7 +205,10 @@ async fn download_chunks_from_manifest(
     let network_bytes = Arc::new(Mutex::new(0u64));
     let skipped_chunks = Arc::new(Mutex::new(0u64));
     let skipped_bytes = Arc::new(Mutex::new(0u64));
-    let semaphore = Arc::new(Semaphore::new(CHUNK_CONCURRENCY));
+    let semaphore = Arc::new(Semaphore::new(effective_chunk_concurrency(
+        chunk_concurrency,
+    )));
+    let file_locks: FileLocks = Arc::new(Mutex::new(HashMap::new()));
     let token_cache: Arc<Mutex<HashMap<String, Option<String>>>> =
         Arc::new(Mutex::new(HashMap::new()));
     let last_emit_ms = Arc::new(AtomicU64::new(0));
@@ -243,6 +269,7 @@ async fn download_chunks_from_manifest(
             let skipped_chunks = skipped_chunks.clone();
             let skipped_bytes = skipped_bytes.clone();
             let permit = semaphore.clone();
+            let file_locks = file_locks.clone();
             let token_cache = token_cache.clone();
             let cancel = cancel.clone();
             let pause = pause.clone();
@@ -289,6 +316,7 @@ async fn download_chunks_from_manifest(
                     &depot_key,
                     chunk_meta,
                     token_cache,
+                    file_locks,
                 )
                 .await;
                 if let Ok(ref outcome) = res {
@@ -413,6 +441,7 @@ async fn process_chunk(
     depot_key: &[u8; 32],
     job: ChunkJob,
     token_cache: Arc<Mutex<HashMap<String, Option<String>>>>,
+    file_locks: FileLocks,
 ) -> Result<ChunkOutcome, String> {
     let sha_hex = hex::encode(&job.sha);
 
@@ -487,6 +516,8 @@ async fn process_chunk(
                 .await
                 .map_err(|e| format!("create dir failed: {}", e))?;
         }
+        let write_lock = file_lock_for(&file_locks, &job.file_path).await;
+        let _held = write_lock.lock().await;
         let mut file = fs::OpenOptions::new()
             .write(true)
             .create(true)
@@ -891,5 +922,58 @@ mod verify_cache_tests {
         verified.insert(chunk_key(&file, 512, &[0x01; 20]));
 
         assert!(!verified.contains(&chunk_key(&file, 512, &[0x02; 20])));
+    }
+}
+
+#[cfg(test)]
+mod chunk_concurrency_tests {
+    use super::*;
+
+    #[test]
+    fn normal_values_pass_through_unchanged() {
+        assert_eq!(effective_chunk_concurrency(1), 1);
+        assert_eq!(effective_chunk_concurrency(8), 8);
+        assert_eq!(effective_chunk_concurrency(32), 32);
+        assert_eq!(effective_chunk_concurrency(64), 64);
+    }
+
+    #[test]
+    fn zero_and_overflow_are_clamped_into_range() {
+        assert_eq!(effective_chunk_concurrency(0), 1);
+        assert_eq!(effective_chunk_concurrency(1000), 64);
+        assert_eq!(effective_chunk_concurrency(u32::MAX), 64);
+    }
+
+    #[test]
+    fn the_default_matches_the_documented_fallback() {
+        assert_eq!(DEFAULT_CHUNK_CONCURRENCY, 8);
+        assert_eq!(effective_chunk_concurrency(DEFAULT_CHUNK_CONCURRENCY), 8);
+    }
+
+    #[tokio::test]
+    async fn the_same_file_resolves_to_the_same_write_lock() {
+        let locks: FileLocks = Arc::new(Mutex::new(HashMap::new()));
+        let path = Path::new("/game/data.bin");
+        let first = file_lock_for(&locks, path).await;
+        let second = file_lock_for(&locks, path).await;
+        assert!(Arc::ptr_eq(&first, &second));
+    }
+
+    #[tokio::test]
+    async fn different_files_get_independent_write_locks() {
+        let locks: FileLocks = Arc::new(Mutex::new(HashMap::new()));
+        let first = file_lock_for(&locks, Path::new("/game/a.bin")).await;
+        let second = file_lock_for(&locks, Path::new("/game/b.bin")).await;
+        assert!(!Arc::ptr_eq(&first, &second));
+    }
+
+    #[tokio::test]
+    async fn a_released_write_lock_can_be_acquired_again() {
+        let locks: FileLocks = Arc::new(Mutex::new(HashMap::new()));
+        let lock = file_lock_for(&locks, Path::new("/game/data.bin")).await;
+        {
+            let _held = lock.lock().await;
+        }
+        assert!(lock.try_lock().is_ok());
     }
 }

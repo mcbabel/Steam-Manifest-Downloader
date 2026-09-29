@@ -25,6 +25,8 @@ const state = {
   emuSettingsPrefillPath: null,
   emuBusy: false,
   emuApplyComplete: false,
+  emuAllowDownload: false,
+  emuPendingDownload: null,
   bypassInitialState: false,
   pendingHistoryRemoveId: null,
   steamLibrarySupported: false,
@@ -170,6 +172,7 @@ const els = {
   advancedSettingsContent: $('#advanced-settings-content'),
   ddExtraArgsInput: $('#dd-extra-args-input'),
   maxRetriesInput: $('#max-retries-input'),
+  chunkConcurrencyInput: $('#chunk-concurrency-input'),
   speedLimitInput: $('#speed-limit-input'),
   proxyInput: $('#proxy-input'),
   hubcapApiKeyInput: $('#hubcap-apikey-input'),
@@ -253,6 +256,10 @@ const els = {
   emuRevertScope: $('#emu-revert-scope'),
   btnEmuRevertYes: $('#btn-emu-revert-yes'),
   btnEmuRevertNo: $('#btn-emu-revert-no'),
+  emuDownloadModal: $('#emu-download-modal'),
+  emuDownloadScope: $('#emu-download-scope'),
+  btnEmuDownloadYes: $('#btn-emu-download-yes'),
+  btnEmuDownloadNo: $('#btn-emu-download-no'),
   historyRemoveModal: $('#history-remove-modal'),
   btnHistoryRemoveYes: $('#btn-history-remove-yes'),
   btnHistoryRemoveNo: $('#btn-history-remove-no'),
@@ -2263,6 +2270,7 @@ async function openSettings() {
 
     els.ddExtraArgsInput.value = (settings.dd_extra_args || []).join(' ');
     els.maxRetriesInput.value = settings.max_retries ?? 3;
+    els.chunkConcurrencyInput.value = settings.native_chunk_concurrency ?? 8;
     els.speedLimitInput.value = settings.download_speed_limit || '';
     els.proxyInput.value = settings.proxy || '';
     if (els.hubcapApiKeyInput) els.hubcapApiKeyInput.value = settings.hubcap_api_key || '';
@@ -2515,6 +2523,7 @@ async function saveSettings() {
       currentSettings.dd_extra_args = ["-max-downloads", "8", "-verify-all"];
     }
     currentSettings.max_retries = parseInt(els.maxRetriesInput.value) || 3;
+    currentSettings.native_chunk_concurrency = parseInt(els.chunkConcurrencyInput.value) || 8;
     currentSettings.download_speed_limit = els.speedLimitInput.value.trim();
     currentSettings.proxy = els.proxyInput.value.trim();
     if (els.hubcapApiKeyInput) {
@@ -3207,6 +3216,21 @@ function initEvents() {
   }
   if (els.btnEmuRevertNo) {
     els.btnEmuRevertNo.addEventListener('click', () => els.emuRevertModal.classList.add('hidden'));
+  }
+  if (els.btnEmuDownloadYes) {
+    els.btnEmuDownloadYes.addEventListener('click', confirmEmuDownload);
+  }
+  if (els.btnEmuDownloadNo) {
+    els.btnEmuDownloadNo.addEventListener('click', cancelEmuDownload);
+  }
+  if (els.emuDownloadModal) {
+    els.emuDownloadModal.querySelector('.modal__backdrop').addEventListener('click', cancelEmuDownload);
+    els.emuDownloadModal.addEventListener('click', (e) => {
+      const anchor = e.target.closest('a[href^="http"]');
+      if (!anchor) return;
+      e.preventDefault();
+      window.__TAURI__.shell.open(anchor.href);
+    });
   }
   if (els.emuRevertModal) {
     els.emuRevertModal.querySelector('.modal__backdrop').addEventListener('click', () => els.emuRevertModal.classList.add('hidden'));
@@ -4446,8 +4470,8 @@ async function applyEmuReplacement() {
   setEmuBusy(true);
   setEmuApplyStatus('busy', window.i18n.t('emulator.applying'));
 
+  const variant = selectedEmuVariant();
   try {
-    const variant = selectedEmuVariant();
     const gathered = gatherEmuSettings();
     const installedAppIds = collectInstalledAppIds(appId);
     const results = await invoke('emu_apply_replacement', {
@@ -4456,7 +4480,9 @@ async function applyEmuReplacement() {
       appId,
       installedAppIds,
       emuSettings: gathered || {},
+      allowDownload: !!state.emuAllowDownload,
     });
+    state.emuAllowDownload = false;
     const total = results.length;
     const success = results.filter(r => r.success).length;
     const failed = total - success;
@@ -4492,6 +4518,13 @@ async function applyEmuReplacement() {
     }
   } catch (e) {
     console.error('emu_apply_replacement failed:', e);
+    const confirmInfo = parseEmuDownloadConfirm(e);
+    if (confirmInfo) {
+      state.emuPendingDownload = { targets: selectedTargets, variant };
+      showEmuDownloadConfirm(confirmInfo);
+      return;
+    }
+    state.emuAllowDownload = false;
     emitEvent('patch_applied', {
       entry: emuEntryPoint(),
       outcome: 'failed',
@@ -4509,6 +4542,7 @@ async function applyEmuReplacement() {
     }
   } finally {
     setEmuBusy(false);
+    cleanupEmuDownloadListener();
   }
 }
 
@@ -4596,6 +4630,105 @@ async function saveEmuSettings() {
   }
   const extra = bypassMessage ? '\n\n' + bypassMessage : '';
   setEmuApplyStatus('success', window.i18n.t('emulator.saveSuccess', { count: success }) + extra);
+}
+
+function parseEmuDownloadConfirm(err) {
+  const text = String((err && err.message) || err || '');
+  const prefix = 'EMU_DOWNLOAD_CONFIRM_REQUIRED:';
+  if (!text.startsWith(prefix)) return null;
+  try {
+    const info = JSON.parse(text.slice(prefix.length));
+    if (!info || !Array.isArray(info.platforms) || info.platforms.length === 0) return null;
+    return info;
+  } catch (_) {
+    return null;
+  }
+}
+
+function platformDisplayName(platform) {
+  return platform === 'windows' ? 'Windows' : platform === 'linux' ? 'Linux' : String(platform || '');
+}
+
+function showEmuDownloadConfirm(info) {
+  if (els.emuDownloadScope) {
+    const items = info.platforms.map(p => {
+      const size = formatBytes(p.size);
+      return `${platformDisplayName(p.platform)}${size ? ` (~${size})` : ''}`;
+    });
+    els.emuDownloadScope.textContent = window.i18n.t('modals.emuDownload.scope', {
+      tag: info.tag || '',
+      items: items.join(', '),
+    });
+  }
+  if (els.emuDownloadModal) {
+    const link = els.emuDownloadModal.querySelector('a[href^="http"]');
+    if (link && info.tag) {
+      link.href = `https://github.com/Detanup01/gbe_fork/releases/tag/${encodeURIComponent(info.tag)}`;
+    }
+    els.emuDownloadModal.classList.remove('hidden');
+  }
+}
+
+async function confirmEmuDownload() {
+  if (els.emuDownloadModal) els.emuDownloadModal.classList.add('hidden');
+  state.emuAllowDownload = true;
+  state.emuPendingDownload = null;
+  if (state.unlistenEmuDownload) {
+    state.unlistenEmuDownload();
+    state.unlistenEmuDownload = null;
+  }
+  state.unlistenEmuDownload = await listen('emu-download-progress', (event) => {
+    showEmuDownloadProgress(event.payload);
+  });
+  setEmuApplyStatus('busy', window.i18n.t('emulator.emuDownloading', { progress: '0%' }));
+  await applyEmuReplacement();
+}
+
+function showEmuDownloadProgress(info) {
+  if (!info) return;
+  const label = platformDisplayName(info.platform);
+  if (info.total && info.total > 0 && info.downloaded >= info.total) {
+    setEmuApplyStatus(
+      'busy',
+      window.i18n.t('emulator.emuExtracting', { platform: label ? ` (${label})` : '' })
+    );
+    return;
+  }
+  const done = formatBytes(info.downloaded);
+  let progress = done || '';
+  if (info.total && info.total > 0) {
+    const pct = Math.floor((info.downloaded / info.total) * 100);
+    progress = `${pct}% · ${done}/${formatBytes(info.total)}`;
+  }
+  setEmuApplyStatus(
+    'busy',
+    window.i18n.t('emulator.emuDownloading', { progress: label ? `${label} ${progress}` : progress })
+  );
+}
+
+function cleanupEmuDownloadListener() {
+  if (state.unlistenEmuDownload) {
+    state.unlistenEmuDownload();
+    state.unlistenEmuDownload = null;
+  }
+}
+
+function cancelEmuDownload() {
+  if (els.emuDownloadModal) els.emuDownloadModal.classList.add('hidden');
+  cleanupEmuDownloadListener();
+  const pending = state.emuPendingDownload;
+  state.emuPendingDownload = null;
+  if (!pending) return;
+  emitEvent('patch_applied', {
+    entry: emuEntryPoint(),
+    outcome: 'cancelled',
+    variant: pending.variant,
+    platforms: emuPlatformMix(pending.targets),
+    targets: countBucket((pending.targets || []).length),
+    failures: countBucket(0),
+    fail_class: null,
+  });
+  setEmuApplyStatus('error', window.i18n.t('emulator.applyCancelled'));
 }
 
 function showEmuRevertConfirm() {

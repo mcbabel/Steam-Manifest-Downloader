@@ -30,6 +30,8 @@ pub struct Settings {
     pub notification_sound: bool,
     #[serde(default)]
     pub download_speed_limit: String,
+    #[serde(default = "default_chunk_concurrency")]
+    pub native_chunk_concurrency: u32,
     #[serde(default)]
     pub proxy: String,
     #[serde(default)]
@@ -97,6 +99,10 @@ fn default_max_retries() -> u32 {
     3
 }
 
+fn default_chunk_concurrency() -> u32 {
+    crate::services::steam_downloader::DEFAULT_CHUNK_CONCURRENCY
+}
+
 fn default_notification_sound() -> bool {
     true
 }
@@ -108,6 +114,7 @@ impl Default for Settings {
             dd_extra_args: default_dd_extra_args(),
             auto_update: default_auto_update(),
             max_retries: default_max_retries(),
+            native_chunk_concurrency: default_chunk_concurrency(),
             notification_sound: default_notification_sound(),
             download_speed_limit: String::new(),
             proxy: String::new(),

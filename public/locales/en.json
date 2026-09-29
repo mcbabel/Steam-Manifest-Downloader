@@ -214,6 +214,13 @@
       "no": "Keep patch",
       "scope": "This affects the {count} already-patched file(s) in this folder. Files that are not patched are left untouched."
     },
+    "emuDownload": {
+      "title": "Download the gbe_fork emulator?",
+      "body": "Patching needs the emulator files from the <a href=\"https://github.com/Detanup01/gbe_fork/releases/latest\">gbe_fork project on GitHub</a>. They are downloaded once and cached locally for future patches.",
+      "yes": "Download & apply",
+      "no": "Cancel",
+      "scope": "gbe_fork {tag}: {items}"
+    },
     "folderMissing": {
       "title": "Folder not found",
       "body": "The download folder no longer exists. It may have been moved or deleted.",
@@ -226,6 +233,8 @@
     "releaseLoading": "Loading emulator release info...",
     "releaseReady": "gbe_fork {tag} — ready to apply.",
     "releaseDownloading": "Downloading gbe_fork {tag} ({platform})...",
+    "emuDownloading": "Downloading gbe_fork ({progress})",
+    "emuExtracting": "Extracting gbe_fork{platform}…",
     "variantLabel": "Emulator variant",
     "variantRegular": "Regular",
     "variantRegularHint": "Stable build, recommended for most games.",
@@ -243,6 +252,7 @@
     "applySuccess": "Patch applied successfully ({count}/{total} files).",
     "applyPartial": "Patch partially applied: {success} succeeded, {failed} failed.",
     "applyError": "Failed to apply patch: {message}",
+    "applyCancelled": "Patch cancelled before the emulator download.",
     "applyReasonUnknown": "no reason reported",
     "avBlockedTitle": "It looks like your antivirus is blocking gbe_fork.",
     "avBlockedHint": "Windows Defender (or another antivirus) quarantined the emulator archive during extraction. Add an exception for the gbe_fork cache folder in your antivirus settings, then retry.",
@@ -437,6 +447,8 @@
     "ddExtraArgsHint": "Additional command-line arguments passed to DepotDownloaderMod",
     "maxRetries": "Max Retries on Error",
     "maxRetriesHint": "Number of retry attempts when a depot download fails",
+    "chunkConcurrency": "Max concurrent chunks (native engine)",
+    "chunkConcurrencyHint": "How many chunks the native engine downloads and decrypts at once. Lower this if downloads make the system lag.",
     "speedLimit": "Download Speed Limit (MB/s)",
     "speedLimitPlaceholder": "Unlimited",
     "speedLimitHint": "Leave empty for unlimited. Applied as DDM argument.",

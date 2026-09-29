@@ -454,12 +454,6 @@ async fn run_download_pipeline(
 
             match tokio::fs::copy(uploaded_path, &dest_path).await {
                 Ok(_) => {
-                    if let Err(err) = tokio::fs::remove_file(uploaded_path).await {
-                        eprintln!(
-                            "[Download] Failed to remove temp upload '{}': {}",
-                            uploaded_path, err
-                        );
-                    }
                     let mut event = ProgressEvent::new("status", job_id);
                     event.step = Some("downloading_manifest".to_string());
                     event.depot_id = Some(depot.depot_id.clone());
@@ -813,6 +807,7 @@ async fn run_download_pipeline(
             &depot_sources_list,
             is_hubcap,
             app_data_dir,
+            settings.native_chunk_concurrency,
         )
         .await?
     } else {
@@ -1131,6 +1126,7 @@ async fn run_native_pipeline(
     depot_sources_list: &[String],
     is_hubcap: bool,
     app_data_dir: &Path,
+    chunk_concurrency: u32,
 ) -> Result<Vec<serde_json::Value>, String> {
     let app_id_u: u32 = app_id
         .parse()
@@ -1284,6 +1280,7 @@ async fn run_native_pipeline(
                         cancel_flag.clone(),
                         pause_flag.clone(),
                         progress_cb,
+                        chunk_concurrency,
                     )
                     .await
                 }
@@ -1309,6 +1306,7 @@ async fn run_native_pipeline(
                 cancel_flag.clone(),
                 pause_flag.clone(),
                 progress_cb,
+                chunk_concurrency,
             )
             .await;
 
@@ -1405,6 +1403,7 @@ async fn run_native_pipeline(
                                     cancel_flag.clone(),
                                     pause_flag.clone(),
                                     progress_cb3,
+                                    chunk_concurrency,
                                 )
                                 .await;
                             }
@@ -1497,6 +1496,7 @@ async fn run_native_pipeline(
                                     cancel_flag.clone(),
                                     pause_flag.clone(),
                                     progress_cb2,
+                                    chunk_concurrency,
                                 )
                                 .await;
                             }
