@@ -71,22 +71,11 @@ jobs:
           $signtool = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\signtool.exe" -Recurse | Sort-Object FullName -Descending | Select-Object -First 1
           if (-not $signtool) { Write-Error "SignTool not found!"; exit 1 }
 
-          $portable = "src-tauri\target\release\steam-manifest-downloader.exe"
-          if (Test-Path $portable) {
-            & $signtool.FullName sign /f $certPath /p $env:SIGNING_CERTIFICATE_PASSWORD /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 $portable
-          }
-
           Get-ChildItem "src-tauri\target\release\bundle\nsis\*.exe" | ForEach-Object {
             & $signtool.FullName sign /f $certPath /p $env:SIGNING_CERTIFICATE_PASSWORD /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 $_.FullName
           }
 
           Remove-Item $certPath -Force
-
-      - name: Upload Windows portable
-        uses: actions/upload-artifact@v7
-        with:
-          name: windows-portable
-          path: src-tauri/target/release/steam-manifest-downloader.exe
 
       - name: Upload Windows NSIS installer
         uses: actions/upload-artifact@v7
@@ -211,6 +200,5 @@ jobs:
           draft: ${{ github.event_name == 'workflow_dispatch' && inputs.draft || false }}
           prerelease: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || false }}
           files: |
-            artifacts/windows-portable/*
             artifacts/windows-nsis/*
             artifacts/linux-builds/*

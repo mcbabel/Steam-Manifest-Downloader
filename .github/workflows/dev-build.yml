@@ -8,6 +8,13 @@ on:
       - 'public/**'
       - 'assets/**'
       - '.github/workflows/dev-build.yml'
+  pull_request:
+    branches: [dev]
+    paths:
+      - 'src-tauri/**'
+      - 'public/**'
+      - 'assets/**'
+      - '.github/workflows/dev-build.yml'
 
 concurrency:
   group: dev-build
@@ -20,6 +27,7 @@ permissions:
 jobs:
   check:
     name: Skip if commit is already on main
+    if: github.event_name == 'push' || github.actor == 'dependabot[bot]'
     runs-on: ubuntu-latest
     outputs:
       in-main: ${{ steps.check.outputs.in-main }}
@@ -220,7 +228,7 @@ jobs:
 
             > This is a development build and may be unstable. For stable releases, see the [latest release](${{ github.server_url }}/${{ github.repository }}/releases/latest).
 
-            **Changes:** ${{ github.event.head_commit.message }}
+            **Changes:** ${{ github.event.pull_request.title || github.event.head_commit.message }}
           files: |
             artifacts/windows-portable/*
             artifacts/linux-appimage/*
