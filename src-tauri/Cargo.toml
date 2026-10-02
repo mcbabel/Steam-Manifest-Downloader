@@ -22,7 +22,7 @@ uuid = { version = "1", features = ["v4"] }
 flate2 = "1"
 zip = "8"
 chrono = { version = "0.4", features = ["serde"] }
-dryoc = "1.0"
+dryoc = "2.0"
 sevenz-rust = "0.6"
 tar = "0.4"
 bzip2 = "0.6"
