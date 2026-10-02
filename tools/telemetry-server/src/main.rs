@@ -7,7 +7,7 @@ use axum::{
     Router,
 };
 use chrono::Utc;
-use dryoc::dryocbox::{DryocBox, KeyPair, SecretKey};
+use dryoc::dryocbox::{DryocBox, SecretKey, StackKeyPair as KeyPair};
 use dryoc::types::ByteArray;
 use serde_json::Value;
 use std::{net::SocketAddr, path::PathBuf, sync::Arc};
@@ -92,7 +92,7 @@ async fn ingest(
         warn!(bytes = body.len(), "failed to parse sealed box");
         (StatusCode::BAD_REQUEST, "parse failed")
     })?;
-    let plaintext = sealed.unseal_to_vec(&state.keypair).map_err(|_| {
+    let plaintext = sealed.open_to_vec(&state.keypair).map_err(|_| {
         warn!(bytes = body.len(), "failed to decrypt sealed box");
         (StatusCode::BAD_REQUEST, "decrypt failed")
     })?;
