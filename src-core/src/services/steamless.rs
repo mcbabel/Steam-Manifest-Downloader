@@ -5,6 +5,7 @@ use std::time::Duration;
 use walkdir::WalkDir;
 
 const STEAMLESS_VERSION: &str = "v3.1.0.5";
+pub const STEAMLESS_ZIP_NAME: &str = "Steamless.v3.1.0.5.-.by.atom0s.zip";
 const STEAMLESS_ZIP_URL: &str =
     "https://github.com/atom0s/Steamless/releases/download/v3.1.0.5/Steamless.v3.1.0.5.-.by.atom0s.zip";
 
@@ -111,22 +112,29 @@ pub async fn ensure_steamless_cached(
         .await
         .map_err(|e| format!("create steamless cache: {}", e))?;
 
-    let resp = client
-        .get(STEAMLESS_ZIP_URL)
-        .header("User-Agent", "SteamManifestDownloader")
-        .timeout(Duration::from_secs(60))
-        .send()
-        .await
-        .map_err(|e| format!("steamless download failed: {}", e))?;
-    if !resp.status().is_success() {
-        return Err(format!("steamless download HTTP {}", resp.status()));
-    }
-    let bytes = resp
-        .bytes()
-        .await
-        .map_err(|e| format!("steamless read body: {}", e))?;
+    let bytes = match crate::paths::bundled_file(&["steamless", STEAMLESS_ZIP_NAME]) {
+        Some(bundled) => tokio::fs::read(&bundled)
+            .await
+            .map_err(|e| format!("read bundled steamless {}: {}", bundled.display(), e))?,
+        None => {
+            let resp = client
+                .get(STEAMLESS_ZIP_URL)
+                .header("User-Agent", "SteamManifestDownloader")
+                .timeout(Duration::from_secs(60))
+                .send()
+                .await
+                .map_err(|e| format!("steamless download failed: {}", e))?;
+            if !resp.status().is_success() {
+                return Err(format!("steamless download HTTP {}", resp.status()));
+            }
+            resp.bytes()
+                .await
+                .map_err(|e| format!("steamless read body: {}", e))?
+                .to_vec()
+        }
+    };
 
-    let reader = std::io::Cursor::new(bytes.to_vec());
+    let reader = std::io::Cursor::new(bytes);
     let mut zip = zip::ZipArchive::new(reader)
         .map_err(|e| format!("steamless zip invalid: {}", e))?;
     for i in 0..zip.len() {

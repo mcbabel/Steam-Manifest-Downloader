@@ -37,6 +37,16 @@ async fn download_to(client: &Client, url: &str, dest: &Path) -> Result<(), Stri
             .await
             .map_err(|e| format!("create cache dir: {}", e))?;
     }
+    let bundled = dest
+        .file_name()
+        .and_then(|n| n.to_str())
+        .and_then(|n| crate::paths::bundled_file(&["steam-api-check-bypass", n]));
+    if let Some(bundled) = bundled {
+        tokio::fs::copy(&bundled, dest)
+            .await
+            .map_err(|e| format!("copy bundled {}: {}", bundled.display(), e))?;
+        return Ok(());
+    }
     let resp = client
         .get(url)
         .header("User-Agent", "SteamManifestDownloader")

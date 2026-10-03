@@ -85,7 +85,7 @@ Then walk through the 5-step pipeline:
 | | Requirement | Details |
 |---|---|---|
 | 💻 | **Operating System** | Windows 10 / 11 (64-bit) or a modern Linux distro (glibc ≥ 2.35) |
-| ⚙️ | **Runtime (Windows)** | [.NET 9.0 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.16-windows-x64-installer) — required by DepotDownloader |
+| ⚙️ | **Runtime (Windows)** | Nothing extra for the default built-in downloader. The optional DepotDownloaderMod engine needs the [.NET 9.0 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.16-windows-x64-installer) |
 | 📦 | **Runtime (Linux)** | `webkit2gtk-4.1`, `libayatana-appindicator3`, `librsvg2` (install commands below) |
 | 🌐 | **Network** | Internet connection |
 
@@ -95,12 +95,15 @@ Then walk through the 5-step pipeline:
 
 ### 🪟 Windows
 
-1. Head to the [**Releases**](../../releases) page and download the latest `.exe` installer (NSIS)
-2. Run the installer — installs per-user, **no admin required**
-3. Launch **Steam Manifest Downloader** from the Start Menu
+Two options on the [**Releases**](../../releases) page, neither needs admin rights:
+
+| | Download | What it is |
+|---|---|---|
+| 🧰 | `Steam-Manifest-Downloader_<version>_windows-standalone.zip` | **Standalone, no install.** Extract the ZIP into a folder of your own (e.g. Documents) and start `Steam Manifest Downloader.exe`. Already contains everything the emulator step needs (gbe_fork, Steamless, Steam API bypass), so it works without extra downloads. Instructions in German and English are inside the ZIP. |
+| 📦 | `Steam Manifest Downloader_<version>_x64-setup.exe` | **Installer.** Installs per user and adds a Start Menu entry. Downloads the emulator tools the first time you use that step. |
 
 > [!NOTE]
-> Make sure you have the [.NET 9.0 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.16-windows-x64-installer) installed. The app will warn you on first launch if it's missing.
+> The default built-in downloader needs no .NET runtime. Only if you switch to the DepotDownloaderMod engine in the settings, install the [.NET 9.0 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.16-windows-x64-installer); the app tells you if it's missing.
 
 ### 🐧 Linux
 

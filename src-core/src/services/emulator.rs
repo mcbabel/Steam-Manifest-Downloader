@@ -81,6 +81,8 @@ pub struct ReleaseInfo {
     pub windows_cached: bool,
     pub linux_cached: bool,
     pub cache_root: String,
+    #[serde(default)]
+    pub bundled: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -429,7 +431,48 @@ fn pick_asset<'a>(
     ))
 }
 
+#[derive(Debug, Deserialize)]
+struct BundledRelease {
+    tag: String,
+    #[serde(default)]
+    published_at: String,
+    windows: String,
+    linux: String,
+}
+
+fn bundled_release_info(app_data_dir: &Path) -> Option<ReleaseInfo> {
+    let manifest = crate::paths::bundled_file(&["gbe_fork", "release.json"])?;
+    let dir = manifest.parent()?.to_path_buf();
+    let release: BundledRelease = serde_json::from_slice(&fs::read(&manifest).ok()?).ok()?;
+    let windows = dir.join(&release.windows);
+    let linux = dir.join(&release.linux);
+    let windows_size = fs::metadata(&windows).ok().filter(|m| m.is_file())?.len();
+    let linux_size = fs::metadata(&linux).ok().filter(|m| m.is_file())?.len();
+    let root = cache_root(app_data_dir).join(&release.tag);
+    Some(ReleaseInfo {
+        windows_cached: root
+            .join(Platform::Windows.cache_subdir())
+            .join(".extracted")
+            .exists(),
+        linux_cached: root
+            .join(Platform::Linux.cache_subdir())
+            .join(".extracted")
+            .exists(),
+        tag: release.tag,
+        published_at: release.published_at,
+        windows_url: windows.to_string_lossy().to_string(),
+        windows_size,
+        linux_url: linux.to_string_lossy().to_string(),
+        linux_size,
+        cache_root: root.to_string_lossy().to_string(),
+        bundled: true,
+    })
+}
+
 pub async fn fetch_release_info(client: &Client, app_data_dir: &Path) -> Result<ReleaseInfo, String> {
+    if let Some(info) = bundled_release_info(app_data_dir) {
+        return Ok(info);
+    }
     let resp = client
         .get(RELEASES_API)
         .header("User-Agent", USER_AGENT)
@@ -494,6 +537,7 @@ pub async fn fetch_release_info(client: &Client, app_data_dir: &Path) -> Result<
         windows_cached,
         linux_cached,
         cache_root: root.to_string_lossy().to_string(),
+        bundled: false,
     })
 }
 
@@ -555,6 +599,12 @@ pub async fn ensure_cached(
     };
     let archive_path = platform_dir.join(asset_name);
 
+    if !archive_path.exists() && info.bundled {
+        fs::copy(asset_url, &archive_path)
+            .map_err(|e| format!("copy bundled archive {}: {}", asset_url, e))?;
+        let size = fs::metadata(&archive_path).map(|m| m.len()).unwrap_or(0);
+        on_progress(size, size);
+    }
     if !archive_path.exists() {
         let mut resp = client
             .get(asset_url)
@@ -986,6 +1036,36 @@ fn backup_path_for(target: &Path) -> PathBuf {
     let mut p = target.as_os_str().to_owned();
     p.push(".steam.bak");
     PathBuf::from(p)
+}
+
+#[cfg(test)]
+mod bundled_tests {
+    use super::*;
+
+    #[test]
+    fn bundled_release_is_used_without_network() {
+        let tmp = std::env::temp_dir().join(format!("smd-bundled-{}", std::process::id()));
+        let gbe = tmp.join("gbe_fork");
+        fs::create_dir_all(&gbe).unwrap();
+        fs::write(gbe.join("emu-win-release.7z"), b"win").unwrap();
+        fs::write(gbe.join("emu-linux-release.tar.bz2"), b"linux!").unwrap();
+        fs::write(
+            gbe.join("release.json"),
+            br#"{"tag":"release-test","windows":"emu-win-release.7z","linux":"emu-linux-release.tar.bz2"}"#,
+        )
+        .unwrap();
+        std::env::set_var(crate::paths::BUNDLED_DIR_ENV, &tmp);
+        let info = bundled_release_info(&tmp.join("data"));
+        std::env::remove_var(crate::paths::BUNDLED_DIR_ENV);
+        let info = info.expect("bundled release");
+        assert!(info.bundled);
+        assert_eq!(info.tag, "release-test");
+        assert_eq!(info.windows_size, 3);
+        assert_eq!(info.linux_size, 6);
+        assert!(info.windows_url.ends_with("emu-win-release.7z"));
+        assert!(!info.windows_cached);
+        let _ = fs::remove_dir_all(&tmp);
+    }
 }
 
 #[cfg(test)]

@@ -454,7 +454,7 @@ pub async fn apply_replacement(
     if need_linux && !emulator::platform_cached(&info, Platform::Linux) {
         missing.push(("linux", info.linux_size));
     }
-    if !missing.is_empty() && !allow_download {
+    if !missing.is_empty() && !allow_download && !info.bundled {
         let platforms: Vec<serde_json::Value> = missing
             .iter()
             .map(|(platform, size)| serde_json::json!({ "platform": platform, "size": size }))

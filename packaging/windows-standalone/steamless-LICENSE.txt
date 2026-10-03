@@ -1,0 +1,11 @@
+Steamless by atom0s
+https://github.com/atom0s/Steamless
+
+This work is licensed under the Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License.
+To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-nd/4.0/ or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
+
+The file Steamless.v3.1.0.5.-.by.atom0s.zip in this folder is the original, unmodified release from
+https://github.com/atom0s/Steamless/releases/tag/v3.1.0.5
+
+Steamless includes SharpDisasm (Plugins/SharpDisasm.dll). Its license follows in full:
+

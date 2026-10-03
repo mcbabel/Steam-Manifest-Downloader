@@ -1,0 +1,36 @@
+Third-party software included in this package
+==============================================
+
+Steam Manifest Downloader itself is licensed under the GNU General Public
+License v2.0: https://github.com/mcbabel/Steam-Manifest-Downloader
+
+The folder "third-party" contains unmodified copies of the following tools.
+They are separate programs with their own licenses and are only used by the
+emulator step, so it works without downloading anything.
+
+
+1. gbe_fork (Goldberg Steam Emulator fork)
+   Release:  @GBE_TAG@
+   Files:    third-party/gbe_fork/@GBE_WIN@
+             third-party/gbe_fork/@GBE_LINUX@
+   Project:  https://github.com/Detanup01/gbe_fork
+   Source:   https://github.com/Detanup01/gbe_fork/releases/tag/@GBE_TAG@
+   License:  GNU Lesser General Public License v3.0
+             (full text: third-party/gbe_fork/LICENSE)
+
+
+2. Steamless by atom0s
+   Release:  @STEAMLESS_VERSION@ (original, unmodified release archive)
+   Files:    third-party/steamless/
+   Project:  https://github.com/atom0s/Steamless
+   License:  Creative Commons Attribution-NonCommercial-NoDerivatives 4.0
+             International, https://creativecommons.org/licenses/by-nc-nd/4.0/
+             This package is free of charge; Steamless must not be part of
+             anything sold.
+   Includes: SharpDisasm, Copyright (c) 2014-2015 Justin Stenning,
+             2-clause BSD License (full text: third-party/steamless/LICENSE.txt)
+
+
+3. Steam API Check Bypass by MCbabel
+   Files:    third-party/steam-api-check-bypass/
+   Project:  https://github.com/MCbabel/Steam-API-Check-Bypass
