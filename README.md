@@ -271,7 +271,7 @@ docker run --rm \
 - `docker stop` and Ctrl+C cancel the download cleanly (exit code `130`), the
   same way as the cancel button in the UI.
 - Pass a ManifestHub key with `-e SMD_MANIFESTHUB_KEY=...`.
-- The interactive UI also works in a container: `docker run --rm -it -v smd-data:/data -v "$PWD/games:/games" ghcr.io/mcbabel/steam-manifest-downloader tui`.
+- The interactive UI also works in a container: `docker run --rm -it -v smd-data:/data -v "$PWD/games:/games" ghcr.io/mcbabel/steam-manifest-downloader`. Without `-it` the image prints the help.
 - The image uses the default native engine. The DepotDownloaderMod engine
   needs glibc and does not run in it.
 

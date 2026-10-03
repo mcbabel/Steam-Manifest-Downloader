@@ -17,35 +17,64 @@ use tokio::sync::Notify;
 
 #[derive(Args, Debug)]
 pub struct DownloadArgs {
+    #[arg(
+        help = "A .lua / .st depot file, or a numeric Steam App ID to look up in the configured depot sources."
+    )]
     pub source: String,
-    #[arg(long, value_delimiter = ',')]
+    #[arg(
+        long,
+        value_delimiter = ',',
+        help = "Depot IDs to download (comma separated). Default: all."
+    )]
     pub depots: Vec<String>,
-    #[arg(long, short, env = "SMD_OUTPUT_DIR")]
+    #[arg(
+        long,
+        short,
+        env = "SMD_OUTPUT_DIR",
+        help = "Parent folder for the game folder. Default: the download location from the settings."
+    )]
     pub out: Option<PathBuf>,
-    #[arg(long, env = "SMD_MANIFESTHUB_KEY", hide_env_values = true)]
+    #[arg(
+        long,
+        env = "SMD_MANIFESTHUB_KEY",
+        hide_env_values = true,
+        help = "ManifestHub API key, used as fallback (and for custom manifests)."
+    )]
     pub mh_key: Option<String>,
-    #[arg(long, default_value_t = 0)]
+    #[arg(
+        long,
+        default_value_t = 0,
+        help = "Which search result to use when SOURCE is an App ID (see `smd search`)."
+    )]
     pub result: usize,
-    #[arg(long = "manifest", value_name = "DEPOT=MANIFEST")]
+    #[arg(
+        long = "manifest",
+        value_name = "DEPOT=MANIFEST",
+        help = "Pin a depot to a specific manifest: DEPOT=MANIFEST (repeatable)."
+    )]
     pub manifests: Vec<String>,
-    #[arg(long)]
+    #[arg(long, help = "Only print the depots that would be downloaded.")]
     pub list: bool,
-    #[arg(long)]
+    #[arg(
+        long,
+        help = "Print progress events as JSON lines (stdout contains only JSON)."
+    )]
     pub json: bool,
 }
 
 #[derive(Args, Debug)]
 pub struct SearchArgs {
+    #[arg(help = "Steam App ID, or a game name to look up the App ID.")]
     pub query: String,
-    #[arg(long)]
+    #[arg(long, help = "Also list the depots of this search result.")]
     pub manifests: Option<usize>,
-    #[arg(long)]
+    #[arg(long, help = "Print the result as JSON.")]
     pub json: bool,
 }
 
 #[derive(Args, Debug)]
 pub struct HistoryArgs {
-    #[arg(long)]
+    #[arg(long, help = "Print the history as JSON.")]
     pub json: bool,
 }
 
@@ -247,13 +276,37 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
         Some(name) => format!("{} (App {})", name, plan.app_id),
         None => format!("App {}", plan.app_id),
     };
-    println!(
-        "{} — {} of {} depot(s)",
-        title,
-        chosen.len(),
-        plan.depots.len()
-    );
-    for (id, manifest, key, size) in &chosen {
+    if args.json {
+        let depots: Vec<Value> = chosen
+            .iter()
+            .map(|(id, manifest, key, size)| {
+                serde_json::json!({
+                    "depotId": id,
+                    "manifestId": pins.get(id).or(manifest.as_ref()),
+                    "sizeBytes": size,
+                    "hasKey": key.is_some(),
+                })
+            })
+            .collect();
+        println!(
+            "{}",
+            serde_json::json!({
+                "type": "plan",
+                "appId": plan.app_id,
+                "gameName": plan.game_name,
+                "totalDepots": plan.depots.len(),
+                "depots": depots,
+            })
+        );
+    } else {
+        println!(
+            "{} — {} of {} depot(s)",
+            title,
+            chosen.len(),
+            plan.depots.len()
+        );
+    }
+    for (id, manifest, key, size) in chosen.iter().filter(|_| !args.json) {
         println!(
             "  {:>10}  manifest {}{}{}",
             id,
@@ -330,7 +383,14 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
         .as_str()
         .unwrap_or_default()
         .to_string();
-    println!("→ {}", work_dir);
+    if args.json {
+        println!(
+            "{}",
+            serde_json::json!({ "type": "started", "jobId": job, "downloadDir": work_dir })
+        );
+    } else {
+        println!("→ {}", work_dir);
+    }
 
     let tty = std::io::stdout().is_terminal() && !args.json;
     let mut printer = Printer::new(tty);
@@ -480,12 +540,20 @@ impl Printer {
                 )),
                 _ => {}
             },
-            "manifest_source" => self.line(&format!(
-                "  [{}] depot {}: {}",
-                ev["source"].as_str().unwrap_or(""),
-                depot,
-                ev["message"].as_str().unwrap_or("")
-            )),
+            "manifest_source" => {
+                let source = ev["source"].as_str().unwrap_or("");
+                self.line(&format!(
+                    "  [{}] depot {}: {}",
+                    source,
+                    depot,
+                    ev["message"].as_str().unwrap_or("")
+                ));
+                if source == "manifesthub_unavailable" {
+                    self.line(
+                        "  hint: pass a ManifestHub key with --mh-key <KEY> or SMD_MANIFESTHUB_KEY",
+                    );
+                }
+            }
             "output" => {
                 if let (Some(done), Some(total)) =
                     (ev["completedBytes"].as_u64(), ev["totalBytes"].as_u64())

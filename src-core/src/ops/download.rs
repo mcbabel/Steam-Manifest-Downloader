@@ -1482,7 +1482,7 @@ async fn run_native_pipeline(
                         &depot.depot_id,
                         "manifesthub_unavailable",
                         &format!(
-                            "All sources failed ({}). No ManifestHub API key set — add one in step 2 and retry.",
+                            "All sources failed ({}). No ManifestHub API key set — add one and retry.",
                             steam_err
                         ),
                     );

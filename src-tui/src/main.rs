@@ -8,7 +8,7 @@ mod ui;
 use std::io::IsTerminal;
 use std::path::PathBuf;
 
-use clap::{Parser, Subcommand};
+use clap::{CommandFactory, Parser, Subcommand};
 
 #[derive(Parser, Debug)]
 #[command(
@@ -20,10 +20,20 @@ use clap::{Parser, Subcommand};
                   Settings, history and caches are shared with the desktop app."
 )]
 struct Cli {
-    #[arg(long, global = true, env = "SMD_DATA_DIR")]
+    #[arg(
+        long,
+        global = true,
+        env = "SMD_DATA_DIR",
+        help = "Data directory (settings, history, caches). Defaults to the desktop app's directory so both share their state."
+    )]
     data_dir: Option<PathBuf>,
 
-    #[arg(long, short, global = true)]
+    #[arg(
+        long,
+        short,
+        global = true,
+        help = "Show the backend's diagnostic output on stderr instead of writing it to the log file (headless commands only)."
+    )]
     verbose: bool,
 
     #[command(subcommand)]
@@ -32,9 +42,13 @@ struct Cli {
 
 #[derive(Subcommand, Debug)]
 enum Command {
+    #[command(about = "Open the interactive terminal UI (default when started in a terminal).")]
     Tui,
+    #[command(about = "Download depots from a .lua/.st file or an App ID.")]
     Download(cli::DownloadArgs),
+    #[command(about = "Look up a game by name, or list the sources and depots for an App ID.")]
     Search(cli::SearchArgs),
+    #[command(about = "Show the download history.")]
     History(cli::HistoryArgs),
 }
 
@@ -54,7 +68,12 @@ fn main() {
         }
     };
 
+    let interactive = std::io::stdout().is_terminal() && std::io::stdin().is_terminal();
     let code = match args.command {
+        None if !interactive => {
+            let _ = Cli::command().print_help();
+            0
+        }
         None | Some(Command::Tui) => match runtime.block_on(run_tui(data_dir)) {
             Ok(()) => 0,
             Err(e) => {

@@ -21,7 +21,6 @@ WORKDIR /games
 VOLUME ["/data", "/games"]
 USER smd
 ENTRYPOINT ["smd"]
-CMD ["--help"]
 
 FROM base AS prebuilt
 COPY --chmod=755 smd /usr/local/bin/smd
