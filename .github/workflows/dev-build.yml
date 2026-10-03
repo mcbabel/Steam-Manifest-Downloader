@@ -12,6 +12,9 @@ on:
       - 'public/**'
       - 'assets/**'
       - '.github/workflows/dev-build.yml'
+      - '.github/workflows/docker.yml'
+      - 'Dockerfile'
+      - '.dockerignore'
   pull_request:
     branches: [dev]
     paths:
@@ -23,6 +26,9 @@ on:
       - 'public/**'
       - 'assets/**'
       - '.github/workflows/dev-build.yml'
+      - '.github/workflows/docker.yml'
+      - 'Dockerfile'
+      - '.dockerignore'
 
 concurrency:
   group: dev-build
@@ -303,3 +309,15 @@ jobs:
             artifacts/linux-appimage/*
             artifacts/tui-linux/*
             artifacts/tui-windows/*
+
+  docker:
+    name: Docker image (dev)
+    needs: [check, release]
+    if: github.event_name == 'push' && needs.check.outputs.in-main == 'false'
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/docker.yml
+    with:
+      channel: dev
+      release-tag: dev-latest

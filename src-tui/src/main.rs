@@ -67,10 +67,17 @@ fn main() {
                 term::redirect_stderr();
             }
             let code = runtime.block_on(async move {
+                cli::listen_for_shutdown();
                 match cmd {
                     Command::Download(a) => cli::download(data_dir, a).await,
-                    Command::Search(a) => cli::search(data_dir, a).await,
-                    Command::History(a) => cli::history(data_dir, a).await,
+                    Command::Search(a) => tokio::select! {
+                        code = cli::search(data_dir, a) => code,
+                        _ = cli::stopped() => 130,
+                    },
+                    Command::History(a) => tokio::select! {
+                        code = cli::history(data_dir, a) => code,
+                        _ = cli::stopped() => 130,
+                    },
                     Command::Tui => unreachable!(),
                 }
             });

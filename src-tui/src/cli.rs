@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::io::{IsTerminal, Write};
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
@@ -12,13 +13,14 @@ use smd_core::services::history::HistoryEntry;
 use smd_core::services::settings as settings_service;
 use smd_core::services::AppState;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
+use tokio::sync::Notify;
 
 #[derive(Args, Debug)]
 pub struct DownloadArgs {
     pub source: String,
     #[arg(long, value_delimiter = ',')]
     pub depots: Vec<String>,
-    #[arg(long, short)]
+    #[arg(long, short, env = "SMD_OUTPUT_DIR")]
     pub out: Option<PathBuf>,
     #[arg(long, env = "SMD_MANIFESTHUB_KEY", hide_env_values = true)]
     pub mh_key: Option<String>,
@@ -155,11 +157,51 @@ fn fmt_bytes(b: u64) -> String {
     crate::ui::widgets::fmt_bytes(b)
 }
 
+static STOP: AtomicBool = AtomicBool::new(false);
+static STOP_NOTIFY: Notify = Notify::const_new();
+
+pub fn listen_for_shutdown() {
+    tokio::spawn(async {
+        shutdown_signal().await;
+        STOP.store(true, Ordering::SeqCst);
+        STOP_NOTIFY.notify_waiters();
+    });
+}
+
+async fn shutdown_signal() {
+    #[cfg(unix)]
+    {
+        use tokio::signal::unix::{signal, SignalKind};
+        if let Ok(mut term) = signal(SignalKind::terminate()) {
+            tokio::select! {
+                _ = tokio::signal::ctrl_c() => {}
+                _ = term.recv() => {}
+            }
+            return;
+        }
+    }
+    let _ = tokio::signal::ctrl_c().await;
+}
+
+pub async fn stopped() {
+    let notified = STOP_NOTIFY.notified();
+    tokio::pin!(notified);
+    notified.as_mut().enable();
+    if STOP.load(Ordering::SeqCst) {
+        return;
+    }
+    notified.await;
+}
+
 pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
     let _ = tokio::fs::create_dir_all(&dir).await;
     let settings = settings_service::seed_defaults_if_needed(&dir).await;
     let core = AppState::new();
-    let mut plan = match plan_from_source(&core, &dir, &args).await {
+    let planned = tokio::select! {
+        r = plan_from_source(&core, &dir, &args) => r,
+        _ = stopped() => return 130,
+    };
+    let mut plan = match planned {
         Ok(p) => p,
         Err(e) => {
             errln!("error: {}", e);
@@ -167,13 +209,15 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
         }
     };
     if plan.game_name.is_none() {
-        if let Ok(Some(info)) = smd_core::services::steam_store_api::get_game_info(
-            &core.http_client,
-            &core.steam_cache,
-            &plan.app_id,
-        )
-        .await
-        {
+        let info = tokio::select! {
+            r = smd_core::services::steam_store_api::get_game_info(
+                &core.http_client,
+                &core.steam_cache,
+                &plan.app_id,
+            ) => r,
+            _ = stopped() => return 130,
+        };
+        if let Ok(Some(info)) = info {
             plan.game_name = info.name;
             plan.header_image = info.header_image;
         }
@@ -290,7 +334,7 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
 
     let tty = std::io::stdout().is_terminal() && !args.json;
     let mut printer = Printer::new(tty);
-    let mut ctrl_c = Box::pin(tokio::signal::ctrl_c());
+    let mut stop = Box::pin(stopped());
     let mut interrupted = false;
     let code = loop {
         tokio::select! {
@@ -318,7 +362,7 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
                     _ => {}
                 }
             }
-            _ = &mut ctrl_c, if !interrupted => {
+            _ = &mut stop, if !interrupted => {
                 interrupted = true;
                 printer.clear();
                 errln!("\ninterrupted — cancelling…");

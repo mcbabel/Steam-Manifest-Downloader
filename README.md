@@ -230,6 +230,7 @@ smd history
 
 | Option / variable | Meaning |
 |---|---|
+| `-o` / `SMD_OUTPUT_DIR` | Download folder (defaults to the one from the settings) |
 | `--data-dir` / `SMD_DATA_DIR` | Settings, history and caches. Defaults to the desktop app's directory, so both share their state |
 | `--mh-key` / `SMD_MANIFESTHUB_KEY` | ManifestHub API key (fallback source and custom manifests) |
 | `--manifest DEPOT=ID` | Pin a depot to a specific manifest (repeatable) |
@@ -239,24 +240,39 @@ smd history
 Exit codes of `smd download`: `0` complete, `1` failed, `2` partially
 downloaded (resumable), `130` interrupted.
 
-<details>
-<summary><b>🐳 Docker example</b></summary>
+### 🐳 Docker
 
-```dockerfile
-FROM alpine:3
-COPY smd_*_linux-x86_64 /usr/local/bin/smd
-ENV SMD_DATA_DIR=/data
-VOLUME ["/data", "/games"]
-ENTRYPOINT ["smd"]
-```
+Images are published to the GitHub Container Registry for every release and
+every dev build. They are built for Intel/AMD processors (`linux/amd64`) and run
+on Linux as well as on Windows and macOS with Docker Desktop; ARM devices such
+as a Raspberry Pi are not supported yet.
+
+| Tag | Content |
+|---|---|
+| `latest`, `1`, `1.4`, `1.4.3` | Latest stable release / that version |
+| `dev`, `1.4.3-dev`, `dev-<commit>` | Latest dev build from the `dev` branch |
 
 ```bash
-docker run --rm -v smd-data:/data -v "$PWD/games:/games" smd download 220 -o /games
+docker run --rm \
+  -v smd-data:/data \
+  -v "$PWD/games:/games" \
+  ghcr.io/mcbabel/steam-manifest-downloader download 220
 ```
 
-This uses the default native engine. For the DepotDownloaderMod engine use
-`mcr.microsoft.com/dotnet/runtime-deps:9.0` as the base image instead.
-</details>
+- Downloads go to `/games`, settings, history and caches to `/data`. Mount both
+  so they survive the container.
+- The container runs as user `smd` (UID 1000). A host folder mounted as
+  `/games` must be writable for that UID (`sudo chown 1000:1000 games`), or run
+  with `--user "$(id -u):$(id -g)"` and mount host folders for both `/data` and
+  `/games`.
+- `docker stop` and Ctrl+C cancel the download cleanly (exit code `130`), the
+  same way as the cancel button in the UI.
+- Pass a ManifestHub key with `-e SMD_MANIFESTHUB_KEY=...`.
+- The interactive UI also works in a container: `docker run --rm -it -v smd-data:/data -v "$PWD/games:/games" ghcr.io/mcbabel/steam-manifest-downloader tui`.
+- The image uses the default native engine. The DepotDownloaderMod engine
+  needs glibc and does not run in it.
+
+Build the image yourself from source with `docker build -t smd .`.
 
 <details>
 <summary><b>🔧 Building from Source</b></summary>

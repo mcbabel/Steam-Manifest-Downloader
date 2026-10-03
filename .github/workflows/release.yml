@@ -259,3 +259,15 @@ jobs:
             artifacts/linux-builds/*
             artifacts/tui-linux/*
             artifacts/tui-windows/*
+
+  docker:
+    name: Docker image
+    needs: release
+    if: ${{ !inputs.draft && !inputs.prerelease }}
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/docker.yml
+    with:
+      channel: stable
+      release-tag: ${{ inputs.tag }}
