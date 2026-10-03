@@ -425,7 +425,7 @@ async function handleDepotManifestFile(depotId) {
     if (btnEl) btnEl.classList.add('depot-manifest-action--active');
   } catch (error) {
     console.error('Failed to select manifest file:', error);
-    alert('Failed to select manifest file: ' + error);
+    alert(window.i18n.t('select.manifestFileError', { message: String(error) }));
     delete state.depotManifests[depotId];
   }
 }
@@ -552,7 +552,7 @@ function showAutocompleteLoading(dropdown) {
 
 function renderAutocompleteResults(dropdown, results) {
   if (!results || results.length === 0) {
-    dropdown.innerHTML = '<div class="search-autocomplete__empty">No games found</div>';
+    dropdown.innerHTML = `<div class="search-autocomplete__empty">${escapeHtml(window.i18n.t('search.noGamesFound'))}</div>`;
     dropdown.classList.remove('hidden');
     return;
   }
@@ -742,7 +742,7 @@ async function addDepotSource(rawUrl, errorEl) {
   const sources = await loadDepotSources();
   if (sources.includes(url)) {
     if (errorEl) {
-      errorEl.textContent = 'Source already added';
+      errorEl.textContent = window.i18n.t('search.sourceExists');
       errorEl.classList.remove('hidden');
     }
     return false;
@@ -947,15 +947,15 @@ function repoBadgeText(repo) {
     case 'remote':
       return window.i18n.t('search.repoBadgeRemote');
     default:
-      return repo.source || repo.type || 'Source';
+      return repo.source || repo.type || window.i18n.t('search.sourceFallback');
   }
 }
 
 function formatRepoDate(dateStr) {
   try {
     const d = new Date(dateStr);
-    return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) +
-      ' at ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleString(window.i18n.getCurrentLocale(), { dateStyle: 'medium', timeStyle: 'short' });
   } catch {
     return dateStr;
   }
@@ -1134,7 +1134,7 @@ function showSelectionStep() {
   if (!data) return;
 
   els.appIdDisplay.textContent = data.mainAppId;
-  els.depotCount.textContent = `${data.depots.length} depot(s) found`;
+  els.depotCount.textContent = window.i18n.t('select.depotsFound', { count: data.depots.length });
 
   // Fetch game info from Steam (async, non-blocking) — only if not already fetched by search
   if (state.mode !== 'search' || !state.gameName) {
@@ -1182,7 +1182,7 @@ function showSelectionStep() {
         <div class="depot-item__manifest-id">Manifest: ${safeManifestId}</div>
         <div class="depot-item__manifest-row">
           <input type="text" data-depot-id="${safeDepotId}" class="custom-manifest-input"
-            placeholder="Custom manifest ID (optional)"
+            placeholder="${escapeHtml(window.i18n.t('select.customManifestPlaceholder'))}"
             onclick="event.stopPropagation()">
           <button type="button" class="depot-manifest-action depot-manifest-fetch-btn" data-depot-id="${safeDepotId}"
             data-i18n-attr="title=depots.fetchLatest,aria-label=depots.fetchLatest" title="Fetch latest manifest ID">
@@ -1551,7 +1551,7 @@ async function startDownload() {
 
 function initProgressUI(depots) {
   els.progressBarFill.style.width = '0%';
-  els.progressStatus.textContent = 'Initializing...';
+  els.progressStatus.textContent = window.i18n.t('progress.initializing');
   els.terminalOutput.innerHTML = '';
   els.completionMessage.classList.add('hidden');
   state.downloadFailed = false;
@@ -1585,7 +1585,7 @@ function initProgressUI(depots) {
     item.innerHTML = `
       <div class="depot-progress-item__icon depot-progress-item__icon--pending">●</div>
       <div class="depot-progress-item__label">Depot ${escapeHtml(String(depot.depotId))}</div>
-      <div class="depot-progress-item__status">Waiting...</div>
+      <div class="depot-progress-item__status">${escapeHtml(window.i18n.t('progress.depotWaiting'))}</div>
     `;
     els.depotProgressList.appendChild(item);
   });
@@ -1632,7 +1632,7 @@ function handleProgressMessage(msg) {
       break;
 
     case 'depot_complete':
-      updateDepotStatus(msg.depotId, 'done', 'Complete');
+      updateDepotStatus(msg.depotId, 'done', window.i18n.t('progress.depotComplete'));
       updateOverallProgress(msg.current, msg.total);
       updateDepotDownloadProgress(100);
       break;
@@ -1668,7 +1668,7 @@ function handleStatusUpdate(msg) {
   }
   switch (msg.step) {
     case 'checking_branch':
-      els.progressStatus.textContent = `Checking GitHub branch for App ${msg.appId}...`;
+      els.progressStatus.textContent = window.i18n.t('progress.checkingBranch', { appId: msg.appId });
       appendTerminalLine(`Checking branch for App ${msg.appId}...`, 'info');
       break;
 
@@ -1677,28 +1677,28 @@ function handleStatusUpdate(msg) {
       break;
 
     case 'downloading_manifests':
-      els.progressStatus.textContent = `Downloading manifests (0/${msg.total})...`;
+      els.progressStatus.textContent = window.i18n.t('progress.manifestsStart', { total: msg.total });
       break;
 
     case 'downloading_manifest':
       if (msg.current && msg.total) {
-        els.progressStatus.textContent = `Downloading manifest ${msg.current}/${msg.total} (Depot ${msg.depotId})...`;
+        els.progressStatus.textContent = window.i18n.t('progress.manifestOne', { current: msg.current, total: msg.total, depotId: msg.depotId });
         updateOverallProgress(msg.current - 1, msg.total * 2);
       }
-      updateDepotStatus(msg.depotId, 'active', 'Downloading manifest...');
+      updateDepotStatus(msg.depotId, 'active', window.i18n.t('progress.depotManifest'));
       if (msg.filename) {
         appendTerminalLine(`Downloading ${msg.filename}...`, 'info');
       }
       break;
 
     case 'downloading_manifest_hub':
-      els.progressStatus.textContent = `Downloading custom manifest for Depot ${msg.depotId} via ManifestHub API...`;
+      els.progressStatus.textContent = window.i18n.t('progress.customManifest', { depotId: msg.depotId });
       updateDepotStatus(msg.depotId, 'active', `Custom manifest: ${msg.manifestId}`);
       appendTerminalLine(`Downloading custom manifest for depot ${msg.depotId} (ID: ${msg.manifestId}) via ManifestHub API...`, 'info');
       break;
 
     case 'generating_keys':
-      els.progressStatus.textContent = 'Generating depot keys file...';
+      els.progressStatus.textContent = window.i18n.t('progress.generatingKeys');
       appendTerminalLine('Generating steam.keys file...', 'info');
       break;
 
@@ -1707,7 +1707,7 @@ function handleStatusUpdate(msg) {
       break;
 
     case 'starting_downloader':
-      els.progressStatus.textContent = `Running DepotDownloader (0/${msg.total})...`;
+      els.progressStatus.textContent = window.i18n.t('progress.runningDdmStart', { total: msg.total });
       break;
 
     case 'running_downloader':
@@ -1726,11 +1726,11 @@ function handleStatusUpdate(msg) {
         state.speedTracker.currentDepotId = msg.depotId;
       }
       if (msg.current && msg.total) {
-        els.progressStatus.textContent = `Running DepotDownloader ${msg.current}/${msg.total} (Depot ${msg.depotId})...`;
+        els.progressStatus.textContent = window.i18n.t('progress.runningDdm', { current: msg.current, total: msg.total, depotId: msg.depotId });
         const baseProgress = state.parsedData ? state.selectedDepots.size : 0;
         updateOverallProgress(baseProgress + msg.current - 1, baseProgress + msg.total);
       }
-      updateDepotStatus(msg.depotId, 'active', 'Downloading...');
+      updateDepotStatus(msg.depotId, 'active', window.i18n.t('progress.depotDownloading'));
       if (msg.command) {
         appendTerminalLine(`> ${msg.command}`, 'info');
       }
@@ -1949,8 +1949,8 @@ function startStaleTimer() {
       const infoEl = els.downloadSpeedInfo;
       if (infoEl) {
         infoEl.classList.remove('hidden');
-        els.downloadSpeed.textContent = '⏳ Downloading large file...';
-        els.downloadEta.textContent = `waiting ${formatElapsed(waitingFor)}`;
+        els.downloadSpeed.textContent = window.i18n.t('progress.largeFile');
+        els.downloadEta.textContent = window.i18n.t('progress.waitingFor', { time: formatElapsed(waitingFor) });
       }
     }
   }, 1000);
@@ -2037,17 +2037,17 @@ function handleComplete(msg) {
   if (msg.results) {
     const results = Array.isArray(msg.results) ? msg.results : [];
     results.forEach((r) => {
-      updateDepotStatus(r.depotId, r.success ? 'done' : 'error', r.success ? 'Complete' : 'Failed');
+      updateDepotStatus(r.depotId, r.success ? 'done' : 'error', window.i18n.t(r.success ? 'progress.depotComplete' : 'progress.depotFailed'));
     });
   }
 
   appendTerminalLine(`\n${msg.message}`, allOk ? 'success' : 'error');
 
-  const gameName = state.gameName || 'Game';
+  const gameName = state.gameName || window.i18n.t('common.game');
   if (allOk) {
-    showBrowserNotification('Download Complete!', `${gameName} has been downloaded successfully.`, state.headerImage);
+    showBrowserNotification(window.i18n.t('notifications.completeTitle'), window.i18n.t('notifications.completeBody', { name: gameName }), state.headerImage);
   } else {
-    showBrowserNotification('Download Incomplete', msg.message || `${gameName} was only partially downloaded.`, state.headerImage);
+    showBrowserNotification(window.i18n.t('notifications.partialTitle'), msg.message || window.i18n.t('notifications.partialBody', { name: gameName }), state.headerImage);
   }
   playNotificationSound();
 
@@ -2057,7 +2057,7 @@ function handleComplete(msg) {
 
 function handleError(msg) {
   if (msg.depotId) {
-    updateDepotStatus(msg.depotId, 'error', 'Error');
+    updateDepotStatus(msg.depotId, 'error', window.i18n.t('progress.depotError'));
   }
   appendTerminalLine(`Error: ${msg.message}`, 'error');
 
@@ -2068,7 +2068,7 @@ function handleError(msg) {
     if (els.downloadSpeedInfo) els.downloadSpeedInfo.classList.add('hidden');
     emitEvent('download_completed', Object.assign({ success: false }, jobContext(), msg.diag || {}));
     showCompletion(false, msg.message);
-    showBrowserNotification('Download Failed!', `Error: ${msg.message}`);
+    showBrowserNotification(window.i18n.t('notifications.failedTitle'), window.i18n.t('notifications.failedBody', { message: msg.message }));
     playNotificationSound();
     cleanupProgressListener();
   }
@@ -2542,7 +2542,7 @@ async function copyBuildInfo() {
     await navigator.clipboard.writeText(text);
     const btn = els.btnCopyBuildInfo;
     const original = btn.textContent;
-    btn.textContent = 'Copied!';
+    btn.textContent = window.i18n.t('common.copied');
     setTimeout(() => { btn.textContent = original; }, 1500);
   } catch (e) {
     console.error('Clipboard write failed:', e);
@@ -2661,7 +2661,7 @@ function showUpdateModal(info) {
   if (info.date) {
     try {
       const d = new Date(info.date);
-      els.updateDate.textContent = isNaN(d.getTime()) ? info.date : d.toLocaleDateString();
+      els.updateDate.textContent = isNaN(d.getTime()) ? info.date : d.toLocaleDateString(window.i18n.getCurrentLocale(), { dateStyle: 'medium' });
     } catch { els.updateDate.textContent = info.date; }
     els.updateDateRow.style.display = '';
   } else {
@@ -2731,7 +2731,7 @@ function renderUpdateCommands(method) {
       try {
         await navigator.clipboard.writeText(cmd);
         const original = btn.textContent;
-        btn.textContent = 'Copied!';
+        btn.textContent = window.i18n.t('common.copied');
         setTimeout(() => { btn.textContent = original; }, 1500);
       } catch {}
     });
@@ -2757,9 +2757,9 @@ async function performUpdate() {
   els.btnUpdateNow.disabled = true;
   els.btnUpdateLater.style.display = 'none';
   els.btnUpdateSkip.style.display = 'none';
-  els.btnUpdateNow.textContent = 'Downloading...';
+  els.btnUpdateNow.textContent = window.i18n.t('modals.update.downloading');
   els.updateProgressWrap.classList.remove('hidden');
-  els.updateProgressText.textContent = 'Downloading update installer...';
+  els.updateProgressText.textContent = window.i18n.t('modals.update.installerDownloading');
   els.updateProgressFill.style.width = '100%';
   els.updateProgressFill.classList.add('progress-bar__fill--indeterminate');
 
@@ -2769,10 +2769,10 @@ async function performUpdate() {
     // App will exit — this line may not be reached
   } catch (e) {
     console.error('[AutoUpdate] Install failed:', e);
-    els.updateProgressText.textContent = `Update failed: ${e}`;
+    els.updateProgressText.textContent = window.i18n.t('modals.update.failed', { message: String(e) });
     els.updateProgressFill.classList.remove('progress-bar__fill--indeterminate');
     els.updateProgressFill.style.width = '0%';
-    els.btnUpdateNow.textContent = 'Retry';
+    els.btnUpdateNow.textContent = window.i18n.t('common.retry');
     els.btnUpdateNow.disabled = false;
     els.btnUpdateLater.style.display = '';
   }
@@ -2914,12 +2914,12 @@ function showDiskSpace(freeGB, drive) {
 
   if (freeGB < 2) {
     els.diskSpaceInfo.classList.add('disk-space-info--danger');
-    els.diskSpaceText.textContent = `Free disk space: ${freeGB} GB on ${drive} — CRITICALLY LOW!`;
+    els.diskSpaceText.textContent = window.i18n.t('progress.diskCritical', { gb: freeGB, drive });
   } else if (freeGB < 10) {
     els.diskSpaceInfo.classList.add('disk-space-info--warning');
-    els.diskSpaceText.textContent = `Free disk space: ${freeGB} GB on ${drive} — Low space warning`;
+    els.diskSpaceText.textContent = window.i18n.t('progress.diskLow', { gb: freeGB, drive });
   } else {
-    els.diskSpaceText.textContent = `Free disk space: ${freeGB} GB on ${drive}`;
+    els.diskSpaceText.textContent = window.i18n.t('progress.diskFree', { gb: freeGB, drive });
   }
 }
 
@@ -3425,7 +3425,7 @@ function renderHistory(entries) {
             <span class="history-entry__appid">App ${escapeHtml(entry.app_id)}</span>
             <span class="history-entry__date">${date}</span>
           </div>
-          <div class="history-entry__depots">${entry.depots_downloaded}/${entry.depot_count} depots downloaded</div>
+          <div class="history-entry__depots">${window.i18n.t('history.depotsDownloaded', { done: entry.depots_downloaded, total: entry.depot_count })}</div>
           <div class="history-entry__status">
             <span class="history-entry__badge ${badgeClass}">${statusLabel}</span>
           </div>
@@ -3434,11 +3434,11 @@ function renderHistory(entries) {
           ${canResumeNow
             ? `<button class="btn btn--small btn--primary history-action-resume" data-entry-id="${escapeHtml(entry.id)}" title="${escapeHtml(window.i18n.t('history.resumeTooltip'))}" aria-label="${escapeHtml(window.i18n.t('history.resumeTooltip'))}">${ICONS.play}</button>`
             : ''}
-          <button class="btn btn--small btn--outline history-action-redownload" data-app-id="${escapeHtml(entry.app_id)}" data-depot-ids="${escapeHtml((entry.depot_ids || []).join(','))}" title="Re-download" aria-label="Re-download">${ICONS.refresh}</button>
+          <button class="btn btn--small btn--outline history-action-redownload" data-app-id="${escapeHtml(entry.app_id)}" data-depot-ids="${escapeHtml((entry.depot_ids || []).join(','))}" title="${escapeHtml(window.i18n.t('history.redownloadTooltip'))}" aria-label="${escapeHtml(window.i18n.t('history.redownloadTooltip'))}">${ICONS.refresh}</button>
           <button class="btn btn--small btn--outline history-action-update" data-app-id="${escapeHtml(entry.app_id)}" data-depot-ids="${escapeHtml((entry.depot_ids || []).join(','))}" data-path="${escapeHtml(entry.download_dir)}" title="${escapeHtml(window.i18n.t('history.updateTooltip'))}" aria-label="${escapeHtml(window.i18n.t('history.updateTooltip'))}"${entry.status === 'cancelled' || !entry.download_dir ? ' disabled' : ''}>${ICONS.update}</button>
-          <button class="btn btn--small btn--outline history-action-folder" data-path="${escapeHtml(entry.download_dir)}" title="Open Folder" aria-label="Open download folder"${entry.status === 'cancelled' ? ' disabled' : ''}>${ICONS.folderOpen}</button>
+          <button class="btn btn--small btn--outline history-action-folder" data-path="${escapeHtml(entry.download_dir)}" title="${escapeHtml(window.i18n.t('history.openFolderTooltip'))}" aria-label="${escapeHtml(window.i18n.t('history.openFolderTooltip'))}"${entry.status === 'cancelled' ? ' disabled' : ''}>${ICONS.folderOpen}</button>
           <button class="btn btn--small btn--outline history-action-edit-emu" data-entry-id="${escapeHtml(entry.id)}" title="${escapeHtml(editTip)}" aria-label="${escapeHtml(editTip)}"${entry.status === 'cancelled' || !entry.download_dir ? ' disabled' : ''}>${ICONS.settings}</button>
-          <button class="btn btn--small btn--outline history-action-remove" data-entry-id="${escapeHtml(entry.id)}" title="Remove" aria-label="Remove entry">${ICONS.trash}</button>
+          <button class="btn btn--small btn--outline history-action-remove" data-entry-id="${escapeHtml(entry.id)}" title="${escapeHtml(window.i18n.t('history.removeTooltip'))}" aria-label="${escapeHtml(window.i18n.t('history.removeTooltip'))}">${ICONS.trash}</button>
         </div>
       </div>
     `;
@@ -3572,8 +3572,8 @@ function renderHistory(entries) {
 function formatHistoryDate(dateStr) {
   try {
     const d = new Date(dateStr);
-    return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) +
-      ', ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleString(window.i18n.getCurrentLocale(), { dateStyle: 'medium', timeStyle: 'short' });
   } catch {
     return dateStr;
   }
@@ -3746,7 +3746,7 @@ async function detectSteamExecutables() {
     if (exes.length === 0) {
       if (els.steamExePath) {
         els.steamExePath.value = '';
-        els.steamExePath.placeholder = 'No executables found. Browse manually.';
+        els.steamExePath.placeholder = window.i18n.t('shortcut.noneFound');
       }
       if (els.btnSteamAdd) els.btnSteamAdd.disabled = false;
       return;
@@ -3760,7 +3760,7 @@ async function detectSteamExecutables() {
       els.steamDetectedSection.classList.remove('hidden');
       els.steamDetectedList.innerHTML = exes.map(exe => {
         const sizeStr = formatShortcutFileSize(exe.size);
-        const recBadge = exe.recommended ? ' <span class="shortcut-exe-badge">Recommended</span>' : '';
+        const recBadge = exe.recommended ? ` <span class="shortcut-exe-badge">${escapeHtml(window.i18n.t('common.recommended'))}</span>` : '';
         return `<div class="shortcut-exe-item" data-path="${escapeHtml(exe.path)}">
           <span class="shortcut-exe-item__name">${escapeHtml(exe.name)}${recBadge}</span>
           <span class="shortcut-exe-item__size">${sizeStr}</span>
@@ -5103,7 +5103,7 @@ function initEmuAccordion() {
 
 async function detectExecutables() {
   if (!state.downloadDir) return;
-  els.shortcutExePath.value = 'Scanning for executables...';
+  els.shortcutExePath.value = window.i18n.t('shortcut.scanning');
   els.btnCreateShortcuts.disabled = true;
   els.shortcutDetectedSection.classList.add('hidden');
 
@@ -5113,7 +5113,7 @@ async function detectExecutables() {
 
     if (exes.length === 0) {
       els.shortcutExePath.value = '';
-      els.shortcutExePath.placeholder = 'No executables found. Browse manually.';
+      els.shortcutExePath.placeholder = window.i18n.t('shortcut.noneFound');
       els.btnCreateShortcuts.disabled = false;
       return;
     }
@@ -5126,7 +5126,7 @@ async function detectExecutables() {
       els.shortcutDetectedSection.classList.remove('hidden');
       els.shortcutDetectedList.innerHTML = exes.map(exe => {
         const sizeStr = formatShortcutFileSize(exe.size);
-        const recBadge = exe.recommended ? ' <span class="shortcut-exe-badge">Recommended</span>' : '';
+        const recBadge = exe.recommended ? ` <span class="shortcut-exe-badge">${escapeHtml(window.i18n.t('common.recommended'))}</span>` : '';
         return `<div class="shortcut-exe-item" data-path="${escapeHtml(exe.path)}">
           <span class="shortcut-exe-item__name">${escapeHtml(exe.name)}${recBadge}</span>
           <span class="shortcut-exe-item__size">${sizeStr}</span>
@@ -5143,7 +5143,7 @@ async function detectExecutables() {
   } catch (e) {
     console.error('Failed to detect executables:', e);
     els.shortcutExePath.value = '';
-    els.shortcutExePath.placeholder = 'Detection failed. Browse manually.';
+    els.shortcutExePath.placeholder = window.i18n.t('shortcut.detectFailed');
     els.btnCreateShortcuts.disabled = false;
   }
 }
@@ -5181,7 +5181,7 @@ async function createShortcuts() {
   }
 
   els.btnCreateShortcuts.disabled = true;
-  els.btnCreateShortcuts.textContent = 'Creating...';
+  els.btnCreateShortcuts.textContent = window.i18n.t('shortcut.creating');
 
   try {
     const gameName = state.gameName || 'Game';
@@ -5194,10 +5194,10 @@ async function createShortcuts() {
     });
 
     const messages = [];
-    if (result.desktop) messages.push('Desktop shortcut created');
-    if (result.startMenu) messages.push('Start menu shortcut created');
+    if (result.desktop) messages.push(window.i18n.t('shortcut.desktopCreated'));
+    if (result.startMenu) messages.push(window.i18n.t('shortcut.startMenuCreated'));
     if (result.errors && result.errors.length > 0) {
-      messages.push('Errors: ' + result.errors.join(', '));
+      messages.push(window.i18n.t('shortcut.errors', { list: result.errors.join(', ') }));
     }
 
     const allGood = (!createDesktop || result.desktop) && (!createStartMenu || result.startMenu);
@@ -5218,9 +5218,9 @@ async function createShortcuts() {
       await addToSteamLibraryFromShortcutStep(exePath);
     }
   } catch (e) {
-    showShortcutStatus(false, `Failed to create shortcuts: ${e}`);
+    showShortcutStatus(false, window.i18n.t('shortcut.failed', { message: String(e) }));
     els.btnCreateShortcuts.disabled = false;
-    els.btnCreateShortcuts.textContent = 'Create Shortcuts';
+    els.btnCreateShortcuts.textContent = window.i18n.t('shortcut.createShortcuts');
   }
 }
 
@@ -5433,6 +5433,8 @@ async function showLanguagePickerIfNeeded(initSettings, hasStored) {
     });
 
     picker.classList.remove('hidden');
+    const active = cards.querySelector('.language-card.is-active') || cards.querySelector('.language-card');
+    if (active) active.focus();
   });
 }
 

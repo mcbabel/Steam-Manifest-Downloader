@@ -3162,6 +3162,7 @@ button:disabled,
 /* Advanced Settings */
 .settings-advanced {
   margin-top: 16px;
+  margin-bottom: 20px;
   border-top: 1px solid var(--border);
   padding-top: 12px;
 }
@@ -3842,9 +3843,9 @@ button:disabled,
 
 .history-entry__meta {
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem 0.6rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
   margin-top: 0.3rem;
   font-size: 0.78rem;
   color: var(--text-muted);
