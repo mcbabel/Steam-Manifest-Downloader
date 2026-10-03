@@ -133,6 +133,7 @@ pub enum Action {
     CreateShortcuts,
     ShortcutNext,
     SteamAdd,
+    SteamCloseAndAdd,
     SteamNext,
 
     EmuToggleFile(usize),

@@ -701,11 +701,12 @@ impl App {
                         e.status = Some((
                             Tone::Error,
                             format!(
-                                "{}\n\n{}",
+                                "{}{}\n\n{}",
                                 tf(
                                     "emulator.applyPartial",
                                     &[("success", &success), ("failed", &failed)]
                                 ),
+                                emu_error_hint(&details),
                                 details
                             ),
                         ));
@@ -792,8 +793,10 @@ impl App {
                             ),
                         ));
                     } else {
-                        e.status =
-                            Some((Tone::Error, tf("emulator.applyError", &[("message", &err)])));
+                        e.status = Some((
+                            Tone::Error,
+                            tf("emulator.applyError", &[("message", &err)]) + &emu_error_hint(&err),
+                        ));
                     }
                 }
             }
@@ -1115,7 +1118,9 @@ impl App {
                     let h = mono_hint(&err);
                     e.drm_status = Some((
                         Tone::Error,
-                        tf("emulator.drmRemoveError", &[("message", &err)]) + &h,
+                        tf("emulator.drmRemoveError", &[("message", &err)])
+                            + &h
+                            + &emu_error_hint(&err),
                     ));
                     return;
                 }
@@ -1137,13 +1142,14 @@ impl App {
                     e.drm_status = Some((
                         Tone::Error,
                         format!(
-                            "{}\n\n{}{}",
+                            "{}\n\n{}{}{}",
                             tf(
                                 "emulator.drmRemovePartial",
                                 &[("success", &success), ("failed", &failed)]
                             ),
                             msg,
-                            h
+                            h,
+                            emu_error_hint(&msg)
                         ),
                     ));
                 }
@@ -1731,9 +1737,57 @@ fn role_label(role: &str) -> String {
     }
 }
 
+fn emu_error_hint(err: &str) -> String {
+    let lower = err.to_lowercase();
+    let has = |needles: &[&str]| needles.iter().any(|n| lower.contains(n));
+    let key = if has(&[
+        "os error 225",
+        "virus",
+        "unwanted software",
+        "unerwünschte software",
+    ]) {
+        "emulator.hintAntivirusFile"
+    } else if has(&[
+        "os error 5)",
+        "os error 13)",
+        "access is denied",
+        "zugriff verweigert",
+        "permission denied",
+    ]) {
+        "emulator.hintPermission"
+    } else if has(&[
+        "github fetch failed",
+        "github returned http",
+        "download returned http",
+        "error sending request",
+        "steamless download",
+        "not present in release",
+    ]) {
+        "emulator.hintDownload"
+    } else {
+        return String::new();
+    };
+    format!("\n\n{}", t(key))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn emu_error_hints_match_common_failures() {
+        crate::i18n::set_language("en");
+        assert!(
+            emu_error_hint("copy emulator binary: Access is denied. (os error 5)")
+                .contains("protected place")
+        );
+        assert!(emu_error_hint("Operation did not complete successfully because the file contains a virus (os error 225)")
+            .contains("antivirus"));
+        assert!(
+            emu_error_hint("GitHub fetch failed: error sending request for url").contains("GitHub")
+        );
+        assert!(emu_error_hint("generate_interfaces failed: bad file").is_empty());
+    }
 
     fn file(path: &str, platform: Platform, arch: &str) -> ScannedFile {
         ScannedFile {

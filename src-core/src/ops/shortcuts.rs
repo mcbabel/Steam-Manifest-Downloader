@@ -307,6 +307,98 @@ fn create_lnk_shortcut(
     description: &str,
     folder_type: &str, // "Desktop" or "Programs"
 ) -> Result<(), String> {
+    let native = std::thread::scope(|s| {
+        s.spawn(|| {
+            create_lnk_native(
+                safe_name,
+                exe_path,
+                working_dir,
+                icon_path,
+                description,
+                folder_type,
+            )
+        })
+        .join()
+        .unwrap_or_else(|_| Err("shortcut thread panicked".to_string()))
+    });
+    match native {
+        Ok(()) => Ok(()),
+        Err(native_err) => create_lnk_powershell(
+            safe_name,
+            exe_path,
+            working_dir,
+            icon_path,
+            description,
+            folder_type,
+        )
+        .map_err(|ps_err| format!("{}; fallback: {}", native_err, ps_err)),
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn create_lnk_native(
+    safe_name: &str,
+    exe_path: &str,
+    working_dir: &str,
+    icon_path: &str,
+    description: &str,
+    folder_type: &str,
+) -> Result<(), String> {
+    use windows::core::{Interface, HSTRING};
+    use windows::Win32::System::Com::{
+        CoCreateInstance, CoInitializeEx, CoTaskMemFree, CoUninitialize, IPersistFile,
+        CLSCTX_INPROC_SERVER, COINIT_APARTMENTTHREADED,
+    };
+    use windows::Win32::UI::Shell::{
+        FOLDERID_Desktop, FOLDERID_Programs, IShellLinkW, SHGetKnownFolderPath, ShellLink,
+        KF_FLAG_DEFAULT,
+    };
+
+    unsafe {
+        let initialized = CoInitializeEx(None, COINIT_APARTMENTTHREADED).is_ok();
+        let result = (|| -> Result<(), String> {
+            let folder_id = if folder_type == "Desktop" {
+                &FOLDERID_Desktop
+            } else {
+                &FOLDERID_Programs
+            };
+            let raw = SHGetKnownFolderPath(folder_id, KF_FLAG_DEFAULT, None)
+                .map_err(|e| format!("folder lookup failed: {}", e))?;
+            let folder = raw.to_string();
+            CoTaskMemFree(Some(raw.0 as *const _));
+            let folder = folder.map_err(|e| format!("folder path invalid: {}", e))?;
+            let target = std::path::Path::new(&folder).join(format!("{}.lnk", safe_name));
+
+            let link: IShellLinkW = CoCreateInstance(&ShellLink, None, CLSCTX_INPROC_SERVER)
+                .map_err(|e| format!("ShellLink unavailable: {}", e))?;
+            link.SetPath(&HSTRING::from(exe_path))
+                .map_err(|e| e.to_string())?;
+            link.SetWorkingDirectory(&HSTRING::from(working_dir))
+                .map_err(|e| e.to_string())?;
+            link.SetDescription(&HSTRING::from(description))
+                .map_err(|e| e.to_string())?;
+            link.SetIconLocation(&HSTRING::from(icon_path), 0)
+                .map_err(|e| e.to_string())?;
+            let file: IPersistFile = link.cast().map_err(|e| e.to_string())?;
+            file.Save(&HSTRING::from(target.as_os_str()), true)
+                .map_err(|e| format!("saving shortcut failed: {}", e))
+        })();
+        if initialized {
+            CoUninitialize();
+        }
+        result
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn create_lnk_powershell(
+    safe_name: &str,
+    exe_path: &str,
+    working_dir: &str,
+    icon_path: &str,
+    description: &str,
+    folder_type: &str,
+) -> Result<(), String> {
     const SCRIPT: &str = "\
         $ErrorActionPreference = 'Stop';\
         $folder = [Environment]::GetFolderPath($env:SMD_FOLDER);\

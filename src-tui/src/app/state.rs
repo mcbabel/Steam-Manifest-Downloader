@@ -253,6 +253,7 @@ pub struct Wizard {
     pub steam_status: Option<(Tone, String)>,
     pub steam_done: bool,
     pub steam_busy: bool,
+    pub steam_running: bool,
 
     pub post_scroll: u16,
 }
@@ -323,6 +324,7 @@ impl Wizard {
             steam_status: None,
             steam_done: false,
             steam_busy: false,
+            steam_running: false,
             post_scroll: 0,
         }
     }

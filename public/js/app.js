@@ -2459,6 +2459,25 @@ function emuFailClass(results) {
   return EMU_FAIL_CLASSES.has(first.failClass) ? first.failClass : 'unknown';
 }
 
+function emuErrorHint(err) {
+  const t = String(err || '');
+  if (/os error 225|virus|unwanted software|unerwünschte software/i.test(t)) {
+    return window.i18n.t('emulator.hintAntivirusFile');
+  }
+  if (/os error 5\b|os error 13\b|access is denied|zugriff verweigert|permission denied/i.test(t)) {
+    return window.i18n.t('emulator.hintPermission');
+  }
+  if (/GitHub fetch failed|GitHub returned HTTP|download returned HTTP|error sending request|steamless download|not present in release/i.test(t)) {
+    return window.i18n.t('emulator.hintDownload');
+  }
+  return '';
+}
+
+function withEmuHint(text, ...sources) {
+  const hint = sources.map(emuErrorHint).find(Boolean);
+  return hint ? `${text}\n\n${hint}` : text;
+}
+
 function classifyEmuCommandError(err) {
   const t = String(err || '');
   if (t.includes('AV_BLOCKED')) return 'av_blocked';
@@ -2542,6 +2561,7 @@ async function saveSettings() {
 
     await invoke('save_settings', { settings: currentSettings });
     state.notificationSoundEnabled = currentSettings.notification_sound;
+    checkDotNet();
 
     if (els.btnSettingsSave && els.btnSettingsSave.dataset.languageRestart === '1') {
       await invoke('restart_app');
@@ -2924,7 +2944,14 @@ function playNotificationSound() {
 }
 
 async function checkDotNet() {
+  const banner = document.getElementById('dotnet-warning');
   try {
+    const settings = await invoke('get_settings');
+    if (settings.use_native_downloader !== false) {
+      if (banner) banner.classList.add('hidden');
+      return;
+    }
+
     // Skip if user already dismissed the warning this session
     if (sessionStorage.getItem('dotnetWarningDismissed') === 'true') return;
 
@@ -3754,6 +3781,24 @@ function setSteamLibraryResult(kind, text) {
   els.steamLibraryResult.textContent = text;
 }
 
+function showSteamRunningPrompt() {
+  setSteamLibraryResult('error', window.i18n.t('steamLibrary.steamRunning'));
+  if (!els.steamLibraryResult) return;
+  const actions = document.createElement('div');
+  actions.className = 'completion-message__actions';
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'btn btn--outline btn--small';
+  btn.textContent = window.i18n.t('steamLibrary.closeAndAdd');
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    const ok = await performSteamLibraryAdd(true);
+    if (ok) switchSteamButtonToNext();
+  });
+  actions.appendChild(btn);
+  els.steamLibraryResult.appendChild(actions);
+}
+
 function currentAppIdForSteam() {
   if (state.parsedData && state.parsedData.mainAppId) return String(state.parsedData.mainAppId);
   if (state.searchAppId) return String(state.searchAppId);
@@ -3790,7 +3835,7 @@ function steamLibraryContinue() {
   else resetApp();
 }
 
-async function performSteamLibraryAdd() {
+async function performSteamLibraryAdd(closeSteam = false) {
   const exePath = (els.steamExePath && els.steamExePath.value || '').trim();
   if (!exePath) {
     setSteamLibraryResult('error', window.i18n.t('steamLibrary.error', { message: 'no executable selected' }));
@@ -3816,10 +3861,12 @@ async function performSteamLibraryAdd() {
       exePath,
       startDir,
       launchOptions,
+      closeSteam,
     });
     const gridCount = (result.grid_files || []).length;
     const isWindowsExe = exePath.toLowerCase().endsWith('.exe');
-    let successMsg = window.i18n.t('steamLibrary.success', { name: appName })
+    const successKey = result.steam_restarted ? 'steamLibrary.successRestarted' : 'steamLibrary.success';
+    let successMsg = window.i18n.t(successKey, { name: appName })
       + '\n\n' + window.i18n.t('steamLibrary.gridArtCount', { count: gridCount });
     if (isWindowsExe) {
       successMsg += '\n' + window.i18n.t('steamLibrary.protonNote');
@@ -3828,6 +3875,10 @@ async function performSteamLibraryAdd() {
     return true;
   } catch (e) {
     console.error('steam_library_add failed:', e);
+    if (String(e) === 'STEAM_RUNNING') {
+      showSteamRunningPrompt();
+      return false;
+    }
     setSteamLibraryResult('error', window.i18n.t('steamLibrary.error', { message: String(e) }));
     return false;
   } finally {
@@ -4127,7 +4178,7 @@ async function removeDrm() {
         && /mono/i.test(errMsg);
       const hint = monoNeeded ? '\n\n' + window.i18n.t('emulator.drmMonoHint') : '';
       const summary = window.i18n.t('emulator.drmRemovePartial', { success, failed });
-      setDrmStatus('error', `${summary}\n\n${errMsg}${hint}`);
+      setDrmStatus('error', withEmuHint(`${summary}\n\n${errMsg}${hint}`, errMsg));
     }
   } catch (e) {
     console.error('steamless_unpack failed:', e);
@@ -4135,7 +4186,7 @@ async function removeDrm() {
     const monoNeeded = /command not found|No such file|cannot run|exec format/i.test(errMsg)
       && /mono/i.test(errMsg);
     const hint = monoNeeded ? '\n\n' + window.i18n.t('emulator.drmMonoHint') : '';
-    setDrmStatus('error', window.i18n.t('emulator.drmRemoveError', { message: errMsg }) + hint);
+    setDrmStatus('error', withEmuHint(window.i18n.t('emulator.drmRemoveError', { message: errMsg }) + hint, errMsg));
   } finally {
     if (els.btnEmuDrmRemove) els.btnEmuDrmRemove.disabled = false;
   }
@@ -4507,11 +4558,15 @@ async function applyEmuReplacement() {
         if (els.btnEmuApply) els.btnEmuApply.textContent = window.i18n.t('emulator.goBackHome');
       }
     } else {
-      const details = results
-        .filter(r => !r.success)
+      const failedResults = results.filter(r => !r.success);
+      const details = failedResults
         .map(r => `${emuFileLabel(r.path)}\n    ${r.error || window.i18n.t('emulator.applyReasonUnknown')}`)
         .join('\n');
-      setEmuApplyStatus('error', window.i18n.t('emulator.applyPartial', { success, failed }), details);
+      const summary = withEmuHint(
+        window.i18n.t('emulator.applyPartial', { success, failed }),
+        ...failedResults.map(r => r.error),
+      );
+      setEmuApplyStatus('error', summary, details);
       if (state.emuStandalone) {
         await refreshEmuScanInPlace();
       }
@@ -4538,7 +4593,7 @@ async function applyEmuReplacement() {
     if (msg.includes('AV_BLOCKED')) {
       setEmuApplyAntivirusBlocked();
     } else {
-      setEmuApplyStatus('error', window.i18n.t('emulator.applyError', { message: msg }));
+      setEmuApplyStatus('error', withEmuHint(window.i18n.t('emulator.applyError', { message: msg }), msg));
     }
   } finally {
     setEmuBusy(false);

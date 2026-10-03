@@ -16,6 +16,7 @@ pub async fn steam_library_add(
     exe_path: String,
     start_dir: String,
     launch_options: Option<String>,
+    close_steam: Option<bool>,
 ) -> Result<ShortcutAdded, String> {
     steam_library::add_to_steam_library(
         &state.http_client,
@@ -24,6 +25,7 @@ pub async fn steam_library_add(
         &exe_path,
         &start_dir,
         launch_options.as_deref().unwrap_or(""),
+        close_steam.unwrap_or(false),
     )
     .await
 }

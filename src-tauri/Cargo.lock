@@ -4343,6 +4343,7 @@ dependencies = [
  "uuid",
  "vdf-reader",
  "walkdir",
+ "windows",
  "zip",
  "zstd 0.14.0",
 ]

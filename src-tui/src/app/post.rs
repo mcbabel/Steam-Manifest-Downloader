@@ -8,6 +8,7 @@ use crate::i18n::{t, tf};
 use crate::theme;
 use crate::ui::widgets::{self, Btn, ButtonSpec, InputSpec, Tone};
 use crate::ui::{take_bottom, Ctx, Fid, ScrollView};
+use smd_core::services::steam_library::STEAM_RUNNING_ERROR;
 
 pub fn derive_start_dir(exe: &str) -> String {
     let idx = exe.rfind(['/', '\\']);
@@ -33,6 +34,7 @@ impl App {
     pub(super) fn go_to_steam_step(&mut self) {
         self.wiz.step = Step::SteamLibrary;
         self.wiz.steam_done = false;
+        self.wiz.steam_running = false;
         self.wiz.steam_status = None;
         self.wiz
             .steam_name
@@ -110,9 +112,10 @@ impl App {
                 if self.wiz.steam_done {
                     self.continue_after_post();
                 } else {
-                    self.steam_add();
+                    self.steam_add(false);
                 }
             }
+            Action::SteamCloseAndAdd => self.steam_add(true),
             Action::SteamNext => self.continue_after_post(),
             _ => return false,
         }
@@ -150,6 +153,7 @@ impl App {
                         &exe,
                         &derive_start_dir(&exe),
                         "",
+                        false,
                     )
                     .await,
                 )
@@ -181,9 +185,10 @@ impl App {
                 match steam {
                     Some(Ok(added)) => msgs.push(format!(
                         "{} ({})",
-                        tf("steamLibrary.success", &[("name", &steam_name)]),
+                        tf(steam_success_key(&added), &[("name", &steam_name)]),
                         tf("steamLibrary.gridArtCount", &[("count", &added.grid_files.len())])
                     )),
+                    Some(Err(e)) if e == STEAM_RUNNING_ERROR => msgs.push(t("steamLibrary.steamRunning")),
                     Some(Err(e)) => msgs.push(tf("steamLibrary.error", &[("message", &e)])),
                     None => {}
                 }
@@ -193,7 +198,7 @@ impl App {
         });
     }
 
-    fn steam_add(&mut self) {
+    fn steam_add(&mut self, close_steam: bool) {
         let exe = self.wiz.steam_exe.trimmed();
         if exe.is_empty() {
             self.wiz.steam_status = Some((
@@ -218,6 +223,7 @@ impl App {
             .unwrap_or_else(|| format!("App {}", app_id));
         let launch = self.wiz.steam_launch.trimmed();
         self.wiz.steam_busy = true;
+        self.wiz.steam_running = false;
         self.wiz.steam_status = Some((Tone::Busy, t("steamLibrary.adding")));
         let core = self.core.clone();
         self.spawn(async move {
@@ -228,6 +234,7 @@ impl App {
                 &exe,
                 &derive_start_dir(&exe),
                 &launch,
+                close_steam,
             )
             .await;
             apply(move |app| {
@@ -236,7 +243,7 @@ impl App {
                     Ok(added) => {
                         let mut msg = format!(
                             "{}\n{}",
-                            tf("steamLibrary.success", &[("name", &name)]),
+                            tf(steam_success_key(&added), &[("name", &name)]),
                             tf(
                                 "steamLibrary.gridArtCount",
                                 &[("count", &added.grid_files.len())]
@@ -248,6 +255,11 @@ impl App {
                         }
                         app.wiz.steam_status = Some((Tone::Success, msg));
                         app.wiz.steam_done = true;
+                    }
+                    Err(e) if e == STEAM_RUNNING_ERROR => {
+                        app.wiz.steam_running = true;
+                        app.wiz.steam_status =
+                            Some((Tone::Warning, t("steamLibrary.steamRunning")));
                     }
                     Err(e) => {
                         app.wiz.steam_status =
@@ -557,18 +569,42 @@ impl App {
         } else {
             t("steamLibrary.add")
         };
-        let specs = [
-            ButtonSpec::new(
-                t("steamLibrary.skip"),
-                Fid::new("steam.skip"),
-                Action::SteamNext,
-                Btn::Secondary,
-            ),
+        let can_add = !self.wiz.steam_busy && self.steam_install.is_some();
+        let mut specs = vec![ButtonSpec::new(
+            t("steamLibrary.skip"),
+            Fid::new("steam.skip"),
+            Action::SteamNext,
+            Btn::Secondary,
+        )];
+        if self.wiz.steam_running && !self.wiz.steam_done {
+            specs.push(
+                ButtonSpec::new(
+                    t("steamLibrary.closeAndAdd"),
+                    Fid::new("steam.closeAndAdd"),
+                    Action::SteamCloseAndAdd,
+                    Btn::Secondary,
+                )
+                .enabled(can_add),
+            );
+        }
+        specs.push(
             ButtonSpec::new(main, Fid::new("steam.add"), Action::SteamAdd, Btn::Primary)
-                .enabled(!self.wiz.steam_busy && self.steam_install.is_some()),
-        ];
+                .enabled(can_add),
+        );
         widgets::buttons(buf, ctx, footer, &specs, true);
-        ctx.prefer(Fid::new("steam.add"));
+        ctx.prefer(Fid::new(if self.wiz.steam_running {
+            "steam.closeAndAdd"
+        } else {
+            "steam.add"
+        }));
+    }
+}
+
+fn steam_success_key(added: &smd_core::services::steam_library::ShortcutAdded) -> &'static str {
+    if added.steam_restarted {
+        "steamLibrary.successRestarted"
+    } else {
+        "steamLibrary.success"
     }
 }
 

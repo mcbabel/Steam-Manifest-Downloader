@@ -20,7 +20,11 @@ pub struct ShortcutAdded {
     pub steam_dir: String,
     pub user_id3: String,
     pub grid_files: Vec<String>,
+    #[serde(default)]
+    pub steam_restarted: bool,
 }
+
+pub const STEAM_RUNNING_ERROR: &str = "STEAM_RUNNING";
 
 #[derive(Debug, Clone)]
 enum VdfNode {
@@ -204,8 +208,42 @@ fn linux_steam_candidates() -> Vec<PathBuf> {
 }
 
 #[cfg(target_os = "windows")]
+fn registry_steam_path() -> Option<PathBuf> {
+    use std::os::windows::process::CommandExt;
+    let output = std::process::Command::new("reg")
+        .args(["query", r"HKCU\Software\Valve\Steam", "/v", "SteamPath"])
+        .creation_flags(0x08000000)
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    parse_reg_query_value(&String::from_utf8_lossy(&output.stdout), "SteamPath")
+}
+
+#[cfg(any(target_os = "windows", test))]
+fn parse_reg_query_value(text: &str, name: &str) -> Option<PathBuf> {
+    text.lines().find_map(|line| {
+        let line = line.trim();
+        let (key, rest) = line.split_once(char::is_whitespace)?;
+        if !key.eq_ignore_ascii_case(name) {
+            return None;
+        }
+        let (kind, value) = rest.trim_start().split_once(char::is_whitespace)?;
+        if !kind.starts_with("REG_") {
+            return None;
+        }
+        let value = value.trim();
+        (!value.is_empty()).then(|| PathBuf::from(value.replace('/', "\\")))
+    })
+}
+
+#[cfg(target_os = "windows")]
 fn windows_steam_candidates() -> Vec<PathBuf> {
     let mut out = Vec::new();
+    if let Some(p) = registry_steam_path() {
+        out.push(p);
+    }
     if let Ok(pf86) = std::env::var("ProgramFiles(x86)") {
         out.push(PathBuf::from(pf86).join("Steam"));
     }
@@ -477,6 +515,90 @@ pub async fn download_grid_art(
     (written, icon_path)
 }
 
+pub fn is_steam_running() -> bool {
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        std::process::Command::new("tasklist")
+            .args(["/FI", "IMAGENAME eq steam.exe", "/FO", "CSV", "/NH"])
+            .creation_flags(0x08000000)
+            .output()
+            .map(|o| {
+                String::from_utf8_lossy(&o.stdout)
+                    .to_ascii_lowercase()
+                    .contains("\"steam.exe\"")
+            })
+            .unwrap_or(false)
+    }
+    #[cfg(target_os = "linux")]
+    {
+        std::fs::read_dir("/proc")
+            .map(|entries| {
+                entries.flatten().any(|e| {
+                    e.file_name()
+                        .to_string_lossy()
+                        .chars()
+                        .all(|c| c.is_ascii_digit())
+                        && std::fs::read_to_string(e.path().join("comm"))
+                            .map(|c| c.trim() == "steam")
+                            .unwrap_or(false)
+                })
+            })
+            .unwrap_or(false)
+    }
+    #[cfg(not(any(target_os = "windows", target_os = "linux")))]
+    {
+        false
+    }
+}
+
+fn steam_command(steam_dir: &Path) -> std::process::Command {
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        let mut cmd = std::process::Command::new(steam_dir.join("steam.exe"));
+        cmd.creation_flags(0x08000000);
+        cmd
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let script = steam_dir.join("steam.sh");
+        if script.exists() {
+            std::process::Command::new(script)
+        } else {
+            std::process::Command::new("steam")
+        }
+    }
+}
+
+pub async fn shutdown_steam(steam_dir: &Path) -> Result<(), String> {
+    steam_command(steam_dir)
+        .arg("-shutdown")
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .map_err(|e| format!("Could not ask Steam to close: {}", e))?;
+    for _ in 0..60 {
+        tokio::time::sleep(Duration::from_millis(500)).await;
+        if !is_steam_running() {
+            tokio::time::sleep(Duration::from_secs(1)).await;
+            return Ok(());
+        }
+    }
+    Err("Steam did not close within 30 seconds. Please close Steam yourself and try again.".into())
+}
+
+pub fn start_steam(steam_dir: &Path) -> Result<(), String> {
+    steam_command(steam_dir)
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .map(|_| ())
+        .map_err(|e| format!("Could not start Steam: {}", e))
+}
+
 pub async fn add_to_steam_library(
     client: &Client,
     steam_app_id: &str,
@@ -484,9 +606,15 @@ pub async fn add_to_steam_library(
     exe_path: &str,
     start_dir: &str,
     launch_options: &str,
+    close_steam: bool,
 ) -> Result<ShortcutAdded, String> {
     let install = detect_steam()?;
     let steam_dir = PathBuf::from(&install.steam_dir);
+
+    let running = is_steam_running();
+    if running && !close_steam {
+        return Err(STEAM_RUNNING_ERROR.to_string());
+    }
 
     let exe_quoted_for_id = quote_exe(exe_path);
     let appid = generate_shortcut_appid(&exe_quoted_for_id, app_name);
@@ -495,6 +623,10 @@ pub async fn add_to_steam_library(
         download_grid_art(client, &steam_dir, &install.user_id3, appid, steam_app_id).await;
 
     let icon = icon_path.unwrap_or_default();
+
+    if running {
+        shutdown_steam(&steam_dir).await?;
+    }
 
     add_or_replace_shortcut(
         &steam_dir,
@@ -506,11 +638,42 @@ pub async fn add_to_steam_library(
         launch_options,
     )?;
 
+    let steam_restarted = running && start_steam(&steam_dir).is_ok();
+
     let _ = Utc::now();
     Ok(ShortcutAdded {
         shortcut_appid: appid,
         steam_dir: install.steam_dir,
         user_id3: install.user_id3,
         grid_files,
+        steam_restarted,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn reads_steam_path_from_reg_query_output() {
+        let out = "\r\nHKEY_CURRENT_USER\\Software\\Valve\\Steam\r\n    SteamPath    REG_SZ    d:/games/steam\r\n\r\n";
+        assert_eq!(
+            parse_reg_query_value(out, "SteamPath"),
+            Some(PathBuf::from("d:\\games\\steam"))
+        );
+    }
+
+    #[test]
+    fn reg_query_value_with_spaces_in_path() {
+        let out = "    SteamPath    REG_SZ    c:/program files (x86)/steam\r\n";
+        assert_eq!(
+            parse_reg_query_value(out, "SteamPath"),
+            Some(PathBuf::from("c:\\program files (x86)\\steam"))
+        );
+    }
+
+    #[test]
+    fn reg_query_value_missing() {
+        assert_eq!(parse_reg_query_value("ERROR: not found", "SteamPath"), None);
+    }
 }

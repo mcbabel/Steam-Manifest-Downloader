@@ -1350,6 +1350,13 @@ button:disabled,
   color: var(--error);
 }
 
+.completion-message__actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.75rem;
+  white-space: normal;
+}
+
 .av-blocked {
   display: flex;
   flex-direction: column;
