@@ -301,10 +301,10 @@ jobs:
           SHA="${{ steps.info.outputs.short_sha }}"
 
           mv "artifacts/windows-portable/steam-manifest-downloader.exe" \
-             "artifacts/windows-portable/Steam-Manifest-Downloader_${VERSION}-dev-${SHA}_portable.exe"
+             "artifacts/windows-portable/Steam-Manifest-Downloader_${VERSION}-dev-${SHA}_windows-portable.exe"
 
-          mv "artifacts/tui-linux/smd" "artifacts/tui-linux/smd_${VERSION}-dev-${SHA}_linux-x86_64"
-          mv "artifacts/tui-windows/smd.exe" "artifacts/tui-windows/smd_${VERSION}-dev-${SHA}_windows-x86_64.exe"
+          mv "artifacts/tui-linux/smd" "artifacts/tui-linux/Steam-Manifest-Downloader-Terminal_${VERSION}-dev-${SHA}_linux-x64"
+          mv "artifacts/tui-windows/smd.exe" "artifacts/tui-windows/Steam-Manifest-Downloader-Terminal_${VERSION}-dev-${SHA}_windows-x64.exe"
 
           cd artifacts/linux-appimage
           for f in *.AppImage; do

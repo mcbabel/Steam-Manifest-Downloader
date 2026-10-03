@@ -105,7 +105,7 @@ jobs:
         run: |
           VERSION=$(grep -oP '"version":\s*"\K[^"]+' src-tauri/tauri.conf.json)
           mkdir -p tui-dist
-          cp target/release/smd.exe "tui-dist/smd_${VERSION}_windows-x86_64.exe"
+          cp target/release/smd.exe "tui-dist/Steam-Manifest-Downloader-Terminal_${VERSION}_windows-x64.exe"
 
       - uses: actions/upload-artifact@v7
         with:
@@ -160,7 +160,7 @@ jobs:
           cargo build --release --locked --target x86_64-unknown-linux-musl -p smd-tui
           VERSION=$(grep -oP '"version":\s*"\K[^"]+' src-tauri/tauri.conf.json)
           mkdir -p tui-dist
-          cp target/x86_64-unknown-linux-musl/release/smd "tui-dist/smd_${VERSION}_linux-x86_64"
+          cp target/x86_64-unknown-linux-musl/release/smd "tui-dist/Steam-Manifest-Downloader-Terminal_${VERSION}_linux-x64"
 
       - uses: actions/upload-artifact@v7
         with:

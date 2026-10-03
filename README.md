@@ -179,7 +179,7 @@ chmod +x Steam\ Manifest\ Downloader_*_amd64.AppImage
 no browser engine, no installer. Run it without arguments for the interactive UI,
 or use the subcommands on a server, in Docker or in scripts.
 
-**Download:** `smd_<version>_linux-x86_64` or `smd_<version>_windows-x86_64.exe`
+**Download:** `Steam-Manifest-Downloader-Terminal_<version>_linux-x64` or `Steam-Manifest-Downloader-Terminal_<version>_windows-x64.exe`
 from [**Releases**](../../releases).
 
 With the default download engine (the built-in native downloader) `smd` needs
@@ -190,8 +190,8 @@ the settings, the same requirements as the desktop app apply: the
 Windows, and a glibc-based distro on Linux (not Alpine).
 
 ```bash
-chmod +x smd_*_linux-x86_64
-./smd_*_linux-x86_64
+chmod +x Steam-Manifest-Downloader-Terminal_*_linux-x64
+./Steam-Manifest-Downloader-Terminal_*_linux-x64
 ```
 
 ### Interactive UI
