@@ -475,7 +475,14 @@ This project is licensed under the [GPL-2.0 License](LICENSE).
 - **[gbe_fork](https://github.com/Detanup01/gbe_fork)** — Steamworks API emulator (downloaded on demand, bundled in the Windows standalone ZIP)
 - **[Steamless](https://github.com/atom0s/Steamless)** by atom0s — SteamStub DRM unpacker (downloaded on demand, bundled in the Windows standalone ZIP)
 - **[Steam API Check Bypass](https://github.com/SteamAutoCracks/Steam-API-Check-Bypass)** by SteamAutoCracks — bypasses Steam API DLL integrity checks (downloaded on demand, bundled in the Windows standalone ZIP)
-- **[api.steamcmd.net](https://api.steamcmd.net/)** — public Steam PICS mirror for depot metadata tags
+- **[api.steamcmd.net](https://api.steamcmd.net/)** — public Steam PICS mirror for depot metadata tags and the latest manifest IDs
+- **[steam-vent](https://codeberg.org/steam-vent/steam-vent)** — Steam network client used by the built-in downloader (anonymous login, PICS, manifest request codes)
+- **[SteamKit2](https://github.com/SteamRE/SteamKit)** — Steam network library used by DepotDownloaderMod
+- **[manifest.steam.run](https://manifest.steam.run/)** — manifest request codes when Steam does not return one
+- **[ManifestHub archive](https://archive.org/details/manifest-hub-repo)** on archive.org — default fallback source for manifests and depot keys
+- **[ManifestHub API](https://manifesthub2.filegear-sg.me/)** — manifest fallback with your own API key
+- **[Hubcap](https://hubcapmanifest.com/)** — optional manifest source with your own API key
+- **[Ryuu](https://generator.ryuu.lol/)** — optional manifest source with your own API key
 
 ---
 
