@@ -4311,6 +4311,43 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "67b1b7a3b5fe4f1376887184045fcf45c69e92af734b7aaddc05fb777b6fbd03"
 
 [[package]]
+name = "smd-core"
+version = "1.4.3"
+dependencies = [
+ "aes 0.9.3",
+ "base64 0.23.1",
+ "byteorder",
+ "bzip2",
+ "cbc 0.2.1",
+ "chrono",
+ "crc32fast",
+ "dirs",
+ "dryoc",
+ "ecb",
+ "flate2",
+ "futures",
+ "hex",
+ "libc",
+ "lzma-rs",
+ "protobuf",
+ "regex",
+ "reqwest 0.12.28",
+ "serde",
+ "serde_json",
+ "sevenz-rust",
+ "sha1 0.11.0",
+ "steam-vent",
+ "steam-vent-proto",
+ "tar",
+ "tokio",
+ "uuid",
+ "vdf-reader",
+ "walkdir",
+ "zip",
+ "zstd 0.14.0",
+]
+
+[[package]]
 name = "socket2"
 version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4394,41 +4431,18 @@ checksum = "6ce2be8dc25455e1f91df71bfa12ad37d7af1092ae736f3a6cd0e37bc7810596"
 name = "steam-manifest-downloader"
 version = "1.4.3"
 dependencies = [
- "aes 0.9.3",
- "base64 0.23.1",
- "byteorder",
- "bzip2",
- "cbc 0.2.1",
- "chrono",
- "crc32fast",
- "dryoc",
- "ecb",
- "flate2",
- "futures",
  "hex",
  "libc",
- "lzma-rs",
- "protobuf",
- "regex",
  "reqwest 0.12.28",
  "serde",
  "serde_json",
- "sevenz-rust",
- "sha1 0.11.0",
- "steam-vent",
- "steam-vent-proto",
- "tar",
+ "smd-core",
  "tauri",
  "tauri-build",
  "tauri-plugin-dialog",
  "tauri-plugin-fs",
  "tauri-plugin-shell",
  "tokio",
- "uuid",
- "vdf-reader",
- "walkdir",
- "zip",
- "zstd 0.14.0",
 ]
 
 [[package]]

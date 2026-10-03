@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 use tauri::{command, AppHandle, Manager};
-use crate::services::settings as settings_service;
+use smd_core::services::settings as settings_service;
 
 #[command]
 pub async fn get_settings(app: AppHandle) -> Result<serde_json::Value, String> {

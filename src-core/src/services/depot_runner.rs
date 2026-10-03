@@ -4,7 +4,7 @@ use std::time::Duration;
 use tokio::io::{AsyncBufReadExt, AsyncRead, BufReader};
 use tokio::process::Command;
 use tokio::task::JoinHandle;
-use tauri::{AppHandle, Emitter};
+use crate::services::events::{Sink, DOWNLOAD_PROGRESS};
 
 const STREAM_THROTTLE: Duration = Duration::from_millis(150);
 const STREAM_BATCH_MAX: usize = 50;
@@ -216,16 +216,17 @@ impl ProgressEvent {
     }
 }
 
-pub fn emit_progress(app: &AppHandle, event: &ProgressEvent) {
-    if let Err(e) = app.emit("download-progress", event) {
-        eprintln!("[DepotRunner] Failed to emit progress event: {}", e);
+pub fn emit_progress(sink: &Sink, event: &ProgressEvent) {
+    match serde_json::to_value(event) {
+        Ok(payload) => sink.emit(DOWNLOAD_PROGRESS, payload),
+        Err(e) => eprintln!("[DepotRunner] Failed to emit progress event: {}", e),
     }
 }
 
 fn spawn_stream_forwarder<R>(
     reader: Option<R>,
     stream_name: &'static str,
-    app: AppHandle,
+    sink: Sink,
     job_id: String,
     depot_id: String,
 ) -> JoinHandle<()>
@@ -245,7 +246,7 @@ where
             event.depot_id = Some(depot_id.clone());
             event.stream = Some(stream_name.to_string());
             event.output = Some(combined);
-            emit_progress(&app, &event);
+            emit_progress(&sink, &event);
             buffer.clear();
         };
 
@@ -280,7 +281,7 @@ const DDM_DISPLAY_NAME: &str = "DepotDownloaderMod.exe";
 const DDM_DISPLAY_NAME: &str = "DepotDownloaderMod";
 
 pub async fn run_depot_downloader(
-    app: &AppHandle,
+    sink: &Sink,
     exe_path: &Path,
     app_id: &str,
     depot: &DepotRunConfig,
@@ -316,7 +317,7 @@ pub async fn run_depot_downloader(
     event.step = Some("running_downloader".to_string());
     event.depot_id = Some(depot.depot_id.clone());
     event.command = Some(command_display);
-    emit_progress(app, &event);
+    emit_progress(sink, &event);
 
     #[cfg(target_os = "windows")]
     let job_object = win_job::JobObject::new().map(Arc::new);
@@ -359,7 +360,7 @@ pub async fn run_depot_downloader(
     let stdout_handle = spawn_stream_forwarder(
         child.stdout.take(),
         "stdout",
-        app.clone(),
+        sink.clone(),
         job_id.to_string(),
         depot.depot_id.clone(),
     );
@@ -367,7 +368,7 @@ pub async fn run_depot_downloader(
     let stderr_handle = spawn_stream_forwarder(
         child.stderr.take(),
         "stderr",
-        app.clone(),
+        sink.clone(),
         job_id.to_string(),
         depot.depot_id.clone(),
     );
@@ -395,7 +396,7 @@ pub async fn run_depot_downloader(
 }
 
 pub async fn run_all_depots(
-    app: &AppHandle,
+    sink: &Sink,
     exe_path: &Path,
     app_id: &str,
     depots: &[DepotRunConfig],
@@ -414,7 +415,7 @@ pub async fn run_all_depots(
                 if job.status == "cancelled" {
                     let mut event = ProgressEvent::new("cancelled", job_id);
                     event.message = Some("Download cancelled by user.".to_string());
-                    emit_progress(app, &event);
+                    emit_progress(sink, &event);
                     break;
                 }
             }
@@ -425,9 +426,9 @@ pub async fn run_all_depots(
         event.depot_id = Some(depot.depot_id.clone());
         event.current = Some(i + 1);
         event.total = Some(total);
-        emit_progress(app, &event);
+        emit_progress(sink, &event);
 
-        match run_depot_downloader(app, exe_path, app_id, depot, work_dir, extra_args, job_id, state).await {
+        match run_depot_downloader(sink, exe_path, app_id, depot, work_dir, extra_args, job_id, state).await {
             Ok(success) => {
                 results.push(serde_json::json!({
                     "depotId": depot.depot_id,
@@ -441,7 +442,7 @@ pub async fn run_all_depots(
                 event.depot_id = Some(depot.depot_id.clone());
                 event.current = Some(i + 1);
                 event.total = Some(total);
-                emit_progress(app, &event);
+                emit_progress(sink, &event);
             }
             Err(e) => {
                 {
@@ -450,7 +451,7 @@ pub async fn run_all_depots(
                         if job.status == "cancelled" {
                             let mut event = ProgressEvent::new("cancelled", job_id);
                             event.message = Some("Download cancelled by user.".to_string());
-                            emit_progress(app, &event);
+                            emit_progress(sink, &event);
                             break;
                         }
                     }
@@ -465,7 +466,7 @@ pub async fn run_all_depots(
                 let mut event = ProgressEvent::new("error", job_id);
                 event.depot_id = Some(depot.depot_id.clone());
                 event.message = Some(e);
-                emit_progress(app, &event);
+                emit_progress(sink, &event);
             }
         }
     }

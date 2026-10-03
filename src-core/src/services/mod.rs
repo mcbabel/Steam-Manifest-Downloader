@@ -27,6 +27,7 @@ pub mod steam_downloader;
 pub mod manifest_code_provider;
 pub mod debug_log;
 pub mod diag;
+pub mod events;
 
 use std::collections::HashMap;
 use std::sync::atomic::AtomicBool;
@@ -55,6 +56,12 @@ pub struct JobInfo {
     pub history_written: bool,
     #[cfg(target_os = "windows")]
     pub job_object: Option<Arc<depot_runner::win_job::JobObject>>,
+}
+
+impl Default for AppState {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl AppState {

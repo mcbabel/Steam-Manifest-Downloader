@@ -146,7 +146,7 @@ fn gen_keypair() -> Result<()> {
     eprintln!("== Server PRIVATE key (server env: TELEMETRY_PRIVATE_KEY_HEX) ==");
     println!("{}", priv_hex);
     eprintln!();
-    eprintln!("== Server PUBLIC key (paste into src-tauri/src/services/telemetry.rs SERVER_PUBLIC_KEY) ==");
+    eprintln!("== Server PUBLIC key (paste into src-core/src/services/telemetry.rs SERVER_PUBLIC_KEY) ==");
     eprintln!("const SERVER_PUBLIC_KEY: [u8; 32] = [");
     for chunk in pub_bytes.chunks(12) {
         let formatted: Vec<String> = chunk.iter().map(|b| format!("0x{:02x}", b)).collect();

@@ -94,15 +94,13 @@ impl Telemetry {
         }
     }
 
-    pub fn spawn_background_flush(self) {
-        tauri::async_runtime::spawn(async move {
-            let mut interval = tokio::time::interval(FLUSH_INTERVAL);
+    pub async fn run_background_flush(self) {
+        let mut interval = tokio::time::interval(FLUSH_INTERVAL);
+        interval.tick().await;
+        loop {
             interval.tick().await;
-            loop {
-                interval.tick().await;
-                self.flush().await;
-            }
-        });
+            self.flush().await;
+        }
     }
 
     pub async fn flush(&self) {

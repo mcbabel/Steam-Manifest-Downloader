@@ -1,7 +1,7 @@
 use tauri::command;
 
-use crate::services::steam_library::{self, ShortcutAdded, SteamInstall};
-use crate::services::AppState;
+use smd_core::services::steam_library::{self, ShortcutAdded, SteamInstall};
+use smd_core::services::AppState;
 
 #[command]
 pub async fn steam_library_detect() -> Result<SteamInstall, String> {

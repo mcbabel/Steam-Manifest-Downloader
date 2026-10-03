@@ -1,7 +1,7 @@
 use tauri::command;
 use tauri::Manager;
 
-use crate::services::AppState;
+use smd_core::services::AppState;
 
 #[command]
 pub async fn minimize_window(window: tauri::Window) -> Result<(), String> {

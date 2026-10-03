@@ -1,8 +1,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod commands;
-mod services;
 
+use smd_core::services;
 use tauri::{Emitter, Manager};
 
 fn main() {
@@ -22,7 +22,7 @@ fn main() {
                 app_version,
                 channel,
             );
-            telemetry.clone().spawn_background_flush();
+            tauri::async_runtime::spawn(telemetry.clone().run_background_flush());
 
             let mut state = services::AppState::new();
             state.telemetry = Some(telemetry);

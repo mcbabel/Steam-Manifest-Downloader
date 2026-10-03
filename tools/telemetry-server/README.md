@@ -45,7 +45,7 @@ Rotate / archive the JSONL files yourself; the server never deletes anything.
 ## Keys
 
 The keypair used by the client is defined at build time in
-`src-tauri/src/services/telemetry.rs` (`SERVER_PUBLIC_KEY`). To rotate:
+`src-core/src/services/telemetry.rs` (`SERVER_PUBLIC_KEY`). To rotate:
 
 1. Generate a new X25519 keypair.
 2. Ship a new client release with the new public key baked in.

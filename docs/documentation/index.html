@@ -846,7 +846,7 @@ sudo pacman -S webkit2gtk-4.1 libappindicator-gtk3 librsvg patchelf</code></pre>
               <p>The project embeds DepotDownloaderMod binaries at compile time. <strong>Pre-built versions are already included</strong> in the repository, so this step is only needed if you want to build them yourself.</p>
               <div class="note">
                 <p class="note__tag">Note</p>
-                <p>Pre-built binaries are located in <code>DepotDownloaderMod-Windows/</code>, which is framework dependent and requires the .NET runtime, and <code>DepotDownloaderMod-linux-full/</code>, which is self contained and needs no runtime. You can skip this step if you do not need to modify them.</p>
+                <p>Pre-built binaries are located in <code>src-core/vendor/ddm-windows/</code>, which is framework dependent and requires the .NET runtime, and <code>src-core/vendor/ddm-linux/</code>, which is self contained and needs no runtime. You can skip this step if you do not need to modify them.</p>
               </div>
               <p>Source: <a href="https://github.com/SteamAutoCracks/DepotDownloaderMod">github.com/SteamAutoCracks/DepotDownloaderMod</a></p>
 
@@ -860,7 +860,7 @@ sudo pacman -S webkit2gtk-4.1 libappindicator-gtk3 librsvg patchelf</code></pre>
 cd DepotDownloaderMod
 dotnet publish -c Release -o ./publish-windows</code></pre>
               </div>
-              <p>Then copy <strong>all</strong> files from <code>publish-windows/</code> to <code>DepotDownloaderMod-Windows/</code> in the project:</p>
+              <p>Then copy <strong>all</strong> files from <code>publish-windows/</code> to <code>src-core/vendor/ddm-windows/</code> in the project:</p>
               <ul>
                 <li><code>DepotDownloaderMod.exe</code></li>
                 <li><code>DepotDownloaderMod.dll</code></li>
@@ -889,7 +889,7 @@ dotnet publish -c Release -r linux-x64 --self-contained true \
                 <p class="note__tag">Important</p>
                 <p>Do not use <code>-p:PublishTrimmed=true</code>. .NET trimming removes reflection metadata needed by SteamKit2 and protobuf-net, which causes "A task was canceled" errors at runtime.</p>
               </div>
-              <p>Then copy <code>publish-linux/DepotDownloaderMod</code> to <code>DepotDownloaderMod-linux-full/DepotDownloaderMod</code> in the project.</p>
+              <p>Then copy <code>publish-linux/DepotDownloaderMod</code> to <code>src-core/vendor/ddm-linux/DepotDownloaderMod</code> in the project.</p>
 
               <h3 id="build-tauri">Step 2: building the Tauri app <a class="alink" href="#build-tauri" aria-label="Permalink to Step 2: building the Tauri app">#</a></h3>
 
@@ -928,15 +928,15 @@ dotnet publish -c Release -r linux-x64 --self-contained true \
               </div>
 
               <h3 id="build-project-structure">Step 3: project structure, for reference <a class="alink" href="#build-project-structure" aria-label="Permalink to Step 3: project structure, for reference">#</a></h3>
-              <p>The <code>include_bytes!</code> macro in <code>src-tauri/src/services/embedded_tools.rs</code> embeds the DDM binaries at compile time:</p>
+              <p>The <code>include_bytes!</code> macro in <code>src-core/src/services/embedded_tools.rs</code> embeds the DDM binaries at compile time:</p>
               <ul class="rows">
                 <li>
                   <span class="rows__k">windows</span>
-                  <span class="rows__v">The Windows build reads from <code>DepotDownloaderMod-Windows/</code></span>
+                  <span class="rows__v">The Windows build reads from <code>src-core/vendor/ddm-windows/</code></span>
                 </li>
                 <li>
                   <span class="rows__k">linux</span>
-                  <span class="rows__v">The Linux build reads from <code>DepotDownloaderMod-linux-full/</code></span>
+                  <span class="rows__v">The Linux build reads from <code>src-core/vendor/ddm-linux/</code></span>
                 </li>
               </ul>
               <div class="note note--key">
