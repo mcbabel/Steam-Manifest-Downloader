@@ -31,6 +31,9 @@ emulator step, so it works without downloading anything.
              2-clause BSD License (full text: third-party/steamless/LICENSE.txt)
 
 
-3. Steam API Check Bypass by MCbabel
+3. Steam API Check Bypass by SteamAutoCracks
    Files:    third-party/steam-api-check-bypass/
-   Project:  https://github.com/MCbabel/Steam-API-Check-Bypass
+   Project:  https://github.com/SteamAutoCracks/Steam-API-Check-Bypass
+   Copy of:  https://github.com/MCbabel/Steam-API-Check-Bypass (fork,
+             the DLLs are taken from there unmodified)
+   Uses:     nt-fs-dupe, https://github.com/otavepto/nt-fs-dupe
