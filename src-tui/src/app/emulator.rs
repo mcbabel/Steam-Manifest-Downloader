@@ -1611,6 +1611,11 @@ impl App {
         let r = col.next(h);
         hint(&mut sv.buf, r, &hint_text);
         col.gap(1);
+        let watcher = t("tui.emu.achievementWatcher");
+        let h = widgets::wrap_height(&watcher, col.w);
+        let r = col.next(h);
+        hint(&mut sv.buf, r, &watcher);
+        col.gap(1);
         let tabs: Vec<ButtonSpec> = SECTIONS
             .iter()
             .enumerate()

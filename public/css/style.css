@@ -807,6 +807,10 @@ button:disabled,
   margin-top: 0.35rem;
 }
 
+.emu-achievement-hint {
+  margin: 0 0 1rem;
+}
+
 /* Game Info Banner */
 .game-info-banner {
   display: flex;

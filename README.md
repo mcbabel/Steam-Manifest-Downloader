@@ -485,6 +485,7 @@ This project is licensed under the [GPL-2.0 License](LICENSE).
 - **[ManifestHub API](https://manifesthub2.filegear-sg.me/)** — manifest fallback with your own API key
 - **[Hubcap](https://hubcapmanifest.com/)** — optional manifest source with your own API key
 - **[Ryuu](https://generator.ryuu.lol/)** — optional manifest source with your own API key
+- **[Achievement Watcher](https://github.com/xan105/Achievement-Watcher)** by xan105 and its maintained [fork](https://github.com/darktakayanagi/Achievement-Watcher) — recommended in the emulator step for achievement notifications
 
 ---
 
