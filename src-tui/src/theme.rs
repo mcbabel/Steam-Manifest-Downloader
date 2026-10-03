@@ -127,6 +127,10 @@ static CURRENT: RwLock<Theme> = RwLock::new(DARK);
 static MONOCHROME: RwLock<bool> = RwLock::new(false);
 
 pub fn supports_truecolor() -> bool {
+    #[cfg(windows)]
+    if crossterm::ansi_support::supports_ansi() {
+        return true;
+    }
     if let Ok(v) = std::env::var("COLORTERM") {
         let v = v.to_ascii_lowercase();
         if v.contains("truecolor") || v.contains("24bit") {
