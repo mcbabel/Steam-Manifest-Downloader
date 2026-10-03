@@ -49,6 +49,8 @@ pub struct DownloadConfig {
     pub source_type: Option<String>,
     #[serde(rename = "updateDir", alias = "update_dir", default)]
     pub update_dir: Option<String>,
+    #[serde(rename = "speedLimit", alias = "speed_limit", default)]
+    pub speed_limit: Option<String>,
 }
 
 impl DownloadConfig {
@@ -863,6 +865,13 @@ async fn run_download_pipeline(
     emit_progress(sink, &event);
 
     let settings = crate::services::settings::load_settings(app_data_dir).await;
+    let speed_limit_text = config
+        .speed_limit
+        .as_deref()
+        .unwrap_or(&settings.download_speed_limit);
+    crate::services::speed_limit::set_limit(
+        crate::services::speed_limit::parse_speed_limit(speed_limit_text)?,
+    );
     let extra_args = if settings.dd_extra_args.is_empty() {
         vec![
             "-max-downloads".to_string(),

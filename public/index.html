@@ -1094,6 +1094,27 @@
         <p class="dd-path__hint" data-i18n="settings.autoUpdateHint">When enabled, the app checks for new versions on GitHub and offers to install them.</p>
       </div>
 
+      <div class="settings-field">
+        <label class="settings-field__label" data-i18n="settings.speedLimit">Speed Limit</label>
+        <div class="settings-field__toggle-wrap">
+          <label class="toggle-switch">
+            <input type="checkbox" id="speed-limit-toggle">
+            <span class="toggle-switch__slider"></span>
+          </label>
+          <span class="settings-field__toggle-text" data-i18n="settings.speedLimitToggle">Limit the download speed</span>
+        </div>
+        <div id="speed-limit-controls" class="speed-limit hidden">
+          <div class="speed-limit__field">
+            <input type="number" id="speed-limit-input" class="speed-limit__input" min="0" step="any" inputmode="decimal" data-i18n-attr="aria-label=settings.speedLimitValue">
+            <div class="speed-limit__units" role="radiogroup" data-i18n-attr="aria-label=settings.speedLimitUnit">
+              <button type="button" class="speed-limit__unit is-active" data-unit="MB/s" role="radio" aria-checked="true">MB/s</button>
+              <button type="button" class="speed-limit__unit" data-unit="Mbit/s" role="radio" aria-checked="false">Mbit/s</button>
+            </div>
+          </div>
+        </div>
+        <p class="dd-path__hint" data-i18n="settings.speedLimitHint">Applies to the built-in downloader, also to a download that is already running. 100 Mbit/s is about 12 MB/s.</p>
+      </div>
+
       <div class="settings-advanced">
         <button type="button" id="btn-toggle-advanced" class="settings-advanced__toggle">
           <span class="settings-advanced__arrow">▶</span>
@@ -1117,12 +1138,6 @@
             <label for="chunk-concurrency-input" class="settings-field__label" data-i18n="settings.chunkConcurrency">Max concurrent chunks (native engine)</label>
             <input type="number" id="chunk-concurrency-input" class="dd-path__input" min="1" max="64" value="8">
             <p class="dd-path__hint" data-i18n="settings.chunkConcurrencyHint">How many chunks the native engine downloads and decrypts at once. Lower this if downloads make the system lag.</p>
-          </div>
-
-          <div class="settings-field">
-            <label for="speed-limit-input" class="settings-field__label" data-i18n="settings.speedLimit">Download Speed Limit (MB/s)</label>
-            <input type="text" id="speed-limit-input" class="dd-path__input" data-i18n-attr="placeholder=settings.speedLimitPlaceholder">
-            <p class="dd-path__hint" data-i18n="settings.speedLimitHint">Leave empty for unlimited. Applied as DDM argument.</p>
           </div>
 
           <div class="settings-field">

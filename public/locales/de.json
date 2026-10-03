@@ -216,7 +216,8 @@
       "later": "Später",
       "now": "Jetzt aktualisieren",
       "installerDownloading": "Update-Installer wird geladen…",
-      "failed": "Update fehlgeschlagen: {message}"
+      "failed": "Update fehlgeschlagen: {message}",
+      "noReleaseNotes": "Keine Versionshinweise verfügbar."
     },
     "history": {
       "title": "Download-Verlauf",
@@ -465,7 +466,10 @@
     "redownloadTooltip": "Erneut laden",
     "openFolderTooltip": "Download-Ordner öffnen",
     "removeTooltip": "Eintrag entfernen",
-    "depotsDownloaded": "{done}/{total} Depots geladen"
+    "depotsDownloaded": "{done}/{total} Depots geladen",
+    "empty": "Noch keine Downloads. Dein Download-Verlauf erscheint hier.",
+    "loading": "Verlauf wird geladen…",
+    "loadFailed": "Verlauf konnte nicht geladen werden."
   },
   "depots": {
     "roleContent": "Hauptspiel · Content",
@@ -501,9 +505,8 @@
     "maxRetriesHint": "Anzahl der Wiederholungsversuche bei fehlgeschlagenem Depot-Download",
     "chunkConcurrency": "Max. gleichzeitige Chunks (native Engine)",
     "chunkConcurrencyHint": "Wie viele Chunks die native Engine gleichzeitig lädt und entschlüsselt. Verringern wenn Downloads das System zum Laggen bringen.",
-    "speedLimit": "Download-Geschwindigkeitslimit (MB/s)",
-    "speedLimitPlaceholder": "Unbegrenzt",
-    "speedLimitHint": "Leer lassen für unbegrenzt. Wird als DDM-Argument übergeben.",
+    "speedLimit": "Geschwindigkeitslimit",
+    "speedLimitHint": "Gilt für den eingebauten Downloader, auch für einen Download, der schon läuft. 100 Mbit/s entsprechen etwa 12 MB/s.",
     "proxy": "HTTP-Proxy",
     "proxyPlaceholder": "Kein Proxy",
     "proxyHint": "Optionale Proxy-URL (z.B. http://proxy:8080 oder socks5://proxy:1080)",
@@ -540,7 +543,12 @@
     "copyDebugInfo": "Debug-Info kopieren",
     "debugInfoHint": "Füge das in Bug-Reports ein, damit der Maintainer weiß, welchen Build du nutzt.",
     "cancel": "Abbrechen",
-    "save": "Speichern"
+    "save": "Speichern",
+    "speedLimitUnit": "Einheit",
+    "speedLimitExample": "leer = unbegrenzt, z. B. 10 MB/s oder 100 Mbit/s",
+    "speedLimitInvalid": "Ungültiges Geschwindigkeitslimit. Beispiele: 10 MB/s oder 100 Mbit/s.",
+    "speedLimitToggle": "Download-Geschwindigkeit begrenzen",
+    "speedLimitValue": "Höchstgeschwindigkeit"
   },
   "errors": {
     "noManifests": "Für diese App-ID wurden in keiner konfigurierten Depot-Quelle Manifests gefunden. Füge weitere Quellen in den Einstellungen hinzu oder aktiviere sie.",

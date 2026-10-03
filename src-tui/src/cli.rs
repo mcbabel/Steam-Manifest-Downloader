@@ -59,6 +59,13 @@ pub struct DownloadArgs {
         help = "Update an existing download in place: only changed files are downloaded and files removed from the game are deleted."
     )]
     pub update: Option<PathBuf>,
+    #[arg(
+        long,
+        value_name = "RATE",
+        env = "SMD_SPEED_LIMIT",
+        help = "Limit the download speed, e.g. 10MB/s or 75Mbit/s (built-in downloader only). Default: the speed limit from the settings, 0 for unlimited."
+    )]
+    pub speed_limit: Option<String>,
     #[arg(long, help = "Only print the depots that would be downloaded.")]
     pub list: bool,
     #[arg(
@@ -373,7 +380,14 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
             .update
             .as_ref()
             .map(|p| p.to_string_lossy().to_string()),
+        speed_limit: args.speed_limit.clone(),
     };
+    if let Some(limit) = config.speed_limit.as_deref() {
+        if let Err(e) = smd_core::services::speed_limit::parse_speed_limit(limit) {
+            errln!("error: {}", e);
+            return 1;
+        }
+    }
     let depot_ids: Vec<String> = config.depots.iter().map(|d| d.depot_id.clone()).collect();
 
     let (tx, mut rx) = unbounded_channel();

@@ -173,6 +173,10 @@ pub async fn load_settings(app_data_dir: &Path) -> Settings {
 }
 
 pub async fn save_settings(app_data_dir: &Path, settings: &Settings) -> Result<(), String> {
+    let speed_limit =
+        crate::services::speed_limit::parse_speed_limit(&settings.download_speed_limit)
+            .ok()
+            .flatten();
     let path = settings_path(app_data_dir);
 
     if let Some(parent) = path.parent() {
@@ -193,5 +197,6 @@ pub async fn save_settings(app_data_dir: &Path, settings: &Settings) -> Result<(
         .await
         .map_err(|e| format!("Failed to write settings file: {}", e))?;
 
+    crate::services::speed_limit::set_limit(speed_limit);
     Ok(())
 }

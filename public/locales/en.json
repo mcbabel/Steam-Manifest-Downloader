@@ -216,7 +216,8 @@
       "later": "Later",
       "now": "Update Now",
       "installerDownloading": "Downloading update installer…",
-      "failed": "Update failed: {message}"
+      "failed": "Update failed: {message}",
+      "noReleaseNotes": "No release notes available."
     },
     "history": {
       "title": "Download History",
@@ -465,7 +466,10 @@
     "redownloadTooltip": "Download again",
     "openFolderTooltip": "Open download folder",
     "removeTooltip": "Remove entry",
-    "depotsDownloaded": "{done}/{total} depots downloaded"
+    "depotsDownloaded": "{done}/{total} depots downloaded",
+    "empty": "No downloads yet. Your download history will appear here.",
+    "loading": "Loading history…",
+    "loadFailed": "Failed to load history."
   },
   "depots": {
     "roleContent": "Main · Content",
@@ -501,9 +505,8 @@
     "maxRetriesHint": "Number of retry attempts when a depot download fails",
     "chunkConcurrency": "Max concurrent chunks (native engine)",
     "chunkConcurrencyHint": "How many chunks the native engine downloads and decrypts at once. Lower this if downloads make the system lag.",
-    "speedLimit": "Download Speed Limit (MB/s)",
-    "speedLimitPlaceholder": "Unlimited",
-    "speedLimitHint": "Leave empty for unlimited. Applied as DDM argument.",
+    "speedLimit": "Speed Limit",
+    "speedLimitHint": "Applies to the built-in downloader, also to a download that is already running. 100 Mbit/s is about 12 MB/s.",
     "proxy": "HTTP Proxy",
     "proxyPlaceholder": "No proxy",
     "proxyHint": "Optional proxy URL (e.g., http://proxy:8080 or socks5://proxy:1080)",
@@ -540,7 +543,12 @@
     "copyDebugInfo": "Copy Debug Info",
     "debugInfoHint": "Paste this into bug reports so the maintainer knows which build you're running.",
     "cancel": "Cancel",
-    "save": "Save"
+    "save": "Save",
+    "speedLimitUnit": "Unit",
+    "speedLimitExample": "empty = unlimited, e.g. 10 MB/s or 100 Mbit/s",
+    "speedLimitInvalid": "Invalid speed limit. Examples: 10 MB/s or 100 Mbit/s.",
+    "speedLimitToggle": "Limit the download speed",
+    "speedLimitValue": "Maximum speed"
   },
   "errors": {
     "noManifests": "No manifests found for this App ID in any configured depot source. Add or enable more sources in Settings.",

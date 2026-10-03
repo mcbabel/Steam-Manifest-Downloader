@@ -179,6 +179,10 @@ impl App {
 
     fn save_settings_page(&mut self) {
         let inputs: Vec<String> = self.set.inputs.iter().map(|i| i.trimmed()).collect();
+        if smd_core::services::speed_limit::parse_speed_limit(&inputs[SETTING_SPEED]).is_err() {
+            self.set.status = Some((Tone::Error, t("settings.speedLimitInvalid")));
+            return;
+        }
         let draft = self.set.draft.clone();
         let sources = self.settings.depot_sources.clone();
         let old_default = self.settings.download_location.clone();
@@ -487,7 +491,7 @@ impl App {
                 SETTING_SPEED,
                 "settings.speedLimit",
                 "settings.speedLimitHint",
-                "@settings.speedLimitPlaceholder",
+                "@settings.speedLimitExample",
             ),
             (
                 SETTING_PROXY,

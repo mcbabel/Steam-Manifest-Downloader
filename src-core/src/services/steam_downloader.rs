@@ -303,6 +303,12 @@ async fn download_chunks_from_manifest(
                 if cancel.load(Ordering::SeqCst) {
                     return Err("cancelled".to_string());
                 }
+                let expected_bytes = if chunk_meta.cb_compressed > 0 {
+                    chunk_meta.cb_compressed
+                } else {
+                    chunk_meta.cb_original
+                } as u64;
+                crate::services::speed_limit::throttle(expected_bytes, &cancel).await?;
                 while pause.load(Ordering::SeqCst) {
                     if cancel.load(Ordering::SeqCst) {
                         return Err("cancelled".to_string());

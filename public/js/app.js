@@ -176,6 +176,8 @@ const els = {
   ddExtraArgsInput: $('#dd-extra-args-input'),
   maxRetriesInput: $('#max-retries-input'),
   chunkConcurrencyInput: $('#chunk-concurrency-input'),
+  speedLimitToggle: $('#speed-limit-toggle'),
+  speedLimitControls: $('#speed-limit-controls'),
   speedLimitInput: $('#speed-limit-input'),
   proxyInput: $('#proxy-input'),
   hubcapApiKeyInput: $('#hubcap-apikey-input'),
@@ -546,7 +548,7 @@ function hideAutocomplete(dropdown) {
 }
 
 function showAutocompleteLoading(dropdown) {
-  dropdown.innerHTML = '<div class="search-autocomplete__loading">Searching...</div>';
+  dropdown.innerHTML = `<div class="search-autocomplete__loading">${escapeHtml(window.i18n.t('search.loading'))}</div>`;
   dropdown.classList.remove('hidden');
 }
 
@@ -1185,11 +1187,11 @@ function showSelectionStep() {
             placeholder="${escapeHtml(window.i18n.t('select.customManifestPlaceholder'))}"
             onclick="event.stopPropagation()">
           <button type="button" class="depot-manifest-action depot-manifest-fetch-btn" data-depot-id="${safeDepotId}"
-            data-i18n-attr="title=depots.fetchLatest,aria-label=depots.fetchLatest" title="Fetch latest manifest ID">
+            title="${escapeHtml(window.i18n.t('depots.fetchLatest'))}" aria-label="${escapeHtml(window.i18n.t('depots.fetchLatest'))}">
             ${ICONS.refresh}
           </button>
           <button type="button" class="depot-manifest-action depot-manifest-btn" data-depot-id="${safeDepotId}"
-            data-i18n-attr="title=depots.uploadManifest,aria-label=depots.uploadManifest" title="Upload .manifest file">
+            title="${escapeHtml(window.i18n.t('depots.uploadManifest'))}" aria-label="${escapeHtml(window.i18n.t('depots.uploadManifest'))}">
             ${ICONS.upload}
           </button>
         </div>
@@ -2295,7 +2297,10 @@ async function openSettings() {
     els.ddExtraArgsInput.value = (settings.dd_extra_args || []).join(' ');
     els.maxRetriesInput.value = settings.max_retries ?? 3;
     els.chunkConcurrencyInput.value = settings.native_chunk_concurrency ?? 8;
-    els.speedLimitInput.value = settings.download_speed_limit || '';
+    const speedLimit = splitSpeedLimit(settings.download_speed_limit);
+    els.speedLimitInput.value = speedLimit.value;
+    setSpeedLimitUnit(speedLimit.unit);
+    setSpeedLimitEnabled(speedLimit.value !== '', false);
     els.proxyInput.value = settings.proxy || '';
     if (els.hubcapApiKeyInput) els.hubcapApiKeyInput.value = settings.hubcap_api_key || '';
     if (els.ryuuApiKeyInput) els.ryuuApiKeyInput.value = settings.ryuu_api_key || '';
@@ -2567,7 +2572,9 @@ async function saveSettings() {
     }
     currentSettings.max_retries = parseInt(els.maxRetriesInput.value) || 3;
     currentSettings.native_chunk_concurrency = parseInt(els.chunkConcurrencyInput.value) || 8;
-    currentSettings.download_speed_limit = els.speedLimitInput.value.trim();
+    currentSettings.download_speed_limit = els.speedLimitToggle && els.speedLimitToggle.checked
+      ? joinSpeedLimit(els.speedLimitInput.value, getSpeedLimitUnit())
+      : '';
     currentSettings.proxy = els.proxyInput.value.trim();
     if (els.hubcapApiKeyInput) {
       currentSettings.hubcap_api_key = els.hubcapApiKeyInput.value.trim();
@@ -2595,6 +2602,65 @@ async function saveSettings() {
     console.error('Failed to save settings:', e);
   }
   closeSettings();
+}
+
+const SPEED_LIMIT_UNITS = {
+  '': ['MB/s', 1], m: ['MB/s', 1], mb: ['MB/s', 1], mib: ['MB/s', 1],
+  k: ['MB/s', 1 / 1024], kb: ['MB/s', 1 / 1024], kib: ['MB/s', 1 / 1024],
+  g: ['MB/s', 1024], gb: ['MB/s', 1024], gib: ['MB/s', 1024],
+  mbit: ['Mbit/s', 1], mbits: ['Mbit/s', 1], mbps: ['Mbit/s', 1],
+  kbit: ['Mbit/s', 0.001], kbits: ['Mbit/s', 0.001], kbps: ['Mbit/s', 0.001],
+  gbit: ['Mbit/s', 1000], gbits: ['Mbit/s', 1000], gbps: ['Mbit/s', 1000],
+};
+
+function splitSpeedLimit(text) {
+  const match = /^\s*([\d.,]+)\s*([a-z/ ]*)$/i.exec(text || '');
+  if (!match) return { value: '', unit: 'MB/s' };
+  const number = parseFloat(match[1].replace(',', '.'));
+  const unitKey = match[2].toLowerCase().replace(/\s+/g, '').replace(/\/s$/, '');
+  const known = SPEED_LIMIT_UNITS[unitKey];
+  if (!known || !isFinite(number) || number <= 0) return { value: '', unit: 'MB/s' };
+  return { value: String(+(number * known[1]).toFixed(3)), unit: known[0] };
+}
+
+function joinSpeedLimit(value, unit) {
+  const number = parseFloat(String(value).replace(',', '.'));
+  if (!isFinite(number) || number <= 0) return '';
+  return `${number} ${unit === 'Mbit/s' ? 'Mbit/s' : 'MB/s'}`;
+}
+
+function speedLimitUnitButtons() {
+  return document.querySelectorAll('.speed-limit__unit');
+}
+
+function getSpeedLimitUnit() {
+  const active = document.querySelector('.speed-limit__unit.is-active');
+  return active ? active.dataset.unit : 'MB/s';
+}
+
+function setSpeedLimitUnit(unit) {
+  speedLimitUnitButtons().forEach(btn => {
+    const on = btn.dataset.unit === unit;
+    btn.classList.toggle('is-active', on);
+    btn.setAttribute('aria-checked', on ? 'true' : 'false');
+  });
+}
+
+function setSpeedLimitEnabled(enabled, focus) {
+  if (els.speedLimitToggle) els.speedLimitToggle.checked = enabled;
+  if (els.speedLimitControls) els.speedLimitControls.classList.toggle('hidden', !enabled);
+  if (enabled && focus && els.speedLimitInput) els.speedLimitInput.focus();
+}
+
+function bindSpeedLimitControls() {
+  if (els.speedLimitToggle) {
+    els.speedLimitToggle.addEventListener('change', () => {
+      setSpeedLimitEnabled(els.speedLimitToggle.checked, true);
+    });
+  }
+  speedLimitUnitButtons().forEach(btn => {
+    btn.addEventListener('click', () => setSpeedLimitUnit(btn.dataset.unit));
+  });
 }
 
 function toggleAdvancedSettings() {
@@ -2669,7 +2735,7 @@ function showUpdateModal(info) {
   }
   els.updateNotes.innerHTML = info.body
     ? renderMarkdown(info.body)
-    : '<em>No release notes available.</em>';
+    : `<em>${escapeHtml(window.i18n.t('modals.update.noReleaseNotes'))}</em>`;
   els.updateProgressWrap.classList.add('hidden');
   els.updateActions.style.display = '';
   els.btnUpdateNow.disabled = false;
@@ -3138,6 +3204,7 @@ function initEvents() {
   els.btnSettingsCancel.addEventListener('click', closeSettings);
   els.settingsModal.querySelector('.modal__backdrop').addEventListener('click', closeSettings);
 
+  bindSpeedLimitControls();
   if (els.btnToggleAdvanced) {
     els.btnToggleAdvanced.addEventListener('click', toggleAdvancedSettings);
   }
@@ -3369,7 +3436,7 @@ function closeHistory() {
 }
 
 async function loadHistory() {
-  els.historyList.innerHTML = '<div class="history-loading"><div class="spinner"></div><span>Loading history...</span></div>';
+  els.historyList.innerHTML = `<div class="history-loading"><div class="spinner"></div><span>${escapeHtml(window.i18n.t('history.loading'))}</span></div>`;
 
   try {
     try {
@@ -3381,7 +3448,7 @@ async function loadHistory() {
     const entries = await invoke('get_history');
     renderHistory(entries);
   } catch (e) {
-    els.historyList.innerHTML = '<div class="history-empty">Failed to load history.</div>';
+    els.historyList.innerHTML = `<div class="history-empty">${escapeHtml(window.i18n.t('history.loadFailed'))}</div>`;
     console.error('Failed to load history:', e);
   }
 }
@@ -3389,7 +3456,7 @@ async function loadHistory() {
 function renderHistory(entries) {
   state.cachedHistory = entries || [];
   if (!entries || entries.length === 0) {
-    els.historyList.innerHTML = '<div class="history-empty">No downloads yet. Your download history will appear here.</div>';
+    els.historyList.innerHTML = `<div class="history-empty">${escapeHtml(window.i18n.t('history.empty'))}</div>`;
     els.btnHistoryClear.style.display = 'none';
     return;
   }
