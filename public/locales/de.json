@@ -98,6 +98,7 @@
     "manifestHubHint": "Optionaler Fallback wenn der direkte Steam-Abruf fehlschlägt. Schlüssel hier holen: <a href=\"https://manifesthub2.filegear-sg.me/\" target=\"_blank\" class=\"link\">manifesthub2.filegear-sg.me</a>",
     "manifestHubRequired": "Du hast eine eigene Manifest-ID gesetzt — dafür wird ein ManifestHub API-Schlüssel benötigt.",
     "manifestHubAfterFailure": "Direkter Steam-Abruf ist für mindestens ein Depot fehlgeschlagen. Trag hier einen ManifestHub API-Schlüssel ein und versuch's nochmal — er wird als Fallback verwendet.",
+    "updateNotice": "Update-Modus: Der Download geht nach <strong>{path}</strong>. Es werden nur geänderte Dateien geladen, aus dem Spiel entfernte Dateien gelöscht und bereits aktuelle Depots übersprungen.",
     "downloadSelected": "Auswahl herunterladen"
   },
   "progress": {
@@ -419,7 +420,8 @@
     "statusFailed": "Fehlgeschlagen",
     "statusResumable": "Fortsetzbar",
     "resumeTooltip": "Download fortsetzen",
-    "resumeError": "Download konnte nicht fortgesetzt werden: {message}"
+    "resumeError": "Download konnte nicht fortgesetzt werden: {message}",
+    "updateTooltip": "Aktualisieren: nur Änderungen in den vorhandenen Ordner laden"
   },
   "depots": {
     "roleContent": "Hauptspiel · Content",

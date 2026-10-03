@@ -98,6 +98,7 @@
     "manifestHubHint": "Optional fallback if direct Steam fetch fails. Get a key at <a href=\"https://manifesthub2.filegear-sg.me/\" target=\"_blank\" class=\"link\">manifesthub2.filegear-sg.me</a>",
     "manifestHubRequired": "You set a custom manifest ID — a ManifestHub API key is required to fetch it.",
     "manifestHubAfterFailure": "Direct Steam fetch failed for at least one depot. Paste a ManifestHub API key here and retry to use it as fallback.",
+    "updateNotice": "Update mode: the download goes into <strong>{path}</strong>. Only changed files are downloaded, files removed from the game are deleted and depots that are already up to date are skipped.",
     "downloadSelected": "Download Selected"
   },
   "progress": {
@@ -419,7 +420,8 @@
     "statusFailed": "Failed",
     "statusResumable": "Resumable",
     "resumeTooltip": "Resume download",
-    "resumeError": "Failed to resume download: {message}"
+    "resumeError": "Failed to resume download: {message}",
+    "updateTooltip": "Update: download only what changed into the existing folder"
   },
   "depots": {
     "roleContent": "Main · Content",

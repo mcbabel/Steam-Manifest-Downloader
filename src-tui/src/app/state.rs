@@ -230,6 +230,8 @@ pub struct Wizard {
     pub select_scroll: u16,
     pub auto_select: Option<Option<Vec<String>>>,
     pub auto_redownload: bool,
+    pub update_dir: Option<String>,
+    pub update_app_id: Option<String>,
 
     pub job_id: Option<String>,
     pub result_dir: Option<String>,
@@ -259,6 +261,13 @@ pub struct Wizard {
 }
 
 impl Wizard {
+    pub fn active_update_dir(&self, app_id: &str) -> Option<String> {
+        match (&self.update_dir, &self.update_app_id) {
+            (Some(dir), Some(id)) if id == app_id => Some(dir.clone()),
+            _ => None,
+        }
+    }
+
     pub fn new(settings: &Settings, mh_key: &str) -> Self {
         Wizard {
             step: Step::Source,
@@ -304,6 +313,8 @@ impl Wizard {
             select_scroll: 0,
             auto_select: None,
             auto_redownload: false,
+            update_dir: None,
+            update_app_id: None,
             job_id: None,
             result_dir: None,
             progress: None,

@@ -38,6 +38,7 @@ Upload `.lua` files or search by App ID across configurable sources (GitHub, arc
 | 🔑 | **Automatic depot keys** generation |
 | ⚡ | **Integrated DepotDownloaderMod** execution |
 | 📊 | **Real-time progress** with per-depot speed + ETA |
+| 🔄 | **Update downloaded games** — from the history, only changed files are downloaded and files removed from the game are deleted |
 | 🎮 | **Steam Store API** integration — game names + cover art |
 | 🖼️ | **Add to Steam Library** — non-Steam shortcut with banner / hero / logo / icon (Linux step + Windows toggle) |
 | 🔧 | **gbe_fork emulator** patching — Regular + Experimental variants, 21 settings, lobby_connect launcher |
@@ -212,7 +213,7 @@ checkboxes — and the mouse wheel scrolls. Keyboard works just as well:
 | `PgUp` / `PgDn` | Scroll long pages and the output log |
 | `a` / `n`, `/`, `d` | Depot selection: all / none, filter, start download |
 | `p` / `c` | While downloading: pause/resume, cancel |
-| `r` `d` `o` `e` `x` | History: resume, download again, open folder, edit emulator, remove |
+| `r` `d` `u` `o` `e` `x` | History: resume, download again, update, open folder, edit emulator, remove |
 | `Ctrl+Q` / `F10` | Quit (asks first while a download runs) |
 
 Dragging a `.lua` / `.st` file onto the terminal window loads it right away
@@ -237,6 +238,7 @@ smd history
 | `--data-dir` / `SMD_DATA_DIR` | Settings, history and caches. Defaults to the desktop app's directory, so both share their state |
 | `--mh-key` / `SMD_MANIFESTHUB_KEY` | ManifestHub API key (fallback source and custom manifests) |
 | `--manifest DEPOT=ID` | Pin a depot to a specific manifest (repeatable) |
+| `--update <GAME_DIR>` | Update an existing download in place: only changed files are downloaded, files removed from the game are deleted |
 | `--json` | Machine-readable output |
 | `-v` | Show backend diagnostics on stderr (otherwise written to a log file) |
 

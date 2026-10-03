@@ -3,6 +3,8 @@ const { listen } = window.__TAURI__.event;
 
 const state = {
   currentStep: 1,
+  updateDir: null,
+  updateAppId: null,
   mode: 'upload', // 'upload' or 'search'
   parsedData: null,
   selectedDepots: new Set(),
@@ -60,6 +62,7 @@ const ICONS = {
   upload: `<svg class="btn-icon" ${SVG_BASE}><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`,
   folderOpen: `<svg class="btn-icon" ${SVG_BASE}><path d="M6 14l1.45-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H18a2 2 0 0 1 2 2v2"/></svg>`,
   refresh: `<svg class="btn-icon" ${SVG_BASE}><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>`,
+  update: `<svg class="btn-icon" ${SVG_BASE}><circle cx="12" cy="12" r="10"/><polyline points="16 12 12 8 8 12"/><line x1="12" y1="16" x2="12" y2="8"/></svg>`,
   trash: `<svg class="btn-icon" ${SVG_BASE}><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>`,
   x: `<svg class="btn-icon" ${SVG_BASE}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
   check: `<svg class="btn-icon" ${SVG_BASE}><polyline points="20 6 9 17 4 12"/></svg>`,
@@ -286,6 +289,7 @@ const els = {
 
 function goToStep(step) {
   state.currentStep = step;
+  renderUpdateNotice(step);
 
   const stepMap = {
     1: els.stepUpload,
@@ -1509,7 +1513,8 @@ async function startDownload() {
       manifestHubApiKey: mhApiKey || null,
       downloadDir: getDownloadDir() || null,
       gameName: state.gameName || null,
-      headerImage: state.headerImage || null
+      headerImage: state.headerImage || null,
+      updateDir: activeUpdateDir(data.mainAppId)
     };
 
     if (state.mode === 'search') {
@@ -2193,8 +2198,27 @@ function showMhKeySuggestionHint() {
   }
 }
 
+function activeUpdateDir(appId) {
+  if (!state.updateDir || !state.updateAppId) return null;
+  return String(appId) === state.updateAppId ? state.updateDir : null;
+}
+
+function renderUpdateNotice(step) {
+  const notice = document.getElementById('update-mode-notice');
+  if (!notice) return;
+  const appId = state.parsedData && state.parsedData.mainAppId;
+  if (step === 2 && activeUpdateDir(appId)) {
+    notice.innerHTML = window.i18n.t('select.updateNotice', { path: escapeHtml(state.updateDir) });
+    notice.classList.remove('hidden');
+  } else {
+    notice.classList.add('hidden');
+  }
+}
+
 function resetApp() {
   commitPendingHistory();
+  state.updateDir = null;
+  state.updateAppId = null;
   if (state.jobId) {
     const orphanJob = state.jobId;
     emitEvent('download_abandoned', abandonProps());
@@ -3411,6 +3435,7 @@ function renderHistory(entries) {
             ? `<button class="btn btn--small btn--primary history-action-resume" data-entry-id="${escapeHtml(entry.id)}" title="${escapeHtml(window.i18n.t('history.resumeTooltip'))}" aria-label="${escapeHtml(window.i18n.t('history.resumeTooltip'))}">${ICONS.play}</button>`
             : ''}
           <button class="btn btn--small btn--outline history-action-redownload" data-app-id="${escapeHtml(entry.app_id)}" data-depot-ids="${escapeHtml((entry.depot_ids || []).join(','))}" title="Re-download" aria-label="Re-download">${ICONS.refresh}</button>
+          <button class="btn btn--small btn--outline history-action-update" data-app-id="${escapeHtml(entry.app_id)}" data-depot-ids="${escapeHtml((entry.depot_ids || []).join(','))}" data-path="${escapeHtml(entry.download_dir)}" title="${escapeHtml(window.i18n.t('history.updateTooltip'))}" aria-label="${escapeHtml(window.i18n.t('history.updateTooltip'))}"${entry.status === 'cancelled' || !entry.download_dir ? ' disabled' : ''}>${ICONS.update}</button>
           <button class="btn btn--small btn--outline history-action-folder" data-path="${escapeHtml(entry.download_dir)}" title="Open Folder" aria-label="Open download folder"${entry.status === 'cancelled' ? ' disabled' : ''}>${ICONS.folderOpen}</button>
           <button class="btn btn--small btn--outline history-action-edit-emu" data-entry-id="${escapeHtml(entry.id)}" title="${escapeHtml(editTip)}" aria-label="${escapeHtml(editTip)}"${entry.status === 'cancelled' || !entry.download_dir ? ' disabled' : ''}>${ICONS.settings}</button>
           <button class="btn btn--small btn--outline history-action-remove" data-entry-id="${escapeHtml(entry.id)}" title="Remove" aria-label="Remove entry">${ICONS.trash}</button>
@@ -3475,11 +3500,14 @@ function renderHistory(entries) {
     });
   });
 
-  els.historyList.querySelectorAll('.history-action-redownload').forEach(btn => {
+  els.historyList.querySelectorAll('.history-action-redownload, .history-action-update').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const appId = btn.dataset.appId;
       const depotIds = (btn.dataset.depotIds || '').split(',').filter(Boolean);
+      const isUpdate = btn.classList.contains('history-action-update');
+      state.updateDir = isUpdate ? (btn.dataset.path || null) : null;
+      state.updateAppId = isUpdate ? String(appId) : null;
       closeHistory();
       state.emuStandalone = false;
       setEmuEditMode(false);

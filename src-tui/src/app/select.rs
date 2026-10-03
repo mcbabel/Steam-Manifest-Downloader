@@ -213,6 +213,7 @@ impl App {
             } else {
                 None
             },
+            update_dir: self.wiz.active_update_dir(&parsed.main_app_id),
         };
         let ids: Vec<String> = config.depots.iter().map(|d| d.depot_id.clone()).collect();
         self.begin_download(config, ids, native);
@@ -527,6 +528,19 @@ impl App {
         let vis = self.wiz.visible_depots();
         let cur = vis.get(self.wiz.depot_cursor).copied();
         let tick = self.tick;
+
+        let update_dir = self
+            .wiz
+            .parsed
+            .as_ref()
+            .and_then(|p| self.wiz.active_update_dir(&p.main_app_id));
+        if let Some(dir) = update_dir {
+            let msg = tf("tui.select.updateNotice", &[("path", &dir)]);
+            let h = widgets::status_height(&msg, w);
+            let r_ = sv.next(h);
+            widgets::status(&mut sv.buf, r_, Tone::Info, &msg, tick);
+            sv.gap(1);
+        }
 
         if let (Some(i), Some(parsed)) = (cur, self.wiz.parsed.as_mut()) {
             let d = &mut parsed.depots[i];

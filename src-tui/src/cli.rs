@@ -53,6 +53,12 @@ pub struct DownloadArgs {
         help = "Pin a depot to a specific manifest: DEPOT=MANIFEST (repeatable)."
     )]
     pub manifests: Vec<String>,
+    #[arg(
+        long,
+        value_name = "GAME_DIR",
+        help = "Update an existing download in place: only changed files are downloaded and files removed from the game are deleted."
+    )]
+    pub update: Option<PathBuf>,
     #[arg(long, help = "Only print the depots that would be downloaded.")]
     pub list: bool,
     #[arg(
@@ -363,6 +369,10 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
         manifest_hub_api_key: args.mh_key.clone().filter(|k| !k.is_empty()),
         header_image: plan.header_image.clone(),
         source_type: plan.source_type.clone(),
+        update_dir: args
+            .update
+            .as_ref()
+            .map(|p| p.to_string_lossy().to_string()),
     };
     let depot_ids: Vec<String> = config.depots.iter().map(|d| d.depot_id.clone()).collect();
 

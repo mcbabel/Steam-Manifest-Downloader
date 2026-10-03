@@ -13,6 +13,7 @@ use crate::services::diag;
 use crate::services::events::{Sink, DOWNLOAD_PROGRESS};
 use crate::services::history;
 use crate::services::hubcap_api;
+use crate::services::install_state;
 use crate::services::lua_parser::DepotInfo;
 use crate::services::manifest_hub_api;
 use crate::services::ryuu_api;
@@ -46,6 +47,18 @@ pub struct DownloadConfig {
     pub header_image: Option<String>,
     #[serde(rename = "sourceType", default)]
     pub source_type: Option<String>,
+    #[serde(rename = "updateDir", alias = "update_dir", default)]
+    pub update_dir: Option<String>,
+}
+
+impl DownloadConfig {
+    pub fn update_target(&self) -> Option<PathBuf> {
+        self.update_dir
+            .as_deref()
+            .map(str::trim)
+            .filter(|d| !d.is_empty())
+            .map(PathBuf::from)
+    }
 }
 
 #[derive(Debug, Clone, Deserialize, serde::Serialize)]
@@ -146,6 +159,26 @@ pub async fn start_download(
         }
     }
 
+    let (base_dir, folder_name) = match config.update_target() {
+        Some(target) => {
+            if !target.is_dir() {
+                return Err(format!(
+                    "Folder to update not found: {}",
+                    target.display()
+                ));
+            }
+            let name = target
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .ok_or_else(|| format!("Invalid folder to update: {}", target.display()))?;
+            let parent = target
+                .parent()
+                .map(Path::to_path_buf)
+                .ok_or_else(|| format!("Invalid folder to update: {}", target.display()))?;
+            (parent, name)
+        }
+        None => (base_dir, folder_name),
+    };
     let download_dir = base_dir.join(&folder_name);
 
     {
@@ -854,6 +887,7 @@ async fn run_download_pipeline(
             is_hubcap,
             app_data_dir,
             settings.native_chunk_concurrency,
+            config.update_target().is_some(),
         )
         .await?
     } else {
@@ -1035,9 +1069,15 @@ pub async fn cancel_download(
     cancel_flag.store(true, std::sync::atomic::Ordering::SeqCst);
     depot_runner::kill_job(state, &job_id).await;
 
-    let keep_files = crate::services::settings::load_settings(app_data_dir)
-        .await
-        .cancel_keep_files;
+    let is_update = snapshot
+        .as_ref()
+        .and_then(|p| p.get("updateDir"))
+        .and_then(|v| v.as_str())
+        .is_some_and(|d| !d.trim().is_empty());
+    let keep_files = is_update
+        || crate::services::settings::load_settings(app_data_dir)
+            .await
+            .cancel_keep_files;
 
     let mut event = ProgressEvent::new("cancelled", &job_id);
     event.step = Some(if keep_files {
@@ -1192,6 +1232,7 @@ async fn run_native_pipeline(
     is_hubcap: bool,
     app_data_dir: &Path,
     chunk_concurrency: u32,
+    update_mode: bool,
 ) -> Result<Vec<serde_json::Value>, String> {
     let app_id_u: u32 = app_id
         .parse()
@@ -1256,6 +1297,37 @@ async fn run_native_pipeline(
         }
         let mut depot_key = [0u8; 32];
         depot_key.copy_from_slice(&key_bytes);
+
+        let installed = install_state::load(work_dir, &depot.depot_id);
+        if update_mode
+            && installed
+                .as_ref()
+                .is_some_and(|i| i.manifest_id == depot.manifest_id)
+        {
+            let mut event = ProgressEvent::new("status", job_id);
+            event.step = Some("depot_up_to_date".to_string());
+            event.depot_id = Some(depot.depot_id.clone());
+            event.manifest_id = Some(depot.manifest_id.clone());
+            event.message = Some(format!(
+                "Depot {} is already up to date (manifest {})",
+                depot.depot_id, depot.manifest_id
+            ));
+            emit_progress(sink, &event);
+            let mut done = ProgressEvent::new("depot_complete", job_id);
+            done.depot_id = Some(depot.depot_id.clone());
+            done.current = Some(idx + 1);
+            done.total = Some(run_depots.len());
+            emit_progress(sink, &done);
+            results.push(serde_json::json!({
+                "depotId": depot.depot_id,
+                "success": true,
+                "filesWritten": 0,
+                "bytesWritten": 0,
+                "upToDate": true,
+                "sourcesTried": Vec::<&str>::new(),
+            }));
+            continue;
+        }
 
         let mut event = ProgressEvent::new("status", job_id);
         event.step = Some("running_downloader".to_string());
@@ -1570,6 +1642,26 @@ async fn run_native_pipeline(
 
         match attempt_outcome {
             Ok(outcome) => {
+                let removed = finish_depot_install(
+                    work_dir,
+                    &depot_out,
+                    &depot.depot_id,
+                    &depot.manifest_id,
+                    &depot_key,
+                    installed.as_ref(),
+                    &outcome.manifest_files,
+                    update_mode,
+                );
+                if removed > 0 {
+                    let mut event = ProgressEvent::new("status", job_id);
+                    event.step = Some("removed_stale_files".to_string());
+                    event.depot_id = Some(depot.depot_id.clone());
+                    event.message = Some(format!(
+                        "Removed {} file(s) that are no longer part of depot {}",
+                        removed, depot.depot_id
+                    ));
+                    emit_progress(sink, &event);
+                }
                 let mut done = ProgressEvent::new("depot_complete", job_id);
                 done.depot_id = Some(depot.depot_id.clone());
                 done.current = Some(idx + 1);
@@ -1606,6 +1698,47 @@ async fn run_native_pipeline(
     }
 
     Ok(results)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn finish_depot_install(
+    work_dir: &Path,
+    depot_out: &Path,
+    depot_id: &str,
+    manifest_id: &str,
+    depot_key: &[u8; 32],
+    installed: Option<&install_state::DepotInstall>,
+    new_files: &[String],
+    update_mode: bool,
+) -> usize {
+    let mut removed = 0;
+    if update_mode {
+        let old_manifests = install_state::other_manifest_files(work_dir, depot_id, manifest_id);
+        let old_files: Vec<String> = match installed {
+            Some(record) if record.manifest_id != manifest_id => record.files.clone(),
+            Some(_) => Vec::new(),
+            None => old_manifests
+                .iter()
+                .filter_map(|p| std::fs::read(p).ok())
+                .filter_map(|bytes| crate::services::steam_manifest::decode_manifest(&bytes, depot_key).ok())
+                .flat_map(|m| install_state::manifest_files(&m))
+                .collect(),
+        };
+        let stale = install_state::stale_files(&old_files, new_files);
+        removed = install_state::remove_stale(depot_out, &stale);
+        for old in old_manifests {
+            let _ = std::fs::remove_file(old);
+        }
+    }
+    let record = install_state::DepotInstall {
+        depot_id: depot_id.to_string(),
+        manifest_id: manifest_id.to_string(),
+        files: new_files.to_vec(),
+    };
+    if let Err(e) = install_state::save(work_dir, &record) {
+        eprintln!("[Download] {}", e);
+    }
+    removed
 }
 
 fn is_safe_depot_cleanup_path(path: &Path) -> bool {
@@ -1731,5 +1864,81 @@ fn get_disk_space_info(path: &Path) -> Option<(f64, String)> {
         let free_gb = (free_gb * 100.0).round() / 100.0;
 
         Some((free_gb, path_str.to_string()))
+    }
+}
+
+#[cfg(test)]
+mod update_install_tests {
+    use super::*;
+
+    fn tmp(name: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("smd-{}-{}", name, std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(dir.join("depots/481/sub")).unwrap();
+        dir
+    }
+
+    fn s(v: &[&str]) -> Vec<String> {
+        v.iter().map(|x| x.to_string()).collect()
+    }
+
+    #[test]
+    fn update_removes_files_dropped_by_the_new_version() {
+        let work = tmp("update");
+        let depot = work.join("depots/481");
+        for f in ["game.exe", "sub/old.pak", "save.dat"] {
+            std::fs::write(depot.join(f), b"x").unwrap();
+        }
+        std::fs::write(work.join("481_100.manifest"), b"old").unwrap();
+        let old = install_state::DepotInstall {
+            depot_id: "481".into(),
+            manifest_id: "100".into(),
+            files: s(&["game.exe", "sub/old.pak", "gone.bin"]),
+        };
+        let removed = finish_depot_install(
+            &work,
+            &depot,
+            "481",
+            "200",
+            &[0u8; 32],
+            Some(&old),
+            &s(&["game.exe", "new.pak"]),
+            true,
+        );
+        assert_eq!(removed, 1);
+        assert!(depot.join("game.exe").exists());
+        assert!(depot.join("save.dat").exists());
+        assert!(!depot.join("sub").exists());
+        assert!(!work.join("481_100.manifest").exists());
+        let rec = install_state::load(&work, "481").unwrap();
+        assert_eq!(rec.manifest_id, "200");
+        assert_eq!(rec.files, s(&["game.exe", "new.pak"]));
+        let _ = std::fs::remove_dir_all(&work);
+    }
+
+    #[test]
+    fn a_normal_download_never_deletes_files() {
+        let work = tmp("normal");
+        let depot = work.join("depots/481");
+        std::fs::write(depot.join("extra.txt"), b"x").unwrap();
+        let old = install_state::DepotInstall {
+            depot_id: "481".into(),
+            manifest_id: "100".into(),
+            files: s(&["extra.txt"]),
+        };
+        let removed = finish_depot_install(
+            &work,
+            &depot,
+            "481",
+            "200",
+            &[0u8; 32],
+            Some(&old),
+            &s(&["game.exe"]),
+            false,
+        );
+        assert_eq!(removed, 0);
+        assert!(depot.join("extra.txt").exists());
+        assert_eq!(install_state::load(&work, "481").unwrap().manifest_id, "200");
+        let _ = std::fs::remove_dir_all(&work);
     }
 }

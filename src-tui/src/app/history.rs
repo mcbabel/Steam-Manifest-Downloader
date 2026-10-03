@@ -83,6 +83,7 @@ impl App {
         match a {
             Action::HistoryResume(pos) => self.history_resume(*pos),
             Action::HistoryRedownload(pos) => self.history_redownload(*pos),
+            Action::HistoryUpdate(pos) => self.history_update(*pos),
             Action::HistoryOpenFolder(pos) => {
                 let dir = if *pos == usize::MAX {
                     self.wiz.result_dir.clone()
@@ -272,6 +273,20 @@ impl App {
         self.wiz.search_input.set(entry.app_id.clone());
         self.page = super::action::Page::Wizard;
         self.perform_search();
+    }
+
+    fn history_update(&mut self, pos: usize) {
+        let Some(entry) = self.hist_entry(pos) else {
+            return;
+        };
+        if entry.download_dir.is_empty() || entry.status == "cancelled" {
+            return;
+        }
+        let dir = entry.download_dir.clone();
+        let app_id = entry.app_id.clone();
+        self.history_redownload(pos);
+        self.wiz.update_dir = Some(dir);
+        self.wiz.update_app_id = Some(app_id);
     }
 
     fn history_edit_emu(&mut self, pos: usize) {
@@ -513,6 +528,13 @@ impl App {
                 Action::HistoryRedownload(pos),
                 Btn::Secondary,
             ),
+            ButtonSpec::new(
+                format!("⇡ {}", t("tui.history.update")),
+                Fid::new("history.update"),
+                Action::HistoryUpdate(pos),
+                Btn::Secondary,
+            )
+            .enabled(has_dir),
             ButtonSpec::new(
                 t("tui.history.openFolder"),
                 Fid::new("history.open"),

@@ -530,6 +530,7 @@ impl App {
                 match c {
                     'r' => self.dispatch(Action::HistoryResume(sel)),
                     'd' => self.dispatch(Action::HistoryRedownload(sel)),
+                    'u' => self.dispatch(Action::HistoryUpdate(sel)),
                     'o' => self.dispatch(Action::HistoryOpenFolder(sel)),
                     'e' => self.dispatch(Action::HistoryEditEmu(sel)),
                     'x' => self.dispatch(Action::AskHistoryRemove(sel)),

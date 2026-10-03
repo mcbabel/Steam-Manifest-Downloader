@@ -29,7 +29,7 @@
       "editing": "Textfelder: Anfang/Ende, bis Anfang/Ende löschen, Wort löschen",
       "select": "Depot-Auswahl: alle / keine, filtern, Download starten",
       "progress": "Beim Download: pausieren/fortsetzen, abbrechen",
-      "history": "Verlauf: fortsetzen, erneut laden, Ordner öffnen, Emulator bearbeiten, entfernen",
+      "history": "Verlauf: fortsetzen, erneut laden, aktualisieren, Ordner öffnen, Emulator bearbeiten, entfernen",
       "quit": "Beenden (fragt nach, solange ein Download läuft)",
       "mouse": "Alles ist klickbar: Buttons, Tabs, Listenzeilen (Doppelklick öffnet), Checkboxen. Das Mausrad scrollt Listen und Seiten.",
       "drop": "Zieh eine .lua- oder .st-Datei auf das Terminalfenster – die meisten Terminals fügen dann ihren Pfad ein und die Datei wird sofort geladen."
@@ -69,6 +69,7 @@
     "select": {
       "depotsFound": "{count} Depot(s)",
       "download": "Herunterladen",
+      "updateNotice": "Update-Modus: Der Download geht nach {path}. Es werden nur geänderte Dateien geladen, aus dem Spiel entfernte Dateien gelöscht und bereits aktuelle Depots übersprungen.",
       "filter": "Filter",
       "noMatch": "Nichts passt zum Filter.",
       "manifest": "Manifest:",
@@ -137,6 +138,7 @@
       "depots": "{done}/{total} Depots",
       "resume": "Fortsetzen",
       "redownload": "Erneut laden",
+      "update": "Aktualisieren",
       "openFolder": "Ordner öffnen",
       "copyPath": "Pfad kopieren",
       "remove": "Entfernen",

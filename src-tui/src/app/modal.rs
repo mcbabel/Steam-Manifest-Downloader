@@ -752,7 +752,7 @@ fn render_help(buf: &mut Buffer, area: Rect, ctx: &mut Ctx) {
         ("Ctrl+A/E/U/K/W", t("tui.help.editing")),
         ("a / n  /  d", t("tui.help.select")),
         ("p / c", t("tui.help.progress")),
-        ("r d o e x", t("tui.help.history")),
+        ("r d u o e x", t("tui.help.history")),
         ("Ctrl+Q / F10", t("tui.help.quit")),
     ];
     let mouse = t("tui.help.mouse");

@@ -57,6 +57,7 @@ pub struct NativeDownloadProgress {
 pub struct NativeDownloadOutcome {
     pub files_written: usize,
     pub bytes_written: u64,
+    pub manifest_files: Vec<String>,
 }
 
 pub async fn download_depot_native(
@@ -177,6 +178,7 @@ async fn download_chunks_from_manifest(
         depot_id
     );
     pre_create_files(&manifest, &out_dir).await?;
+    let manifest_files = crate::services::install_state::manifest_files(&manifest);
 
     let total_chunks: u64 = manifest
         .payload
@@ -413,6 +415,7 @@ async fn download_chunks_from_manifest(
     Ok(NativeDownloadOutcome {
         files_written: files_written_unique.len(),
         bytes_written,
+        manifest_files,
     })
 }
 

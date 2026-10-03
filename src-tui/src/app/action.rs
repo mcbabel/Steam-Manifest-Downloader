@@ -154,6 +154,7 @@ pub enum Action {
 
     HistoryResume(usize),
     HistoryRedownload(usize),
+    HistoryUpdate(usize),
     HistoryOpenFolder(usize),
     HistoryCopyPath(usize),
     HistoryEditEmu(usize),

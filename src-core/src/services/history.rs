@@ -69,11 +69,20 @@ pub fn supersedes_resumable(entry: &HistoryEntry, old: &HistoryEntry) -> bool {
     old.app_id == entry.app_id && old.download_dir == entry.download_dir
 }
 
+pub fn supersedes_same_install(entry: &HistoryEntry, old: &HistoryEntry) -> bool {
+    if entry.status != "complete" && entry.status != "partial" {
+        return false;
+    }
+    !entry.download_dir.is_empty()
+        && old.app_id == entry.app_id
+        && old.download_dir == entry.download_dir
+}
+
 pub async fn add_entry(app_data_dir: &Path, entry: HistoryEntry) -> Result<(), String> {
     let mut history = load_history(app_data_dir).await;
-    history
-        .entries
-        .retain(|old| !supersedes_resumable(&entry, old));
+    history.entries.retain(|old| {
+        !supersedes_resumable(&entry, old) && !supersedes_same_install(&entry, old)
+    });
     history.entries.insert(0, entry);
     if history.entries.len() > MAX_HISTORY_ENTRIES {
         history.entries.truncate(MAX_HISTORY_ENTRIES);
@@ -155,5 +164,14 @@ mod supersede_tests {
         let done = entry("complete", "730", "/games/730");
         let older_done = entry("complete", "730", "/games/730");
         assert!(!supersedes_resumable(&done, &older_done));
+    }
+
+    #[test]
+    fn an_update_of_the_same_folder_replaces_the_old_entry() {
+        let done = entry("complete", "480", "/g/480");
+        let older_done = entry("complete", "480", "/g/480");
+        assert!(supersedes_same_install(&done, &older_done));
+        assert!(!supersedes_same_install(&done, &entry("complete", "480", "/other/480")));
+        assert!(!supersedes_same_install(&entry("failed", "480", "/g/480"), &older_done));
     }
 }

@@ -29,7 +29,7 @@
       "editing": "Text fields: start/end, delete to start/end, delete word",
       "select": "Depot selection: select all / none, filter, start download",
       "progress": "While downloading: pause/resume, cancel",
-      "history": "History: resume, download again, open folder, edit emulator, remove",
+      "history": "History: resume, download again, update, open folder, edit emulator, remove",
       "quit": "Quit (asks first while a download runs)",
       "mouse": "Everything is clickable: buttons, tabs, list rows (double-click opens), checkboxes. The mouse wheel scrolls lists and pages.",
       "drop": "Drag a .lua or .st file onto the terminal window — most terminals paste its path, which loads the file right away."
@@ -69,6 +69,7 @@
     "select": {
       "depotsFound": "{count} depot(s)",
       "download": "Download",
+      "updateNotice": "Update mode: the download goes into {path}. Only changed files are downloaded, files removed from the game are deleted, depots that are already up to date are skipped.",
       "filter": "Filter",
       "noMatch": "Nothing matches the filter.",
       "manifest": "Manifest:",
@@ -137,6 +138,7 @@
       "depots": "{done}/{total} depots",
       "resume": "Resume",
       "redownload": "Download again",
+      "update": "Update",
       "openFolder": "Open folder",
       "copyPath": "Copy path",
       "remove": "Remove",
