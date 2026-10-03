@@ -57,6 +57,15 @@ jobs:
           export SMD_BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           cargo tauri build
 
+      - name: Build terminal app
+        env:
+          SMD_BUILD_CHANNEL: stable
+          SMD_GIT_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          export SMD_BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          cargo build --release --locked -p smd-tui
+
       - name: Sign executables with SignTool
         if: env.SIGNING_CERTIFICATE != ''
         env:
@@ -74,6 +83,7 @@ jobs:
           Get-ChildItem "src-tauri\target\release\bundle\nsis\*.exe" | ForEach-Object {
             & $signtool.FullName sign /f $certPath /p $env:SIGNING_CERTIFICATE_PASSWORD /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 $_.FullName
           }
+          & $signtool.FullName sign /f $certPath /p $env:SIGNING_CERTIFICATE_PASSWORD /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 "target\release\smd.exe"
 
           Remove-Item $certPath -Force
 
@@ -82,6 +92,51 @@ jobs:
         with:
           name: windows-nsis
           path: src-tauri/target/release/bundle/nsis/*.exe
+
+      - name: Upload Windows terminal app
+        shell: bash
+        run: |
+          VERSION=$(grep -oP '"version":\s*"\K[^"]+' src-tauri/tauri.conf.json)
+          mkdir -p tui-dist
+          cp target/release/smd.exe "tui-dist/smd_${VERSION}_windows-x86_64.exe"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: tui-windows
+          path: tui-dist/*
+
+  build-tui-linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-musl
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: tui-musl
+
+      - name: Install musl toolchain
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+      - name: Build terminal app
+        env:
+          SMD_BUILD_CHANNEL: stable
+          SMD_GIT_SHA: ${{ github.sha }}
+        run: |
+          export SMD_BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          cargo build --release --locked --target x86_64-unknown-linux-musl -p smd-tui
+          VERSION=$(grep -oP '"version":\s*"\K[^"]+' src-tauri/tauri.conf.json)
+          mkdir -p tui-dist
+          cp target/x86_64-unknown-linux-musl/release/smd "tui-dist/smd_${VERSION}_linux-x86_64"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: tui-linux
+          path: tui-dist/*
 
   # Compiles in Arch (for a newer webkit2gtk), then bundles the AppImage on Ubuntu.
   build-linux:
@@ -169,7 +224,7 @@ jobs:
           path: "Steam Manifest Downloader_*_amd64.AppImage"
 
   release:
-    needs: [build-windows, build-linux]
+    needs: [build-windows, build-linux, build-tui-linux]
     runs-on: ubuntu-latest
 
     steps:
@@ -202,3 +257,5 @@ jobs:
           files: |
             artifacts/windows-nsis/*
             artifacts/linux-builds/*
+            artifacts/tui-linux/*
+            artifacts/tui-windows/*

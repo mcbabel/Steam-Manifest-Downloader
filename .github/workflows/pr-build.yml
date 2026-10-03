@@ -29,7 +29,7 @@ jobs:
         run: |
           git fetch --no-tags origin "$BASE_REF"
           if git diff --name-only "origin/$BASE_REF...HEAD" \
-            | grep -qE '^(src-tauri|public|assets|tools|\.github/workflows)/'; then
+            | grep -qE '^(src-tauri|src-core|src-tui|public|assets|tools|\.github/workflows)/|^Cargo\.(toml|lock)$'; then
             echo "code=true" >> "$GITHUB_OUTPUT"
           else
             echo "code=false" >> "$GITHUB_OUTPUT"
@@ -48,11 +48,16 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: src-tauri
+          workspaces: |
+            src-tauri
+            .
 
       - name: Run tests
         working-directory: src-tauri
         run: cargo test --bin steam-manifest-downloader
+
+      - name: Run core and terminal app tests
+        run: cargo test --workspace --locked
 
   build-windows:
     needs: test
@@ -177,3 +182,58 @@ jobs:
         with:
           name: linux-appimage-pr${{ github.event.pull_request.number }}
           path: "Steam Manifest Downloader_*_amd64.AppImage"
+
+  build-tui-linux:
+    name: Terminal app (Linux, static)
+    needs: test
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-musl
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: tui-musl
+      - name: Install musl toolchain
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+      - name: Build
+        env:
+          SMD_BUILD_CHANNEL: pr-${{ github.event.pull_request.number }}
+          SMD_GIT_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          export SMD_BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          cargo build --release --locked --target x86_64-unknown-linux-musl -p smd-tui
+      - name: Upload binary
+        uses: actions/upload-artifact@v7
+        with:
+          name: tui-linux-pr${{ github.event.pull_request.number }}
+          path: target/x86_64-unknown-linux-musl/release/smd
+
+  build-tui-windows:
+    name: Terminal app (Windows)
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: tui
+      - name: Build
+        env:
+          SMD_BUILD_CHANNEL: pr-${{ github.event.pull_request.number }}
+          SMD_GIT_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          export SMD_BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          cargo build --release --locked -p smd-tui
+      - name: Upload binary
+        uses: actions/upload-artifact@v7
+        with:
+          name: tui-windows-pr${{ github.event.pull_request.number }}
+          path: target/release/smd.exe

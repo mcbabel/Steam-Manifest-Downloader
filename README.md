@@ -45,6 +45,7 @@ Upload `.lua` files or search by App ID across configurable sources (GitHub, arc
 | 🪝 | **Steam-API-Check Bypass** — bundled `version.dll` hijack for stubborn integrity checks |
 | 🌙 | **Dark / Light theme** + English & German localisation |
 | 🔒 | **Fully self-contained** — DepotDownloaderMod embedded |
+| 🖥️ | **Terminal version** — full mouse-driven TUI plus headless CLI for servers & Docker ([details](#%EF%B8%8F-terminal-version-tui--cli)) |
 
 ### 📌 Scope
 
@@ -64,7 +65,7 @@ the access.
 
 ## 🚀 Quick Start
 
-1. 📥 **Install** — grab the latest build from [Releases](../../releases) (NSIS for Windows, AppImage for Linux, AUR for Arch)
+1. 📥 **Install** — grab the latest build from [Releases](../../releases) (NSIS for Windows, AppImage for Linux, AUR for Arch, `smd` for the terminal)
 2. 🌍 **First launch** — pick your language, accept or decline anonymous telemetry, done
 
 Then walk through the 5-step pipeline:
@@ -167,6 +168,96 @@ chmod +x Steam\ Manifest\ Downloader_*_amd64.AppImage
 > [!NOTE]
 > On **NixOS**, portable binaries can't find system libs through the normal loader paths. Launch via `steam-run ./Steam\ Manifest\ Downloader_*_amd64.AppImage`, or wrap the binary in a Nix derivation that lists `webkitgtk_4_1`, `libayatana-appindicator`, `librsvg` and `gtk3` as build inputs.
 
+---
+
+## 🖥️ Terminal Version (TUI & CLI)
+
+`smd` is a single binary that brings the whole app into the terminal: no WebView,
+no browser engine, no installer. Run it without arguments for the interactive UI,
+or use the subcommands on a server, in Docker or in scripts.
+
+**Download:** `smd_<version>_linux-x86_64` or `smd_<version>_windows-x86_64.exe`
+from [**Releases**](../../releases).
+
+With the default download engine (the built-in native downloader) `smd` needs
+nothing else: no .NET runtime, and the Linux build is static, so it runs on any
+distro including Alpine. Only if you switch the engine to DepotDownloaderMod in
+the settings, the same requirements as the desktop app apply: the
+[.NET 9.0 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/9.0) on
+Windows, and a glibc-based distro on Linux (not Alpine).
+
+```bash
+chmod +x smd_*_linux-x86_64
+./smd_*_linux-x86_64
+```
+
+### Interactive UI
+
+All five steps of the desktop app (upload/search, depot selection, download,
+shortcuts / Steam library, emulator patching) plus history and settings.
+Everything is clickable — buttons, tabs, list rows (double-click opens),
+checkboxes — and the mouse wheel scrolls. Keyboard works just as well:
+
+| Key | Action |
+|---|---|
+| `Tab` / `Shift+Tab` | Move between fields, buttons and lists |
+| `↑ ↓ ← →` | Move inside lists, between buttons elsewhere |
+| `Enter` / `Space` | Press the focused button, toggle a checkbox, pick a list entry |
+| `Esc` | Close a dialog or go back one step |
+| `F2` `F3` `F4` | Download, History, Settings |
+| `F1` | Help |
+| `PgUp` / `PgDn` | Scroll long pages and the output log |
+| `a` / `n`, `/`, `d` | Depot selection: all / none, filter, start download |
+| `p` / `c` | While downloading: pause/resume, cancel |
+| `r` `d` `o` `e` `x` | History: resume, download again, open folder, edit emulator, remove |
+| `Ctrl+Q` / `F10` | Quit (asks first while a download runs) |
+
+Dragging a `.lua` / `.st` file onto the terminal window loads it right away
+(most terminals paste the path). The UI uses true color where the terminal
+supports it, falls back to the 16 terminal colors otherwise, and respects
+`NO_COLOR`.
+
+### Headless commands
+
+```bash
+smd search "Half-Life 2"            # find the App ID
+smd search 220 --manifests 0        # sources + depots for an App ID
+smd download 220 --list             # show what would be downloaded
+smd download 220 --depots 221,222 -o /data/games
+smd download game.lua --json        # progress as JSON lines
+smd history
+```
+
+| Option / variable | Meaning |
+|---|---|
+| `--data-dir` / `SMD_DATA_DIR` | Settings, history and caches. Defaults to the desktop app's directory, so both share their state |
+| `--mh-key` / `SMD_MANIFESTHUB_KEY` | ManifestHub API key (fallback source and custom manifests) |
+| `--manifest DEPOT=ID` | Pin a depot to a specific manifest (repeatable) |
+| `--json` | Machine-readable output |
+| `-v` | Show backend diagnostics on stderr (otherwise written to a log file) |
+
+Exit codes of `smd download`: `0` complete, `1` failed, `2` partially
+downloaded (resumable), `130` interrupted.
+
+<details>
+<summary><b>🐳 Docker example</b></summary>
+
+```dockerfile
+FROM alpine:3
+COPY smd_*_linux-x86_64 /usr/local/bin/smd
+ENV SMD_DATA_DIR=/data
+VOLUME ["/data", "/games"]
+ENTRYPOINT ["smd"]
+```
+
+```bash
+docker run --rm -v smd-data:/data -v "$PWD/games:/games" smd download 220 -o /games
+```
+
+This uses the default native engine. For the DepotDownloaderMod engine use
+`mcr.microsoft.com/dotnet/runtime-deps:9.0` as the base image instead.
+</details>
+
 <details>
 <summary><b>🔧 Building from Source</b></summary>
 
@@ -184,8 +275,8 @@ chmod +x Steam\ Manifest\ Downloader_*_amd64.AppImage
 
 The project embeds DepotDownloaderMod binaries at compile time. **Pre-built versions are already included** in the repo:
 
-- `DepotDownloaderMod-Windows/` — Windows build (framework-dependent, requires .NET runtime)
-- `DepotDownloaderMod-linux-full/` — Linux build (self-contained, no runtime needed)
+- `src-core/vendor/ddm-windows/` — Windows build (framework-dependent, requires .NET runtime)
+- `src-core/vendor/ddm-linux/` — Linux build (self-contained, no runtime needed)
 
 If you want to build DepotDownloaderMod yourself:
 
@@ -199,7 +290,7 @@ cd DepotDownloaderMod
 dotnet publish -c Release -o ./publish-windows
 ```
 
-Copy **all** files from `publish-windows/` to `DepotDownloaderMod-Windows/` in this project:
+Copy **all** files from `publish-windows/` to `src-core/vendor/ddm-windows/` in this project:
 
 - `DepotDownloaderMod.exe`
 - `DepotDownloaderMod.dll`
@@ -224,7 +315,7 @@ dotnet publish -c Release -r linux-x64 --self-contained true \
 > [!CAUTION]
 > **Do NOT use `-p:PublishTrimmed=true`** — .NET trimming removes reflection metadata needed by SteamKit2/protobuf-net, causing "A task was canceled" errors at runtime.
 
-Copy `publish-linux/DepotDownloaderMod` to `DepotDownloaderMod-linux-full/DepotDownloaderMod` in this project.
+Copy `publish-linux/DepotDownloaderMod` to `src-core/vendor/ddm-linux/DepotDownloaderMod` in this project.
 
 ---
 
@@ -253,15 +344,26 @@ Output: `src-tauri/target/release/bundle/appimage/Steam Manifest Downloader_<ver
 
 ---
 
+### Step 3: Building the terminal version (optional)
+
+```bash
+cargo build --release -p smd-tui
+```
+
+Output: `target/release/smd` (`smd.exe` on Windows). For a fully static Linux
+binary, add `--target x86_64-unknown-linux-musl` (needs `musl-tools`).
+
+---
+
 ### Project Structure (for reference)
 
-The `include_bytes!` macro in `src-tauri/src/services/embedded_tools.rs` embeds the DDM binaries at compile time:
+The `include_bytes!` macro in `src-core/src/services/embedded_tools.rs` embeds the DDM binaries at compile time:
 
-- **Windows build** reads from `DepotDownloaderMod-Windows/`
-- **Linux build** reads from `DepotDownloaderMod-linux-full/`
+- **Windows build** reads from `src-core/vendor/ddm-windows/`
+- **Linux build** reads from `src-core/vendor/ddm-linux/`
 
 > [!IMPORTANT]
-> The DDM binary files **must be in place before** running `cargo tauri build`. The Rust compiler reads them via `include_bytes!` at compile time — if the files are missing, the build will fail.
+> The DDM binary files **must be in place before** running `cargo tauri build` or `cargo build -p smd-tui`. The Rust compiler reads them via `include_bytes!` at compile time — if the files are missing, the build will fail.
 
 </details>
 
@@ -283,6 +385,7 @@ The `include_bytes!` macro in `src-tauri/src/services/embedded_tools.rs` embeds 
 |---|---|
 | **Backend** | Rust, reqwest, tokio, serde |
 | **Frontend** | HTML / CSS / JS (vanilla) |
+| **Terminal UI** | ratatui, crossterm, clap |
 | **Framework** | Tauri v2 |
 | **Downloader** | DepotDownloaderMod (.NET 9) |
 | **Emulator** | gbe_fork (downloaded on demand from GitHub releases) |
@@ -294,31 +397,37 @@ The `include_bytes!` macro in `src-tauri/src/services/embedded_tools.rs` embeds 
 <summary><b>📁 Project Structure</b></summary>
 
 ```
-DepoDownloaderWebApp/
-├── public/                     # Frontend (HTML/CSS/JS)
-│   ├── index.html              # Main UI
-│   ├── css/style.css           # Styles & themes
-│   └── js/app.js               # Application logic
-├── src-tauri/
+Steam-Manifest-Downloader/
+├── public/                     # Desktop frontend (HTML/CSS/JS, locales)
+├── src-core/                   # Shared Rust core (no UI dependencies)
+│   ├── src/
+│   │   ├── ops/                # High-level operations used by GUI and TUI
+│   │   │   ├── download.rs     # Download orchestration
+│   │   │   ├── emulator.rs     # gbe_fork patching, DLC merge
+│   │   │   ├── search.rs       # Game / depot source search
+│   │   │   └── ...
+│   │   ├── services/           # Business logic
+│   │   │   ├── github_api.rs   # GitHub API client
+│   │   │   ├── manifest_hub_api.rs
+│   │   │   ├── steam_store_api.rs
+│   │   │   ├── depot_runner.rs # DepotDownloaderMod runner
+│   │   │   ├── events.rs       # UI-independent progress events
+│   │   │   └── ...
+│   │   └── paths.rs            # Shared data directory
+│   └── vendor/                 # Embedded DepotDownloaderMod builds
+├── src-tauri/                  # Desktop app (Tauri v2)
 │   ├── src/
 │   │   ├── main.rs             # Tauri entry point
-│   │   ├── commands/           # Tauri command handlers
-│   │   │   ├── download.rs     # Download orchestration
-│   │   │   ├── search.rs       # Game search
-│   │   │   ├── file_ops.rs     # File operations
-│   │   │   ├── settings.rs     # App settings
-│   │   │   ├── system.rs       # System utilities
-│   │   │   └── window.rs       # Window controls
-│   │   └── services/           # Business logic
-│   │       ├── github_api.rs   # GitHub API client
-│   │       ├── manifest_hub_api.rs
-│   │       ├── steam_store_api.rs
-│   │       ├── depot_runner.rs # DepotDownloaderMod runner
-│   │       ├── lua_parser.rs   # .lua file parser
-│   │       └── ...
-│   ├── Cargo.toml              # Rust dependencies
+│   │   └── commands/           # Thin Tauri command wrappers around smd-core
+│   ├── Cargo.toml
 │   └── tauri.conf.json         # Tauri configuration
-├── DepotDownloaderMod/         # Embedded .NET tool
+├── src-tui/                    # Terminal UI + headless CLI (`smd`)
+│   ├── src/
+│   │   ├── app/                # Screens, modals, state
+│   │   ├── ui/                 # Widgets, mouse/focus handling, file browser
+│   │   └── cli.rs              # download / search / history commands
+│   └── locales/                # TUI-only strings (rest shared with public/locales)
+├── Cargo.toml                  # Workspace for src-core + src-tui
 ├── assets/                     # App icons
 └── README.md
 ```

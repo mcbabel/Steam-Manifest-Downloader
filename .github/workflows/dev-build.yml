@@ -5,6 +5,10 @@ on:
     branches: [dev]
     paths:
       - 'src-tauri/**'
+      - 'src-core/**'
+      - 'src-tui/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
       - 'public/**'
       - 'assets/**'
       - '.github/workflows/dev-build.yml'
@@ -12,6 +16,10 @@ on:
     branches: [dev]
     paths:
       - 'src-tauri/**'
+      - 'src-core/**'
+      - 'src-tui/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
       - 'public/**'
       - 'assets/**'
       - '.github/workflows/dev-build.yml'
@@ -58,11 +66,16 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: src-tauri
+          workspaces: |
+            src-tauri
+            .
 
       - name: Run tests
         working-directory: src-tauri
         run: cargo test --bin steam-manifest-downloader
+
+      - name: Run core and terminal app tests
+        run: cargo test --workspace --locked
 
   build-windows:
     needs: [check, test]
@@ -176,8 +189,61 @@ jobs:
           name: linux-appimage
           path: "Steam Manifest Downloader_*_amd64.AppImage"
 
+  build-tui-linux:
+    name: Terminal app (Linux, static)
+    needs: [check, test]
+    if: needs.check.outputs.in-main == 'false'
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-musl
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: tui-musl
+      - name: Install musl toolchain
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+      - name: Build
+        env:
+          SMD_BUILD_CHANNEL: dev
+          SMD_GIT_SHA: ${{ github.sha }}
+        run: |
+          export SMD_BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          cargo build --release --locked --target x86_64-unknown-linux-musl -p smd-tui
+      - name: Upload binary
+        uses: actions/upload-artifact@v7
+        with:
+          name: tui-linux
+          path: target/x86_64-unknown-linux-musl/release/smd
+
+  build-tui-windows:
+    name: Terminal app (Windows)
+    needs: [check, test]
+    if: needs.check.outputs.in-main == 'false'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: tui
+      - name: Build
+        env:
+          SMD_BUILD_CHANNEL: dev
+          SMD_GIT_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          export SMD_BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          cargo build --release --locked -p smd-tui
+      - name: Upload binary
+        uses: actions/upload-artifact@v7
+        with:
+          name: tui-windows
+          path: target/release/smd.exe
+
   release:
-    needs: [check, build-windows, build-linux]
+    needs: [check, build-windows, build-linux, build-tui-linux, build-tui-windows]
     if: needs.check.outputs.in-main == 'false'
     runs-on: ubuntu-latest
     permissions:
@@ -206,6 +272,9 @@ jobs:
           mv "artifacts/windows-portable/steam-manifest-downloader.exe" \
              "artifacts/windows-portable/Steam-Manifest-Downloader_${VERSION}-dev-${SHA}_portable.exe"
 
+          mv "artifacts/tui-linux/smd" "artifacts/tui-linux/smd_${VERSION}-dev-${SHA}_linux-x86_64"
+          mv "artifacts/tui-windows/smd.exe" "artifacts/tui-windows/smd_${VERSION}-dev-${SHA}_windows-x86_64.exe"
+
           cd artifacts/linux-appimage
           for f in *.AppImage; do
             mv "$f" "$(echo "$f" | sed "s/${VERSION}/${VERSION}-dev-${SHA}/")"
@@ -232,3 +301,5 @@ jobs:
           files: |
             artifacts/windows-portable/*
             artifacts/linux-appimage/*
+            artifacts/tui-linux/*
+            artifacts/tui-windows/*

@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["src-core"]
+members = ["src-core", "src-tui"]
 exclude = ["src-tauri", "tools/telemetry-server"]
 
 [profile.release]
