@@ -472,8 +472,9 @@ This project is licensed under the [GPL-2.0 License](LICENSE).
 - **[DepotDownloaderMod](https://github.com/SteamAutoCracks/DepotDownloaderMod)** — Steam depot downloading engine
 - **[Steam Store API](https://store.steampowered.com/api/)** — Game metadata & artwork
 - **[Tauri](https://v2.tauri.app/)** — Desktop application framework
-- **[gbe_fork](https://github.com/Detanup01/gbe_fork)** — Steamworks API emulator (downloaded on demand)
-- **[Steamless](https://github.com/atom0s/Steamless)** by atom0s — SteamStub DRM unpacker (downloaded on demand)
+- **[gbe_fork](https://github.com/Detanup01/gbe_fork)** — Steamworks API emulator (downloaded on demand, bundled in the Windows standalone ZIP)
+- **[Steamless](https://github.com/atom0s/Steamless)** by atom0s — SteamStub DRM unpacker (downloaded on demand, bundled in the Windows standalone ZIP)
+- **[Steam API Check Bypass](https://github.com/SteamAutoCracks/Steam-API-Check-Bypass)** by SteamAutoCracks — bypasses Steam API DLL integrity checks (downloaded on demand, bundled in the Windows standalone ZIP)
 - **[api.steamcmd.net](https://api.steamcmd.net/)** — public Steam PICS mirror for depot metadata tags
 
 ---
