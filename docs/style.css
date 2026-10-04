@@ -789,6 +789,10 @@ code {
   text-transform: uppercase;
 }
 .readout li > span:last-child { color: var(--d-ink); }
+.readout--literal li > span:first-child {
+  text-transform: none;
+  letter-spacing: 0.04em;
+}
 .readout .ok { color: var(--d-mint); }
 .readout--num li { grid-template-columns: minmax(0, 2.4rem) minmax(0, 1fr); }
 
@@ -1028,6 +1032,10 @@ code {
   text-transform: uppercase;
   color: var(--w-accent);
   min-width: 0;
+}
+.rows__k--literal {
+  text-transform: none;
+  letter-spacing: 0.04em;
 }
 .rows__v {
   font-family: var(--karla);

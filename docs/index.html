@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Steam Manifest Downloader, resolve Steam depots and write them to disk</title>
-<meta name="description" content="SMD resolves depot IDs, manifest GIDs and depot keys from a .lua or .st file or an App ID, then writes the depot contents to a folder you pick. Built with Rust and Tauri v2 for Windows 10 and 11 and for Linux.">
+<meta name="description" content="SMD resolves depot IDs, manifest GIDs and depot keys from a .lua or .st file or an App ID, then writes the depot contents to a folder you pick. Desktop app for Windows 10 and 11 and for Linux, plus a terminal version and a Docker image. Built with Rust and Tauri v2.">
 <meta name="theme-color" content="#06060A">
 <link rel="icon" href="./icon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -91,9 +91,9 @@
 
       <ul class="hero__meta">
         <li>Windows 10, 11 and Linux</li>
+        <li>Desktop, terminal and Docker</li>
         <li>Rust and Tauri v2</li>
         <li>GPL-2.0</li>
-        <li>smd.mcbabel.de</li>
       </ul>
 
       <dl class="facts frame">
@@ -110,8 +110,8 @@
           <dd>05</dd>
         </div>
         <div class="fact">
-          <dt>License</dt>
-          <dd>GPL-2.0</dd>
+          <dt>Ways to run it</dt>
+          <dd>03</dd>
         </div>
       </dl>
     </div>
@@ -137,6 +137,9 @@
         <li>WebKitGTK</li>
         <li>AppImage</li>
         <li>NSIS</li>
+        <li>Terminal UI</li>
+        <li>Headless CLI</li>
+        <li>Docker</li>
         <li>GPL-2.0</li>
       </ul>
       <ul class="ticker__list" aria-hidden="true">
@@ -157,6 +160,9 @@
         <li>WebKitGTK</li>
         <li>AppImage</li>
         <li>NSIS</li>
+        <li>Terminal UI</li>
+        <li>Headless CLI</li>
+        <li>Docker</li>
         <li>GPL-2.0</li>
       </ul>
     </div>
@@ -190,7 +196,7 @@
       <div class="rail">
         <p class="kicker"><span class="kicker__idx">01</span> Capability</p>
         <span class="rail__rule" aria-hidden="true"></span>
-        <span class="chip">four blocks</span>
+        <span class="chip">six blocks</span>
       </div>
       <h2 id="h-cap" class="display-2">What it does</h2>
       <p class="lead">One file or one App ID goes in. Depot IDs, manifest GIDs and depot keys come back, and the depot contents land in a folder you choose.</p>
@@ -278,8 +284,8 @@
       <div class="row row--flip">
         <div class="row__text">
           <h3>After the files land</h3>
-          <p>Patching is optional and separate from downloading. You can patch with the gbe_fork emulator, which has a variant picker, 21 settings and per file patch selection. You can detect and remove SteamStub DRM with the bundled Steamless, and install a Steam API check bypass.</p>
-          <p>You can also add the game to your Steam library as a non-Steam entry, with banner, hero, logo and icon.</p>
+          <p>Patching is optional and separate from downloading. You can patch with the gbe_fork emulator, which has a variant picker, 21 settings and per file patch selection. You can detect and remove SteamStub DRM with Steamless, and install a Steam API check bypass. For achievement pop-ups the emulator step points you to Achievement Watcher.</p>
+          <p>You can also add the game to your Steam library as a non-Steam entry, with banner, hero, logo and icon. SMD checks first whether Steam is running, because Steam would drop the entry when it exits, and offers to close and restart it for you. On Windows it creates desktop and Start Menu shortcuts as well.</p>
         </div>
         <div class="row__media">
           <div class="panel frame">
@@ -289,6 +295,52 @@
               <li><span>02</span><span>Steamless, detects and removes SteamStub DRM</span></li>
               <li><span>03</span><span>Steam API check bypass</span></li>
               <li><span>04</span><span>Steam library entry with banner, hero, logo, icon</span></li>
+              <li><span>05</span><span>Windows desktop and Start Menu shortcuts</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="row__text">
+          <h3>Keep a game current</h3>
+          <p>A game you downloaded before can be updated in place from the history. Only the parts that changed are downloaded, files the new version no longer has are deleted, and everything that never belonged to the game, such as saves and emulator settings, stays where it is. Depots whose manifest did not change are skipped entirely.</p>
+          <p>A speed limit in MB/s or Mbit/s keeps the rest of your connection usable and applies to a download that is already running. And if you start a long download before bed, SMD can shut the PC down when it is done, after a countdown you can cancel.</p>
+        </div>
+        <div class="row__media">
+          <div class="panel frame">
+            <div class="panel__bar"><span>update</span><span>in place</span></div>
+            <ul class="readout">
+              <li><span>changed</span><span>only those parts are downloaded</span></li>
+              <li><span>unchanged</span><span class="ok">depot skipped</span></li>
+              <li><span>removed</span><span>deleted from the folder</span></li>
+              <li><span>your files</span><span class="ok">kept</span></li>
+            </ul>
+            <div class="panel__bar panel__bar--mid"><span>while it runs</span><span>optional</span></div>
+            <ul class="readout">
+              <li><span>speed limit</span><span>MB/s or Mbit/s, applied live</span></li>
+              <li><span>when done</span><span>shut down after a 60 s countdown</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="row row--flip">
+        <div class="row__text">
+          <h3>Desktop, terminal or container</h3>
+          <p>Next to the desktop app there is a terminal version, a single binary called <code>smd</code>. Started without arguments it opens a full interface in the terminal, with all five steps, the history and the settings, usable with mouse or keyboard.</p>
+          <p>Its subcommands search, download and list the history without any interface, for servers and scripts, and there is a Docker image on ghcr.io. The Linux binary is static, so it runs on any distribution. Desktop and terminal share settings and history.</p>
+        </div>
+        <div class="row__media">
+          <div class="panel frame">
+            <div class="panel__bar"><span>smd</span><span>terminal version</span></div>
+            <ul class="readout readout--literal">
+              <li><span>smd</span><span>interactive terminal interface</span></li>
+              <li><span>smd search</span><span>find an App ID or its depots</span></li>
+              <li><span>smd download</span><span>download, update, limit, shut down</span></li>
+              <li><span>smd history</span><span>past downloads</span></li>
+              <li><span>--json</span><span>progress as JSON lines</span></li>
+              <li><span>docker</span><span>ghcr.io/mcbabel/steam-manifest-downloader</span></li>
             </ul>
           </div>
         </div>
@@ -352,17 +404,17 @@
         <li class="step">
           <span class="step__idx" aria-hidden="true">03</span>
           <h3>Download</h3>
-          <p>Run the pure Rust CDN pipeline or the bundled .NET engine. Contents are written to the folder you pick. An interrupted run resumes by verifying the chunks already on disk.</p>
+          <p>Run the pure Rust CDN pipeline or the bundled .NET engine. Contents are written to the folder you pick. An interrupted run resumes by verifying the chunks already on disk. A speed limit and a shutdown after the download are optional.</p>
         </li>
         <li class="step">
           <span class="step__idx" aria-hidden="true">04</span>
           <h3>Shortcuts and Steam library</h3>
-          <p>Add the game to your Steam library as a non-Steam entry, with banner, hero, logo and icon attached.</p>
+          <p>Add the game to your Steam library as a non-Steam entry, with banner, hero, logo and icon attached. On Windows, desktop and Start Menu shortcuts are created as well.</p>
         </li>
         <li class="step">
           <span class="step__idx" aria-hidden="true">05</span>
           <h3>Emulator</h3>
-          <p>Optionally patch with gbe_fork using the variant picker, its 21 settings and per file patch selection. Remove SteamStub DRM with the bundled Steamless, or install the Steam API check bypass.</p>
+          <p>Optionally patch with gbe_fork using the variant picker, its 21 settings and per file patch selection. Remove SteamStub DRM with Steamless, or install the Steam API check bypass. Later, the same game can be updated in place from the history.</p>
         </li>
       </ol>
     </div>
@@ -451,10 +503,10 @@
         <div class="rail">
           <p class="kicker"><span class="kicker__idx">03</span> Install</p>
           <span class="rail__rule" aria-hidden="true"></span>
-          <span class="chip chip--key">three routes</span>
+          <span class="chip chip--key">four routes</span>
         </div>
-        <h2 id="h-install" class="h2-paper">Three ways in, depending on what you run.</h2>
-        <p class="lead-paper">Arch based distributions have packages in the AUR. Everywhere else on Linux there is an AppImage, and Windows 10 and 11 have an installer.</p>
+        <h2 id="h-install" class="h2-paper">Four ways in, depending on what you run.</h2>
+        <p class="lead-paper">Arch based distributions have packages in the AUR. Everywhere else on Linux there is an AppImage, and Windows 10 and 11 have an installer and a standalone ZIP. For servers and scripts there is the terminal version and a Docker image.</p>
 
         <div class="routes">
           <article class="route">
@@ -486,14 +538,26 @@
 
           <article class="route">
             <p class="route__tag">Windows 10 and 11</p>
-            <h3>NSIS installer</h3>
-            <p>The installer sits on the same <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest">releases page</a>. It installs per user and does not ask for admin rights.</p>
+            <h3>Installer or standalone ZIP</h3>
+            <p>Both sit on the same <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest">releases page</a>, and neither asks for admin rights. The installer sets the app up per user with a Start Menu entry. The standalone ZIP needs no installation at all: extract it into a folder of your own and start the app from there. It already contains gbe_fork, Steamless and the Steam API check bypass, so the emulator step works without extra downloads, which helps on PCs where GitHub downloads are blocked.</p>
             <ul class="rows">
-              <li><span class="rows__k">installer</span><span class="rows__v">NSIS, per user</span></li>
+              <li><span class="rows__k">installer</span><span class="rows__v">NSIS, per user, <code>_x64-setup.exe</code></span></li>
+              <li><span class="rows__k">standalone</span><span class="rows__v">ZIP, no install, <code>_windows-standalone.zip</code></span></li>
               <li><span class="rows__k">admin</span><span class="rows__v">not needed</span></li>
-              <li><span class="rows__k">runtime</span><span class="rows__v"><a href="https://dotnet.microsoft.com/en-us/download/dotnet/9.0">.NET 9 Desktop Runtime</a></span></li>
+              <li><span class="rows__k">runtime</span><span class="rows__v">none for the default engine</span></li>
             </ul>
-            <p class="cmd__note">The bundled .NET engine needs that runtime, and the app checks for it on first launch. The Rust pipeline does not need it.</p>
+            <p class="cmd__note">Only the optional DepotDownloaderMod engine needs the <a href="https://dotnet.microsoft.com/en-us/download/dotnet/9.0">.NET 9 Desktop Runtime</a>, and the app tells you if it is missing.</p>
+          </article>
+
+          <article class="route">
+            <p class="route__tag">Servers, scripts, Docker</p>
+            <h3>Terminal version</h3>
+            <p>The terminal version is a single file per system on the <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest">releases page</a>, <code>Steam-Manifest-Downloader-Terminal_&lt;version&gt;_linux-x64</code> or <code>_windows-x64.exe</code>. Start it without arguments for the terminal interface, or use its commands. The same program is published as a Docker image:</p>
+            <div class="cmd">
+              <code>docker run --rm -v smd-data:/data -v "$PWD/games:/games" ghcr.io/mcbabel/steam-manifest-downloader download 220</code>
+              <button class="copy" type="button" data-copy='docker run --rm -v smd-data:/data -v "$PWD/games:/games" ghcr.io/mcbabel/steam-manifest-downloader download 220' aria-label="Copy the docker run command that downloads App ID 220"><span class="copy__label">Copy</span></button>
+            </div>
+            <p class="cmd__note">Downloads land in <code>/games</code>, settings and history in <code>/data</code>. Add <code>-it</code> and leave out the command for the terminal interface. Details are in the <a href="./documentation/#terminal">documentation</a>.</p>
           </article>
         </div>
       </div>
@@ -511,7 +575,7 @@
       <div class="rail">
         <p class="kicker"><span class="kicker__idx">04</span> The rest of the app</p>
         <span class="rail__rule" aria-hidden="true"></span>
-        <span class="chip">local by default</span>
+        <span class="chip">eight details</span>
       </div>
       <h2 id="h-app" class="display-2">Inside the app</h2>
 
@@ -519,12 +583,32 @@
         <div class="cell frame">
           <span class="cell__tag">history</span>
           <h3>Run a past download again</h3>
-          <p>Downloads are kept in a history list, and one click repeats any of them.</p>
+          <p>Downloads are kept in a history list. One click repeats any of them, resumes a cancelled one or opens its folder.</p>
+        </div>
+        <div class="cell frame">
+          <span class="cell__tag">update</span>
+          <h3>Update instead of starting over</h3>
+          <p>Update brings an existing download to the newest version. Only changed parts are fetched, and saves and settings stay.</p>
+        </div>
+        <div class="cell frame">
+          <span class="cell__tag">speed</span>
+          <h3>A speed limit that applies live</h3>
+          <p>Cap downloads in MB/s or Mbit/s. A change applies at once, even to a download that is already running.</p>
+        </div>
+        <div class="cell frame">
+          <span class="cell__tag">power</span>
+          <h3>Shut down when it is done</h3>
+          <p>Switch it on during a download and the PC shuts down afterwards. A 60 second countdown lets you change your mind.</p>
+        </div>
+        <div class="cell frame">
+          <span class="cell__tag">steam</span>
+          <h3>Steam library without surprises</h3>
+          <p>Before a game is added, SMD checks whether Steam is running and can close and restart it, so the entry is not lost.</p>
         </div>
         <div class="cell frame">
           <span class="cell__tag">interface</span>
           <h3>Two themes, two languages</h3>
-          <p>Dark and light themes ship together. The interface is available in English and in German.</p>
+          <p>Dark and light themes ship together. The desktop app and the terminal version are available in English and in German.</p>
         </div>
         <div class="cell frame">
           <span class="cell__tag">telemetry</span>
@@ -617,7 +701,7 @@
         <div class="rail">
           <p class="kicker"><span class="kicker__idx">05</span> Questions</p>
           <span class="rail__rule" aria-hidden="true"></span>
-          <span class="chip chip--key">nine answers</span>
+          <span class="chip chip--key">twelve answers</span>
         </div>
         <h2 id="h-q" class="h2-paper">Questions</h2>
         <p class="lead-paper">Short answers here, with the longer versions in the documentation.</p>
@@ -632,7 +716,7 @@
           <details class="qa">
             <summary><span>Which systems does it run on?</span></summary>
             <div class="qa__body">
-              <p>Windows 10 and 11, and Linux. On Windows there is an NSIS installer that installs per user with no admin rights. On Arch, CachyOS and Manjaro there are two AUR packages, and everywhere else on Linux there is an AppImage that uses system WebKitGTK.</p>
+              <p>Windows 10 and 11, and Linux. On Windows there is an NSIS installer that installs per user, and a standalone ZIP that needs no installation, neither asks for admin rights. On Arch, CachyOS and Manjaro there are two AUR packages, and everywhere else on Linux there is an AppImage that uses system WebKitGTK. The terminal version runs on both systems, and its Docker image anywhere Docker runs on an Intel or AMD processor.</p>
             </div>
           </details>
           <details class="qa">
@@ -651,6 +735,24 @@
             <summary><span>What happens if a download is interrupted?</span></summary>
             <div class="qa__body">
               <p>Start it again and it resumes. The app verifies the chunks already on disk rather than pulling everything a second time.</p>
+            </div>
+          </details>
+          <details class="qa">
+            <summary><span>Can I update a game I downloaded earlier?</span></summary>
+            <div class="qa__body">
+              <p>Yes. Open the history and pick Update on that entry. SMD downloads into the existing folder, fetches only the parts that changed, deletes files the new version no longer has and leaves saves, emulator settings and your own files alone. In the terminal version the same works with <code>smd download --update &lt;folder&gt;</code>.</p>
+            </div>
+          </details>
+          <details class="qa">
+            <summary><span>Can I run it without a desktop, on a server or in Docker?</span></summary>
+            <div class="qa__body">
+              <p>Yes. The terminal version <code>smd</code> searches, downloads and shows the history from the command line, and its Docker image is on ghcr.io as <code>ghcr.io/mcbabel/steam-manifest-downloader</code>. Started in an interactive terminal it also offers the full interface.</p>
+            </div>
+          </details>
+          <details class="qa">
+            <summary><span>Can I limit the speed or shut down the PC afterwards?</span></summary>
+            <div class="qa__body">
+              <p>Both. The speed limit sits in the settings and takes MB/s or Mbit/s. The switch to shut down the PC is on the download screen, and a 60 second countdown runs before the PC turns off, so you can still cancel.</p>
             </div>
           </details>
           <details class="qa">
@@ -689,7 +791,7 @@
           <span class="chip chip--key">1.4.3</span>
         </div>
         <h2 id="h-get" class="h2-close">Version 1.4.3 is on the releases page.</h2>
-        <p class="lead-paper">Windows installer, Linux AppImage, and AUR packages for Arch, CachyOS and Manjaro. Source under GPL-2.0.</p>
+        <p class="lead-paper">Windows installer and standalone ZIP, Linux AppImage, AUR packages for Arch, CachyOS and Manjaro, the terminal version and a Docker image. Source under GPL-2.0.</p>
         <div class="close__actions">
           <a class="pbtn pbtn--solid" href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest">Get the latest release</a>
           <a class="pbtn pbtn--line" href="./documentation/">Read the documentation</a>

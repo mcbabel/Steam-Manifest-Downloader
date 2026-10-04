@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Documentation, Steam Manifest Downloader</title>
-<meta name="description" content="Install, use, configure and build Steam Manifest Downloader 1.4.3. System requirements, the five step pipeline, file formats, settings, depot sources, build instructions and troubleshooting.">
+<meta name="description" content="Install, use, configure and build Steam Manifest Downloader 1.4.3. System requirements, the five step pipeline, updates, file formats, settings, depot sources, the terminal version and Docker, build instructions and troubleshooting.">
 <meta name="theme-color" content="#06060A">
 <meta property="og:title" content="Documentation, Steam Manifest Downloader">
-<meta property="og:description" content="Install, use, configure and build Steam Manifest Downloader 1.4.3. Built with Rust and Tauri v2 for Windows 10 and 11 and for Linux.">
+<meta property="og:description" content="Install, use, configure and build Steam Manifest Downloader 1.4.3. Desktop app for Windows 10 and 11 and for Linux, terminal version and Docker image. Built with Rust and Tauri v2.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://smd.mcbabel.de/documentation/">
 <meta name="twitter:card" content="summary">
@@ -80,7 +80,7 @@
         <span class="ln ln-3">install, use, configure, build</span>
       </h1>
 
-      <p class="lead hero__deck">Everything the app does, written out. Requirements and installation, the five step pipeline, the file formats it reads, every setting, how depot sources are queried, how to build from source, and what to do when something breaks.</p>
+      <p class="lead hero__deck">Everything the app does, written out. Requirements and installation, the five step pipeline, updating a game, the file formats it reads, every setting, how depot sources are queried, the terminal version and Docker, how to build from source, and what to do when something breaks.</p>
 
       <div class="hero__cta">
         <a class="btn btn--primary" href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest">Download 1.4.3</a>
@@ -92,11 +92,11 @@
         <li>Windows 10, 11 and Linux</li>
         <li>Rust and Tauri v2</li>
         <li>GPL-2.0</li>
-        <li>Eight sections</li>
+        <li>Nine sections</li>
       </ul>
 
       <div class="panel frame toc" id="contents">
-        <div class="panel__bar"><span>contents</span><span>eight sections</span></div>
+        <div class="panel__bar"><span>contents</span><span>nine sections</span></div>
 
         <div class="toc__group">
           <p class="kicker" id="toc-1"><span class="kicker__idx">01</span> Getting started</p>
@@ -118,6 +118,7 @@
             <li class="sub"><a href="#step-shortcuts">Step 4, shortcuts and Steam library</a></li>
             <li class="sub"><a href="#step-emulator">Step 5, emulator</a></li>
             <li class="sub"><a href="#step-cancel">Cancel a download</a></li>
+            <li class="sub"><a href="#step-update">Update a downloaded game</a></li>
           </ul>
         </div>
 
@@ -142,19 +143,30 @@
         </div>
 
         <div class="toc__group">
-          <p class="kicker" id="toc-5"><span class="kicker__idx">05</span> Development</p>
+          <p class="kicker" id="toc-5"><span class="kicker__idx">05</span> Terminal and Docker</p>
           <ul class="toc__list" aria-labelledby="toc-5">
+            <li><a href="#terminal">Terminal version</a></li>
+            <li class="sub"><a href="#terminal-ui">Interactive interface</a></li>
+            <li class="sub"><a href="#terminal-cli">Headless commands</a></li>
+            <li class="sub"><a href="#terminal-docker">Docker</a></li>
+          </ul>
+        </div>
+
+        <div class="toc__group">
+          <p class="kicker" id="toc-6"><span class="kicker__idx">06</span> Development</p>
+          <ul class="toc__list" aria-labelledby="toc-6">
             <li><a href="#building-from-source">Building from source</a></li>
             <li class="sub"><a href="#build-prerequisites">Prerequisites</a></li>
             <li class="sub"><a href="#build-ddm">Building DepotDownloaderMod</a></li>
             <li class="sub"><a href="#build-tauri">Building the Tauri app</a></li>
+            <li class="sub"><a href="#build-terminal">Building the terminal version</a></li>
             <li class="sub"><a href="#build-project-structure">Project structure</a></li>
           </ul>
         </div>
 
         <div class="toc__group">
-          <p class="kicker" id="toc-6"><span class="kicker__idx">06</span> Help</p>
-          <ul class="toc__list" aria-labelledby="toc-6">
+          <p class="kicker" id="toc-7"><span class="kicker__idx">07</span> Help</p>
+          <ul class="toc__list" aria-labelledby="toc-7">
             <li><a href="#troubleshooting">Troubleshooting and FAQ</a></li>
             <li><a href="#legal-notice">Legal notice</a></li>
           </ul>
@@ -239,7 +251,7 @@
         <details class="docnav__d" id="docnav-d" open>
           <summary class="docnav__sum">
             <span class="docnav__lab" id="docnav-title">On this page</span>
-            <span class="docnav__hint">01 to 09</span>
+            <span class="docnav__hint">01 to 10</span>
           </summary>
           <div class="docnav__panel">
             <ol class="docnav__secs">
@@ -260,6 +272,7 @@
                   <li><a href="#step-shortcuts">Step 4: shortcuts and Steam library</a></li>
                   <li><a href="#step-emulator">Step 5: emulator</a></li>
                   <li><a href="#step-cancel">Cancel a download</a></li>
+                  <li><a href="#step-update">Update a downloaded game</a></li>
                 </ul>
               </li>
               <li class="docnav__sec">
@@ -288,19 +301,29 @@
                 </ul>
               </li>
               <li class="docnav__sec">
-                <a class="docnav__h2" href="#building-from-source"><span class="docnav__n">06</span><span class="docnav__t">Building from source</span></a>
+                <a class="docnav__h2" href="#terminal"><span class="docnav__n">06</span><span class="docnav__t">Terminal version and Docker</span></a>
+                <ul class="docnav__subs">
+                  <li><a href="#terminal-start">Download and start</a></li>
+                  <li><a href="#terminal-ui">Interactive interface</a></li>
+                  <li><a href="#terminal-cli">Headless commands</a></li>
+                  <li><a href="#terminal-docker">Docker</a></li>
+                </ul>
+              </li>
+              <li class="docnav__sec">
+                <a class="docnav__h2" href="#building-from-source"><span class="docnav__n">07</span><span class="docnav__t">Building from source</span></a>
                 <ul class="docnav__subs">
                   <li><a href="#build-prerequisites">Prerequisites</a></li>
                   <li><a href="#build-ddm">Step 1: building DepotDownloaderMod</a></li>
                   <li><a href="#build-tauri">Step 2: building the Tauri app</a></li>
-                  <li><a href="#build-project-structure">Step 3: project structure</a></li>
+                  <li><a href="#build-terminal">Step 3: building the terminal version</a></li>
+                  <li><a href="#build-project-structure">Step 4: project structure</a></li>
                 </ul>
               </li>
               <li class="docnav__sec">
-                <a class="docnav__h2" href="#troubleshooting"><span class="docnav__n">07</span><span class="docnav__t">Troubleshooting and FAQ</span></a>
+                <a class="docnav__h2" href="#troubleshooting"><span class="docnav__n">08</span><span class="docnav__t">Troubleshooting and FAQ</span></a>
               </li>
               <li class="docnav__sec">
-                <a class="docnav__h2" href="#legal-notice"><span class="docnav__n">08</span><span class="docnav__t">Legal notice</span></a>
+                <a class="docnav__h2" href="#legal-notice"><span class="docnav__n">09</span><span class="docnav__t">Legal notice</span></a>
                 <ul class="docnav__subs">
                   <li><a href="#legal-intent">Intended use</a></li>
                   <li><a href="#legal-terms">Terms of service</a></li>
@@ -308,7 +331,7 @@
                 </ul>
               </li>
               <li class="docnav__sec">
-                <a class="docnav__h2" href="#next"><span class="docnav__n">09</span><span class="docnav__t">Download</span></a>
+                <a class="docnav__h2" href="#next"><span class="docnav__n">10</span><span class="docnav__t">Download</span></a>
               </li>
             </ol>
           </div>
@@ -324,7 +347,7 @@
               <span class="chip chip--key">three parts</span>
             </div>
             <h2 id="h-start" class="h2-paper">Getting started <a class="alink" href="#getting-started" aria-label="Permalink to Getting started">#</a></h2>
-            <p class="lead-paper">Steam Manifest Downloader (SMD) is a Tauri v2 desktop application built with Rust and a WebView front end.</p>
+            <p class="lead-paper">Steam Manifest Downloader (SMD) is a Tauri v2 desktop application built with Rust and a WebView front end, with a terminal version for servers, scripts and Docker.</p>
             <nav class="qidx" aria-label="Inside Getting started">
               <p class="qidx__lab">In this section</p>
               <ul class="qidx__list">
@@ -343,6 +366,7 @@
                 <li>Optionally create desktop and start menu shortcuts (Windows), or add the game to your Steam library with grid art (Linux and Windows)</li>
                 <li>Optionally patch the game with the gbe_fork emulator so it runs without the Steam client, including DRM detection via Steamless and an API check bypass</li>
               </ol>
+              <p>A game you downloaded once can later be updated in place from the history, see <a href="#step-update">Update a downloaded game</a>. Besides the desktop app there is a terminal version with the same steps and a Docker image, see <a href="#terminal">Terminal version and Docker</a>.</p>
 
               <h3 id="system-requirements">System requirements <a class="alink" href="#system-requirements" aria-label="Permalink to System requirements">#</a></h3>
               <ul class="rows">
@@ -363,6 +387,10 @@
                   <span class="rows__v">Most modern distributions with GTK3 and WebKit2GTK. For the AppImage: FUSE support, or <code>APPIMAGE_EXTRACT_AND_RUN=1</code></span>
                 </li>
                 <li>
+                  <span class="rows__k">terminal</span>
+                  <span class="rows__v">The terminal version needs nothing else with the default engine. The Linux build is static and runs on any distribution, Alpine included. The optional DepotDownloaderMod engine needs a glibc based distribution there.</span>
+                </li>
+                <li>
                   <span class="rows__k">network</span>
                   <span class="rows__v">An internet connection is required for searching and downloading manifests.</span>
                 </li>
@@ -376,23 +404,65 @@
 
               <h4 id="windows-nsis-installer">Windows, NSIS installer <a class="alink" href="#windows-nsis-installer" aria-label="Permalink to Windows, NSIS installer">#</a></h4>
               <ol>
-                <li>Download the latest <code>.exe</code> installer from the <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases">releases page</a></li>
-                <li>Run the installer and follow the setup wizard</li>
+                <li>Download <code>Steam Manifest Downloader_&lt;version&gt;_x64-setup.exe</code> from the <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases">releases page</a></li>
+                <li>Run the installer and follow the setup wizard. It installs per user and does not ask for admin rights</li>
                 <li>Launch <strong>Steam Manifest Downloader</strong> from your start menu or desktop</li>
               </ol>
+              <p>The installer downloads gbe_fork, Steamless and the Steam API check bypass from GitHub the first time you use the emulator step, after asking you.</p>
+
+              <h4 id="windows-standalone-zip">Windows, standalone ZIP <a class="alink" href="#windows-standalone-zip" aria-label="Permalink to Windows, standalone ZIP">#</a></h4>
+              <ol>
+                <li>Download <code>Steam-Manifest-Downloader_&lt;version&gt;_windows-standalone.zip</code> from the <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases">releases page</a></li>
+                <li>Extract the whole ZIP into a folder of your own, for example <code>Documents\Steam Manifest Downloader</code>. Do not run it from inside the ZIP and do not extract it to <code>C:\Program Files</code></li>
+                <li>Start <code>Steam Manifest Downloader.exe</code> from that folder, and keep the <code>third-party</code> folder next to it</li>
+              </ol>
+              <p>Nothing is installed and no admin rights are needed. The <code>third-party</code> folder already contains gbe_fork, Steamless and the Steam API check bypass, so the emulator step works without downloading them, which helps on PCs where GitHub downloads or scripts are blocked. Instructions in English and German are inside the ZIP.</p>
+
+              <h4 id="linux-aur">Linux, AUR <a class="alink" href="#linux-aur" aria-label="Permalink to Linux, AUR">#</a></h4>
+              <p>On Arch, CachyOS and Manjaro, install one of the two AUR packages. They conflict with each other, so only one can be installed:</p>
+              <div class="snip">
+                <div class="snip__bar">
+                  <p class="snip__lang">bash</p>
+                  <button class="copy" type="button" aria-label="Copy the paru commands for the two AUR packages"><span class="copy__label">Copy</span></button>
+                </div>
+                <pre tabindex="0"><code><span class="cm"># Released binary, installs in seconds</span>
+paru -S steam-manifest-downloader-bin
+
+<span class="cm"># Builds locally</span>
+paru -S steam-manifest-downloader</code></pre>
+              </div>
+              <p>Updates come through your package manager, and the in-app updater points you there instead of fetching an AppImage.</p>
 
               <h4 id="linux-appimage">Linux, AppImage <a class="alink" href="#linux-appimage" aria-label="Permalink to Linux, AppImage">#</a></h4>
               <ol>
+                <li>Install WebKitGTK for your distribution, since the AppImage uses the system copy instead of bundling it</li>
                 <li>Download the latest <code>.AppImage</code> file from the <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases">releases page</a></li>
                 <li>Make it executable, then run it</li>
               </ol>
               <div class="snip">
                 <div class="snip__bar">
                   <p class="snip__lang">bash</p>
+                  <button class="copy" type="button" aria-label="Copy the WebKitGTK install commands for Debian, Arch, Fedora and openSUSE"><span class="copy__label">Copy</span></button>
+                </div>
+                <pre tabindex="0"><code><span class="cm"># Ubuntu, Debian</span>
+sudo apt install libwebkit2gtk-4.1-0 libayatana-appindicator3-1 librsvg2-2
+
+<span class="cm"># Arch, CachyOS, Manjaro</span>
+sudo pacman -S webkit2gtk-4.1 libayatana-appindicator librsvg
+
+<span class="cm"># Fedora</span>
+sudo dnf install webkit2gtk4.1 libappindicator-gtk3 librsvg2
+
+<span class="cm"># openSUSE</span>
+sudo zypper install libwebkit2gtk-4_1-0 libayatana-appindicator3-1 librsvg-2-2</code></pre>
+              </div>
+              <div class="snip">
+                <div class="snip__bar">
+                  <p class="snip__lang">bash</p>
                   <button class="copy" type="button" aria-label="Copy the commands that make the AppImage executable and run it"><span class="copy__label">Copy</span></button>
                 </div>
-                <pre tabindex="0"><code>chmod +x SteamManifestDownloader_*.AppImage
-./SteamManifestDownloader_*.AppImage</code></pre>
+                <pre tabindex="0"><code>chmod +x Steam\ Manifest\ Downloader_*_amd64.AppImage
+./Steam\ Manifest\ Downloader_*_amd64.AppImage</code></pre>
               </div>
               <div class="note">
                 <p class="note__tag">Note</p>
@@ -410,7 +480,8 @@
               <ul>
                 <li>Set a custom <strong>download location</strong> on the download page (step 3) before your first download</li>
                 <li>Configure a <strong>ManifestHub API key</strong> on the download page for additional manifest sources</li>
-                <li>Open <strong>Settings, Advanced settings</strong> to tune the retry count, speed limit or proxy, or to add and remove depot sources</li>
+                <li>Set a <strong>speed limit</strong> under <strong>Settings</strong> if the download should leave room for the rest of your connection</li>
+                <li>Open <strong>Settings, Advanced settings</strong> to tune the retry count, the number of parallel chunks or the proxy, or to add and remove depot sources</li>
               </ul>
             </div>
           </div>
@@ -434,6 +505,7 @@
                 <li><a href="#step-shortcuts">Step 4: shortcuts and Steam library</a></li>
                 <li><a href="#step-emulator">Step 5: emulator</a></li>
                 <li><a href="#step-cancel">Cancel a download</a></li>
+                <li><a href="#step-update">Update a downloaded game</a></li>
               </ul>
             </nav>
 
@@ -494,9 +566,13 @@
               </ul>
               <div class="note">
                 <p class="note__tag">Where files land</p>
-                <p>The downloaded files are saved to your configured download location, by default <code>Documents/SteamDownloads</code>. Each download creates a subdirectory named after the app ID.</p>
+                <p>The downloaded files are saved to your configured download location, by default <code>Documents/SteamDownloads</code>. Each download creates a subdirectory named after the app ID and the game name, for example <code>220 - Half-Life 2</code>. Chunks are decrypted in memory and written straight into that folder, so nothing is staged in a temporary directory on another drive.</p>
               </div>
-              <p>When the download succeeds the app automatically progresses to step 4, or to step 5 on Linux without Steam installed. The history entry is only persisted once you reach <strong>Go to home</strong>, so closing the app mid flow leaves no trace.</p>
+              <h4 id="speed-limit">Speed limit <a class="alink" href="#speed-limit" aria-label="Permalink to Speed limit">#</a></h4>
+              <p>Under <strong>Settings, Speed limit</strong> you can cap the download speed, in MB/s or in Mbit/s. MB/s matches the speed shown during a download, and Mbit/s follows the convention of internet providers, so 100 Mbit/s is about 12 MB/s. A change applies at once, also to a download that is already running. The limit applies to the native engine.</p>
+              <h4 id="shutdown-after-download">Shut down after the download <a class="alink" href="#shutdown-after-download" aria-label="Permalink to Shut down after the download">#</a></h4>
+              <p>The download screen has a switch <strong>Shut down the PC when the download has finished</strong>. It is off by default and can be switched on while the download runs. When the download ends, including when it fails but not when you cancel it, a 60 second countdown appears with <strong>Cancel</strong> and <strong>Shut Down Now</strong>. The history entry is saved before the PC turns off. Windows shuts down with <code>shutdown /s</code>, Linux tries <code>systemctl poweroff</code>, <code>loginctl poweroff</code> and <code>shutdown -h now</code> in that order. If none of them works, the app says so instead of failing silently.</p>
+              <p>When the download succeeds, <strong>Next</strong> leads to step 4, or to step 5 on Linux without Steam installed. The history entry is only persisted once you reach <strong>Back to Start</strong>, so closing the app mid flow leaves no trace.</p>
 
               <h3 id="step-shortcuts">Step 4: shortcuts and Steam library, optional <a class="alink" href="#step-shortcuts" aria-label="Permalink to Step 4: shortcuts and Steam library, optional">#</a></h3>
               <p>Step 4 has two platform specific variants. SMD picks the right one automatically based on whether you are on Windows or Linux and whether Steam is detected.</p>
@@ -508,17 +584,19 @@
                 <li>Toggle <strong>Desktop shortcut</strong> and <strong>Start menu shortcut</strong> independently</li>
                 <li>Toggle <strong>Also add to Steam library</strong> to chain the Steam integration, described in the next part</li>
               </ul>
-              <p>Shortcuts are created via PowerShell using the <code>WScript.Shell</code> COM object, with user derived values passed through environment variables, so there is no string interpolation and no script injection.</p>
+              <p>Shortcuts are written as <code>.lnk</code> files through the Windows Shell API, directly from the app. PowerShell, which is often blocked on managed PCs, is only used as a fallback if that fails, with user derived values passed through environment variables so there is no string interpolation and no script injection.</p>
 
               <h4 id="linux-add-to-steam-library">Linux: add to Steam library <a class="alink" href="#linux-add-to-steam-library" aria-label="Permalink to Linux: add to Steam library">#</a></h4>
-              <p>The app detects your Steam installation, at <code>~/.steam/steam/</code>, <code>~/.local/share/Steam/</code> or the Flatpak path, and the active user, via the <code>MostRecent=1</code> flag in <code>loginusers.vdf</code>. When you click <strong>Add to Steam</strong> it will:</p>
+              <p>The app detects your Steam installation, at <code>~/.steam/steam/</code>, <code>~/.local/share/Steam/</code> or the Flatpak path, and on Windows also through the <code>SteamPath</code> registry value, and the active user, via the <code>MostRecent=1</code> flag in <code>loginusers.vdf</code>.</p>
+              <p>Steam rewrites <code>shortcuts.vdf</code> when it exits, which would drop a freshly added entry. So before anything is written, SMD checks whether Steam is running. If it is, you can close Steam yourself and try again, or let the app close Steam, add the entry and start Steam again. This applies to the Windows toggle <strong>Also add to Steam library</strong> as well.</p>
+              <p>When you click <strong>Add to Steam</strong> it will:</p>
               <ol>
                 <li>Download the <strong>banner</strong>, <strong>hero</strong>, <strong>logo</strong> and <strong>icon</strong> images from the Steam CDN, using the icon hash from <code>api.steamcmd.net</code></li>
                 <li>Save them into <code>~/.steam/steam/userdata/&lt;user&gt;/config/grid/</code> with the naming Steam expects: <code>&lt;shortcutid&gt;.jpg</code>, <code>&lt;shortcutid&gt;p.jpg</code>, <code>&lt;shortcutid&gt;_hero.jpg</code>, <code>&lt;shortcutid&gt;_logo.png</code> and <code>&lt;shortcutid&gt;_icon.jpg</code></li>
                 <li>Parse the existing binary <code>shortcuts.vdf</code> file, with a backup, append a new shortcut entry, and write it back</li>
                 <li>Generate the shortcut AppID as <code>CRC32(exe_path + app_name) | 0x80000000</code>, which is Steam compatible and deterministic</li>
               </ol>
-              <p>The Linux step also supports <strong>launch options</strong>, for example <code>%command%</code>, and a <strong>display name</strong> field. After adding, restart Steam fully, by right clicking the tray icon and choosing Exit, for the new entry to appear. For Windows games on Linux: right click the new entry in Steam, open Properties, then Compatibility, then enable Proton.</p>
+              <p>The Linux step also supports <strong>launch options</strong>, for example <code>%command%</code>, and a <strong>display name</strong> field. The new entry appears the next time Steam starts. For Windows games on Linux: right click the new entry in Steam, open Properties, then Compatibility, then enable Proton.</p>
               <p>Footer buttons are minimal: <strong>Skip</strong> proceeds without adding, and <strong>Add to Steam</strong> switches to a single <strong>Next</strong> button after success.</p>
 
               <h3 id="step-emulator">Step 5: emulator, optional <a class="alink" href="#step-emulator" aria-label="Permalink to Step 5: emulator, optional">#</a></h3>
@@ -530,21 +608,21 @@
                 <li><strong>Regular</strong>, the stable build, recommended for most games</li>
                 <li><strong>Experimental</strong>, newer features, may be unstable</li>
               </ul>
-              <p>The chosen variant's DLL is fetched from the latest gbe_fork GitHub release, extracted into the app data cache at <code>$APP_DATA/gbe_fork_cache/&lt;release-tag&gt;/</code> and copied over the game's <code>steam_api*.dll</code>. The original is backed up as <code>steam_api*.dll.steam.bak</code>. <code>steam_interfaces.txt</code> is generated natively in Rust by pattern matching against 37 known Steam interface names, so no external <code>generate_interfaces.exe</code> is required.</p>
+              <p>The chosen variant's DLL is fetched from the latest gbe_fork GitHub release after you confirm the download, extracted into the app data cache at <code>$APP_DATA/gbe_fork_cache/&lt;release-tag&gt;/</code> and copied over the game's <code>steam_api*.dll</code>. The Windows standalone ZIP ships gbe_fork in its <code>third-party</code> folder, so nothing is downloaded there. The original is backed up as <code>steam_api*.dll.steam.bak</code>. <code>steam_interfaces.txt</code> is generated natively in Rust by pattern matching against 37 known Steam interface names, so no external <code>generate_interfaces.exe</code> is required.</p>
 
               <h4 id="drm-detection-and-removal-via-steamless">DRM detection and removal, via Steamless <a class="alink" href="#drm-detection-and-removal-via-steamless" aria-label="Permalink to DRM detection and removal, via Steamless">#</a></h4>
               <p>Before applying the emulator, SMD scans the game folder for executables protected by Steam DRM (SteamStub). Detection is a fast PE header scan looking for a <code>.bind</code> section, with no execution required.</p>
               <p>If DRM is found, a yellow warning banner appears with the affected files. Clicking <strong>Remove DRM (via Steamless)</strong>:</p>
               <ul>
-                <li>Downloads <a href="https://github.com/atom0s/Steamless">Steamless v3.1.0.5</a> once into the app data cache</li>
+                <li>Downloads <a href="https://github.com/atom0s/Steamless">Steamless v3.1.0.5</a> once into the app data cache, or uses the copy bundled in the Windows standalone ZIP</li>
                 <li>On Windows: runs <code>Steamless.CLI.exe</code> directly</li>
                 <li>On Linux: runs it via <code>mono</code>, installed with <code>pacman -S mono</code> or <code>apt install mono-runtime</code>, and <code>MONO_PATH</code> is set to the <code>Plugins/</code> directory so plugin assemblies resolve correctly</li>
                 <li>Replaces the original <code>.exe</code> with the unpacked version and keeps the original as <code>.exe.drm.bak</code></li>
               </ul>
-              <p>The full Steamless log is shown inline if anything fails, with a one-click copy button.</p>
+              <p>The full Steamless log is shown inline if anything fails, with a one-click copy button. For the common causes, a failed GitHub download, a write protected game folder or files removed by the antivirus, the error comes with a plain explanation of what to do.</p>
 
               <h4 id="steam-api-check-bypass-optional-toggle">Steam API check bypass, optional toggle <a class="alink" href="#steam-api-check-bypass-optional-toggle" aria-label="Permalink to Steam API check bypass, optional toggle">#</a></h4>
-              <p>Some games perform additional integrity or size checks on <code>steam_api*.dll</code> at runtime, and those reject the gbe_fork swap even when it loaded. Enabling the bypass toggle installs <a href="https://github.com/MCbabel/Steam-API-Check-Bypass">Steam-API-Check-Bypass</a> alongside gbe_fork:</p>
+              <p>Some games perform additional integrity or size checks on <code>steam_api*.dll</code> at runtime, and those reject the gbe_fork swap even when it loaded. Enabling the bypass toggle installs <a href="https://github.com/SteamAutoCracks/Steam-API-Check-Bypass">Steam API Check Bypass</a> by SteamAutoCracks alongside gbe_fork:</p>
               <ul>
                 <li>The matching arch DLL, x64 for <code>steam_api64.dll</code> and x32 for <code>steam_api.dll</code>, is copied next to <code>game.exe</code> under <strong>three</strong> hijack names: <code>version.dll</code>, <code>winmm.dll</code> and <code>winhttp.dll</code>. Whichever the game imports gets loaded, and the others sit harmless</li>
                 <li>A <code>SteamAPICheckBypass.json</code> file is written next to <code>game.exe</code> with a <code>file_redirect</code> rule that points the first 3 <code>CreateFile</code> reads of <code>steam_api*.dll</code> to the <code>.steam.bak</code> file gbe_fork created, so integrity checks see the original bytes while the game uses the emulator</li>
@@ -563,8 +641,11 @@
               </ul>
               <p>Settings are written as INI files, <code>configs.user.ini</code>, <code>configs.main.ini</code> and <code>configs.overlay.ini</code>, into a <code>steam_settings/</code> folder next to the patched DLL, alongside <code>steam_interfaces.txt</code>, <code>steam_appid.txt</code> and <code>installed_app_ids.txt</code>.</p>
 
+              <h4 id="achievement-notifications">Achievement notifications <a class="alink" href="#achievement-notifications" aria-label="Permalink to Achievement notifications">#</a></h4>
+              <p>gbe_fork stores achievements locally, and its own overlay does not work in every game. For a notification when you unlock one, the emulator step points you to <a href="https://github.com/xan105/Achievement-Watcher">Achievement Watcher</a> by xan105 for Windows. The original is no longer developed, the <a href="https://github.com/darktakayanagi/Achievement-Watcher">fork by darktakayanagi</a> is still maintained. SMD only links to it and does not install it.</p>
+
               <h4 id="history-actions-per-game">History actions, per game <a class="alink" href="#history-actions-per-game" aria-label="Permalink to History actions, per game">#</a></h4>
-              <p>After applying, the game appears in your download history, reachable via <strong>Go to home</strong>, with an extra action button:</p>
+              <p>After applying, the game appears in your download history, reachable via <strong>Back to Start</strong>, with an extra action button:</p>
               <ul>
                 <li><strong>Edit emulator settings</strong>, the gear button, re-opens step 5 in edit mode. The variant picker is hidden, the accordion is populated from the existing INI files, the Apply button becomes <strong>Save settings</strong> and a red <strong>Revert patch</strong> button appears. Reverting restores the original DLL, deletes <code>steam_settings/</code> and is gated by a confirmation modal</li>
               </ul>
@@ -581,6 +662,21 @@
                 <p class="note__tag">Careful</p>
                 <p>By default, cancelling a download deletes all partially downloaded files for that session. Turn on <strong>Cancel behaviour, Keep downloaded files when cancelling</strong> if you would rather resume later. The job then lands in your history as Resumable, with a <strong>Resume</strong> button.</p>
               </div>
+
+              <h3 id="step-update">Update a downloaded game <a class="alink" href="#step-update" aria-label="Permalink to Update a downloaded game">#</a></h3>
+              <p>When a game you downloaded earlier gets a new version, you do not have to download it again. Open the history and click <strong>Update</strong>, the arrow button on the entry. SMD loads the current manifests and runs the usual steps, with a notice in step 2 that the download goes into the existing folder. Then:</p>
+              <ul>
+                <li><strong>Unchanged depots are skipped.</strong> After each depot SMD writes a small <code>.smd-depot-&lt;id&gt;.json</code> into the game folder with the manifest ID and the file list. If the manifest ID did not change, the depot is reported as up to date and left alone, so an applied emulator patch stays untouched</li>
+                <li><strong>Only changed parts are downloaded.</strong> Every chunk already on disk is verified and skipped</li>
+                <li><strong>Removed files are deleted.</strong> Files that belonged to the old version but not to the new one are removed, and empty folders with them. Case only renames are never deleted, and nothing outside the depot folder is touched</li>
+                <li><strong>Your files stay.</strong> Saves, emulator settings and anything else that was never part of the depot are left alone</li>
+              </ul>
+              <p>For folders downloaded before this feature existed, SMD reads the old <code>.manifest</code> file in the folder to learn the previous file list. Cancelling an update never deletes the game folder, whatever <strong>Keep downloaded files when cancelling</strong> is set to, and the history entry of the folder is replaced instead of duplicated. The update folder is tied to its App ID, so starting a different game afterwards never writes into it.</p>
+              <div class="note">
+                <p class="note__tag">Engines</p>
+                <p>Skipping unchanged depots and deleting removed files is done by the native engine. With DepotDownloaderMod the download still goes into the existing folder, and DepotDownloaderMod handles the files itself.</p>
+              </div>
+              <p>In the terminal version, use <strong>Update</strong> or the <code>u</code> key in the history, or <code>smd download &lt;source&gt; --update &lt;game folder&gt;</code>.</p>
             </div>
           </div>
         </section>
@@ -696,13 +792,15 @@ setManifestid(1392863, "4398981003384795747", 13789896785)</code></pre>
               <ul>
                 <li><strong>Language</strong>, the interface language. English and German are bundled, and the picker also runs on first launch</li>
                 <li><strong>Auto-update</strong>, toggles whether SMD checks GitHub for new releases on startup and offers an in-app update prompt</li>
+                <li><strong>Speed limit</strong>, off by default. Switch it on and enter a value in MB/s or Mbit/s, see <a href="#speed-limit">Speed limit</a>. It applies to the native engine and takes effect at once, also for a running download</li>
               </ul>
 
               <h3 id="settings-advanced">Advanced settings, collapsible <a class="alink" href="#settings-advanced" aria-label="Permalink to Advanced settings, collapsible">#</a></h3>
               <p>Click Advanced settings to expand the section. It contains the following.</p>
 
               <h4 id="download-engine">Download engine <a class="alink" href="#download-engine" aria-label="Permalink to Download engine">#</a></h4>
-              <p><strong>Download directly from Steam (native, recommended)</strong> is on by default: an anonymous Steam login fetches manifests and chunks from Steam's CDN in process, with ManifestHub only as a fallback. Turn it off to force the legacy DepotDownloaderMod path, which needs the .NET runtime on Windows.</p>
+              <p><strong>Download directly from Steam (native, recommended)</strong> is on by default: an anonymous Steam login fetches manifests and chunks from Steam's CDN in process, with ManifestHub only as a fallback. Turn it off to force the legacy DepotDownloaderMod path, which needs the .NET runtime on Windows. The .NET warning only appears when that engine is selected.</p>
+              <p><strong>Max concurrent chunks</strong> sets how many chunks the native engine downloads and decrypts at once, 8 by default and 1 to 64. Lower it if downloads make the system lag.</p>
 
               <h4 id="cancel-behaviour">Cancel behaviour <a class="alink" href="#cancel-behaviour" aria-label="Permalink to Cancel behaviour">#</a></h4>
               <p><strong>Keep downloaded files when cancelling</strong> is off by default. Enable it and cancelling leaves the partial files on disk. The job appears in your history as Resumable, and restarting it skips every chunk that already verifies.</p>
@@ -711,7 +809,6 @@ setManifestid(1392863, "4398981003384795747", 13789896785)</code></pre>
               <ul>
                 <li><strong>Extra arguments</strong>, appended verbatim to the DepotDownloaderMod CLI. The internal default is <code>-max-downloads 8 -verify-all</code>, and your input is added on top</li>
                 <li><strong>Max retries on error</strong>, how often a failed depot is retried before SMD gives up</li>
-                <li><strong>Download speed limit (MB/s)</strong>, an optional global cap</li>
                 <li><strong>HTTP proxy</strong>, a proxy URL forwarded to DepotDownloaderMod for environments that require one</li>
               </ul>
 
@@ -726,16 +823,16 @@ setManifestid(1392863, "4398981003384795747", 13789896785)</code></pre>
               <p>The <strong>ManifestHub</strong> key is separate and lives on the download page, see <a href="#download-options">ManifestHub API key</a> under Download page options below.</p>
 
               <h4 id="notification-sound">Notification sound <a class="alink" href="#notification-sound" aria-label="Permalink to Notification sound">#</a></h4>
-              <p>Toggles a short system notification sound when a download completes. This is separate from the OS desktop notification itself.</p>
+              <p>Toggles a short notification sound when a download completes or fails. This is separate from the OS desktop notification itself.</p>
 
               <h4 id="anonymous-telemetry-opt-in">Anonymous telemetry, opt in <a class="alink" href="#anonymous-telemetry-opt-in" aria-label="Permalink to Anonymous telemetry, opt in">#</a></h4>
               <p>SMD can send anonymous usage counters, meaning which features get used, to the maintainer's server to help prioritise development. Events are end to end encrypted with an embedded public key, so only the maintainer's server can decrypt them. It is disabled by default, the choice is asked on first launch, and it can be changed here anytime. Never sent: game IDs, depot IDs, file contents, IP addresses, account info.</p>
 
               <h3 id="download-options">Download page options <a class="alink" href="#download-options" aria-label="Permalink to Download page options">#</a></h3>
-              <p>These options appear on the download page, step 3, just above the download button.</p>
+              <p>These options appear on the download page, step 3, just above the download button. The switch to shut down the PC afterwards sits on the download screen itself, see <a href="#shutdown-after-download">Shut down after the download</a>.</p>
 
               <h4 id="download-location">Download location <a class="alink" href="#download-location" aria-label="Permalink to Download location">#</a></h4>
-              <p>Where downloaded depot files are saved. The default is <code>Documents/SteamDownloads</code> inside your home folder. Each download creates a subdirectory named after the app ID, and the path is remembered between sessions.</p>
+              <p>Where downloaded depot files are saved. The default is <code>Documents/SteamDownloads</code> inside your home folder. Each download creates a subdirectory named after the app ID and the game name, and the path is remembered between sessions. When you update a game from the history, the existing folder is used instead.</p>
 
               <h4 id="manifesthub-api-key-optional">ManifestHub API key, optional <a class="alink" href="#manifesthub-api-key-optional" aria-label="Permalink to ManifestHub API key, optional">#</a></h4>
               <p>If you have a <a href="https://manifesthub2.filegear-sg.me/">ManifestHub</a> API key, paste it here. With the native engine it acts as the last fallback, used only when neither Steam directly nor your configured depot sources can supply a manifest. It is also required if you enter a <strong>custom manifest ID</strong> by hand.</p>
@@ -793,12 +890,116 @@ setManifestid(1392863, "4398981003384795747", 13789896785)</code></pre>
           </div>
         </section>
 
+        <section class="band band--paper" id="terminal" aria-labelledby="h-terminal">
+          <div class="wrap wrap--narrow">
+            <div class="rail">
+              <p class="kicker"><span class="kicker__idx">06</span> Terminal and Docker</p>
+              <span class="rail__rule" aria-hidden="true"></span>
+              <span class="chip chip--key">one binary</span>
+            </div>
+            <h2 id="h-terminal" class="h2-paper">Terminal version and Docker <a class="alink" href="#terminal" aria-label="Permalink to Terminal version and Docker">#</a></h2>
+            <p class="lead-paper"><code>smd</code> is a single binary that brings the whole app into the terminal, with no WebView and no installer. Run it without arguments for the interactive interface, or use its commands on a server, in Docker or in scripts.</p>
+            <nav class="qidx" aria-label="Inside Terminal version and Docker">
+              <p class="qidx__lab">In this section</p>
+              <ul class="qidx__list">
+                <li><a href="#terminal-start">Download and start</a></li>
+                <li><a href="#terminal-ui">Interactive interface</a></li>
+                <li><a href="#terminal-cli">Headless commands</a></li>
+                <li><a href="#terminal-docker">Docker</a></li>
+              </ul>
+            </nav>
+
+            <div class="prose">
+              <h3 id="terminal-start">Download and start <a class="alink" href="#terminal-start" aria-label="Permalink to Download and start">#</a></h3>
+              <p>The <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases">releases page</a> has one file per system: <code>Steam-Manifest-Downloader-Terminal_&lt;version&gt;_linux-x64</code> and <code>Steam-Manifest-Downloader-Terminal_&lt;version&gt;_windows-x64.exe</code>.</p>
+              <div class="snip">
+                <div class="snip__bar">
+                  <p class="snip__lang">bash</p>
+                  <button class="copy" type="button" aria-label="Copy the commands that make the terminal version executable and start it"><span class="copy__label">Copy</span></button>
+                </div>
+                <pre tabindex="0"><code>chmod +x Steam-Manifest-Downloader-Terminal_*_linux-x64
+./Steam-Manifest-Downloader-Terminal_*_linux-x64</code></pre>
+              </div>
+              <p>With the default native engine it needs nothing else: no .NET runtime, and the Linux build is static, so it runs on any distribution including Alpine. Only the optional DepotDownloaderMod engine has the same requirements as the desktop app. By default the terminal version uses the same settings, history and caches as the desktop app.</p>
+
+              <h3 id="terminal-ui">Interactive interface <a class="alink" href="#terminal-ui" aria-label="Permalink to Interactive interface">#</a></h3>
+              <p>All five steps of the desktop app, upload or search, depot selection, download, shortcuts and Steam library, and emulator patching, plus history and settings. Everything is clickable, buttons, tabs, list rows and checkboxes, a double click opens a list entry, and the mouse wheel scrolls. The keyboard works just as well:</p>
+              <ul class="rows">
+                <li><span class="rows__k rows__k--literal">Tab</span><span class="rows__v">Move between fields, buttons and lists, <code>Shift+Tab</code> backwards</span></li>
+                <li><span class="rows__k rows__k--literal">arrows</span><span class="rows__v">Move inside lists, between buttons elsewhere</span></li>
+                <li><span class="rows__k rows__k--literal">Enter, Space</span><span class="rows__v">Press the focused button, toggle a checkbox, pick a list entry</span></li>
+                <li><span class="rows__k rows__k--literal">Esc</span><span class="rows__v">Close a dialog or go back one step</span></li>
+                <li><span class="rows__k rows__k--literal">F2 F3 F4</span><span class="rows__v">Download, History, Settings, and <code>F1</code> for help</span></li>
+                <li><span class="rows__k rows__k--literal">PgUp, PgDn</span><span class="rows__v">Scroll long pages and the output log</span></li>
+                <li><span class="rows__k rows__k--literal">a n / d</span><span class="rows__v">Depot selection: all, none, filter, start download</span></li>
+                <li><span class="rows__k rows__k--literal">p c</span><span class="rows__v">While downloading: pause or resume, cancel</span></li>
+                <li><span class="rows__k rows__k--literal">r d u o e x</span><span class="rows__v">History: resume, download again, update, open folder, edit emulator, remove</span></li>
+                <li><span class="rows__k rows__k--literal">Ctrl+Q, F10</span><span class="rows__v">Quit, with a question first while a download runs</span></li>
+              </ul>
+              <p>The download screen has a button <strong>Shut down after: on, off</strong> for the same shutdown with countdown as the desktop app. Dragging a <code>.lua</code> or <code>.st</code> file onto the terminal window loads it right away, since most terminals paste the path. The interface uses true color where the terminal supports it, including the Windows console, falls back to the 16 terminal colors otherwise and respects <code>NO_COLOR</code>.</p>
+
+              <h3 id="terminal-cli">Headless commands <a class="alink" href="#terminal-cli" aria-label="Permalink to Headless commands">#</a></h3>
+              <div class="snip">
+                <div class="snip__bar">
+                  <p class="snip__lang">bash</p>
+                  <button class="copy" type="button" aria-label="Copy the example smd commands"><span class="copy__label">Copy</span></button>
+                </div>
+                <pre tabindex="0"><code>smd search "Half-Life 2"            <span class="cm"># find the App ID</span>
+smd search 220 --manifests 0        <span class="cm"># sources and depots for an App ID</span>
+smd download 220 --list             <span class="cm"># show what would be downloaded</span>
+smd download 220 --depots 221,222 -o /data/games
+smd download game.lua --json        <span class="cm"># progress as JSON lines</span>
+smd history</code></pre>
+              </div>
+              <p>Options of <code>smd download</code>, with the matching environment variable where there is one:</p>
+              <ul class="rows">
+                <li><span class="rows__k rows__k--literal">-o</span><span class="rows__v">Download folder, also <code>SMD_OUTPUT_DIR</code>. Defaults to the one from the settings</span></li>
+                <li><span class="rows__k rows__k--literal">--data-dir</span><span class="rows__v">Settings, history and caches, also <code>SMD_DATA_DIR</code>. Defaults to the desktop app's directory</span></li>
+                <li><span class="rows__k rows__k--literal">--mh-key</span><span class="rows__v">ManifestHub API key, also <code>SMD_MANIFESTHUB_KEY</code></span></li>
+                <li><span class="rows__k rows__k--literal">--manifest</span><span class="rows__v"><code>DEPOT=ID</code> pins a depot to a specific manifest, repeatable</span></li>
+                <li><span class="rows__k rows__k--literal">--update</span><span class="rows__v"><code>&lt;GAME_DIR&gt;</code> updates an existing download in place, see <a href="#step-update">Update a downloaded game</a></span></li>
+                <li><span class="rows__k rows__k--literal">--speed-limit</span><span class="rows__v">Caps the speed, for example <code>10MB/s</code> or <code>100Mbit/s</code>, also <code>SMD_SPEED_LIMIT</code>. <code>0</code> means unlimited, and the setting is the default</span></li>
+                <li><span class="rows__k rows__k--literal">--shutdown</span><span class="rows__v">Shuts the computer down when the download has finished, after 60 seconds. Ctrl+C aborts, and nothing happens when the download is interrupted</span></li>
+                <li><span class="rows__k rows__k--literal">--json</span><span class="rows__v">Machine readable output, only JSON lines on stdout</span></li>
+                <li><span class="rows__k rows__k--literal">-v</span><span class="rows__v">Backend diagnostics on stderr instead of the log file</span></li>
+              </ul>
+              <p>Exit codes of <code>smd download</code>: <code>0</code> complete, <code>1</code> failed, <code>2</code> partially downloaded and resumable, <code>130</code> interrupted.</p>
+
+              <h3 id="terminal-docker">Docker <a class="alink" href="#terminal-docker" aria-label="Permalink to Docker">#</a></h3>
+              <p>Images are published to the GitHub Container Registry for every release and every dev build. They are built for Intel and AMD processors, <code>linux/amd64</code>, and run on Linux as well as on Windows and macOS with Docker Desktop. ARM devices such as a Raspberry Pi are not supported yet.</p>
+              <ul class="rows">
+                <li><span class="rows__k">latest</span><span class="rows__v">Latest stable release, also tagged with its version, for example <code>1</code>, <code>1.4</code> and <code>1.4.3</code></span></li>
+                <li><span class="rows__k">dev</span><span class="rows__v">Latest dev build from the <code>dev</code> branch, also <code>&lt;version&gt;-dev</code> and <code>dev-&lt;commit&gt;</code></span></li>
+              </ul>
+              <div class="snip">
+                <div class="snip__bar">
+                  <p class="snip__lang">bash</p>
+                  <button class="copy" type="button" aria-label="Copy the docker run command"><span class="copy__label">Copy</span></button>
+                </div>
+                <pre tabindex="0"><code>docker run --rm \
+  -v smd-data:/data \
+  -v "$PWD/games:/games" \
+  ghcr.io/mcbabel/steam-manifest-downloader download 220</code></pre>
+              </div>
+              <ul>
+                <li>Downloads go to <code>/games</code>, settings, history and caches to <code>/data</code>. Mount both so they survive the container</li>
+                <li>The container runs as user <code>smd</code>, UID 1000. A host folder mounted as <code>/games</code> must be writable for that UID, for example with <code>sudo chown 1000:1000 games</code>, or run with <code>--user "$(id -u):$(id -g)"</code> and mount host folders for both <code>/data</code> and <code>/games</code></li>
+                <li><code>docker stop</code> and Ctrl+C cancel the download cleanly with exit code <code>130</code>, the same way as the cancel button</li>
+                <li>Pass a ManifestHub key with <code>-e SMD_MANIFESTHUB_KEY=...</code></li>
+                <li>The interactive interface works in a container too: add <code>-it</code> and leave out the command. Without <code>-it</code> the image prints the help</li>
+                <li>The image uses the native engine. DepotDownloaderMod needs glibc and does not run in it</li>
+              </ul>
+              <p>To build the image yourself from source, run <code>docker build -t smd .</code> in the repository.</p>
+            </div>
+          </div>
+        </section>
+
         <section class="band band--paper" id="building-from-source" aria-labelledby="h-build">
           <div class="wrap wrap--narrow">
             <div class="rail">
-              <p class="kicker"><span class="kicker__idx">06</span> Development</p>
+              <p class="kicker"><span class="kicker__idx">07</span> Development</p>
               <span class="rail__rule" aria-hidden="true"></span>
-              <span class="chip chip--key">three steps</span>
+              <span class="chip chip--key">four steps</span>
             </div>
             <h2 id="h-build" class="h2-paper">Building from source <a class="alink" href="#building-from-source" aria-label="Permalink to Building from source">#</a></h2>
             <p class="lead-paper">This guide covers how to compile Steam Manifest Downloader from source. The project uses Tauri v2 with a Rust backend and an embedded .NET tool, DepotDownloaderMod.</p>
@@ -808,7 +1009,8 @@ setManifestid(1392863, "4398981003384795747", 13789896785)</code></pre>
                 <li><a href="#build-prerequisites">Prerequisites</a></li>
                 <li><a href="#build-ddm">Step 1: building DepotDownloaderMod</a></li>
                 <li><a href="#build-tauri">Step 2: building the Tauri app</a></li>
-                <li><a href="#build-project-structure">Step 3: project structure</a></li>
+                <li><a href="#build-terminal">Step 3: building the terminal version</a></li>
+                <li><a href="#build-project-structure">Step 4: project structure</a></li>
               </ul>
             </nav>
 
@@ -927,7 +1129,18 @@ dotnet publish -c Release -r linux-x64 --self-contained true \
                 <p><code>NO_STRIP=true</code> prevents stripping symbols from the embedded .NET binary. <code>APPIMAGE_EXTRACT_AND_RUN=1</code> is needed on some distributions for the AppImage bundler to work correctly.</p>
               </div>
 
-              <h3 id="build-project-structure">Step 3: project structure, for reference <a class="alink" href="#build-project-structure" aria-label="Permalink to Step 3: project structure, for reference">#</a></h3>
+              <h3 id="build-terminal">Step 3: building the terminal version, optional <a class="alink" href="#build-terminal" aria-label="Permalink to Step 3: building the terminal version, optional">#</a></h3>
+              <div class="snip">
+                <div class="snip__bar">
+                  <p class="snip__lang">bash</p>
+                  <button class="copy" type="button" aria-label="Copy the command that builds the terminal version"><span class="copy__label">Copy</span></button>
+                </div>
+                <pre tabindex="0"><code>cargo build --release -p smd-tui</code></pre>
+              </div>
+              <p>Output: <code>target/release/smd</code>, or <code>smd.exe</code> on Windows. For a fully static Linux binary, add <code>--target x86_64-unknown-linux-musl</code>, which needs <code>musl-tools</code>.</p>
+
+              <h3 id="build-project-structure">Step 4: project structure, for reference <a class="alink" href="#build-project-structure" aria-label="Permalink to Step 4: project structure, for reference">#</a></h3>
+              <p>The shared logic lives in <code>src-core</code>, the desktop app in <code>src-tauri</code> with its interface in <code>public</code>, and the terminal version in <code>src-tui</code>.</p>
               <p>The <code>include_bytes!</code> macro in <code>src-core/src/services/embedded_tools.rs</code> embeds the DDM binaries at compile time:</p>
               <ul class="rows">
                 <li>
@@ -941,7 +1154,7 @@ dotnet publish -c Release -r linux-x64 --self-contained true \
               </ul>
               <div class="note note--key">
                 <p class="note__tag">Careful</p>
-                <p>The DDM binary files <strong>must be in place before</strong> you run <code>cargo tauri build</code>. The Rust compiler reads them via <code>include_bytes!</code> at compile time, so if the files are missing, the build fails.</p>
+                <p>The DDM binary files <strong>must be in place before</strong> you run <code>cargo tauri build</code> or <code>cargo build -p smd-tui</code>. The Rust compiler reads them via <code>include_bytes!</code> at compile time, so if the files are missing, the build fails.</p>
               </div>
             </div>
           </div>
@@ -950,38 +1163,38 @@ dotnet publish -c Release -r linux-x64 --self-contained true \
         <section class="band band--paper" id="troubleshooting" aria-labelledby="h-help">
           <div class="wrap wrap--narrow">
             <div class="rail">
-              <p class="kicker"><span class="kicker__idx">07</span> Help</p>
+              <p class="kicker"><span class="kicker__idx">08</span> Help</p>
               <span class="rail__rule" aria-hidden="true"></span>
-              <span class="chip chip--key">eleven answers</span>
+              <span class="chip chip--key">thirteen answers</span>
             </div>
             <h2 id="h-help" class="h2-paper">Troubleshooting and FAQ <a class="alink" href="#troubleshooting" aria-label="Permalink to Troubleshooting and FAQ">#</a></h2>
             <p class="lead-paper">Common issues and how to resolve them.</p>
 
             <div class="faq">
               <details class="qa">
-                <summary><span>".NET not found" error on launch</span></summary>
+                <summary><span>".NET not found" warning</span></summary>
                 <div class="qa__body">
-                  <p>The embedded DepotDownloaderMod requires the <strong>.NET 9.0 Desktop Runtime</strong>. Direct installer: <a href="https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.16-windows-x64-installer">.NET 9.0.16 Desktop Runtime, Windows x64</a>. After installing, restart SMD and the warning banner should disappear automatically.</p>
+                  <p>The warning only appears when you switched to the DepotDownloaderMod engine, which needs the <strong>.NET 9.0 Desktop Runtime</strong>. Either switch back to the default native engine under <strong>Settings, Advanced settings, Download engine</strong>, which needs no runtime, or install it: <a href="https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.16-windows-x64-installer">.NET 9.0.16 Desktop Runtime, Windows x64</a>. After installing, restart SMD and the warning disappears.</p>
                 </div>
               </details>
               <details class="qa">
-                <summary><span>"Connection timeout" during download</span></summary>
+                <summary><span>"Connection timeout" during download, or the PC lags while downloading</span></summary>
                 <div class="qa__body">
-                  <p>This usually happens when the number of open connections overwhelms your network, or when Steam servers are under heavy load. Check whether a VPN or proxy is interfering with the connection. The app uses <code>-max-downloads 8</code> by default, which works well for most connections.</p>
+                  <p>This usually happens when the number of parallel connections overwhelms your network or disk, or when Steam servers are under heavy load. Check whether a VPN or proxy is interfering. Lower <strong>Max concurrent chunks</strong> under Settings, Advanced settings from 8 to 4, or set a <a href="#speed-limit">speed limit</a>, which also takes effect for a running download.</p>
                 </div>
               </details>
               <details class="qa">
                 <summary><span>Download stuck at 0%</span></summary>
                 <div class="qa__body">
-                  <p>First, check your internet connection. If your connection is fine, make sure your firewall or antivirus is not blocking <code>DepotDownloaderMod.exe</code>. You may need to add an exception for the application. Also verify that the .NET 9.0 Desktop Runtime is properly installed.</p>
+                  <p>First, check your internet connection. If your connection is fine, make sure your firewall or antivirus is not blocking SMD. If you use the DepotDownloaderMod engine, it also has to allow <code>DepotDownloaderMod.exe</code>, and the .NET 9.0 Desktop Runtime must be installed.</p>
                 </div>
               </details>
               <details class="qa">
                 <summary><span>Linux: the AppImage will not launch</span></summary>
                 <div class="qa__body">
-                  <p>AppImages require FUSE to run. If FUSE is not available on your system, set the environment variable before launching:</p>
-                  <p><code>APPIMAGE_EXTRACT_AND_RUN=1 ./SteamManifestDownloader_*.AppImage</code></p>
-                  <p>Also make sure the file is executable: <code>chmod +x SteamManifestDownloader_*.AppImage</code></p>
+                  <p>Make sure WebKitGTK is installed, see <a href="#linux-appimage">Linux, AppImage</a>. AppImages also require FUSE to run. If FUSE is not available on your system, set the environment variable before launching:</p>
+                  <p><code>APPIMAGE_EXTRACT_AND_RUN=1 ./Steam\ Manifest\ Downloader_*_amd64.AppImage</code></p>
+                  <p>Also make sure the file is executable: <code>chmod +x Steam\ Manifest\ Downloader_*_amd64.AppImage</code>. On NixOS, start it with <code>steam-run</code>.</p>
                 </div>
               </details>
               <details class="qa">
@@ -1009,9 +1222,21 @@ dotnet publish -c Release -r linux-x64 --self-contained true \
                 </div>
               </details>
               <details class="qa">
-                <summary><span>Linux: "Add to Steam" added the game but no banner or hero is showing</span></summary>
+                <summary><span>"Add to Steam" added the game but no banner or hero is showing</span></summary>
                 <div class="qa__body">
                   <p>Steam only re-reads <code>shortcuts.vdf</code> and the <code>grid/</code> folder on a <strong>full restart</strong>. Closing the window is not enough: right click the Steam tray icon, choose <strong>Exit</strong>, then start Steam again. If the game has no Linux build, also right click the new entry in Steam, open Properties, then Compatibility, then enable a Proton version.</p>
+                </div>
+              </details>
+              <details class="qa">
+                <summary><span>"Steam is running" when adding a game to the library</span></summary>
+                <div class="qa__body">
+                  <p>Steam rewrites <code>shortcuts.vdf</code> when it exits, so an entry added while it runs would be lost. Close Steam completely and try again, or let SMD do it: it closes Steam, adds the entry and starts Steam again.</p>
+                </div>
+              </details>
+              <details class="qa">
+                <summary><span>Windows: the emulator step cannot download gbe_fork or Steamless</span></summary>
+                <div class="qa__body">
+                  <p>On managed PCs, downloads from GitHub are often blocked. Use the <a href="#windows-standalone-zip">standalone ZIP</a>, which already contains gbe_fork, Steamless and the Steam API check bypass. Also download games into a folder you own, such as Documents or the Desktop, not into <code>C:\Program Files</code>. If Windows Defender reports the emulator files as a threat and deletes them, they can be restored under Windows Security, Virus and threat protection, Protection history, which can require admin rights.</p>
                 </div>
               </details>
               <details class="qa">
@@ -1033,7 +1258,7 @@ dotnet publish -c Release -r linux-x64 --self-contained true \
         <section class="band band--paper" id="legal-notice" aria-labelledby="h-legal">
           <div class="wrap wrap--narrow">
             <div class="rail">
-              <p class="kicker"><span class="kicker__idx">08</span> Legal</p>
+              <p class="kicker"><span class="kicker__idx">09</span> Legal</p>
               <span class="rail__rule" aria-hidden="true"></span>
               <span class="chip chip--key">GPL-2.0</span>
             </div>
@@ -1069,12 +1294,12 @@ dotnet publish -c Release -r linux-x64 --self-contained true \
         <section class="band band--paper band--close" id="next" aria-labelledby="h-next">
           <div class="wrap wrap--narrow">
             <div class="rail">
-              <p class="kicker"><span class="kicker__idx">09</span> Download</p>
+              <p class="kicker"><span class="kicker__idx">10</span> Download</p>
               <span class="rail__rule" aria-hidden="true"></span>
               <span class="chip chip--key">1.4.3</span>
             </div>
             <h2 id="h-next" class="h2-close">Version 1.4.3 is on the releases page. <a class="alink" href="#next" aria-label="Permalink to Version 1.4.3 is on the releases page.">#</a></h2>
-            <p class="lead-paper">Windows installer, Linux AppImage, and AUR packages for Arch, CachyOS and Manjaro. Source under GPL-2.0.</p>
+            <p class="lead-paper">Windows installer and standalone ZIP, Linux AppImage, AUR packages for Arch, CachyOS and Manjaro, the terminal version and a Docker image. Source under GPL-2.0.</p>
             <div class="close__actions">
               <a class="pbtn pbtn--solid" href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest">Get the latest release</a>
               <a class="pbtn pbtn--line" href="../changelog/">Read the changelog</a>
