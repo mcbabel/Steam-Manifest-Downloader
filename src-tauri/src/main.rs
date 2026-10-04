@@ -56,6 +56,7 @@ fn main() {
             commands::check_free_space,
             commands::set_download_progress,
             commands::get_installed_depots,
+            commands::check_game_updates,
             commands::power_off_system,
             commands::get_build_info,
             commands::get_debug_log_path,

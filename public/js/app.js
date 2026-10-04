@@ -3857,11 +3857,46 @@ function initHistoryToolbar() {
   });
 }
 
+const UPDATE_CHECK_TTL = 10 * 60 * 1000;
+
+function updateCheckKey(entries) {
+  return entries
+    .filter((e) => e.status === 'complete' && e.download_dir)
+    .map((e) => e.id)
+    .sort()
+    .join(',');
+}
+
+async function refreshUpdateChecks() {
+  const entries = state.cachedHistory || [];
+  const key = updateCheckKey(entries);
+  if (!key) return;
+  const cache = state.updateChecks;
+  if (cache && (cache.key === key && Date.now() - cache.at < UPDATE_CHECK_TTL || cache.pending === key)) return;
+  state.updateChecks = { ...(cache || { byEntry: {} }), pending: key };
+  try {
+    const list = await invoke('check_game_updates');
+    const byEntry = {};
+    (list || []).forEach((c) => { byEntry[c.entry_id] = c; });
+    state.updateChecks = { key, at: Date.now(), byEntry, pending: null };
+    if (!els.historyModal.classList.contains('hidden')) renderHistoryEntries(visibleHistory());
+  } catch (e) {
+    console.warn('check_game_updates failed:', e);
+    state.updateChecks = { key, at: Date.now(), byEntry: (cache && cache.byEntry) || {}, pending: null };
+  }
+}
+
+function updateCheckFor(entry) {
+  const checks = state.updateChecks && state.updateChecks.byEntry;
+  return checks ? checks[entry.id] : null;
+}
+
 function renderHistory(entries) {
   state.cachedHistory = entries || [];
   if (!state.historyView) state.historyView = loadHistoryView();
   syncHistoryToolbar();
   renderHistoryEntries(visibleHistory());
+  refreshUpdateChecks();
 }
 
 function renderHistoryEntries(entries) {
@@ -3897,7 +3932,9 @@ function renderHistoryEntries(entries) {
       : '<div class="history-entry__image history-entry__image--placeholder"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>';
     const name = entry.game_name ? escapeHtml(entry.game_name) : `App ${escapeHtml(entry.app_id)}`;
     const canUpdate = entry.status === 'complete' && !!entry.download_dir;
-    const updateTip = window.i18n.t(canUpdate ? 'history.updateTooltip' : 'history.updateUnavailable');
+    const updateCheck = canUpdate ? updateCheckFor(entry) : null;
+    const hasUpdate = !!(updateCheck && updateCheck.update_available);
+    const updateTip = window.i18n.t(!canUpdate ? 'history.updateUnavailable' : hasUpdate ? 'history.updateAvailableTooltip' : 'history.updateTooltip');
 
     return `
       <div class="history-entry" data-entry-id="${escapeHtml(entry.id)}">
@@ -3912,6 +3949,7 @@ function renderHistoryEntries(entries) {
           <div class="history-entry__depots">${window.i18n.t('history.depotsDownloaded', { done: entry.depots_downloaded, total: entry.depot_count })}</div>
           <div class="history-entry__status">
             <span class="history-entry__badge ${badgeClass}">${statusLabel}</span>
+            ${hasUpdate ? `<span class="history-entry__badge history-entry__badge--update">${escapeHtml(window.i18n.t('history.updateAvailable'))}</span>` : ''}
           </div>
         </div>
         <div class="history-entry__actions">
@@ -3919,7 +3957,7 @@ function renderHistoryEntries(entries) {
             ? `<button class="btn btn--small btn--primary history-action-resume" data-entry-id="${escapeHtml(entry.id)}" title="${escapeHtml(window.i18n.t('history.resumeTooltip'))}" aria-label="${escapeHtml(window.i18n.t('history.resumeTooltip'))}">${ICONS.play}</button>`
             : ''}
           <button class="btn btn--small btn--outline history-action-redownload" data-app-id="${escapeHtml(entry.app_id)}" data-depot-ids="${escapeHtml((entry.depot_ids || []).join(','))}" title="${escapeHtml(window.i18n.t('history.redownloadTooltip'))}" aria-label="${escapeHtml(window.i18n.t('history.redownloadTooltip'))}">${ICONS.refresh}</button>
-          <button class="btn btn--small btn--outline history-action-update" data-app-id="${escapeHtml(entry.app_id)}" data-depot-ids="${escapeHtml((entry.depot_ids || []).join(','))}" data-path="${escapeHtml(entry.download_dir)}" title="${escapeHtml(updateTip)}" aria-label="${escapeHtml(updateTip)}"${canUpdate ? '' : ' disabled'}>${ICONS.update}</button>
+          <button class="btn btn--small ${hasUpdate ? 'btn--primary' : 'btn--outline'} history-action-update" data-app-id="${escapeHtml(entry.app_id)}" data-depot-ids="${escapeHtml((entry.depot_ids || []).join(','))}" data-path="${escapeHtml(entry.download_dir)}" title="${escapeHtml(updateTip)}" aria-label="${escapeHtml(updateTip)}"${canUpdate ? '' : ' disabled'}>${ICONS.update}</button>
           <button class="btn btn--small btn--outline history-action-repair" data-entry-id="${escapeHtml(entry.id)}" title="${escapeHtml(window.i18n.t(canUpdate ? 'history.repairTooltip' : 'history.repairUnavailable'))}" aria-label="${escapeHtml(window.i18n.t(canUpdate ? 'history.repairTooltip' : 'history.repairUnavailable'))}"${canUpdate ? '' : ' disabled'}>${ICONS.shieldCheck}</button>
           <button class="btn btn--small btn--outline history-action-folder" data-path="${escapeHtml(entry.download_dir)}" title="${escapeHtml(window.i18n.t('history.openFolderTooltip'))}" aria-label="${escapeHtml(window.i18n.t('history.openFolderTooltip'))}"${entry.status === 'cancelled' ? ' disabled' : ''}>${ICONS.folderOpen}</button>
           <button class="btn btn--small btn--outline history-action-edit-emu" data-entry-id="${escapeHtml(entry.id)}" title="${escapeHtml(editTip)}" aria-label="${escapeHtml(editTip)}"${entry.status === 'cancelled' || !entry.download_dir ? ' disabled' : ''}>${ICONS.settings}</button>

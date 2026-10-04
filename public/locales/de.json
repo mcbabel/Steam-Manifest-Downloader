@@ -542,7 +542,9 @@
     "sortSize": "Größte zuerst",
     "noMatch": "Keine Downloads passen zur Suche oder zum Filter.",
     "repairTooltip": "Prüfen und reparieren: Dateien mit dem installierten Stand vergleichen und nur beschädigte oder fehlende Teile neu laden",
-    "repairUnavailable": "Prüfen geht nur bei abgeschlossenen Downloads"
+    "repairUnavailable": "Prüfen geht nur bei abgeschlossenen Downloads",
+    "updateAvailable": "Update verfügbar",
+    "updateAvailableTooltip": "Bei Steam gibt es eine neuere Version. Aktualisieren: nur geänderte Teile in den vorhandenen Ordner laden"
   },
   "depots": {
     "roleContent": "Hauptspiel · Content",

@@ -579,6 +579,8 @@ pub struct HistoryState {
     pub filter: TextInput,
     pub banner: Option<(Tone, String, Instant)>,
     pub pending_remove: Option<(String, bool)>,
+    pub updates: HashSet<String>,
+    pub updates_checked: Option<(String, Instant)>,
 }
 
 impl HistoryState {
@@ -591,6 +593,8 @@ impl HistoryState {
             filter: TextInput::default(),
             banner: None,
             pending_remove: None,
+            updates: HashSet::new(),
+            updates_checked: None,
         }
     }
 

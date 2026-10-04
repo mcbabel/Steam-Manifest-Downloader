@@ -157,3 +157,117 @@ fn path_is_within(child: &Path, parent: &Path) -> bool {
     };
     c.starts_with(&p) && c != p
 }
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct UpdateCheck {
+    pub entry_id: String,
+    pub app_id: String,
+    pub update_available: bool,
+    pub depots: Vec<DepotUpdate>,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct DepotUpdate {
+    pub depot_id: String,
+    pub installed: String,
+    pub latest: String,
+}
+
+pub fn compare_installed(
+    entry: &HistoryEntry,
+    installed: &[crate::services::install_state::DepotInstall],
+    latest: &std::collections::HashMap<String, String>,
+) -> Option<UpdateCheck> {
+    let depots: Vec<DepotUpdate> = installed
+        .iter()
+        .filter_map(|d| {
+            latest.get(&d.depot_id).map(|gid| DepotUpdate {
+                depot_id: d.depot_id.clone(),
+                installed: d.manifest_id.clone(),
+                latest: gid.clone(),
+            })
+        })
+        .collect();
+    if depots.is_empty() {
+        return None;
+    }
+    Some(UpdateCheck {
+        entry_id: entry.id.clone(),
+        app_id: entry.app_id.clone(),
+        update_available: depots.iter().any(|d| d.installed != d.latest),
+        depots,
+    })
+}
+
+pub async fn check_updates(
+    app_data_dir: &Path,
+    session: std::sync::Arc<crate::services::steam_session::SteamSession>,
+) -> Result<Vec<UpdateCheck>, String> {
+    let history = history_service::load_history(app_data_dir).await;
+    let candidates: Vec<(HistoryEntry, Vec<crate::services::install_state::DepotInstall>)> = history
+        .entries
+        .into_iter()
+        .filter(|e| e.status == "complete" && !e.download_dir.is_empty())
+        .filter_map(|e| {
+            let installed = crate::services::install_state::installed(Path::new(&e.download_dir));
+            (!installed.is_empty()).then_some((e, installed))
+        })
+        .collect();
+    let mut app_ids: Vec<u32> = candidates
+        .iter()
+        .filter_map(|(e, _)| e.app_id.parse().ok())
+        .collect();
+    app_ids.sort_unstable();
+    app_ids.dedup();
+    if app_ids.is_empty() {
+        return Ok(Vec::new());
+    }
+    let latest = crate::services::steam_pics::fetch_public_manifests(session, &app_ids).await?;
+    Ok(candidates
+        .iter()
+        .filter_map(|(entry, installed)| {
+            let app: u32 = entry.app_id.parse().ok()?;
+            compare_installed(entry, installed, latest.get(&app)?)
+        })
+        .collect())
+}
+
+#[cfg(test)]
+mod update_check_tests {
+    use super::*;
+    use crate::services::install_state::DepotInstall;
+
+    fn entry() -> HistoryEntry {
+        serde_json::from_value(serde_json::json!({
+            "id": "e", "app_id": "70", "game_name": null, "header_image": null,
+            "depot_count": 2, "depots_downloaded": 2, "status": "complete",
+            "download_dir": "/x", "started_at": "", "completed_at": null, "source_repo": null
+        }))
+        .unwrap()
+    }
+
+    fn installed(id: &str, manifest: &str) -> DepotInstall {
+        DepotInstall {
+            depot_id: id.to_string(),
+            manifest_id: manifest.to_string(),
+            files: vec![],
+        }
+    }
+
+    #[test]
+    fn flags_a_depot_with_a_newer_public_manifest() {
+        let latest = [("71".to_string(), "2".to_string()), ("72".to_string(), "5".to_string())]
+            .into_iter()
+            .collect();
+        let up_to_date = compare_installed(&entry(), &[installed("71", "2"), installed("72", "5")], &latest).unwrap();
+        assert!(!up_to_date.update_available);
+        let outdated = compare_installed(&entry(), &[installed("71", "1"), installed("72", "5")], &latest).unwrap();
+        assert!(outdated.update_available);
+    }
+
+    #[test]
+    fn unknown_depots_give_no_answer() {
+        let latest = std::collections::HashMap::new();
+        assert!(compare_installed(&entry(), &[installed("71", "1")], &latest).is_none());
+    }
+}

@@ -542,7 +542,9 @@
     "sortSize": "Largest first",
     "noMatch": "No downloads match the search or filter.",
     "repairTooltip": "Check and repair: compare the files with the installed version and download only damaged or missing parts",
-    "repairUnavailable": "Checking is only available for completed downloads"
+    "repairUnavailable": "Checking is only available for completed downloads",
+    "updateAvailable": "Update available",
+    "updateAvailableTooltip": "A newer version is on Steam. Update: download only what changed into the existing folder"
   },
   "depots": {
     "roleContent": "Main · Content",

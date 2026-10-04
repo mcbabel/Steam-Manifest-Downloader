@@ -63,6 +63,45 @@ impl App {
                 if app.hist.selected >= n {
                     app.hist.selected = n.saturating_sub(1);
                 }
+                app.check_game_updates();
+            })
+        });
+    }
+
+    fn check_game_updates(&mut self) {
+        let mut ids: Vec<&str> = self
+            .hist
+            .entries
+            .iter()
+            .filter(|e| can_update(e))
+            .map(|e| e.id.as_str())
+            .collect();
+        if ids.is_empty() {
+            return;
+        }
+        ids.sort_unstable();
+        let key = ids.join(",");
+        if self
+            .hist
+            .updates_checked
+            .as_ref()
+            .is_some_and(|(k, at)| *k == key && at.elapsed() < std::time::Duration::from_secs(600))
+        {
+            return;
+        }
+        self.hist.updates_checked = Some((key, std::time::Instant::now()));
+        let dir = self.data_dir.clone();
+        let session = self.core.steam_session.clone();
+        self.spawn(async move {
+            let r = smd_core::ops::history::check_updates(&dir, session).await;
+            apply(move |app| {
+                if let Ok(list) = r {
+                    app.hist.updates = list
+                        .into_iter()
+                        .filter(|c| c.update_available)
+                        .map(|c| c.entry_id)
+                        .collect();
+                }
             })
         });
     }
@@ -517,12 +556,17 @@ impl App {
                 .unwrap_or_else(|| format!("App {}", e.app_id));
             let (badge, color) = status_badge(e);
             let date = format_date(e.completed_at.as_deref().unwrap_or(&e.started_at));
-            let line1 = Line::from(vec![
+            let mut spans = vec![
                 Span::styled(if cursor { " ▸ " } else { "   " }, theme::accent()),
                 Span::styled(name, theme::text().add_modifier(Modifier::BOLD)),
                 Span::raw("  "),
                 widgets::badge(&badge, color),
-            ]);
+            ];
+            if self.hist.updates.contains(&e.id) {
+                spans.push(Span::raw(" "));
+                spans.push(widgets::badge(&t("history.updateAvailable"), theme::get().accent));
+            }
+            let line1 = Line::from(spans);
             widgets::line(buf, Rect::new(r.x, r.y, r.width, 1), line1);
             widgets::text_right(
                 buf,

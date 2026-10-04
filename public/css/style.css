@@ -3926,6 +3926,13 @@ button:disabled,
   color: #fff;
 }
 
+.history-entry__badge--update {
+  margin-left: 0.35rem;
+  background: rgba(88, 166, 255, 0.12);
+  color: var(--accent);
+  border: 1px solid rgba(88, 166, 255, 0.35);
+}
+
 .history-entry__size {
   opacity: 0.85;
 }

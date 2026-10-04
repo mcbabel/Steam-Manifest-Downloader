@@ -75,6 +75,38 @@ pub async fn fetch_public_manifest_gid(
     .map_err(|_| "Steam PICS query timed out after 20s".to_string())?
 }
 
+fn public_gids(app: &Table) -> HashMap<String, String> {
+    let Some(depots) = app.get("depots").and_then(as_table) else {
+        return HashMap::new();
+    };
+    depots
+        .iter()
+        .filter(|(key, _)| key.chars().all(|c| c.is_ascii_digit()))
+        .filter_map(|(key, value)| {
+            let public = as_table(value)?.get("manifests").and_then(as_table)?.get("public")?;
+            let gid = as_table(public)
+                .and_then(|p| p.get("gid"))
+                .and_then(as_str)
+                .or_else(|| as_str(public))?;
+            Some((key.clone(), gid.to_string()))
+        })
+        .collect()
+}
+
+pub async fn fetch_public_manifests(
+    session: Arc<SteamSession>,
+    app_ids: &[u32],
+) -> Result<HashMap<u32, HashMap<String, String>>, String> {
+    let ids = app_ids.to_vec();
+    timeout(PICS_BATCH_TIMEOUT, async move {
+        let conn = session.connection().await?;
+        let vdf = pics_product_info_vdf(&conn, &ids).await?;
+        Ok::<_, String>(vdf.iter().map(|(id, app)| (*id, public_gids(app))).collect())
+    })
+    .await
+    .map_err(|_| "Steam PICS batch query timed out".to_string())?
+}
+
 pub async fn fetch_depots_with_names(
     session: Arc<SteamSession>,
     parent_app_id: u32,

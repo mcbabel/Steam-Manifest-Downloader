@@ -64,3 +64,12 @@ pub fn get_installed_depots(dir: String) -> serde_json::Value {
     let list = smd_core::services::install_state::installed(std::path::Path::new(&dir));
     serde_json::to_value(list).unwrap_or(serde_json::Value::Null)
 }
+
+#[command]
+pub async fn check_game_updates(
+    app: AppHandle,
+    state: tauri::State<'_, smd_core::services::AppState>,
+) -> Result<serde_json::Value, String> {
+    let list = history_ops::check_updates(&app_data_dir(&app), state.steam_session.clone()).await?;
+    serde_json::to_value(list).map_err(|e| e.to_string())
+}
