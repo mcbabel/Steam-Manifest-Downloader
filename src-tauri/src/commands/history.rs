@@ -94,3 +94,12 @@ pub async fn launch_game(app: AppHandle, dir: String, exe: String) -> Result<ser
     .map_err(|e| e.to_string())??;
     serde_json::to_value(method).map_err(|e| e.to_string())
 }
+
+#[command]
+pub async fn get_covers(
+    app: AppHandle,
+    state: tauri::State<'_, smd_core::services::AppState>,
+    app_ids: Vec<String>,
+) -> Result<std::collections::HashMap<String, String>, String> {
+    Ok(smd_core::services::steam_assets::covers(&state.http_client, &app_data_dir(&app), &app_ids).await)
+}

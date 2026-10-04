@@ -57,6 +57,7 @@ fn main() {
             commands::set_download_progress,
             commands::get_installed_depots,
             commands::check_game_updates,
+            commands::get_covers,
             commands::get_launch_exe,
             commands::launch_game,
             commands::queue_list,

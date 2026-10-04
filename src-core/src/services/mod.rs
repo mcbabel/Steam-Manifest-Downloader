@@ -9,6 +9,7 @@ pub mod depot_sources;
 pub mod depot_keys_generator;
 pub mod depot_runner;
 pub mod steam_store_api;
+pub mod steam_assets;
 pub mod settings;
 pub mod embedded_tools;
 pub mod history;

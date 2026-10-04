@@ -4281,12 +4281,48 @@ function updateCheckFor(entry) {
   return checks ? checks[entry.id] : null;
 }
 
+const COVER_PLACEHOLDER = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+
+function historyCoverFailed(img) {
+  const fallback = img.dataset.fallback;
+  if (fallback) {
+    img.dataset.fallback = '';
+    img.src = fallback;
+    return;
+  }
+  const placeholder = document.createElement('div');
+  placeholder.className = 'history-entry__image history-entry__image--placeholder';
+  placeholder.innerHTML = COVER_PLACEHOLDER;
+  img.replaceWith(placeholder);
+}
+
+async function refreshCovers() {
+  state.covers = state.covers || {};
+  const ids = [...new Set((state.cachedHistory || []).map((e) => String(e.app_id)))]
+    .filter((id) => !(id in state.covers));
+  if (ids.length === 0) return;
+  ids.forEach((id) => { state.covers[id] = null; });
+  let found = {};
+  try {
+    found = (await invoke('get_covers', { appIds: ids })) || {};
+  } catch (e) {
+    console.warn('get_covers failed:', e);
+    ids.forEach((id) => { delete state.covers[id]; });
+    return;
+  }
+  Object.assign(state.covers, found);
+  if (Object.keys(found).length && !els.historyModal.classList.contains('hidden')) {
+    renderHistoryEntries(visibleHistory());
+  }
+}
+
 function renderHistory(entries) {
   state.cachedHistory = entries || [];
   if (!state.historyView) state.historyView = loadHistoryView();
   syncHistoryToolbar();
   renderHistoryEntries(visibleHistory());
   refreshUpdateChecks();
+  refreshCovers();
 }
 
 function renderHistoryEntries(entries) {
@@ -4310,8 +4346,10 @@ function renderHistoryEntries(entries) {
     const kind = historyEntryKind(entry);
     const badgeClass = `history-entry__badge--${kind}`;
     const statusLabel = window.i18n.t(HISTORY_KIND_LABELS[kind]);
-    const imgHtml = entry.header_image
-      ? `<img class="history-entry__image" src="${escapeHtml(entry.header_image)}" alt="" loading="lazy" onerror="this.style.display='none'">`
+    const cover = state.covers && state.covers[String(entry.app_id)];
+    const imgSrc = cover || entry.header_image;
+    const imgHtml = imgSrc
+      ? `<img class="history-entry__image" src="${escapeHtml(imgSrc)}" data-fallback="${escapeHtml(cover && entry.header_image ? entry.header_image : '')}" alt="" loading="lazy" onerror="historyCoverFailed(this)">`
       : '<div class="history-entry__image history-entry__image--placeholder"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>';
     const name = entry.game_name ? escapeHtml(entry.game_name) : `App ${escapeHtml(entry.app_id)}`;
     const canUpdate = entry.status === 'complete' && !!entry.download_dir;
@@ -4321,7 +4359,7 @@ function renderHistoryEntries(entries) {
     const updateTip = window.i18n.t(!canUpdate ? 'history.updateUnavailable' : hasUpdate ? 'history.updateAvailableTooltip' : 'history.updateTooltip');
 
     return `
-      <div class="history-entry" data-entry-id="${escapeHtml(entry.id)}">
+      <div class="history-entry" data-entry-id="${escapeHtml(entry.id)}" data-app-id="${escapeHtml(entry.app_id)}">
         ${imgHtml}
         <div class="history-entry__info">
           <div class="history-entry__name">${name}</div>

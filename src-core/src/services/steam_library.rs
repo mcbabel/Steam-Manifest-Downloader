@@ -468,22 +468,15 @@ pub fn add_or_replace_shortcut(
     Ok(appid)
 }
 
-async fn fetch_app_icon_hash(client: &Client, steam_app_id: &str) -> Option<String> {
-    let url = format!("https://api.steamcmd.net/v1/info/{}", steam_app_id);
-    let resp = client
-        .get(&url)
-        .header("User-Agent", "SteamManifestDownloader")
-        .timeout(Duration::from_secs(15))
-        .send()
-        .await
-        .ok()?;
-    if !resp.status().is_success() {
-        return None;
+fn image_ext(url: &str) -> Option<&'static str> {
+    let path = url.split(['?', '#']).next().unwrap_or(url).to_ascii_lowercase();
+    if path.ends_with(".png") {
+        Some("png")
+    } else if path.ends_with(".jpg") || path.ends_with(".jpeg") {
+        Some("jpg")
+    } else {
+        None
     }
-    let json: serde_json::Value = resp.json().await.ok()?;
-    json["data"][steam_app_id]["common"]["icon"]
-        .as_str()
-        .map(String::from)
 }
 
 async fn download_to(client: &Client, url: &str, dest: &Path) -> bool {
@@ -496,7 +489,12 @@ async fn download_to(client: &Client, url: &str, dest: &Path) -> bool {
         Ok(r) => r,
         Err(_) => return false,
     };
-    if !resp.status().is_success() {
+    let is_image = resp
+        .headers()
+        .get(reqwest::header::CONTENT_TYPE)
+        .and_then(|v| v.to_str().ok())
+        .is_none_or(|v| v.starts_with("image/"));
+    if !resp.status().is_success() || !is_image {
         return false;
     }
     let bytes = match resp.bytes().await {
@@ -522,40 +520,39 @@ pub async fn download_grid_art(
         return (Vec::new(), None);
     }
 
-    let cdn = "https://cdn.akamai.steamstatic.com/steam/apps";
-    let targets: &[(&str, &str, &str)] = &[
-        ("header.jpg", "", "jpg"),
-        ("library_600x900.jpg", "p", "jpg"),
-        ("library_hero.jpg", "_hero", "jpg"),
-        ("logo.png", "_logo", "png"),
+    let resolved = crate::services::steam_assets::game_assets(client, steam_app_id).await;
+    let legacy = crate::services::steam_assets::legacy(steam_app_id);
+    let targets: [(&str, [Option<String>; 2], &str); 4] = [
+        ("", [resolved.header.clone(), legacy.header.clone()], "jpg"),
+        ("p", [resolved.capsule.clone(), legacy.capsule.clone()], "jpg"),
+        ("_hero", [resolved.hero.clone(), legacy.hero.clone()], "jpg"),
+        ("_logo", [resolved.logo.clone(), legacy.logo.clone()], "png"),
     ];
 
     let mut written = Vec::new();
-    for (source_name, suffix, ext) in targets {
-        let url = format!("{}/{}/{}", cdn, steam_app_id, source_name);
-        let filename = format!("{}{}.{}", shortcut_appid, suffix, ext);
-        let dest = grid_dir.join(&filename);
-        if download_to(client, &url, &dest).await {
-            written.push(dest.to_string_lossy().to_string());
+    for (suffix, candidates, default_ext) in targets.iter() {
+        for url in candidates.iter().flatten() {
+            let ext = image_ext(url).unwrap_or(default_ext);
+            let dest = grid_dir.join(format!("{}{}.{}", shortcut_appid, suffix, ext));
+            if download_to(client, url, &dest).await {
+                written.push(dest.to_string_lossy().to_string());
+                break;
+            }
         }
     }
 
-    let icon_path = if let Some(hash) = fetch_app_icon_hash(client, steam_app_id).await {
-        let url = format!(
-            "https://cdn.akamai.steamstatic.com/steamcommunity/public/images/apps/{}/{}.jpg",
-            steam_app_id, hash
-        );
-        let filename = format!("{}_icon.jpg", shortcut_appid);
-        let dest = grid_dir.join(&filename);
-        if download_to(client, &url, &dest).await {
-            let p = dest.to_string_lossy().to_string();
-            written.push(p.clone());
-            Some(p)
-        } else {
-            None
+    let icon_path = match resolved.icon {
+        Some(url) => {
+            let dest = grid_dir.join(format!("{}_icon.jpg", shortcut_appid));
+            if download_to(client, &url, &dest).await {
+                let p = dest.to_string_lossy().to_string();
+                written.push(p.clone());
+                Some(p)
+            } else {
+                None
+            }
         }
-    } else {
-        None
+        None => None,
     };
 
     (written, icon_path)
