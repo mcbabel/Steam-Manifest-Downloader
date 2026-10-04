@@ -1288,6 +1288,36 @@ async fn check_cancelled(state: &AppState, job_id: &str) -> bool {
         .unwrap_or(false)
 }
 
+fn prepare_native_depot(
+    depot: &DepotRunConfig,
+    depot_infos: &[DepotInfo],
+) -> Result<(u32, u64, [u8; 32]), String> {
+    let depot_id_u: u32 = depot
+        .depot_id
+        .parse()
+        .map_err(|_| format!("invalid depot id '{}'", depot.depot_id))?;
+    let manifest_id_u: u64 = depot
+        .manifest_id
+        .parse()
+        .map_err(|_| format!("invalid manifest id '{}'", depot.manifest_id))?;
+    let info = depot_infos
+        .iter()
+        .find(|d| d.depot_id.to_string() == depot.depot_id)
+        .ok_or_else(|| format!("depot {} missing DepotInfo / key", depot.depot_id))?;
+    let key_hex = info
+        .depot_key
+        .as_ref()
+        .ok_or_else(|| format!("depot {} has no key", depot.depot_id))?;
+    let key_bytes = hex::decode(key_hex.trim())
+        .map_err(|e| format!("depot {} key hex invalid: {}", depot.depot_id, e))?;
+    if key_bytes.len() != 32 {
+        return Err(format!("depot {} key length != 32 bytes", depot.depot_id));
+    }
+    let mut depot_key = [0u8; 32];
+    depot_key.copy_from_slice(&key_bytes);
+    Ok((depot_id_u, manifest_id_u, depot_key))
+}
+
 async fn run_native_pipeline(
     sink: &Sink,
     state: &AppState,
@@ -1345,29 +1375,29 @@ async fn run_native_pipeline(
             return Ok(results);
         }
 
-        let depot_id_u: u32 = depot
-            .depot_id
-            .parse()
-            .map_err(|_| format!("invalid depot id '{}'", depot.depot_id))?;
-        let manifest_id_u: u64 = depot
-            .manifest_id
-            .parse()
-            .map_err(|_| format!("invalid manifest id '{}'", depot.manifest_id))?;
-        let info = depot_infos
-            .iter()
-            .find(|d| d.depot_id.to_string() == depot.depot_id)
-            .ok_or_else(|| format!("depot {} missing DepotInfo / key", depot.depot_id))?;
-        let key_hex = info
-            .depot_key
-            .as_ref()
-            .ok_or_else(|| format!("depot {} has no key", depot.depot_id))?;
-        let key_bytes = hex::decode(key_hex.trim())
-            .map_err(|e| format!("depot {} key hex invalid: {}", depot.depot_id, e))?;
-        if key_bytes.len() != 32 {
-            return Err(format!("depot {} key length != 32 bytes", depot.depot_id));
-        }
-        let mut depot_key = [0u8; 32];
-        depot_key.copy_from_slice(&key_bytes);
+        let (depot_id_u, manifest_id_u, depot_key) = match prepare_native_depot(depot, depot_infos) {
+            Ok(prepared) => prepared,
+            Err(e) => {
+                let mut err_event = ProgressEvent::new("error", job_id);
+                err_event.localized(
+                    format!(
+                        "Native download failed for depot {}: {}",
+                        depot.depot_id, e
+                    ),
+                    "events.nativeFailed",
+                    serde_json::json!({ "depot": depot.depot_id, "error": e }),
+                );
+                err_event.depot_id = Some(depot.depot_id.clone());
+                emit_progress(sink, &err_event);
+                results.push(serde_json::json!({
+                    "depotId": depot.depot_id,
+                    "success": false,
+                    "error": e,
+                    "sourcesTried": Vec::<&str>::new(),
+                }));
+                continue;
+            }
+        };
 
         let installed = install_state::load(work_dir, &depot.depot_id);
         if update_mode
@@ -1992,6 +2022,38 @@ fn get_disk_space_info(path: &Path) -> Option<(f64, String)> {
         let free_gb = (free_gb * 100.0).round() / 100.0;
 
         Some((free_gb, path_str.to_string()))
+    }
+}
+
+#[cfg(test)]
+mod native_depot_prepare_tests {
+    use super::*;
+
+    fn run(id: &str, manifest: &str) -> DepotRunConfig {
+        DepotRunConfig {
+            depot_id: id.to_string(),
+            manifest_id: manifest.to_string(),
+            display_name: None,
+        }
+    }
+
+    fn info(id: u64, key: Option<&str>) -> DepotInfo {
+        DepotInfo {
+            depot_id: id,
+            depot_key: key.map(str::to_string),
+            manifest_id: None,
+            size_bytes: None,
+        }
+    }
+
+    #[test]
+    fn a_depot_without_key_is_an_error_for_that_depot_only() {
+        let infos = vec![info(481, Some(&"ab".repeat(32))), info(482, None)];
+        assert!(prepare_native_depot(&run("481", "1"), &infos).is_ok());
+        let err = prepare_native_depot(&run("482", "2"), &infos).unwrap_err();
+        assert!(err.contains("482"));
+        assert!(prepare_native_depot(&run("483", "3"), &infos).is_err());
+        assert!(prepare_native_depot(&run("481", "N/A"), &infos).is_err());
     }
 }
 
