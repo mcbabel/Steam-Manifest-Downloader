@@ -815,5 +815,27 @@
   "shortcuts": {
     "ctrl": "Ctrl",
     "openFile": "Open a .lua or .st file"
+  },
+  "queue": {
+    "title": "Download Queue",
+    "body": "Queued downloads run one after another. If \"Shut down the PC\" is on, the PC shuts down after the last one. The shortcut, Steam and emulator steps of each game are offered afterwards.",
+    "add": "Add to Queue",
+    "added": "{name} was added to the queue ({count} waiting).",
+    "empty": "The queue is empty. Choose a game and click \"Add to Queue\" in step 2.",
+    "start": "Start Queue",
+    "stop": "Stop After This Download",
+    "stopped": "The queue is stopped. The remaining downloads stay in it.",
+    "clear": "Clear",
+    "running": "Downloading now: {name}",
+    "depots": "{count} depot(s)",
+    "kindUpdate": "Update",
+    "kindRepair": "Check",
+    "up": "Move up",
+    "down": "Move down",
+    "remove": "Remove from the queue",
+    "nextIn": "Next download from the queue starts in {seconds} s…",
+    "finished": "The queue is done: all downloads have finished.",
+    "runningShort": "Queue running",
+    "broken": "Could not read the queued download of {name}, skipped."
   }
 }

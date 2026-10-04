@@ -50,8 +50,11 @@ pub async fn get_pending_followup(app: AppHandle) -> Option<PendingFollowup> {
 }
 
 #[command]
-pub async fn clear_pending_followup(app: AppHandle) {
-    followup_service::clear(&app_data_dir(&app)).await
+pub async fn clear_pending_followup(app: AppHandle, download_dir: Option<String>) {
+    match download_dir {
+        Some(dir) => followup_service::remove(&app_data_dir(&app), &dir).await,
+        None => followup_service::clear(&app_data_dir(&app)).await,
+    }
 }
 
 #[command]

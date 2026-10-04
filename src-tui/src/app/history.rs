@@ -563,6 +563,12 @@ impl App {
         );
         let _ = take_top(&mut rest, 1);
 
+        let qh = self.queue_bar_height();
+        if qh > 0 {
+            let bar = take_top(&mut rest, qh);
+            self.render_queue_bar(buf, Rect::new(bar.x, bar.y, bar.width, 1), ctx);
+        }
+
         if let Some((tone, msg, _)) = &self.hist.banner {
             let h = widgets::status_height(msg, rest.width).min(3);
             widgets::status(buf, take_top(&mut rest, h), *tone, msg, self.tick);

@@ -815,5 +815,27 @@
   "shortcuts": {
     "ctrl": "Strg",
     "openFile": ".lua- oder .st-Datei öffnen"
+  },
+  "queue": {
+    "title": "Warteschlange",
+    "body": "Vorgemerkte Downloads laufen nacheinander. Ist „PC herunterfahren“ an, fährt der PC erst nach dem letzten herunter. Die Schritte Verknüpfung, Steam und Emulator werden für jedes Spiel danach angeboten.",
+    "add": "Zur Warteschlange",
+    "added": "{name} ist in der Warteschlange ({count} wartend).",
+    "empty": "Die Warteschlange ist leer. Wähl ein Spiel und klick in Schritt 2 auf „Zur Warteschlange“.",
+    "start": "Warteschlange starten",
+    "stop": "Nach diesem Download anhalten",
+    "stopped": "Die Warteschlange ist angehalten. Die übrigen Downloads bleiben drin.",
+    "clear": "Leeren",
+    "running": "Wird gerade geladen: {name}",
+    "depots": "{count} Depot(s)",
+    "kindUpdate": "Update",
+    "kindRepair": "Prüfen",
+    "up": "Nach oben",
+    "down": "Nach unten",
+    "remove": "Aus der Warteschlange entfernen",
+    "nextIn": "Der nächste Download aus der Warteschlange startet in {seconds} s…",
+    "finished": "Die Warteschlange ist fertig: Alle Downloads sind durch.",
+    "runningShort": "Warteschlange läuft",
+    "broken": "Der vorgemerkte Download von {name} konnte nicht gelesen werden und wurde übersprungen."
   }
 }

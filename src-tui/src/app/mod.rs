@@ -5,6 +5,7 @@ mod modal;
 mod post;
 mod prefs;
 mod progress;
+mod queue;
 mod select;
 mod settings;
 mod source;
@@ -98,6 +99,9 @@ pub struct App {
     pub shutdown_after: bool,
     pub shutdown_deadline: Option<Instant>,
     pub followup: Option<smd_core::services::followup::PendingFollowup>,
+    pub queue: Vec<smd_core::services::download_queue::QueuedDownload>,
+    pub queue_running: bool,
+    pub queue_next_at: Option<Instant>,
 }
 
 impl App {
@@ -155,6 +159,9 @@ impl App {
             shutdown_after: false,
             shutdown_deadline: None,
             followup: None,
+            queue: Vec::new(),
+            queue_running: false,
+            queue_next_at: None,
         };
         (app, rx)
     }
@@ -222,7 +229,9 @@ impl App {
         let dir = self.data_dir.clone();
         self.spawn(async move {
             let followup = smd_core::services::followup::load(&dir).await;
+            let queue = smd_core::services::download_queue::load(&dir).await;
             apply(move |app| {
+                app.queue = queue;
                 if let Some(f) = followup {
                     app.offer_followup(f);
                 }
@@ -401,6 +410,7 @@ impl App {
         self.autocomplete_tick();
         self.progress_tick();
         self.shutdown_tick();
+        self.queue_tick();
     }
 
     fn on_event(&mut self, ev: Event) {
@@ -903,6 +913,7 @@ impl App {
                     && !self.dispatch_post(&a)
                     && !self.dispatch_emulator(&a)
                     && !self.dispatch_history(&a)
+                    && !self.dispatch_queue(&a)
                     && !self.dispatch_settings(&a)
                 {
                     self.dispatch_modal(a);
@@ -918,7 +929,10 @@ impl App {
         self.page = page;
         self.focus = None;
         match page {
-            Page::History => self.load_history(),
+            Page::History => {
+                self.load_history();
+                self.load_queue();
+            }
             Page::Settings => {
                 let s = self.settings.clone();
                 self.set.load(&s, &self.prefs.mh_api_key.clone());

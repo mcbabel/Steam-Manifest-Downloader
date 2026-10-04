@@ -13,6 +13,7 @@ pub mod settings;
 pub mod embedded_tools;
 pub mod history;
 pub mod followup;
+pub mod download_queue;
 pub mod install_state;
 pub mod telemetry;
 pub mod emulator;

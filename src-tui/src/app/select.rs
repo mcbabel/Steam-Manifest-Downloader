@@ -52,11 +52,17 @@ impl App {
                 }
             }
             Action::StartDownload => {
-                if self.space_confirmed() {
+                if self.space_confirmed(Action::StartDownloadAnyway) {
                     self.start_download();
                 }
             }
             Action::StartDownloadAnyway => self.start_download(),
+            Action::QueueAdd => {
+                if self.space_confirmed(Action::QueueAddAnyway) {
+                    self.queue_add();
+                }
+            }
+            Action::QueueAddAnyway => self.queue_add(),
             Action::BackToSource => {
                 self.wiz.step = Step::Source;
                 self.focus = None;
@@ -127,7 +133,7 @@ impl App {
         });
     }
 
-    fn space_confirmed(&mut self) -> bool {
+    fn space_confirmed(&mut self, on_yes: Action) -> bool {
         let Some(parsed) = self.wiz.parsed.as_ref() else {
             return true;
         };
@@ -162,23 +168,51 @@ impl App {
             t("modals.space.start"),
             t("common.cancel"),
             false,
-            Action::StartDownloadAnyway,
+            on_yes,
         );
         self.queue_modal(modal);
         false
     }
 
     fn start_download(&mut self) {
-        let Some(parsed) = self.wiz.parsed.clone() else {
+        let Some((config, ids, native)) = self.build_download() else {
             return;
         };
+        self.emit(
+            "download_started",
+            Some(serde_json::json!({
+                "depot_count": config.depots.len(),
+                "engine": if native { "native" } else { "ddm" },
+                "source_count": self.settings.depot_sources.len(),
+                "had_mh_key": config.manifest_hub_api_key.is_some(),
+            })),
+        );
+        self.begin_download(config, ids, native);
+    }
+
+    pub(super) fn selected_bytes(&self) -> u64 {
+        self.wiz
+            .parsed
+            .as_ref()
+            .map(|p| {
+                p.depots
+                    .iter()
+                    .filter(|d| self.wiz.selected.contains(&d.depot_id))
+                    .filter_map(|d| d.size_bytes)
+                    .sum()
+            })
+            .unwrap_or(0)
+    }
+
+    pub(super) fn build_download(&mut self) -> Option<(DownloadConfig, Vec<String>, bool)> {
+        let parsed = self.wiz.parsed.clone()?;
         let selected: Vec<_> = parsed
             .depots
             .iter()
             .filter(|d| self.wiz.selected.contains(&d.depot_id))
             .collect();
         if selected.is_empty() {
-            return;
+            return None;
         }
         let native = self.settings.use_native_downloader;
         let mh_key = self.wiz.mh_key.trimmed();
@@ -231,16 +265,6 @@ impl App {
             })
             .collect();
 
-        self.emit(
-            "download_started",
-            Some(serde_json::json!({
-                "depot_count": depots.len(),
-                "engine": if native { "native" } else { "ddm" },
-                "source_count": self.settings.depot_sources.len(),
-                "had_mh_key": !mh_key.is_empty(),
-            })),
-        );
-
         let config = DownloadConfig {
             app_id: parsed.main_app_id.clone(),
             game_name: self.wiz.game_name.clone(),
@@ -272,7 +296,7 @@ impl App {
             repair: self.wiz.active_repair(&parsed.main_app_id).is_some(),
         };
         let ids: Vec<String> = config.depots.iter().map(|d| d.depot_id.clone()).collect();
-        self.begin_download(config, ids, native);
+        Some((config, ids, native))
     }
 
     pub(super) fn begin_download(
@@ -394,6 +418,22 @@ impl App {
             footer.y,
             gw,
             &go,
+        );
+        let queue = ButtonSpec::new(
+            format!("+ {}", t("queue.add")),
+            Fid::new("select.queue"),
+            Action::QueueAdd,
+            Btn::Secondary,
+        )
+        .enabled(n > 0);
+        let qw = widgets::button_width(&queue.label);
+        widgets::button(
+            buf,
+            ctx,
+            footer.right().saturating_sub(gw + qw + 2),
+            footer.y,
+            qw,
+            &queue,
         );
 
         if rest.width >= 100 {

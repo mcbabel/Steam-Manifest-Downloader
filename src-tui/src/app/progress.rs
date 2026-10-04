@@ -616,7 +616,9 @@ impl App {
             }
         }
         self.check_emulator_support();
-        self.schedule_shutdown();
+        if !self.queue_after(super::queue::QueueOutcome::Finished) {
+            self.schedule_shutdown();
+        }
     }
 
     fn record_success_history(&mut self, results: &[Value]) {
@@ -694,7 +696,9 @@ impl App {
             }
             self.emit("download_completed", Some(props));
             self.finish_download(false, message);
-            self.schedule_shutdown();
+            if !self.queue_after(super::queue::QueueOutcome::Failed) {
+                self.schedule_shutdown();
+            }
         }
     }
 
@@ -738,7 +742,7 @@ impl App {
         self.shutdown_modal_body(tf("modals.shutdown.body", &[("seconds", &secs)]));
     }
 
-    fn pending_followup(&self) -> Option<PendingFollowup> {
+    pub(super) fn pending_followup(&self) -> Option<PendingFollowup> {
         let success = self
             .wiz
             .progress
@@ -786,10 +790,11 @@ impl App {
                 && c.check.as_ref().is_some_and(|(_, on)| *on))
     }
 
-    fn clear_followup_file(&mut self) {
+    fn clear_followup_file(&mut self, download_dir: &str) {
         let dir = self.data_dir.clone();
+        let game = download_dir.to_string();
         self.spawn(async move {
-            smd_core::services::followup::clear(&dir).await;
+            smd_core::services::followup::remove(&dir, &game).await;
             apply(|_| {})
         });
     }
@@ -830,8 +835,8 @@ impl App {
                 .await
                 .map_err(|e| e.to_string())
                 .and_then(|r| r);
-            if r.is_err() && saved {
-                smd_core::services::followup::clear(&data).await;
+            if let (Err(_), true, Some(f)) = (&r, saved, &followup) {
+                smd_core::services::followup::remove(&data, &f.download_dir).await;
             }
             apply(move |app| {
                 if let Err(e) = r {
@@ -864,6 +869,7 @@ impl App {
             Some(serde_json::json!({ "success": false, "outcome": "cancelled" })),
         );
         self.finish_download(false, text);
+        self.queue_after(super::queue::QueueOutcome::Cancelled);
     }
 
     pub(super) fn finish_download(&mut self, success: bool, message: String) {
@@ -936,16 +942,15 @@ impl App {
             Action::FollowupResume => {
                 self.close_modal();
                 if let Some(f) = self.followup.take() {
-                    self.clear_followup_file();
+                    self.clear_followup_file(&f.download_dir);
                     self.resume_followup(f);
                 }
             }
             Action::FollowupLater => {
                 let discard = self.followup_dont_ask();
                 self.close_modal();
-                self.followup = None;
-                if discard {
-                    self.clear_followup_file();
+                if let Some(f) = self.followup.take().filter(|_| discard) {
+                    self.clear_followup_file(&f.download_dir);
                 }
             }
             _ => return false,

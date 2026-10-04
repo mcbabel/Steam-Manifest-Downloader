@@ -211,6 +211,12 @@ const els = {
   btnHistory: $('#btn-history'),
   historyModal: $('#history-modal'),
   historyList: $('#history-list'),
+  btnQueue: $('#btn-queue'),
+  btnQueueAdd: $('#btn-queue-add'),
+  queueModal: $('#queue-modal'),
+  btnQueueStart: $('#btn-queue-start'),
+  btnQueueClear: $('#btn-queue-clear'),
+  btnQueueClose: $('#btn-queue-close'),
   historyToolbar: $('#history-toolbar'),
   historySearch: $('#history-search'),
   historySort: $('#history-sort'),
@@ -1434,6 +1440,7 @@ function deselectAll() {
 function updateDownloadButton() {
   const count = state.selectedDepots.size;
   els.btnDownload.disabled = count === 0;
+  if (els.btnQueueAdd) els.btnQueueAdd.disabled = count === 0;
 
   let totalBytes = 0;
   let hasSizeInfo = false;
@@ -1462,48 +1469,8 @@ function updateDownloadButton() {
   `;
 }
 
-async function startDownload() {
-  const data = state.parsedData;
-  const selectedDepots = data.depots.filter(d => state.selectedDepots.has(d.depotId));
-
-  if (selectedDepots.length === 0) return;
-  if (!(await confirmFreeSpace(selectedDepots, activeUpdateDir(data.mainAppId)))) return;
-
-  let sourceCount = null;
-  try {
-    const s = await invoke('get_settings');
-    state.currentEngine = s.use_native_downloader !== false ? 'native' : 'ddm';
-    if (Array.isArray(s.depot_sources)) sourceCount = s.depot_sources.length;
-  } catch (_) {
-    state.currentEngine = 'native';
-  }
-
-  const mhApiKey = els.mhApiKey.value.trim();
-  hideMhKeyRequiredHint();
-
-  state.dlNonce = telemetryNonce();
-  state.dlSourceCount = sourceCount;
-  state.dlHadMhKey = !!mhApiKey;
-  emitEvent('download_started', {
-    job: state.dlNonce,
-    depot_count: selectedDepots.length,
-    engine: state.currentEngine,
-    source_count: sourceCount,
-    had_mh_key: state.dlHadMhKey,
-  });
-
-  requestNotificationPermission();
-
-  if (mhApiKey) {
-    localStorage.setItem(MH_APIKEY_STORAGE_KEY, mhApiKey);
-  } else {
-    localStorage.removeItem(MH_APIKEY_STORAGE_KEY);
-  }
-  saveDownloadDir();
-
-  const repairManifests = activeRepair(data.mainAppId);
-  state.repairRunning = !!repairManifests;
-  const depotsWithCustomManifests = selectedDepots.map(depot => {
+function collectDepotConfigs(selectedDepots, repairManifests) {
+  return selectedDepots.map(depot => {
     const input = document.querySelector(`.custom-manifest-input[data-depot-id="${depot.depotId}"]`);
     const customManifestId = input ? input.value.trim() : '';
     const depotManifest = state.depotManifests[depot.depotId];
@@ -1518,7 +1485,6 @@ async function startDownload() {
     }
     if (depotManifest) {
       result.uploadedManifestPath = depotManifest.storedPath;
-      // If no custom manifest ID typed, try to extract from filename
       if (!result.customManifestId) {
         const nameMatch = depotManifest.originalName.match(/^(\d+)_(\d+)\.manifest$/);
         if (nameMatch) {
@@ -1528,36 +1494,88 @@ async function startDownload() {
     }
     return result;
   });
+}
+
+function buildDownloadConfig(data, depots, mhApiKey, repairManifests) {
+  const downloadConfig = {
+    mainAppId: String(data.mainAppId),
+    selectedDepots: depots,
+    manifestHubApiKey: mhApiKey || null,
+    downloadDir: getDownloadDir() || null,
+    gameName: state.gameName || null,
+    headerImage: state.headerImage || null,
+    updateDir: activeUpdateDir(data.mainAppId),
+    repair: !!repairManifests
+  };
+  if (state.mode === 'search') {
+    if (state.searchRepo) downloadConfig.repo = state.searchRepo;
+    if (state.searchSha) downloadConfig.sha = state.searchSha;
+    if (state.searchKeyVdfKeys) downloadConfig.keyVdfKeys = state.searchKeyVdfKeys;
+    if (state.selectedRepo && state.selectedRepo.type) {
+      downloadConfig.sourceType = state.selectedRepo.type;
+    }
+  }
+  return downloadConfig;
+}
+
+function rememberDownloadInputs() {
+  const mhApiKey = els.mhApiKey.value.trim();
+  hideMhKeyRequiredHint();
+  if (mhApiKey) {
+    localStorage.setItem(MH_APIKEY_STORAGE_KEY, mhApiKey);
+  } else {
+    localStorage.removeItem(MH_APIKEY_STORAGE_KEY);
+  }
+  saveDownloadDir();
+  return mhApiKey;
+}
+
+async function startDownload() {
+  const data = state.parsedData;
+  const selectedDepots = data.depots.filter(d => state.selectedDepots.has(d.depotId));
+
+  if (selectedDepots.length === 0) return;
+  if (!(await confirmFreeSpace(selectedDepots, activeUpdateDir(data.mainAppId)))) return;
+
+  const mhApiKey = rememberDownloadInputs();
+  const repairManifests = activeRepair(data.mainAppId);
+  state.repairRunning = !!repairManifests;
+  const depots = collectDepotConfigs(selectedDepots, repairManifests);
+  await runDownload(buildDownloadConfig(data, depots, mhApiKey, repairManifests), depots);
+}
+
+async function runDownload(downloadConfig, depots) {
+  let sourceCount = null;
+  try {
+    const s = await invoke('get_settings');
+    state.currentEngine = s.use_native_downloader !== false ? 'native' : 'ddm';
+    if (Array.isArray(s.depot_sources)) sourceCount = s.depot_sources.length;
+  } catch (_) {
+    state.currentEngine = 'native';
+  }
+
+  state.dlNonce = telemetryNonce();
+  state.dlSourceCount = sourceCount;
+  state.dlHadMhKey = !!downloadConfig.manifestHubApiKey;
+  emitEvent('download_started', {
+    job: state.dlNonce,
+    depot_count: depots.length,
+    engine: state.currentEngine,
+    source_count: sourceCount,
+    had_mh_key: state.dlHadMhKey,
+  });
+
+  requestNotificationPermission();
 
   goToStep(3);
-  initProgressUI(depotsWithCustomManifests);
+  initProgressUI(depots);
   await commitPendingHistory();
   state.downloadStartedAt = new Date().toISOString();
 
   try {
-    const downloadConfig = {
-      mainAppId: String(data.mainAppId),
-      selectedDepots: depotsWithCustomManifests,
-      manifestHubApiKey: mhApiKey || null,
-      downloadDir: getDownloadDir() || null,
-      gameName: state.gameName || null,
-      headerImage: state.headerImage || null,
-      updateDir: activeUpdateDir(data.mainAppId),
-      repair: !!repairManifests
-    };
-
-    if (state.mode === 'search') {
-      if (state.searchRepo) downloadConfig.repo = state.searchRepo;
-      if (state.searchSha) downloadConfig.sha = state.searchSha;
-      if (state.searchKeyVdfKeys) downloadConfig.keyVdfKeys = state.searchKeyVdfKeys;
-      if (state.selectedRepo && state.selectedRepo.type) {
-        downloadConfig.sourceType = state.selectedRepo.type;
-      }
-    }
-
     state.dlStartedAt = Date.now();
     state.dlStage = 'starting';
-    state.dlDepotCount = selectedDepots.length;
+    state.dlDepotCount = depots.length;
 
     await connectProgressListener();
 
@@ -1576,7 +1594,204 @@ async function startDownload() {
       engine: state.currentEngine || 'native',
     }, classifyStartFailure(error)));
     showCompletion(false, errorText);
+    queueAfterDownload('failed');
   }
+}
+
+function showToast(text, kind = 'info', durationMs = 4000) {
+  const toast = document.getElementById('app-toast');
+  if (!toast) return;
+  toast.textContent = text;
+  toast.className = `app-toast app-toast--${kind}`;
+  clearTimeout(toast._hideTimer);
+  toast._hideTimer = setTimeout(() => toast.classList.add('hidden'), durationMs);
+}
+
+function updateQueueBadge(queue) {
+  if (Array.isArray(queue)) state.queue = queue;
+  const n = (state.queue || []).length;
+  const badge = document.getElementById('queue-badge');
+  if (badge) {
+    badge.textContent = String(n);
+    badge.classList.toggle('hidden', n === 0);
+  }
+  if (els.btnQueue) {
+    const label = window.i18n.t('queue.title');
+    els.btnQueue.title = n ? `${label} (${n})` : label;
+  }
+}
+
+async function refreshQueue() {
+  try {
+    updateQueueBadge(await invoke('queue_list'));
+  } catch (e) {
+    console.error('queue_list failed:', e);
+  }
+  if (els.queueModal && !els.queueModal.classList.contains('hidden')) renderQueue();
+}
+
+async function addToQueue() {
+  const data = state.parsedData;
+  if (!data) return;
+  const selectedDepots = data.depots.filter(d => state.selectedDepots.has(d.depotId));
+  if (selectedDepots.length === 0) return;
+  if (!(await confirmFreeSpace(selectedDepots, activeUpdateDir(data.mainAppId)))) return;
+  const mhApiKey = rememberDownloadInputs();
+  const repairManifests = activeRepair(data.mainAppId);
+  const depots = collectDepotConfigs(selectedDepots, repairManifests);
+  const size = selectedDownloadBytes(selectedDepots);
+  const item = {
+    id: '',
+    app_id: String(data.mainAppId),
+    game_name: state.gameName || null,
+    header_image: state.headerImage || null,
+    depot_count: depots.length,
+    size_bytes: size > 0 ? size : null,
+    depots,
+    config: buildDownloadConfig(data, depots, mhApiKey, repairManifests),
+    added_at: new Date().toISOString(),
+  };
+  try {
+    updateQueueBadge(await invoke('queue_add', { item }));
+  } catch (e) {
+    alert(window.i18n.localizeError(e));
+    return;
+  }
+  const name = item.game_name || `App ${item.app_id}`;
+  showToast(window.i18n.t('queue.added', { name, count: state.queue.length }), 'success');
+  resetApp();
+}
+
+function renderQueue() {
+  const list = document.getElementById('queue-list');
+  const running = document.getElementById('queue-running');
+  const queue = state.queue || [];
+  const current = state.queueRunning && state.queueCurrent;
+  running.classList.toggle('hidden', !current);
+  if (current) {
+    running.textContent = window.i18n.t('queue.running', { name: current.game_name || `App ${current.app_id}` });
+  }
+  if (queue.length === 0) {
+    list.innerHTML = `<div class="history-empty">${escapeHtml(window.i18n.t('queue.empty'))}</div>`;
+  } else {
+    list.innerHTML = queue.map((item, i) => `
+      <div class="queue-item" data-id="${escapeHtml(item.id)}">
+        <span class="queue-item__pos">${i + 1}</span>
+        <div class="queue-item__info">
+          <div class="queue-item__name">${escapeHtml(item.game_name || `App ${item.app_id}`)}</div>
+          <div class="queue-item__meta">App ${escapeHtml(item.app_id)} · ${escapeHtml(window.i18n.t('queue.depots', { count: item.depot_count }))}${item.size_bytes ? ` · ${escapeHtml(formatBytes(item.size_bytes) || '')}` : ''}${item.config && item.config.updateDir ? ` · ${escapeHtml(window.i18n.t(item.config.repair ? 'queue.kindRepair' : 'queue.kindUpdate'))}` : ''}</div>
+        </div>
+        <div class="queue-item__actions">
+          <button class="btn btn--small btn--outline queue-up" title="${escapeHtml(window.i18n.t('queue.up'))}" aria-label="${escapeHtml(window.i18n.t('queue.up'))}"${i === 0 ? ' disabled' : ''}>↑</button>
+          <button class="btn btn--small btn--outline queue-down" title="${escapeHtml(window.i18n.t('queue.down'))}" aria-label="${escapeHtml(window.i18n.t('queue.down'))}"${i === queue.length - 1 ? ' disabled' : ''}>↓</button>
+          <button class="btn btn--small btn--outline queue-remove" title="${escapeHtml(window.i18n.t('queue.remove'))}" aria-label="${escapeHtml(window.i18n.t('queue.remove'))}">${ICONS.trash}</button>
+        </div>
+      </div>`).join('');
+  }
+  list.querySelectorAll('.queue-item').forEach((row) => {
+    const id = row.dataset.id;
+    const act = async (cmd, args) => {
+      try {
+        updateQueueBadge(await invoke(cmd, args));
+      } catch (e) {
+        console.error(`${cmd} failed:`, e);
+      }
+      renderQueue();
+    };
+    row.querySelector('.queue-up').addEventListener('click', () => act('queue_move', { id, offset: -1 }));
+    row.querySelector('.queue-down').addEventListener('click', () => act('queue_move', { id, offset: 1 }));
+    row.querySelector('.queue-remove').addEventListener('click', () => act('queue_remove', { id }));
+  });
+  const busy = !!state.jobId || state.queueRunning;
+  els.btnQueueStart.disabled = queue.length === 0 || busy;
+  els.btnQueueStart.textContent = window.i18n.t(state.queueRunning ? 'queue.stop' : 'queue.start');
+  if (state.queueRunning) els.btnQueueStart.disabled = false;
+  els.btnQueueClear.disabled = queue.length === 0;
+}
+
+async function openQueue() {
+  await refreshQueue();
+  renderQueue();
+  els.queueModal.classList.remove('hidden');
+}
+
+function closeQueue() {
+  els.queueModal.classList.add('hidden');
+}
+
+async function startQueue() {
+  if (state.jobId || state.queueRunning) return;
+  state.queueRunning = true;
+  closeQueue();
+  await runNextQueued();
+}
+
+function stopQueue() {
+  state.queueRunning = false;
+  clearTimeout(state.queueTimer);
+  state.queueTimer = null;
+  state.queueCurrent = null;
+  showToast(window.i18n.t('queue.stopped'));
+  renderQueue();
+}
+
+async function runNextQueued() {
+  state.queueTimer = null;
+  if (!state.queueRunning) return;
+  if (state.jobId) {
+    state.queueTimer = setTimeout(runNextQueued, 2000);
+    return;
+  }
+  let next = null;
+  try {
+    next = await invoke('queue_take_next');
+  } catch (e) {
+    console.error('queue_take_next failed:', e);
+  }
+  await refreshQueue();
+  if (!next) {
+    state.queueRunning = false;
+    state.queueCurrent = null;
+    return;
+  }
+  state.queueCurrent = next;
+  closeHistory();
+  state.emuStandalone = false;
+  setEmuEditMode(false);
+  cleanupProgressListener();
+  state.jobId = null;
+  state.parsedData = { mainAppId: next.app_id, depots: next.depots || [] };
+  state.selectedDepots = new Set((next.depots || []).map((d) => String(d.depotId)));
+  state.gameName = next.game_name || null;
+  state.headerImage = next.header_image || null;
+  state.updateDir = next.config.updateDir || null;
+  state.updateAppId = next.config.updateDir ? String(next.app_id) : null;
+  state.repairManifests = null;
+  state.repairRunning = !!next.config.repair;
+  await runDownload(next.config, next.depots || []);
+}
+
+function queueAfterDownload(outcome) {
+  if (!state.queueRunning) return;
+  if (outcome === 'cancelled') {
+    stopQueue();
+    return;
+  }
+  (async () => {
+    await refreshQueue();
+    const remaining = (state.queue || []).length;
+    if (remaining === 0) {
+      state.queueRunning = false;
+      state.queueCurrent = null;
+      showToast(window.i18n.t('queue.finished'), 'success', 6000);
+      maybeScheduleShutdown();
+      return;
+    }
+    await commitPendingHistory();
+    if (outcome !== 'failed') await savePendingFollowup();
+    appendTerminalLine(window.i18n.t('queue.nextIn', { seconds: QUEUE_NEXT_DELAY_SECONDS }), 'info');
+    state.queueTimer = setTimeout(runNextQueued, QUEUE_NEXT_DELAY_SECONDS * 1000);
+  })();
 }
 
 function initProgressUI(depots) {
@@ -2152,6 +2367,7 @@ function handleComplete(msg) {
   cleanupProgressListener();
   checkEmulatorSupport();
   maybeScheduleShutdown();
+  queueAfterDownload(allOk ? 'complete' : 'partial');
 }
 
 function handleError(msg) {
@@ -2172,6 +2388,7 @@ function handleError(msg) {
     playNotificationSound();
     cleanupProgressListener();
     maybeScheduleShutdown();
+    queueAfterDownload('failed');
   }
 }
 
@@ -2196,6 +2413,7 @@ function handleCancelled(msg) {
   }, msg.diag || {}));
   showCompletion(false, localized);
   cleanupProgressListener();
+  queueAfterDownload('cancelled');
 }
 
 function updateDepotStatus(depotId, status, text) {
@@ -2392,6 +2610,7 @@ function resetApp() {
   resetUpload();
   resetPatchOnlyTab();
   goToStep(1);
+  if (!state.queueRunning) setTimeout(showPendingFollowupIfAny, 300);
 }
 
 async function openSettings() {
@@ -3125,6 +3344,7 @@ function showBrowserNotification(title, body, icon) {
 const SHUTDOWN_DELAY_SECONDS = 60;
 
 function maybeScheduleShutdown() {
+  if (state.queueRunning) return;
   if (!els.shutdownAfterToggle || !els.shutdownAfterToggle.checked || !els.shutdownModal) return;
   clearInterval(state.shutdownTimer);
   state.shutdownRemaining = SHUTDOWN_DELAY_SECONDS;
@@ -3162,7 +3382,7 @@ async function shutdownNow() {
   try {
     await invoke('power_off_system');
   } catch (e) {
-    if (followupSaved) invoke('clear_pending_followup').catch(() => {});
+    if (followupSaved) invoke('clear_pending_followup', { downloadDir: state.downloadDir }).catch(() => {});
     els.shutdownModalBody.textContent = window.i18n.t('modals.shutdown.failed', { message: window.i18n.localizeError(e) });
     els.btnShutdownNow.disabled = false;
     if (els.shutdownAfterToggle) els.shutdownAfterToggle.checked = false;
@@ -3271,11 +3491,11 @@ async function showPendingFollowupIfAny() {
   els.btnFollowupLater.onclick = close;
   els.followupModal.querySelector('.modal__backdrop').onclick = close;
   els.btnFollowupDiscard.onclick = () => {
-    invoke('clear_pending_followup').catch(() => {});
+    invoke('clear_pending_followup', { downloadDir: followup.download_dir }).catch(() => {});
     close();
   };
   els.btnFollowupResume.onclick = () => {
-    invoke('clear_pending_followup').catch(() => {});
+    invoke('clear_pending_followup', { downloadDir: followup.download_dir }).catch(() => {});
     close();
     resumePendingFollowup(followup);
   };
@@ -3458,6 +3678,19 @@ function initEvents() {
   els.btnDeselectAll.addEventListener('click', deselectAll);
   els.btnBack.addEventListener('click', () => goToStep(1));
   els.btnDownload.addEventListener('click', startDownload);
+  els.btnQueueAdd.addEventListener('click', addToQueue);
+  els.btnQueue.addEventListener('click', openQueue);
+  els.btnQueueClose.addEventListener('click', closeQueue);
+  els.queueModal.querySelector('.modal__backdrop').addEventListener('click', closeQueue);
+  els.btnQueueStart.addEventListener('click', () => (state.queueRunning ? stopQueue() : startQueue()));
+  els.btnQueueClear.addEventListener('click', async () => {
+    try {
+      await invoke('queue_clear');
+    } catch (e) {
+      console.error('queue_clear failed:', e);
+    }
+    await refreshQueue();
+  });
   if (els.mhApiKey) {
     els.mhApiKey.addEventListener('input', () => {
       if (els.mhApiKey.value.trim()) hideMhKeyRequiredHint();
@@ -3919,6 +4152,7 @@ function initHistoryToolbar() {
 }
 
 const UPDATE_CHECK_TTL = 10 * 60 * 1000;
+const QUEUE_NEXT_DELAY_SECONDS = 5;
 
 function updateCheckKey(entries) {
   return entries
@@ -6145,6 +6379,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initEvents();
   initHistoryToolbar();
   initShortcuts();
+  refreshQueue();
   loadSettingsAndDefaults();
   initTauri();
   refreshSourcesUI();

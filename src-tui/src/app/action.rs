@@ -119,6 +119,11 @@ pub enum Action {
     ToggleMask(InputId),
     StartDownload,
     StartDownloadAnyway,
+    QueueAdd,
+    QueueAddAnyway,
+    QueueStart,
+    QueueStop,
+    QueueClear,
     BackToSource,
 
     PauseResume,

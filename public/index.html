@@ -52,6 +52,12 @@
             <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
           </svg>
         </button>
+        <button id="btn-queue" class="btn btn--outline header__queue-btn" data-i18n-attr="title=queue.title,aria-label=queue.title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+          </svg>
+          <span id="queue-badge" class="header__badge hidden"></span>
+        </button>
         <button id="btn-theme-toggle" class="btn btn--outline header__theme-btn" data-i18n-attr="title=header.themeToggle,aria-label=header.themeToggle">
           <svg id="theme-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
@@ -348,6 +354,7 @@
             &larr; <span data-i18n="common.back">Back</span>
           </button>
           <div class="card__footer-right">
+            <button id="btn-queue-add" class="btn btn--outline" disabled data-i18n="queue.add">Add to Queue</button>
             <button id="btn-download" class="btn btn--primary" disabled>
               <span data-i18n="select.downloadSelected">Download Selected</span>
               <svg class="btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1425,6 +1432,21 @@
     </div>
   </div>
 
+  <div id="queue-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="queue-modal-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content queue-modal-content">
+      <h3 class="modal__title" id="queue-modal-title" data-i18n="queue.title">Download Queue</h3>
+      <p class="modal__text" data-i18n="queue.body">Queued downloads run one after another. If "Shut down the PC" is on, the PC shuts down after the last one.</p>
+      <div id="queue-running" class="queue-running hidden" role="status"></div>
+      <div id="queue-list" class="queue-list"></div>
+      <div class="modal__actions">
+        <button id="btn-queue-clear" class="btn btn--outline btn--small btn--push-end" data-i18n="queue.clear">Clear</button>
+        <button id="btn-queue-close" class="btn btn--outline" data-modal-cancel data-i18n="common.close">Close</button>
+        <button id="btn-queue-start" class="btn btn--primary" data-i18n="queue.start">Start Queue</button>
+      </div>
+    </div>
+  </div>
+
   <div id="confirm-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title" aria-hidden="true">
     <div class="modal__backdrop"></div>
     <div class="modal__content">
@@ -1444,6 +1466,7 @@
     </div>
   </div>
 
+  <div id="app-toast" class="app-toast hidden" role="status" aria-live="polite"></div>
 </div>
   <script src="js/i18n.js"></script>
   <script src="js/app.js"></script>
