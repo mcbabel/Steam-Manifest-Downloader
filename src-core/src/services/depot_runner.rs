@@ -228,9 +228,28 @@ impl ProgressEvent {
     }
 }
 
+fn redact_payload(value: &mut serde_json::Value, sensitive: bool) {
+    match value {
+        serde_json::Value::String(text) if sensitive && text.contains("://") => {
+            *text = crate::services::net::redact(text);
+        }
+        serde_json::Value::Array(items) => items.iter_mut().for_each(|v| redact_payload(v, sensitive)),
+        serde_json::Value::Object(map) => {
+            for (key, v) in map.iter_mut() {
+                let nested = sensitive || matches!(key.as_str(), "message" | "error" | "params" | "results" | "output");
+                redact_payload(v, nested);
+            }
+        }
+        _ => {}
+    }
+}
+
 pub fn emit_progress(sink: &Sink, event: &ProgressEvent) {
     match serde_json::to_value(event) {
-        Ok(payload) => sink.emit(DOWNLOAD_PROGRESS, payload),
+        Ok(mut payload) => {
+            redact_payload(&mut payload, false);
+            sink.emit(DOWNLOAD_PROGRESS, payload)
+        }
         Err(e) => eprintln!("[DepotRunner] Failed to emit progress event: {}", e),
     }
 }
@@ -340,6 +359,11 @@ pub async fn run_depot_downloader(
     let job_object = win_job::JobObject::new().map(Arc::new);
 
     let mut cmd = Command::new(exe_path);
+    if let Some(proxy) = crate::services::net::proxy() {
+        for var in ["HTTPS_PROXY", "HTTP_PROXY", "ALL_PROXY", "https_proxy", "http_proxy", "all_proxy"] {
+            cmd.env(var, &proxy);
+        }
+    }
     cmd.args(&args)
         .current_dir(work_dir)
         .stdout(Stdio::piped())
@@ -422,6 +446,7 @@ pub async fn run_all_depots(
     job_id: &str,
     state: &AppState,
     merged: bool,
+    max_retries: u32,
 ) -> Result<Vec<serde_json::Value>, String> {
     let mut results = Vec::new();
     let total = depots.len();
@@ -450,7 +475,32 @@ pub async fn run_all_depots(
         event.total = Some(total);
         emit_progress(sink, &event);
 
-        match run_depot_downloader(sink, exe_path, app_id, depot, work_dir, extra_args, job_id, state, merged).await {
+        let mut attempt: u32 = 0;
+        let outcome = loop {
+            let outcome = run_depot_downloader(sink, exe_path, app_id, depot, work_dir, extra_args, job_id, state, merged).await;
+            let cancelled = {
+                let jobs = state.active_jobs.lock().await;
+                jobs.get(job_id).is_some_and(|j| j.status == "cancelled")
+            };
+            if matches!(outcome, Ok(true)) || cancelled || attempt >= max_retries {
+                break outcome;
+            }
+            attempt += 1;
+            let mut event = ProgressEvent::new("status", job_id);
+            event.step = Some("retrying_depot".to_string());
+            event.depot_id = Some(depot.depot_id.clone());
+            event.localized(
+                format!(
+                    "Depot {} failed, trying again ({}/{})",
+                    depot.depot_id, attempt, max_retries
+                ),
+                "events.depotRetryDdm",
+                serde_json::json!({ "depot": depot.depot_id, "attempt": attempt, "max": max_retries }),
+            );
+            emit_progress(sink, &event);
+            tokio::time::sleep(std::time::Duration::from_secs(2 * attempt as u64)).await;
+        };
+        match outcome {
             Ok(success) => {
                 results.push(serde_json::json!({
                     "depotId": depot.depot_id,

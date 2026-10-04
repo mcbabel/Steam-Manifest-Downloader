@@ -638,6 +638,7 @@ pub struct SettingsPage {
     pub source_selected: usize,
     pub source_offset: usize,
     pub status: Option<(Tone, String)>,
+    pub proxy_status: Option<(Tone, String)>,
     pub scroll: u16,
     pub dirty: bool,
 }
@@ -663,6 +664,7 @@ impl SettingsPage {
             source_selected: 0,
             source_offset: 0,
             status: None,
+            proxy_status: None,
             scroll: 0,
             dirty: false,
         };

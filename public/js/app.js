@@ -207,6 +207,9 @@ const els = {
   speedLimitControls: $('#speed-limit-controls'),
   speedLimitInput: $('#speed-limit-input'),
   proxyInput: $('#proxy-input'),
+  proxyError: $('#proxy-error'),
+  btnProxyTest: $('#btn-proxy-test'),
+  proxyStatus: $('#proxy-status'),
   hubcapApiKeyInput: $('#hubcap-apikey-input'),
   ryuuApiKeyInput: $('#ryuu-apikey-input'),
   notificationSoundToggle: $('#notification-sound-toggle'),
@@ -2118,9 +2121,10 @@ function handleStatusUpdate(msg) {
       break;
 
     case 'manifest_hub_rate_limited':
+    case 'retrying_depot':
     case 'depot_up_to_date':
     case 'removed_stale_files':
-      if (msg.message) appendTerminalLine(eventText(msg), msg.step === 'manifest_hub_rate_limited' ? 'warn' : 'info');
+      if (msg.message) appendTerminalLine(eventText(msg), msg.step === 'manifest_hub_rate_limited' || msg.step === 'retrying_depot' ? 'warn' : 'info');
       break;
 
     case 'downloading_manifests':
@@ -2820,6 +2824,8 @@ async function openSettings() {
     setSpeedLimitUnit(speedLimit.unit);
     setSpeedLimitEnabled(speedLimit.value !== '', false);
     els.proxyInput.value = settings.proxy || '';
+    if (els.proxyError) els.proxyError.classList.add('hidden');
+    setProxyStatus(null);
     if (els.hubcapApiKeyInput) els.hubcapApiKeyInput.value = settings.hubcap_api_key || '';
     if (els.ryuuApiKeyInput) els.ryuuApiKeyInput.value = settings.ryuu_api_key || '';
     if (els.nativeDownloaderToggle) els.nativeDownloaderToggle.checked = !!settings.use_native_downloader;
@@ -3126,6 +3132,13 @@ async function saveSettings() {
     }
   } catch (e) {
     console.error('Failed to save settings:', e);
+    if (/proxy/i.test(String(e)) && els.proxyError) {
+      els.proxyError.textContent = window.i18n.localizeError(String(e));
+      els.proxyError.classList.remove('hidden');
+      if (els.advancedSettingsContent && els.advancedSettingsContent.classList.contains('hidden')) toggleAdvancedSettings();
+      els.proxyInput.focus();
+      return;
+    }
   }
   closeSettings();
 }
@@ -3289,6 +3302,41 @@ function bindDepotSelectionSettings() {
   }, true);
   document.addEventListener('click', (e) => {
     if (!els.gameLanguage.contains(e.target)) setGameLanguageOpen(false);
+  });
+}
+
+function setProxyStatus(kind, text) {
+  if (!els.proxyStatus) return;
+  els.proxyStatus.className = 'proxy-status' + (kind ? ` proxy-status--${kind}` : ' hidden');
+  els.proxyStatus.textContent = text || '';
+}
+
+async function testProxy() {
+  const proxy = els.proxyInput.value.trim();
+  if (els.proxyError) els.proxyError.classList.add('hidden');
+  els.btnProxyTest.disabled = true;
+  setProxyStatus('busy', window.i18n.t(proxy ? 'settings.proxyTesting' : 'settings.proxyTestingDirect'));
+  try {
+    const result = await invoke('test_proxy', { proxy });
+    const key = result && result.proxy ? 'settings.proxyOk' : 'settings.proxyOkDirect';
+    setProxyStatus('ok', '✓ ' + window.i18n.t(key, { ms: result ? result.millis : 0 }));
+  } catch (e) {
+    const key = proxy ? 'settings.proxyFailed' : 'settings.proxyFailedDirect';
+    setProxyStatus('error', '✗ ' + window.i18n.t(key, { error: window.i18n.localizeError(String(e)) }));
+  } finally {
+    els.btnProxyTest.disabled = false;
+  }
+}
+
+function bindProxyControls() {
+  if (!els.btnProxyTest) return;
+  els.btnProxyTest.addEventListener('click', testProxy);
+  els.proxyInput.addEventListener('input', () => setProxyStatus(null));
+  els.proxyInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      testProxy();
+    }
   });
 }
 
@@ -4055,6 +4103,7 @@ function initEvents() {
   els.settingsModal.querySelector('.modal__backdrop').addEventListener('click', closeSettings);
 
   bindSpeedLimitControls();
+  bindProxyControls();
   bindDepotSelectionSettings();
   if (els.btnToggleAdvanced) {
     els.btnToggleAdvanced.addEventListener('click', toggleAdvancedSettings);

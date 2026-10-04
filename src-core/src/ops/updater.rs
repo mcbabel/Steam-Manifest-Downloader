@@ -34,7 +34,7 @@ pub fn detect_install_method() -> &'static str {
 }
 
 pub async fn check_for_updates(current_version: &str) -> Result<serde_json::Value, String> {
-    let client = reqwest::Client::new();
+    let client = crate::services::net::client();
     let url = format!(
         "https://api.github.com/repos/{}/releases/latest",
         GITHUB_REPO
@@ -46,7 +46,7 @@ pub async fn check_for_updates(current_version: &str) -> Result<serde_json::Valu
         .header("Accept", "application/vnd.github.v3+json")
         .send()
         .await
-        .map_err(|e| format!("Failed to check for updates: {}", e))?;
+        .map_err(|e| format!("Failed to check for updates: {}", crate::services::net::describe(&e)))?;
 
     if !response.status().is_success() {
         return Ok(serde_json::json!({

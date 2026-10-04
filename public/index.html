@@ -1251,8 +1251,13 @@
           </div>
 
           <div class="settings-field">
-            <label for="proxy-input" class="settings-field__label" data-i18n="settings.proxy">HTTP Proxy</label>
-            <input type="text" id="proxy-input" class="dd-path__input" data-i18n-attr="placeholder=settings.proxyPlaceholder">
+            <label for="proxy-input" class="settings-field__label" data-i18n="settings.proxy">Proxy</label>
+            <div class="dd-path__input-wrap dd-path__input-wrap--with-btn">
+              <input type="text" id="proxy-input" class="dd-path__input" data-i18n-attr="placeholder=settings.proxyPlaceholder">
+              <button type="button" id="btn-proxy-test" class="btn btn--small btn--outline" data-i18n="settings.proxyTest">Test</button>
+            </div>
+            <p id="proxy-status" class="proxy-status hidden" role="status"></p>
+            <p id="proxy-error" class="error-message hidden"></p>
             <p class="dd-path__hint" data-i18n="settings.proxyHint">Optional proxy URL (e.g., http://proxy:8080 or socks5://proxy:1080)</p>
           </div>
 

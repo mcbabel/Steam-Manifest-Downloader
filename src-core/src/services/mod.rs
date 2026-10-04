@@ -3,6 +3,7 @@ pub mod st_parser;
 pub mod vdf_parser;
 pub mod multi_repo_search;
 pub mod manifest_hub_api;
+pub mod net;
 pub mod hubcap_api;
 pub mod ryuu_api;
 pub mod depot_sources;
@@ -42,7 +43,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 pub struct AppState {
     pub active_jobs: Arc<Mutex<HashMap<String, JobInfo>>>,
-    pub http_client: reqwest::Client,
+    pub http_client: net::HttpClient,
     pub steam_cache: Arc<Mutex<HashMap<String, serde_json::Value>>>,
     pub telemetry: Option<telemetry::Telemetry>,
     pub steam_session: Arc<steam_session::SteamSession>,
@@ -76,7 +77,7 @@ impl AppState {
     pub fn new() -> Self {
         Self {
             active_jobs: Arc::new(Mutex::new(HashMap::new())),
-            http_client: reqwest::Client::new(),
+            http_client: net::HttpClient,
             steam_cache: Arc::new(Mutex::new(HashMap::new())),
             telemetry: None,
             steam_session: Arc::new(steam_session::SteamSession::new()),

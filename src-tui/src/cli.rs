@@ -767,7 +767,7 @@ impl Printer {
                     };
                     self.line(&format!("  {}", text));
                 }
-                "manifest_hub_rate_limited" | "depot_up_to_date" | "removed_stale_files" => {
+                "manifest_hub_rate_limited" | "retrying_depot" | "depot_up_to_date" | "removed_stale_files" => {
                     self.line(&format!("  {}", crate::i18n::event_text(ev)))
                 }
                 _ => {}

@@ -492,7 +492,7 @@ pub async fn fetch_release_info(client: &Client, app_data_dir: &Path) -> Result<
         .timeout(Duration::from_secs(30))
         .send()
         .await
-        .map_err(|e| format!("GitHub fetch failed: {}", e))?;
+        .map_err(|e| format!("GitHub fetch failed: {}", crate::services::net::describe(&e)))?;
 
     if !resp.status().is_success() {
         return Err(format!("GitHub returned HTTP {}", resp.status()));
@@ -624,7 +624,7 @@ pub async fn ensure_cached(
             .timeout(Duration::from_secs(600))
             .send()
             .await
-            .map_err(|e| format!("download failed: {}", e))?;
+            .map_err(|e| format!("download failed: {}", crate::services::net::describe(&e)))?;
         if !resp.status().is_success() {
             return Err(format!("download returned HTTP {}", resp.status()));
         }

@@ -197,6 +197,7 @@ pub enum Action {
     SettingsRevert,
     CopyBuildInfo,
     CheckUpdates,
+    TestProxy,
 
     ModalToggleCheck,
     BrowserUp,

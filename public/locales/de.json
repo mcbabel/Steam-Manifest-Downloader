@@ -607,14 +607,14 @@
     "ddExtraArgs": "DepotDownloader Zusatzargumente",
     "ddExtraArgsHint": "Zusätzliche Kommandozeilen-Argumente für DepotDownloaderMod",
     "maxRetries": "Maximale Wiederholungen bei Fehler",
-    "maxRetriesHint": "Anzahl der Wiederholungsversuche bei fehlgeschlagenem Depot-Download",
+    "maxRetriesHint": "Zusätzliche Versuche pro Depot, wenn die Verbindung abbricht (eingebauter Downloader) oder DepotDownloaderMod mit einem Fehler endet.",
     "chunkConcurrency": "Max. gleichzeitige Chunks (native Engine)",
     "chunkConcurrencyHint": "Wie viele Chunks die native Engine gleichzeitig lädt und entschlüsselt. Verringern wenn Downloads das System zum Laggen bringen.",
     "speedLimit": "Geschwindigkeitslimit",
     "speedLimitHint": "Gilt für den eingebauten Downloader, auch für einen Download, der schon läuft. 100 Mbit/s entsprechen etwa 12 MB/s.",
-    "proxy": "HTTP-Proxy",
+    "proxy": "Proxy",
     "proxyPlaceholder": "Kein Proxy",
-    "proxyHint": "Optionale Proxy-URL (z.B. http://proxy:8080 oder socks5://proxy:1080)",
+    "proxyHint": "Gilt für alle Downloads (Steam-CDN, Depot-Quellen, ManifestHub, Hubcap, Ryuu, Spielbilder und Updates) und wird an DepotDownloaderMod weitergegeben. Format: http://host:port oder socks5://host:port, bei Bedarf mit benutzer:passwort@. Leer: Der System-Proxy wird verwendet. Der Steam-Login für Depot-Infos verbindet sich direkt.",
     "depotSources": "Depot-Quellen",
     "depotSourcesHint": "URLs, die auf einen Ordner im Layout <code>branches/&lt;appid&gt;/&lt;files&gt;</code> zeigen (Depot-Keys, Manifests, key.vdf). Quellen werden in der angezeigten Reihenfolge abgefragt.",
     "depotSourcePlaceholder": "Quell-URL einfügen…",
@@ -666,7 +666,14 @@
     "targetPlatformHint": "Auto nimmt dieses System. Hat ein Spiel keine Linux-Version, wird die Windows-Version gewählt (läuft mit Proton). Mit „Download danach sofort starten“ wählst du nur noch das Spiel, der Download beginnt 5 Sekunden später.",
     "auto": "Auto",
     "gameLanguage": "Spielsprache",
-    "gameLanguageAuto": "Automatisch (App-Sprache)"
+    "gameLanguageAuto": "Automatisch (App-Sprache)",
+    "proxyTest": "Testen",
+    "proxyTesting": "Verbinde über den Proxy mit Steam …",
+    "proxyTestingDirect": "Kein Proxy eingetragen, prüfe die direkte Verbindung zu Steam …",
+    "proxyOk": "Proxy funktioniert: Steam hat in {ms} ms geantwortet.",
+    "proxyOkDirect": "Kein Proxy eingetragen, die direkte Verbindung funktioniert: Steam hat in {ms} ms geantwortet.",
+    "proxyFailed": "Proxy funktioniert nicht: {error}",
+    "proxyFailedDirect": "Kein Proxy eingetragen und die direkte Verbindung scheitert: {error}"
   },
   "errors": {
     "noManifests": "Für diese App-ID wurden in keiner konfigurierten Depot-Quelle Manifests gefunden. Füge weitere Quellen in den Einstellungen hinzu oder aktiviere sie.",
@@ -718,7 +725,10 @@
       "depotSource": "Steam direkt fehlgeschlagen ({error}). Weiche auf eine Depot-Quelle aus.",
       "noKey": "Alle Quellen fehlgeschlagen ({error}). Kein ManifestHub-API-Key gesetzt – trag einen ein und versuch es nochmal.",
       "manifestHub": "Vorherige Quellen fehlgeschlagen ({error}). Weiche auf ManifestHub aus."
-    }
+    },
+    "depotRetry": "Verbindungsproblem bei Depot {depot}, neuer Versuch ({attempt}/{max}) …",
+    "depotRetryDdm": "Depot {depot} ist fehlgeschlagen, neuer Versuch ({attempt}/{max}) …",
+    "networkUnreachable": "Keine Verbindung zu Steam oder einer Manifest-Quelle ({reason}). Die restlichen {count} Depot(s) wurden übersprungen. Prüfe Internetverbindung, Firewall, Web-Schutz des Virenscanners, VPN oder den Proxy in den Einstellungen."
   },
   "backend": {
     "entryRemovedPartial": "Eintrag entfernt, aber {0} Depot-Ordner konnten nicht gelöscht werden: {1}",
@@ -838,7 +848,17 @@
     "noSourcesNoKey": "keine Depot-Quellen eingerichtet und kein ManifestHub-API-Key",
     "steamcmdHttp": "Die steamcmd-API hat mit HTTP {0} geantwortet",
     "steamcmdRequest": "Anfrage an die steamcmd-API fehlgeschlagen: {0}",
-    "steamcmdNoDepots": "Die steamcmd-Antwort enthält keine Depots für App {0}"
+    "steamcmdNoDepots": "Die steamcmd-Antwort enthält keine Depots für App {0}",
+    "invalidProxy": "Ungültige Proxy-Adresse: {0}",
+    "unsupportedProxy": "Nicht unterstützter Proxy-Typ: {0}",
+    "proxyAuth": "Der Proxy verlangt Benutzername und Passwort (HTTP 407)",
+    "proxyBadGateway": "Der Proxy konnte Steam nicht erreichen (HTTP 502)",
+    "proxyRefused": "Verbindung abgelehnt, läuft unter dieser Adresse und diesem Port ein Proxy? ({0})",
+    "refused": "Verbindung abgelehnt ({0})",
+    "proxyDns": "Proxy-Adresse nicht gefunden, prüfe den Hostnamen ({0})",
+    "directDns": "Steam wurde nicht gefunden, prüfe DNS oder Internetverbindung ({0})",
+    "timeout": "Keine Antwort in der Zeit, die Verbindung wird blockiert oder ist zu langsam ({0})",
+    "tlsIntercept": "Sichere Verbindung fehlgeschlagen, eventuell fängt ein Virenscanner oder Firmen-Proxy HTTPS ab ({0})"
   },
   "shortcuts": {
     "ctrl": "Strg",

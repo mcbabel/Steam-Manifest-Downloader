@@ -187,6 +187,32 @@ impl App {
                 self.toast(Tone::Success, t("tui.settings.copied"));
             }
             Action::CheckUpdates => self.check_updates(true),
+            Action::TestProxy => {
+                let proxy = self.set.inputs[SETTING_PROXY].trimmed();
+                let key = if proxy.is_empty() { "settings.proxyTestingDirect" } else { "settings.proxyTesting" };
+                self.set.proxy_status = Some((Tone::Busy, t(key)));
+                self.spawn(async move {
+                    let r = smd_core::services::net::test_proxy(&proxy).await;
+                    apply(move |app| {
+                        app.set.proxy_status = Some(match r {
+                            Ok(res) => (
+                                Tone::Success,
+                                tf(
+                                    if res.proxy.is_some() { "settings.proxyOk" } else { "settings.proxyOkDirect" },
+                                    &[("ms", &res.millis)],
+                                ),
+                            ),
+                            Err(e) => (
+                                Tone::Error,
+                                tf(
+                                    if proxy.is_empty() { "settings.proxyFailedDirect" } else { "settings.proxyFailed" },
+                                    &[("error", &e)],
+                                ),
+                            ),
+                        });
+                    })
+                });
+            }
             _ => return false,
         }
         true
@@ -261,7 +287,7 @@ impl App {
                     app.set.load(&s, &mh);
                     app.set.status = Some((Tone::Success, t("tui.settings.saved")));
                 }
-                Err(e) => app.set.status = Some((Tone::Error, e)),
+                Err(e) => app.set.status = Some((Tone::Error, i18n::localize_error(&e))),
             })
         });
     }
@@ -553,6 +579,26 @@ impl App {
                     error: false,
                 },
             );
+            if idx == SETTING_PROXY {
+                let r = sv.next(1);
+                widgets::button(
+                    &mut sv.buf,
+                    ctx,
+                    r.x,
+                    r.y,
+                    r.width,
+                    &ButtonSpec::new(
+                        t("settings.proxyTest"),
+                        Fid::new("settings.proxyTest"),
+                        Action::TestProxy,
+                        Btn::Secondary,
+                    ),
+                );
+                if let Some((tone, msg)) = self.set.proxy_status.clone() {
+                    let r = sv.next(widgets::status_height(&msg, w));
+                    widgets::status(&mut sv.buf, r, tone, &msg, self.tick);
+                }
+            }
             let ht = t(hint_key);
             let h = widgets::wrap_height(&ht, w);
             let r = sv.next(h);

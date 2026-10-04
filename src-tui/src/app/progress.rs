@@ -275,7 +275,7 @@ impl App {
                     ),
                 );
             }
-            "manifest_hub_rate_limited" => {
+            "manifest_hub_rate_limited" | "retrying_depot" => {
                 if msg.get("message").is_some() {
                     self.log(LogKind::Warn, crate::i18n::event_text(msg));
                 }

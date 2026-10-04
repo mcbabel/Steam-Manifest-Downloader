@@ -4507,3 +4507,22 @@ button:disabled,
   color: var(--text-muted);
   border: 1px dashed var(--border);
 }
+
+.proxy-status {
+  margin-top: 0.5rem;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.proxy-status--busy {
+  color: var(--text-secondary);
+}
+
+.proxy-status--ok {
+  color: var(--success);
+}
+
+.proxy-status--error {
+  color: var(--error);
+}

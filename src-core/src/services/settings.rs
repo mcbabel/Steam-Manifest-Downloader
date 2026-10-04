@@ -181,13 +181,18 @@ fn settings_path(app_data_dir: &Path) -> PathBuf {
 
 pub async fn load_settings(app_data_dir: &Path) -> Settings {
     let path = settings_path(app_data_dir);
-    match fs::read_to_string(&path).await {
+    let settings: Settings = match fs::read_to_string(&path).await {
         Ok(content) => serde_json::from_str(&content).unwrap_or_default(),
         Err(_) => Settings::default(),
+    };
+    if let Err(e) = crate::services::net::apply_proxy(&settings.proxy) {
+        eprintln!("[Settings] {}", e);
     }
+    settings
 }
 
 pub async fn save_settings(app_data_dir: &Path, settings: &Settings) -> Result<(), String> {
+    crate::services::net::apply_proxy(&settings.proxy)?;
     let speed_limit =
         crate::services::speed_limit::parse_speed_limit(&settings.download_speed_limit)
             .ok()

@@ -32,7 +32,7 @@ pub async fn fetch_app_data(
         .header("User-Agent", "SteamManifestDownloader")
         .send()
         .await
-        .map_err(|e| format!("Hubcap request failed: {}", e))?;
+        .map_err(|e| format!("Hubcap request failed: {}", crate::services::net::describe(&e)))?;
 
     if !resp.status().is_success() {
         return Err(format!("Hubcap returned HTTP {}", resp.status()));

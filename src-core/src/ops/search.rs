@@ -27,7 +27,7 @@ pub async fn search_steam_games(
         .query(&[("term", query), ("l", "english"), ("cc", "US")])
         .send()
         .await
-        .map_err(|e| format!("[SteamSearch] Request failed: {}", e))?;
+        .map_err(|e| format!("[SteamSearch] Request failed: {}", crate::services::net::describe(&e)))?;
 
     if !response.status().is_success() {
         return Err(format!(

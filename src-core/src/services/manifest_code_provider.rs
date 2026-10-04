@@ -64,7 +64,7 @@ async fn fetch_steamrun(http: &Client, gid: u64) -> Result<u64, String> {
         .timeout(PROVIDER_TIMEOUT)
         .send()
         .await
-        .map_err(|e| format!("request failed: {}", e))?;
+        .map_err(|e| format!("request failed: {}", crate::services::net::describe(&e)))?;
     let status = resp.status();
     if !status.is_success() {
         return Err(format!("HTTP {}", status));
@@ -92,7 +92,7 @@ async fn fetch_wudrm(http: &Client, gid: u64) -> Result<u64, String> {
         .timeout(PROVIDER_TIMEOUT)
         .send()
         .await
-        .map_err(|e| format!("request failed: {}", e))?;
+        .map_err(|e| format!("request failed: {}", crate::services::net::describe(&e)))?;
     let status = resp.status();
     if !status.is_success() {
         return Err(format!("HTTP {}", status));

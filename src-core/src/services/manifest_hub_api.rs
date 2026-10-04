@@ -28,7 +28,7 @@ pub async fn download_from_manifest_hub(
         .header("User-Agent", "SteamManifestDownloader")
         .send()
         .await
-        .map_err(|e| format!("ManifestHub API request failed for depot {}: {}", depot_id, e))?;
+        .map_err(|e| format!("ManifestHub API request failed for depot {}: {}", depot_id, crate::services::net::describe(&e)))?;
 
     if !response.status().is_success() {
         let status = response.status();

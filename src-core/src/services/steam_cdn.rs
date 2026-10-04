@@ -32,9 +32,9 @@ pub async fn fetch_decoded_manifest(
         .timeout(CDN_HTTP_TIMEOUT)
         .send()
         .await
-        .map_err(|e| format!("manifest CDN request failed: {}", e))?
+        .map_err(|e| format!("manifest CDN request failed: {}", crate::services::net::describe(&e)))?
         .error_for_status()
-        .map_err(|e| format!("manifest CDN returned HTTP error: {}", e))?
+        .map_err(|e| format!("manifest CDN returned HTTP error: {}", crate::services::net::describe(&e)))?
         .bytes()
         .await
         .map_err(|e| format!("manifest CDN body read failed: {}", e))?;
@@ -62,9 +62,9 @@ pub async fn fetch_encrypted_chunk(
         .timeout(CDN_HTTP_TIMEOUT)
         .send()
         .await
-        .map_err(|e| format!("chunk CDN request failed: {}", e))?
+        .map_err(|e| format!("chunk CDN request failed: {}", crate::services::net::describe(&e)))?
         .error_for_status()
-        .map_err(|e| format!("chunk CDN returned HTTP error: {}", e))?
+        .map_err(|e| format!("chunk CDN returned HTTP error: {}", crate::services::net::describe(&e)))?
         .bytes()
         .await
         .map_err(|e| format!("chunk CDN body read failed: {}", e))?;

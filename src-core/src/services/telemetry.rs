@@ -73,7 +73,7 @@ impl Telemetry {
         };
         Self {
             inner: Arc::new(Mutex::new(inner)),
-            http: reqwest::Client::builder()
+            http: crate::services::net::builder()
                 .timeout(Duration::from_secs(10))
                 .build()
                 .unwrap_or_else(|_| reqwest::Client::new()),

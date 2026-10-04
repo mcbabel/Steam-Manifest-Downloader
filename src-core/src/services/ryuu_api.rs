@@ -32,7 +32,7 @@ pub async fn fetch_app_data(
         .header("User-Agent", "SteamManifestDownloader")
         .send()
         .await
-        .map_err(|e| format!("Ryuu request failed: {}", e))?;
+        .map_err(|e| format!("Ryuu request failed: {}", crate::services::net::describe(&e)))?;
 
     if !resp.status().is_success() {
         return Err(format!("Ryuu returned HTTP {}", resp.status()));

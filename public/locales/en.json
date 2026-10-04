@@ -607,14 +607,14 @@
     "ddExtraArgs": "DepotDownloader Extra Arguments",
     "ddExtraArgsHint": "Additional command-line arguments passed to DepotDownloaderMod",
     "maxRetries": "Max Retries on Error",
-    "maxRetriesHint": "Number of retry attempts when a depot download fails",
+    "maxRetriesHint": "Extra attempts per depot when the connection fails (built-in downloader) or DepotDownloaderMod exits with an error.",
     "chunkConcurrency": "Max concurrent chunks (native engine)",
     "chunkConcurrencyHint": "How many chunks the native engine downloads and decrypts at once. Lower this if downloads make the system lag.",
     "speedLimit": "Speed Limit",
     "speedLimitHint": "Applies to the built-in downloader, also to a download that is already running. 100 Mbit/s is about 12 MB/s.",
-    "proxy": "HTTP Proxy",
+    "proxy": "Proxy",
     "proxyPlaceholder": "No proxy",
-    "proxyHint": "Optional proxy URL (e.g., http://proxy:8080 or socks5://proxy:1080)",
+    "proxyHint": "Used for every download (Steam CDN, depot sources, ManifestHub, Hubcap, Ryuu, game images and updates) and handed to DepotDownloaderMod. Format: http://host:port or socks5://host:port, with user:password@ if needed. Empty: the system proxy is used. The Steam login for depot information connects directly.",
     "depotSources": "Depot Sources",
     "depotSourcesHint": "URLs pointing at a folder that follows the <code>branches/&lt;appid&gt;/&lt;files&gt;</code> layout (depot keys, manifests, key.vdf). Sources are queried in the order shown when searching by App ID.",
     "depotSourcePlaceholder": "Paste a source URL…",
@@ -666,7 +666,14 @@
     "targetPlatformHint": "Auto uses this system. When a game has no Linux build, the Windows version is picked (it runs with Proton). With \"Start the download right away\" you only pick the game, the download starts 5 seconds later.",
     "auto": "Auto",
     "gameLanguage": "Game language",
-    "gameLanguageAuto": "Auto (app language)"
+    "gameLanguageAuto": "Auto (app language)",
+    "proxyTest": "Test",
+    "proxyTesting": "Connecting to Steam through the proxy…",
+    "proxyTestingDirect": "No proxy entered, testing the direct connection to Steam…",
+    "proxyOk": "Proxy works: Steam answered in {ms} ms.",
+    "proxyOkDirect": "No proxy entered, the direct connection works: Steam answered in {ms} ms.",
+    "proxyFailed": "Proxy does not work: {error}",
+    "proxyFailedDirect": "No proxy entered and the direct connection fails: {error}"
   },
   "errors": {
     "noManifests": "No manifests found for this App ID in any configured depot source. Add or enable more sources in Settings.",
@@ -718,7 +725,10 @@
       "depotSource": "Steam direct failed ({error}). Falling back to a depot source.",
       "noKey": "All sources failed ({error}). No ManifestHub API key set — add one and try again.",
       "manifestHub": "Previous sources failed ({error}). Falling back to ManifestHub."
-    }
+    },
+    "depotRetry": "Connection problem with depot {depot}, trying again ({attempt}/{max})…",
+    "depotRetryDdm": "Depot {depot} failed, trying again ({attempt}/{max})…",
+    "networkUnreachable": "No connection to Steam or any manifest source ({reason}). The remaining {count} depot(s) were skipped. Check your internet connection, firewall, antivirus web protection, VPN or the proxy in the settings."
   },
   "backend": {
     "entryRemovedPartial": "Entry removed, but {0} depot folder(s) could not be deleted: {1}",
@@ -838,7 +848,17 @@
     "noSourcesNoKey": "no manifest sources configured and No ManifestHub API key",
     "steamcmdHttp": "steamcmd API returned HTTP {0}",
     "steamcmdRequest": "steamcmd API request failed: {0}",
-    "steamcmdNoDepots": "steamcmd response missing depots for app {0}"
+    "steamcmdNoDepots": "steamcmd response missing depots for app {0}",
+    "invalidProxy": "Invalid proxy address: {0}",
+    "unsupportedProxy": "Unsupported proxy type: {0}",
+    "proxyAuth": "Proxy requires a user name and password (HTTP 407)",
+    "proxyBadGateway": "Proxy could not reach Steam (HTTP 502)",
+    "proxyRefused": "Connection refused, is a proxy running at this address and port? ({0})",
+    "refused": "Connection refused ({0})",
+    "proxyDns": "Proxy address not found, check the host name ({0})",
+    "directDns": "Steam could not be found, check your DNS or internet connection ({0})",
+    "timeout": "No answer in time, the connection is blocked or too slow ({0})",
+    "tlsIntercept": "Secure connection failed, an antivirus or company proxy may be intercepting HTTPS ({0})"
   },
   "shortcuts": {
     "ctrl": "Ctrl",

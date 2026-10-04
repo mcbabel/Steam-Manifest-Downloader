@@ -13,7 +13,7 @@ pub async fn check_for_updates(app: AppHandle) -> Result<serde_json::Value, Stri
 
 #[command]
 pub async fn install_update(app: AppHandle, installer_url: String) -> Result<(), String> {
-    let client = reqwest::Client::new();
+    let client = smd_core::services::net::client();
 
     let temp_dir = std::env::temp_dir().join("SteamManifestDownloader");
     std::fs::create_dir_all(&temp_dir)
@@ -26,7 +26,7 @@ pub async fn install_update(app: AppHandle, installer_url: String) -> Result<(),
         .header("User-Agent", USER_AGENT)
         .send()
         .await
-        .map_err(|e| format!("Failed to download update: {}", e))?;
+        .map_err(|e| format!("Failed to download update: {}", smd_core::services::net::describe(&e)))?;
 
     if !response.status().is_success() {
         return Err(format!("Download failed with status {}", response.status()));

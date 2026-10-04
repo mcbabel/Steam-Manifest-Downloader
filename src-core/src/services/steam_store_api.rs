@@ -43,7 +43,7 @@ pub async fn get_game_info(
         .get(&url)
         .send()
         .await
-        .map_err(|e| format!("[SteamAPI] Request failed for appId {}: {}", id, e))?;
+        .map_err(|e| format!("[SteamAPI] Request failed for appId {}: {}", id, crate::services::net::describe(&e)))?;
 
     if !response.status().is_success() {
         return Ok(None);

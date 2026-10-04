@@ -221,7 +221,6 @@ pub async fn start_download(
 
     let job_id_clone = job_id.clone();
     let sink_clone = sink.clone();
-    let http_client = state.http_client.clone();
     let active_jobs = state.active_jobs.clone();
     let steam_cache = state.steam_cache.clone();
     let steam_session = state.steam_session.clone();
@@ -232,7 +231,7 @@ pub async fn start_download(
 
         let state_ref = AppState {
             active_jobs: active_jobs.clone(),
-            http_client: http_client.clone(),
+            http_client: crate::services::net::HttpClient,
             steam_cache: steam_cache.clone(),
             telemetry: None,
             steam_session: steam_session.clone(),
@@ -961,6 +960,7 @@ async fn run_download_pipeline(
             config.resume_mode.as_deref() == Some("fast") && !config.repair,
             config.repair,
             merged,
+            settings.max_retries,
         )
         .await?
     } else {
@@ -998,6 +998,7 @@ async fn run_download_pipeline(
             job_id,
             state,
             merged,
+            settings.max_retries,
         )
         .await?
     };
@@ -1388,6 +1389,7 @@ async fn run_native_pipeline(
     trust_checkpoint: bool,
     repair: bool,
     merged: bool,
+    max_retries: u32,
 ) -> Result<Vec<serde_json::Value>, String> {
     let app_id_u: u32 = app_id
         .parse()
@@ -1425,6 +1427,8 @@ async fn run_native_pipeline(
     };
 
     let mut rewritten: std::collections::HashSet<String> = std::collections::HashSet::new();
+    let mut any_success = false;
+    let mut connection_failures = 0usize;
     for (idx, depot) in run_depots.iter().enumerate() {
         if check_cancelled(state, job_id).await {
             return Ok(results);
@@ -1495,6 +1499,7 @@ async fn run_native_pipeline(
                 "upToDate": true,
                 "sourcesTried": Vec::<&str>::new(),
             }));
+            any_success = true;
             continue;
         }
 
@@ -1556,10 +1561,6 @@ async fn run_native_pipeline(
             }
         }
 
-        let manifest_already_on_disk = work_dir
-            .join(format!("{}_{}.manifest", depot.depot_id, depot.manifest_id))
-            .exists();
-
         let resume_opts = ResumeOptions {
             checkpoint: Some(work_dir.join(format!(".smd-depot-{}.resume.json", depot.depot_id))),
             manifest_id: depot.manifest_id.clone(),
@@ -1568,7 +1569,13 @@ async fn run_native_pipeline(
         let mut sources_tried: Vec<&'static str> = Vec::new();
         let mut no_fallback_left: Option<&'static str> = None;
 
-        let attempt_outcome = if manifest_already_on_disk {
+        let mut attempt_no: u32 = 0;
+        let attempt_outcome = loop {
+        attempt_no += 1;
+        let manifest_already_on_disk = work_dir
+            .join(format!("{}_{}.manifest", depot.depot_id, depot.manifest_id))
+            .exists();
+        let outcome = if manifest_already_on_disk {
             sources_tried.push(diag::SourceKind::Cached.as_str());
             emit_manifest_source(
                 sink,
@@ -1592,7 +1599,7 @@ async fn run_native_pipeline(
                         depot_out.clone(),
                         cancel_flag.clone(),
                         pause_flag.clone(),
-                        progress_cb,
+                        progress_cb.clone(),
                         chunk_concurrency,
                         resume_opts.clone(),
                     )
@@ -1621,7 +1628,7 @@ async fn run_native_pipeline(
                 depot_out.clone(),
                 cancel_flag.clone(),
                 pause_flag.clone(),
-                progress_cb,
+                progress_cb.clone(),
                 chunk_concurrency,
                 resume_opts.clone(),
             )
@@ -1835,6 +1842,28 @@ async fn run_native_pipeline(
             }
             steam_result
         };
+        let retry = match &outcome {
+            Err(e) => attempt_no <= max_retries && crate::services::net::is_connection_problem(e),
+            Ok(_) => false,
+        };
+        if !retry || check_cancelled(state, job_id).await {
+            break outcome;
+        }
+        let mut event = ProgressEvent::new("status", job_id);
+        event.step = Some("retrying_depot".to_string());
+        event.depot_id = Some(depot.depot_id.clone());
+        event.localized(
+            format!(
+                "Connection problem with depot {}, trying again ({}/{})",
+                depot.depot_id, attempt_no, max_retries
+            ),
+            "events.depotRetry",
+            serde_json::json!({ "depot": depot.depot_id, "attempt": attempt_no, "max": max_retries }),
+        );
+        emit_progress(sink, &event);
+        tokio::time::sleep(std::time::Duration::from_secs(2 * attempt_no as u64)).await;
+        };
+        sources_tried.dedup();
 
         match attempt_outcome {
             Ok(outcome) => {
@@ -1871,6 +1900,8 @@ async fn run_native_pipeline(
                 done.current = Some(idx + 1);
                 done.total = Some(run_depots.len());
                 emit_progress(sink, &done);
+                any_success = true;
+                connection_failures = 0;
                 results.push(serde_json::json!({
                     "depotId": depot.depot_id,
                     "success": true,
@@ -1892,6 +1923,7 @@ async fn run_native_pipeline(
                 );
                 err_event.depot_id = Some(depot.depot_id.clone());
                 emit_progress(sink, &err_event);
+                let connection_problem = crate::services::net::is_connection_problem(&e);
                 let reported = match no_fallback_left {
                     Some(reason) => format!("{} ({})", reason, e),
                     None => e,
@@ -1902,6 +1934,30 @@ async fn run_native_pipeline(
                     "error": reported,
                     "sourcesTried": sources_tried,
                 }));
+                connection_failures = if connection_problem { connection_failures + 1 } else { 0 };
+                let remaining = &run_depots[idx + 1..];
+                if !any_success && connection_failures >= 2 && !remaining.is_empty() {
+                    let mut event = ProgressEvent::new("error", job_id);
+                    event.localized(
+                        format!(
+                            "No connection to Steam or any manifest source ({}). The remaining {} depot(s) were skipped. Check your internet connection, firewall, antivirus web protection, VPN or the proxy in the settings.",
+                            reported,
+                            remaining.len()
+                        ),
+                        "events.networkUnreachable",
+                        serde_json::json!({ "reason": reported, "count": remaining.len() }),
+                    );
+                    emit_progress(sink, &event);
+                    for skipped in remaining {
+                        results.push(serde_json::json!({
+                            "depotId": skipped.depot_id,
+                            "success": false,
+                            "error": "skipped: no connection",
+                            "sourcesTried": Vec::<&str>::new(),
+                        }));
+                    }
+                    break;
+                }
             }
         }
     }

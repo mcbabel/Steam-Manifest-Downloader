@@ -53,11 +53,11 @@ async fn download_to(client: &Client, url: &str, dest: &Path) -> Result<(), Stri
         .timeout(Duration::from_secs(60))
         .send()
         .await
-        .map_err(|e| format!("download failed: {}", e))?;
+        .map_err(|e| format!("download failed: {}", crate::services::net::describe(&e)))?;
     if !resp.status().is_success() {
         return Err(format!("download HTTP {}", resp.status()));
     }
-    let bytes = resp.bytes().await.map_err(|e| format!("read body: {}", e))?;
+    let bytes = resp.bytes().await.map_err(|e| format!("read body: {}", crate::services::net::describe(&e)))?;
     tokio::fs::write(dest, &bytes)
         .await
         .map_err(|e| format!("write {}: {}", dest.display(), e))?;

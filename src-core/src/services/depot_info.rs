@@ -92,7 +92,7 @@ async fn fetch_depot_info_inner(
         .timeout(Duration::from_secs(15))
         .send()
         .await
-        .map_err(|e| format!("steamcmd API request failed: {}", e))?;
+        .map_err(|e| format!("steamcmd API request failed: {}", crate::services::net::describe(&e)))?;
 
     if !resp.status().is_success() {
         return Err(format!("steamcmd API returned HTTP {}", resp.status()));

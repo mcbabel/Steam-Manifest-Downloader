@@ -51,6 +51,7 @@ fn main() {
             // Settings
             commands::get_settings,
             commands::save_settings,
+            commands::test_proxy,
             // System
             commands::check_dotnet,
             commands::get_disk_space,

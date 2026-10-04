@@ -123,7 +123,7 @@ pub async fn ensure_steamless_cached(
                 .timeout(Duration::from_secs(60))
                 .send()
                 .await
-                .map_err(|e| format!("steamless download failed: {}", e))?;
+                .map_err(|e| format!("steamless download failed: {}", crate::services::net::describe(&e)))?;
             if !resp.status().is_success() {
                 return Err(format!("steamless download HTTP {}", resp.status()));
             }

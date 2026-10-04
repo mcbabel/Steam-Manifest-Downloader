@@ -337,13 +337,13 @@ pub async fn download_text_file(
                 return resp
                     .text()
                     .await
-                    .map_err(|e| format!("Failed to read response: {}", e));
+                    .map_err(|e| format!("Failed to read response: {}", crate::services::net::describe(&e)));
             }
             Ok(resp) => {
                 last_status = format!("HTTP {}", resp.status());
             }
             Err(e) => {
-                last_status = e.to_string();
+                last_status = crate::services::net::describe(&e);
             }
         }
     }
@@ -406,7 +406,7 @@ pub async fn download_manifest_file(
                 let bytes = resp
                     .bytes()
                     .await
-                    .map_err(|e| format!("Failed to read manifest: {}", e))?;
+                    .map_err(|e| format!("Failed to read manifest: {}", crate::services::net::describe(&e)))?;
 
                 tokio::fs::create_dir_all(output_dir)
                     .await
@@ -423,7 +423,7 @@ pub async fn download_manifest_file(
                 last_error = format!("HTTP {}", resp.status());
             }
             Err(e) => {
-                last_error = format!("Download failed: {}", e);
+                last_error = format!("Download failed: {}", crate::services::net::describe(&e));
             }
         }
     }
