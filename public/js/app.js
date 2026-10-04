@@ -220,6 +220,10 @@ const els = {
   historyToolbar: $('#history-toolbar'),
   historySearch: $('#history-search'),
   historySort: $('#history-sort'),
+  historySortButton: $('#history-sort-button'),
+  historySortLabel: $('#history-sort-label'),
+  historySortMenu: $('#history-sort-menu'),
+  historyFilters: $('#history-filters'),
   btnHistoryClear: $('#btn-history-clear'),
   btnHistoryClose: $('#btn-history-close'),
   updateModal: $('#update-modal'),
@@ -3984,7 +3988,7 @@ function loadHistoryView() {
   const view = { query: '', status: 'all', sort: 'newest' };
   try {
     const saved = JSON.parse(localStorage.getItem(HISTORY_VIEW_KEY) || '{}');
-    if (['all', 'complete', 'resumable', 'problem'].includes(saved.status)) view.status = saved.status;
+    if (['all', ...HISTORY_KINDS].includes(saved.status)) view.status = saved.status;
     if (['newest', 'oldest', 'name', 'size'].includes(saved.sort)) view.sort = saved.sort;
   } catch (_) {}
   return view;
@@ -4003,6 +4007,13 @@ function relativeToDir(path, dir) {
   return base && full.toLowerCase().startsWith(`${base.toLowerCase()}/`) ? full.slice(base.length + 1) : full;
 }
 
+function exePlatformBadge(exe, all) {
+  const platforms = new Set((all || []).map((e) => e.platform).filter(Boolean));
+  if (platforms.size < 2 || !exe.platform) return '';
+  const label = window.i18n.t(exe.platform === 'linux' ? 'depotTags.linux' : 'depotTags.windows');
+  return ` <span class="depot-tag depot-tag--${exe.platform === 'linux' ? 'linux' : 'windows'}">${escapeHtml(label)}</span>`;
+}
+
 function chooseLaunchExe(candidates, dir) {
   const modal = document.getElementById('launch-modal');
   const list = document.getElementById('launch-list');
@@ -4010,7 +4021,7 @@ function chooseLaunchExe(candidates, dir) {
   list.innerHTML = candidates.map((c, i) => `
     <label class="launch-option">
       <input type="radio" name="launch-exe" value="${i}"${c.path === chosen ? ' checked' : ''}>
-      <span class="launch-option__name">${escapeHtml(c.name)}</span>
+      <span class="launch-option__name">${escapeHtml(c.name)}${exePlatformBadge(c, candidates)}</span>
       <span class="launch-option__path" title="${escapeHtml(c.path)}">${escapeHtml(relativeToDir(c.path, dir))}</span>
       <span class="launch-option__size">${escapeHtml(formatBytes(c.size) || '')}</span>
     </label>`).join('');
@@ -4035,9 +4046,10 @@ async function playGame(entry, choose) {
   try {
     if (!choose) exe = await invoke('get_launch_exe', { dir });
     if (!exe) {
-      const candidates = (await invoke('detect_executables', { downloadDir: dir })) || [];
+      const detected = await invoke('detect_executables', { downloadDir: dir });
+      const candidates = (detected && detected.executables) || [];
       if (candidates.length === 0) {
-        showHistoryBanner(window.i18n.t('history.playNoExe'));
+        showHistoryBanner(window.i18n.t(entry.status === 'partial' ? 'history.playNoExePartial' : 'history.playNoExe'), 9000);
         return;
       }
       exe = candidates.length === 1 && !choose ? candidates[0].path : await chooseLaunchExe(candidates, dir);
@@ -4089,10 +4101,21 @@ function startHistoryRedownload(appId, depotIds, target) {
   performSearch();
 }
 
+const HISTORY_KINDS = ['complete', 'partial', 'resumable', 'cancelled', 'failed'];
+const HISTORY_KIND_LABELS = {
+  complete: 'history.statusComplete',
+  partial: 'history.statusPartial',
+  resumable: 'history.statusResumable',
+  cancelled: 'history.statusCancelled',
+  failed: 'history.statusFailed',
+};
+
 function historyEntryKind(entry) {
   if (entry.status === 'complete') return 'complete';
+  if (entry.status === 'partial') return 'partial';
   if (entry.status === 'cancelled_resumable' && entry.resume_payload) return 'resumable';
-  return 'problem';
+  if (entry.status === 'cancelled' || entry.status === 'cancelled_resumable') return 'cancelled';
+  return 'failed';
 }
 
 function historyEntryTime(entry) {
@@ -4118,16 +4141,65 @@ function visibleHistory() {
   return list.sort(sorters[view.sort] || sorters.newest);
 }
 
+function renderHistoryFilters() {
+  const view = state.historyView;
+  const counts = {};
+  (state.cachedHistory || []).forEach((e) => {
+    const kind = historyEntryKind(e);
+    counts[kind] = (counts[kind] || 0) + 1;
+  });
+  if (view.status !== 'all' && !counts[view.status]) view.status = 'all';
+  const chips = [['all', window.i18n.t('history.filterAll'), (state.cachedHistory || []).length]]
+    .concat(HISTORY_KINDS.filter((k) => counts[k]).map((k) => [k, window.i18n.t(HISTORY_KIND_LABELS[k]), counts[k]]));
+  els.historyFilters.innerHTML = chips.map(([kind, label, count]) => `
+    <button type="button" class="history-chip history-chip--${kind}${kind === view.status ? ' is-active' : ''}" data-status="${kind}" role="radio" aria-checked="${kind === view.status}">
+      ${escapeHtml(label)}<span class="history-chip__count">${count}</span>
+    </button>`).join('');
+  els.historyFilters.querySelectorAll('.history-chip').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      state.historyView.status = chip.dataset.status;
+      saveHistoryView();
+      renderHistoryFilters();
+      renderHistoryEntries(visibleHistory());
+    });
+  });
+}
+
+function syncHistorySort() {
+  const sort = state.historyView.sort;
+  els.historySortMenu.querySelectorAll('.history-sort__option').forEach((opt) => {
+    const active = opt.dataset.value === sort;
+    opt.classList.toggle('is-active', active);
+    opt.setAttribute('aria-selected', active ? 'true' : 'false');
+    if (active) els.historySortLabel.textContent = opt.textContent;
+  });
+}
+
+function setHistorySortOpen(open) {
+  els.historySortMenu.classList.toggle('hidden', !open);
+  els.historySortButton.setAttribute('aria-expanded', open ? 'true' : 'false');
+  els.historySort.classList.toggle('is-open', open);
+  if (open) {
+    const active = els.historySortMenu.querySelector('.is-active') || els.historySortMenu.firstElementChild;
+    els.historySortMenu.querySelectorAll('.history-sort__option').forEach((o) => o.classList.toggle('is-focused', o === active));
+  }
+}
+
+function chooseHistorySort(value) {
+  state.historyView.sort = value;
+  saveHistoryView();
+  syncHistorySort();
+  setHistorySortOpen(false);
+  els.historySortButton.focus();
+  renderHistoryEntries(visibleHistory());
+}
+
 function syncHistoryToolbar() {
   const view = state.historyView;
   els.historyToolbar.classList.toggle('hidden', (state.cachedHistory || []).length === 0);
   if (els.historySearch.value !== view.query) els.historySearch.value = view.query;
-  els.historySort.value = view.sort;
-  els.historyToolbar.querySelectorAll('.history-chip').forEach((chip) => {
-    const active = chip.dataset.status === view.status;
-    chip.classList.toggle('is-active', active);
-    chip.setAttribute('aria-checked', active ? 'true' : 'false');
-  });
+  renderHistoryFilters();
+  syncHistorySort();
 }
 
 function initHistoryToolbar() {
@@ -4136,18 +4208,41 @@ function initHistoryToolbar() {
     state.historyView.query = els.historySearch.value;
     renderHistoryEntries(visibleHistory());
   });
-  els.historySort.addEventListener('change', () => {
-    state.historyView.sort = els.historySort.value;
-    saveHistoryView();
-    renderHistoryEntries(visibleHistory());
+  els.historySortButton.addEventListener('click', () => {
+    setHistorySortOpen(els.historySortMenu.classList.contains('hidden'));
   });
-  els.historyToolbar.querySelectorAll('.history-chip').forEach((chip) => {
-    chip.addEventListener('click', () => {
-      state.historyView.status = chip.dataset.status;
-      saveHistoryView();
-      syncHistoryToolbar();
-      renderHistoryEntries(visibleHistory());
+  els.historySortMenu.querySelectorAll('.history-sort__option').forEach((opt) => {
+    opt.addEventListener('click', () => chooseHistorySort(opt.dataset.value));
+    opt.addEventListener('mouseenter', () => {
+      els.historySortMenu.querySelectorAll('.history-sort__option').forEach((o) => o.classList.toggle('is-focused', o === opt));
     });
+  });
+  els.historySort.addEventListener('keydown', (e) => {
+    const open = !els.historySortMenu.classList.contains('hidden');
+    const options = Array.from(els.historySortMenu.querySelectorAll('.history-sort__option'));
+    const focused = options.findIndex((o) => o.classList.contains('is-focused'));
+    if (e.key === 'Escape' && open) {
+      e.preventDefault();
+      e.stopPropagation();
+      setHistorySortOpen(false);
+      els.historySortButton.focus();
+    } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (!open) {
+        setHistorySortOpen(true);
+        return;
+      }
+      const next = (focused + (e.key === 'ArrowDown' ? 1 : options.length - 1)) % options.length;
+      options.forEach((o, i) => o.classList.toggle('is-focused', i === next));
+    } else if ((e.key === 'Enter' || e.key === ' ') && open && focused >= 0) {
+      e.preventDefault();
+      chooseHistorySort(options[focused].dataset.value);
+    } else if (e.key === 'Tab' && open) {
+      setHistorySortOpen(false);
+    }
+  }, true);
+  document.addEventListener('click', (e) => {
+    if (!els.historySort.contains(e.target)) setHistorySortOpen(false);
   });
 }
 
@@ -4212,16 +4307,9 @@ function renderHistoryEntries(entries) {
     const date = entry.completed_at ? formatHistoryDate(entry.completed_at) : formatHistoryDate(entry.started_at);
     const isResumable = entry.status === 'cancelled_resumable' && !!entry.resume_payload;
     const canResumeNow = isResumable && state.useNativeDownloader !== false;
-    const badgeClass = entry.status === 'complete' ? 'history-entry__badge--complete'
-      : entry.status === 'partial' ? 'history-entry__badge--partial'
-      : isResumable ? 'history-entry__badge--resumable'
-      : entry.status === 'cancelled' ? 'history-entry__badge--cancelled'
-      : 'history-entry__badge--failed';
-    const statusLabel = entry.status === 'complete' ? window.i18n.t('history.statusComplete')
-      : entry.status === 'partial' ? window.i18n.t('history.statusPartial')
-      : isResumable ? window.i18n.t('history.statusResumable')
-      : entry.status === 'cancelled' ? window.i18n.t('history.statusCancelled')
-      : window.i18n.t('history.statusFailed');
+    const kind = historyEntryKind(entry);
+    const badgeClass = `history-entry__badge--${kind}`;
+    const statusLabel = window.i18n.t(HISTORY_KIND_LABELS[kind]);
     const imgHtml = entry.header_image
       ? `<img class="history-entry__image" src="${escapeHtml(entry.header_image)}" alt="" loading="lazy" onerror="this.style.display='none'">`
       : '<div class="history-entry__image history-entry__image--placeholder"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>';
@@ -4588,7 +4676,7 @@ async function detectSteamExecutables() {
         const sizeStr = formatShortcutFileSize(exe.size);
         const recBadge = exe.recommended ? ` <span class="shortcut-exe-badge">${escapeHtml(window.i18n.t('common.recommended'))}</span>` : '';
         return `<div class="shortcut-exe-item" data-path="${escapeHtml(exe.path)}">
-          <span class="shortcut-exe-item__name">${escapeHtml(exe.name)}${recBadge}</span>
+          <span class="shortcut-exe-item__name">${escapeHtml(exe.name)}${exePlatformBadge(exe, exes)}${recBadge}</span>
           <span class="shortcut-exe-item__size">${sizeStr}</span>
         </div>`;
       }).join('');
@@ -5954,7 +6042,7 @@ async function detectExecutables() {
         const sizeStr = formatShortcutFileSize(exe.size);
         const recBadge = exe.recommended ? ` <span class="shortcut-exe-badge">${escapeHtml(window.i18n.t('common.recommended'))}</span>` : '';
         return `<div class="shortcut-exe-item" data-path="${escapeHtml(exe.path)}">
-          <span class="shortcut-exe-item__name">${escapeHtml(exe.name)}${recBadge}</span>
+          <span class="shortcut-exe-item__name">${escapeHtml(exe.name)}${exePlatformBadge(exe, exes)}${recBadge}</span>
           <span class="shortcut-exe-item__size">${sizeStr}</span>
         </div>`;
       }).join('');

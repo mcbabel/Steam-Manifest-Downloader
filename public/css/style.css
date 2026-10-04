@@ -3860,8 +3860,7 @@ button:disabled,
   margin-top: 1rem;
 }
 
-.history-toolbar__search,
-.history-toolbar__sort {
+.history-toolbar__search {
   background: var(--bg-input);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -3877,24 +3876,20 @@ button:disabled,
   padding: 0.5rem 0.75rem;
 }
 
-.history-toolbar__sort {
-  flex-shrink: 0;
-  padding: 0.35rem 0.5rem;
-  cursor: pointer;
-}
-
-.history-toolbar__search:focus,
-.history-toolbar__sort:focus {
+.history-toolbar__search:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.1);
 }
 
 .history-toolbar__row {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.6rem;
+}
+
+.history-toolbar__row .history-toolbar__search {
+  flex: 1;
+  min-width: 0;
 }
 
 .history-toolbar__filters {
@@ -3924,6 +3919,100 @@ button:disabled,
   background: var(--accent);
   border-color: var(--accent);
   color: #fff;
+}
+
+.history-chip__count {
+  margin-left: 0.4rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--bg-hover);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.history-chip.is-active .history-chip__count {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.history-chip--complete:not(.is-active) .history-chip__count { color: #2ed573; }
+.history-chip--partial:not(.is-active) .history-chip__count { color: #ffa502; }
+.history-chip--failed:not(.is-active) .history-chip__count { color: #ff4757; }
+.history-chip--resumable:not(.is-active) .history-chip__count { color: var(--accent); }
+
+.history-sort {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+}
+
+.history-sort__button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  height: 100%;
+  padding: 0 0.75rem;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-family: var(--font);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: border-color var(--transition), color var(--transition);
+}
+
+.history-sort__button:hover,
+.history-sort.is-open .history-sort__button {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.history-sort__button:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+}
+
+.history-sort__chevron {
+  transition: transform var(--transition);
+}
+
+.history-sort.is-open .history-sort__chevron {
+  transform: rotate(180deg);
+}
+
+.history-sort__menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.35rem);
+  z-index: 20;
+  min-width: 100%;
+  margin: 0;
+  padding: 0.3rem;
+  list-style: none;
+  background: var(--bg-card-solid);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
+}
+
+.history-sort__option {
+  padding: 0.4rem 0.7rem;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.history-sort__option.is-focused {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.history-sort__option.is-active {
+  color: var(--accent);
+  font-weight: 600;
 }
 
 .history-entry__badge--update {
@@ -4139,11 +4228,6 @@ button:disabled,
   color: var(--error);
   background: var(--error-bg);
   border-color: var(--error);
-}
-
-.history-toolbar__sort option {
-  background: var(--bg-card-solid);
-  color: var(--text-primary);
 }
 
 .launch-modal-content {

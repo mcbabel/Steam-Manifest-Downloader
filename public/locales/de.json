@@ -556,7 +556,8 @@
     "playStartedSteam": "{name} wird über Steam gestartet…",
     "playStartedWine": "{name} wird mit Wine gestartet…",
     "playNeedsProton": "Das ist ein Windows-Spiel. Unter Linux läuft es über Steam mit Proton: Füge es zur Steam-Bibliothek hinzu (Schritt 4) und schalte in Steam unter Eigenschaften → Kompatibilität Proton ein, oder installiere Wine. Danach startet „Spielen“ es von hier aus.",
-    "playFailed": "Das Spiel konnte nicht gestartet werden: {message}"
+    "playFailed": "Das Spiel konnte nicht gestartet werden: {message}",
+    "playNoExePartial": "Im Spielordner wurde keine Programmdatei gefunden. Der Download ist nur teilweise fertig, das Depot mit der Programmdatei fehlt wahrscheinlich noch. Lade es zuerst fertig oder erneut herunter."
   },
   "depots": {
     "roleContent": "Hauptspiel · Content",

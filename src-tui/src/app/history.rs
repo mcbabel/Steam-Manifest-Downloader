@@ -371,6 +371,7 @@ impl App {
             return;
         }
         let data = self.data_dir.clone();
+        let partial = entry.status == "partial";
         let name = entry
             .game_name
             .clone()
@@ -417,7 +418,11 @@ impl App {
                 Err(None) => {
                     app.hist.banner = Some((
                         Tone::Error,
-                        t("history.playNoExe"),
+                        t(if partial {
+                            "history.playNoExePartial"
+                        } else {
+                            "history.playNoExe"
+                        }),
                         std::time::Instant::now(),
                     ))
                 }

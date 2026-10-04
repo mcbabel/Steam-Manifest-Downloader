@@ -11,6 +11,7 @@ pub struct DetectedExecutable {
     pub name: String,
     pub size: u64,
     pub recommended: bool,
+    pub platform: &'static str,
 }
 
 #[derive(Debug, Clone, Default, serde::Serialize)]
@@ -27,7 +28,7 @@ pub async fn detect_executables(download_dir: &str) -> Result<Vec<DetectedExecut
         return Err("Download directory does not exist".to_string());
     }
 
-    let mut exes: Vec<(String, String, u64)> = Vec::new();
+    let mut exes: Vec<(String, String, u64, Kind)> = Vec::new();
     scan_dir_recursive(&dir_path, &mut exes, 0, 5).await;
 
     if exes.is_empty() {
@@ -50,9 +51,9 @@ pub async fn detect_executables(download_dir: &str) -> Result<Vec<DetectedExecut
         .filter(|w| w.len() > 2)
         .collect();
 
-    let mut scored: Vec<(i64, String, String, u64)> = exes
+    let mut scored: Vec<(i64, String, String, u64, Kind)> = exes
         .into_iter()
-        .map(|(path, name, size)| {
+        .map(|(path, name, size, kind)| {
             let name_lower = name.to_lowercase();
             let mut score: i64 = 0;
 
@@ -67,8 +68,9 @@ pub async fn detect_executables(download_dir: &str) -> Result<Vec<DetectedExecut
             }
 
             score += (size / (1024 * 1024)) as i64;
+            score += kind_score(kind);
 
-            (score, path, name, size)
+            (score, path, name, size, kind)
         })
         .collect();
 
@@ -77,20 +79,40 @@ pub async fn detect_executables(download_dir: &str) -> Result<Vec<DetectedExecut
     let executables: Vec<DetectedExecutable> = scored
         .into_iter()
         .enumerate()
-        .map(|(i, (_, path, name, size))| DetectedExecutable {
+        .map(|(i, (_, path, name, size, kind))| DetectedExecutable {
             path,
             name,
             size,
             recommended: i == 0,
+            platform: if kind == Kind::Windows { "windows" } else { "linux" },
         })
         .collect();
 
     Ok(executables)
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Kind {
+    Windows,
+    Linux,
+}
+
+fn kind_score(kind: Kind) -> i64 {
+    let native = if cfg!(target_os = "windows") {
+        Kind::Windows
+    } else {
+        Kind::Linux
+    };
+    if kind == native {
+        1000
+    } else {
+        0
+    }
+}
+
 async fn scan_dir_recursive(
     dir: &std::path::Path,
-    results: &mut Vec<(String, String, u64)>,
+    results: &mut Vec<(String, String, u64, Kind)>,
     depth: usize,
     max_depth: usize,
 ) {
@@ -110,8 +132,8 @@ async fn scan_dir_recursive(
                 Box::pin(scan_dir_recursive(&path, results, depth + 1, max_depth)).await;
             } else if metadata.is_file() {
                 let name = entry.file_name().to_string_lossy().to_string();
-                if is_executable_candidate(&path, &name).await {
-                    results.push((path.to_string_lossy().to_string(), name, metadata.len()));
+                if let Some(kind) = executable_kind(&path, &name).await {
+                    results.push((path.to_string_lossy().to_string(), name, metadata.len(), kind));
                 }
             }
         }
@@ -122,51 +144,40 @@ async fn scan_dir_recursive(
     }
 }
 
-async fn is_executable_candidate(path: &std::path::Path, name: &str) -> bool {
+async fn executable_kind(path: &std::path::Path, name: &str) -> Option<Kind> {
     let lower = name.to_lowercase();
     if lower.ends_with(".exe") {
-        return true;
+        return Some(Kind::Windows);
     }
-    if lower.ends_with(".so")
-        || lower.ends_with(".dll")
-        || lower.ends_with(".dylib")
-        || lower.ends_with(".manifest")
-        || lower.ends_with(".vdf")
-        || lower.ends_with(".txt")
-        || lower.ends_with(".json")
-        || lower.ends_with(".ini")
-        || lower.ends_with(".pdb")
-        || lower.ends_with(".png")
-        || lower.ends_with(".jpg")
-        || lower.ends_with(".dat")
-        || lower.ends_with(".pak")
-        || lower.ends_with(".lua")
-    {
-        return false;
+    const SKIP: &[&str] = &[
+        ".so", ".dll", ".dylib", ".manifest", ".vdf", ".txt", ".json", ".ini", ".pdb", ".png",
+        ".jpg", ".dat", ".pak", ".lua",
+    ];
+    if SKIP.iter().any(|ext| lower.ends_with(ext)) || lower.contains(".so.") {
+        return None;
     }
-    is_native_executable(path).await
+    let header = read_header(path).await?;
+    if header.len() >= 18 && header.starts_with(b"\x7fELF") {
+        let e_type = u16::from_le_bytes([header[16], header[17]]);
+        return (e_type == 2 || e_type == 3).then_some(Kind::Linux);
+    }
+    None
 }
 
-#[cfg(unix)]
-async fn is_native_executable(path: &std::path::Path) -> bool {
-    let Ok(mut file) = tokio::fs::File::open(path).await else {
-        return false;
-    };
+async fn read_header(path: &std::path::Path) -> Option<Vec<u8>> {
     use tokio::io::AsyncReadExt;
-    let mut header = [0u8; 20];
-    if file.read_exact(&mut header).await.is_err() {
-        return false;
+    let mut file = tokio::fs::File::open(path).await.ok()?;
+    let mut header = vec![0u8; 20];
+    let mut filled = 0;
+    while filled < header.len() {
+        match file.read(&mut header[filled..]).await {
+            Ok(0) => break,
+            Ok(n) => filled += n,
+            Err(_) => return None,
+        }
     }
-    if &header[..4] != b"\x7fELF" {
-        return false;
-    }
-    let e_type = u16::from_le_bytes([header[16], header[17]]);
-    e_type == 2 || e_type == 3
-}
-
-#[cfg(not(unix))]
-async fn is_native_executable(_path: &std::path::Path) -> bool {
-    false
+    header.truncate(filled);
+    Some(header)
 }
 
 fn is_blacklisted(name_lower: &str) -> bool {
@@ -431,5 +442,46 @@ fn create_lnk_powershell(
             }
         }
         Err(e) => Err(format!("Failed to run PowerShell: {}", e)),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn elf(e_type: u8) -> Vec<u8> {
+        let mut h = vec![0u8; 64];
+        h[..4].copy_from_slice(b"\x7fELF");
+        h[16] = e_type;
+        h
+    }
+
+    #[tokio::test]
+    async fn finds_windows_and_linux_executables() {
+        let dir = std::env::temp_dir().join(format!("smd-detect-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(dir.join("bin")).unwrap();
+        std::fs::write(dir.join("Game.exe"), b"MZ").unwrap();
+        std::fs::write(dir.join("bin/Game.x86_64"), elf(3)).unwrap();
+        std::fs::write(dir.join("GameLauncher"), elf(2)).unwrap();
+        std::fs::write(dir.join("start.sh"), b"#!/bin/sh\nexec ./bin/Game.x86_64\n").unwrap();
+        std::fs::write(dir.join("libsteam_api.so.1"), elf(3)).unwrap();
+        std::fs::write(dir.join("object.o"), elf(1)).unwrap();
+        std::fs::write(dir.join("readme"), b"plain text").unwrap();
+
+        let found = detect_executables(dir.to_str().unwrap()).await.unwrap();
+        let mut names: Vec<(&str, &str)> = found.iter().map(|e| (e.name.as_str(), e.platform)).collect();
+        names.sort();
+        assert_eq!(
+            names,
+            vec![("Game.exe", "windows"), ("Game.x86_64", "linux"), ("GameLauncher", "linux")]
+        );
+        let recommended = found.iter().find(|e| e.recommended).unwrap();
+        if cfg!(target_os = "windows") {
+            assert_eq!(recommended.name, "Game.exe");
+        } else {
+            assert_ne!(recommended.platform, "windows");
+        }
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }
