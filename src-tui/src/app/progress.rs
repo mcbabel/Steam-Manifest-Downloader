@@ -643,6 +643,7 @@ impl App {
             source_repo: self.wiz.search_repo.clone(),
             depot_ids,
             resume_payload: None,
+            size_bytes: None,
         };
         let data = self.data_dir.clone();
         self.spawn(async move {

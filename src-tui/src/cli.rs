@@ -578,6 +578,7 @@ async fn record_history(
                 .collect()
         },
         resume_payload: None,
+        size_bytes: None,
     };
     let _ = smd_core::services::history::add_entry(dir, entry).await;
 }

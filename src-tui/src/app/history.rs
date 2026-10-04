@@ -48,7 +48,7 @@ impl App {
         self.hist.loading = true;
         let dir = self.data_dir.clone();
         self.spawn(async move {
-            let h = smd_core::services::history::load_history(&dir).await;
+            let h = smd_core::services::history::fill_missing_sizes(&dir).await;
             apply(move |app| {
                 app.hist.loading = false;
                 app.hist.entries = h.entries;
@@ -505,13 +505,18 @@ impl App {
                 &date,
                 theme::muted(),
             );
+            let size = e
+                .size_bytes
+                .map(|b| format!("{}  ·  ", widgets::fmt_bytes(b)))
+                .unwrap_or_default();
             let meta = format!(
-                "   App {}  ·  {}  ·  {}",
+                "   App {}  ·  {}  ·  {}{}",
                 e.app_id,
                 tf(
                     "tui.history.depots",
                     &[("done", &e.depots_downloaded), ("total", &e.depot_count)]
                 ),
+                size,
                 e.download_dir
             );
             widgets::text(

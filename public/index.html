@@ -1369,6 +1369,23 @@
         <span data-i18n="modals.history.title">Download History</span>
       </h3>
       <div id="history-banner" class="history-banner hidden" role="alert"></div>
+      <div id="history-toolbar" class="history-toolbar hidden">
+        <input type="search" id="history-search" class="history-toolbar__search" autocomplete="off" spellcheck="false" data-i18n-attr="placeholder=history.searchPlaceholder,aria-label=history.searchPlaceholder">
+        <div class="history-toolbar__row">
+          <div class="history-toolbar__filters" role="radiogroup" data-i18n-attr="aria-label=history.filterLabel">
+            <button type="button" class="history-chip is-active" data-status="all" role="radio" aria-checked="true" data-i18n="history.filterAll">All</button>
+            <button type="button" class="history-chip" data-status="complete" role="radio" aria-checked="false" data-i18n="history.statusComplete">Complete</button>
+            <button type="button" class="history-chip" data-status="resumable" role="radio" aria-checked="false" data-i18n="history.statusResumable">Resumable</button>
+            <button type="button" class="history-chip" data-status="problem" role="radio" aria-checked="false" data-i18n="history.filterProblems">Unfinished</button>
+          </div>
+          <select id="history-sort" class="history-toolbar__sort" data-i18n-attr="aria-label=history.sortLabel">
+            <option value="newest" data-i18n="history.sortNewest">Newest first</option>
+            <option value="oldest" data-i18n="history.sortOldest">Oldest first</option>
+            <option value="name" data-i18n="history.sortName">Name A–Z</option>
+            <option value="size" data-i18n="history.sortSize">Largest first</option>
+          </select>
+        </div>
+      </div>
       <div id="history-list" class="history-list"></div>
       <div class="modal__actions">
         <button id="btn-history-clear" class="btn btn--outline btn--small btn--push-end" data-i18n="modals.history.clear">Clear All</button>

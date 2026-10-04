@@ -7,7 +7,7 @@ use super::app_data_dir;
 
 #[command]
 pub async fn get_history(app: AppHandle) -> Result<serde_json::Value, String> {
-    let history = history_service::load_history(&app_data_dir(&app)).await;
+    let history = history_service::fill_missing_sizes(&app_data_dir(&app)).await;
     serde_json::to_value(&history.entries)
         .map_err(|e| format!("Failed to serialize history: {}", e))
 }

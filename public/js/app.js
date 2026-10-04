@@ -209,6 +209,9 @@ const els = {
   btnHistory: $('#btn-history'),
   historyModal: $('#history-modal'),
   historyList: $('#history-list'),
+  historyToolbar: $('#history-toolbar'),
+  historySearch: $('#history-search'),
+  historySort: $('#history-sort'),
   btnHistoryClear: $('#btn-history-clear'),
   btnHistoryClose: $('#btn-history-close'),
   updateModal: $('#update-modal'),
@@ -3655,6 +3658,7 @@ function initTauri() {
 
 async function openHistory() {
   hideHistoryBanner();
+  if (state.historyView) state.historyView.query = '';
   els.historyModal.classList.remove('hidden');
   await loadHistory();
 }
@@ -3681,17 +3685,107 @@ async function loadHistory() {
   }
 }
 
+const HISTORY_VIEW_KEY = 'smd.historyView';
+
+function loadHistoryView() {
+  const view = { query: '', status: 'all', sort: 'newest' };
+  try {
+    const saved = JSON.parse(localStorage.getItem(HISTORY_VIEW_KEY) || '{}');
+    if (['all', 'complete', 'resumable', 'problem'].includes(saved.status)) view.status = saved.status;
+    if (['newest', 'oldest', 'name', 'size'].includes(saved.sort)) view.sort = saved.sort;
+  } catch (_) {}
+  return view;
+}
+
+function saveHistoryView() {
+  try {
+    localStorage.setItem(HISTORY_VIEW_KEY, JSON.stringify({ status: state.historyView.status, sort: state.historyView.sort }));
+  } catch (_) {}
+}
+
+function historyEntryKind(entry) {
+  if (entry.status === 'complete') return 'complete';
+  if (entry.status === 'cancelled_resumable' && entry.resume_payload) return 'resumable';
+  return 'problem';
+}
+
+function historyEntryTime(entry) {
+  const t = Date.parse(entry.completed_at || entry.started_at || '');
+  return Number.isNaN(t) ? 0 : t;
+}
+
+function visibleHistory() {
+  const view = state.historyView;
+  const query = view.query.trim().toLowerCase();
+  const list = (state.cachedHistory || []).filter((entry) => {
+    if (view.status !== 'all' && historyEntryKind(entry) !== view.status) return false;
+    if (!query) return true;
+    return (entry.game_name || '').toLowerCase().includes(query) || String(entry.app_id).includes(query);
+  });
+  const byName = (e) => (e.game_name || `App ${e.app_id}`).toLowerCase();
+  const sorters = {
+    newest: (a, b) => historyEntryTime(b) - historyEntryTime(a),
+    oldest: (a, b) => historyEntryTime(a) - historyEntryTime(b),
+    name: (a, b) => byName(a).localeCompare(byName(b), window.i18n.getCurrentLocale()),
+    size: (a, b) => (b.size_bytes || 0) - (a.size_bytes || 0),
+  };
+  return list.sort(sorters[view.sort] || sorters.newest);
+}
+
+function syncHistoryToolbar() {
+  const view = state.historyView;
+  els.historyToolbar.classList.toggle('hidden', (state.cachedHistory || []).length === 0);
+  if (els.historySearch.value !== view.query) els.historySearch.value = view.query;
+  els.historySort.value = view.sort;
+  els.historyToolbar.querySelectorAll('.history-chip').forEach((chip) => {
+    const active = chip.dataset.status === view.status;
+    chip.classList.toggle('is-active', active);
+    chip.setAttribute('aria-checked', active ? 'true' : 'false');
+  });
+}
+
+function initHistoryToolbar() {
+  state.historyView = loadHistoryView();
+  els.historySearch.addEventListener('input', () => {
+    state.historyView.query = els.historySearch.value;
+    renderHistoryEntries(visibleHistory());
+  });
+  els.historySort.addEventListener('change', () => {
+    state.historyView.sort = els.historySort.value;
+    saveHistoryView();
+    renderHistoryEntries(visibleHistory());
+  });
+  els.historyToolbar.querySelectorAll('.history-chip').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      state.historyView.status = chip.dataset.status;
+      saveHistoryView();
+      syncHistoryToolbar();
+      renderHistoryEntries(visibleHistory());
+    });
+  });
+}
+
 function renderHistory(entries) {
   state.cachedHistory = entries || [];
-  if (!entries || entries.length === 0) {
+  if (!state.historyView) state.historyView = loadHistoryView();
+  syncHistoryToolbar();
+  renderHistoryEntries(visibleHistory());
+}
+
+function renderHistoryEntries(entries) {
+  if (state.cachedHistory.length === 0) {
     els.historyList.innerHTML = `<div class="history-empty">${escapeHtml(window.i18n.t('history.empty'))}</div>`;
     els.btnHistoryClear.style.display = 'none';
     return;
   }
 
   els.btnHistoryClear.style.display = '';
+  if (entries.length === 0) {
+    els.historyList.innerHTML = `<div class="history-empty">${escapeHtml(window.i18n.t('history.noMatch'))}</div>`;
+    return;
+  }
   const editTip = window.i18n.t('emulator.history.editTooltip');
-  const entryById = new Map(entries.map(e => [e.id, e]));
+  const entryById = new Map(state.cachedHistory.map(e => [e.id, e]));
   els.historyList.innerHTML = entries.map(entry => {
     const date = entry.completed_at ? formatHistoryDate(entry.completed_at) : formatHistoryDate(entry.started_at);
     const isResumable = entry.status === 'cancelled_resumable' && !!entry.resume_payload;
@@ -3721,6 +3815,7 @@ function renderHistory(entries) {
           <div class="history-entry__meta">
             <span class="history-entry__appid">App ${escapeHtml(entry.app_id)}</span>
             <span class="history-entry__date">${date}</span>
+            ${entry.size_bytes ? `<span class="history-entry__size">${escapeHtml(formatBytes(entry.size_bytes) || '')}</span>` : ''}
           </div>
           <div class="history-entry__depots">${window.i18n.t('history.depotsDownloaded', { done: entry.depots_downloaded, total: entry.depot_count })}</div>
           <div class="history-entry__status">
@@ -5779,6 +5874,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initTheme();
   initUpload();
   initEvents();
+  initHistoryToolbar();
   loadSettingsAndDefaults();
   initTauri();
   refreshSourcesUI();

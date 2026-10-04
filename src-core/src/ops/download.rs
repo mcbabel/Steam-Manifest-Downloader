@@ -266,6 +266,7 @@ pub async fn start_download(
                         source_repo: None,
                         depot_ids: config.depots.iter().map(|d| d.depot_id.clone()).collect(),
                         resume_payload: None,
+                        size_bytes: None,
                     };
                     if let Err(err) = history::add_entry(&app_data_dir, entry).await {
                         eprintln!(
@@ -301,6 +302,7 @@ pub async fn start_download(
                         source_repo: None,
                         depot_ids: config.depots.iter().map(|d| d.depot_id.clone()).collect(),
                         resume_payload: None,
+                        size_bytes: None,
                     };
                     if let Err(err) = history::add_entry(&app_data_dir, entry).await {
                         eprintln!("[Download] Failed to record failed job in history: {}", err);
@@ -785,6 +787,7 @@ async fn run_download_pipeline(
             source_repo: None,
             depot_ids: config.depots.iter().map(|d| d.depot_id.clone()).collect(),
             resume_payload: None,
+            size_bytes: None,
         };
         if let Err(err) = history::add_entry(app_data_dir, entry).await {
             eprintln!(
@@ -1060,6 +1063,7 @@ async fn run_download_pipeline(
             source_repo: None,
             depot_ids: run_depots.iter().map(|d| d.depot_id.clone()).collect(),
             resume_payload: None,
+            size_bytes: None,
         };
         if let Err(err) = history::add_entry(app_data_dir, entry).await {
             eprintln!("[Download] Failed to record failed job in history: {}", err);
@@ -1188,6 +1192,7 @@ pub async fn cancel_download(
         source_repo: None,
         depot_ids: snapshot_depot_ids,
         resume_payload: if keep_files { snapshot } else { None },
+        size_bytes: None,
     };
     if let Err(err) = crate::services::history::add_entry(app_data_dir, entry).await {
         eprintln!("[Cancel] Failed to record history entry: {}", err);

@@ -525,7 +525,17 @@
     "empty": "Noch keine Downloads. Dein Download-Verlauf erscheint hier.",
     "loading": "Verlauf wird geladen…",
     "loadFailed": "Verlauf konnte nicht geladen werden.",
-    "updateUnavailable": "Aktualisieren geht nur bei abgeschlossenen Downloads"
+    "updateUnavailable": "Aktualisieren geht nur bei abgeschlossenen Downloads",
+    "searchPlaceholder": "Nach Name oder App-ID suchen…",
+    "filterLabel": "Anzeigen",
+    "filterAll": "Alle",
+    "filterProblems": "Unfertig",
+    "sortLabel": "Sortieren",
+    "sortNewest": "Neueste zuerst",
+    "sortOldest": "Älteste zuerst",
+    "sortName": "Name A–Z",
+    "sortSize": "Größte zuerst",
+    "noMatch": "Keine Downloads passen zur Suche oder zum Filter."
   },
   "depots": {
     "roleContent": "Hauptspiel · Content",

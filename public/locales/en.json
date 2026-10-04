@@ -525,7 +525,17 @@
     "empty": "No downloads yet. Your download history will appear here.",
     "loading": "Loading history…",
     "loadFailed": "Failed to load history.",
-    "updateUnavailable": "Update is only available for completed downloads"
+    "updateUnavailable": "Update is only available for completed downloads",
+    "searchPlaceholder": "Search by name or App ID…",
+    "filterLabel": "Show",
+    "filterAll": "All",
+    "filterProblems": "Unfinished",
+    "sortLabel": "Sort",
+    "sortNewest": "Newest first",
+    "sortOldest": "Oldest first",
+    "sortName": "Name A–Z",
+    "sortSize": "Largest first",
+    "noMatch": "No downloads match the search or filter."
   },
   "depots": {
     "roleContent": "Main · Content",

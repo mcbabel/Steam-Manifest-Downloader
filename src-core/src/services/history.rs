@@ -21,6 +21,8 @@ pub struct HistoryEntry {
     pub depot_ids: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub resume_payload: Option<serde_json::Value>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub size_bytes: Option<u64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -78,7 +80,54 @@ pub fn supersedes_same_install(entry: &HistoryEntry, old: &HistoryEntry) -> bool
         && old.download_dir == entry.download_dir
 }
 
+fn folder_size(dir: &Path) -> Option<u64> {
+    if !dir.is_dir() {
+        return None;
+    }
+    let total = walkdir::WalkDir::new(dir)
+        .into_iter()
+        .filter_map(Result::ok)
+        .filter(|e| e.file_type().is_file())
+        .filter_map(|e| e.metadata().ok())
+        .map(|m| m.len())
+        .sum();
+    Some(total)
+}
+
+fn wants_size(entry: &HistoryEntry) -> bool {
+    entry.size_bytes.is_none()
+        && (entry.status == "complete" || entry.status == "partial")
+        && !entry.download_dir.is_empty()
+}
+
+async fn measure(dir: &str) -> Option<u64> {
+    let dir = PathBuf::from(dir);
+    tokio::task::spawn_blocking(move || folder_size(&dir))
+        .await
+        .ok()
+        .flatten()
+}
+
+pub async fn fill_missing_sizes(app_data_dir: &Path) -> History {
+    let mut history = load_history(app_data_dir).await;
+    let mut changed = false;
+    for entry in history.entries.iter_mut().filter(|e| wants_size(e)) {
+        if let Some(size) = measure(&entry.download_dir).await {
+            entry.size_bytes = Some(size);
+            changed = true;
+        }
+    }
+    if changed {
+        let _ = save_history(app_data_dir, &history).await;
+    }
+    history
+}
+
 pub async fn add_entry(app_data_dir: &Path, entry: HistoryEntry) -> Result<(), String> {
+    let mut entry = entry;
+    if wants_size(&entry) {
+        entry.size_bytes = measure(&entry.download_dir).await;
+    }
     let mut history = load_history(app_data_dir).await;
     history.entries.retain(|old| {
         !supersedes_resumable(&entry, old) && !supersedes_same_install(&entry, old)
@@ -121,6 +170,7 @@ mod supersede_tests {
             source_repo: None,
             depot_ids: vec![],
             resume_payload: None,
+            size_bytes: None,
         }
     }
 
