@@ -56,7 +56,8 @@
     "dropHint": "or click to browse",
     "removeFile": "Remove file",
     "parsing": "Parsing file…",
-    "wrongFile": "Please select a .lua or .st file"
+    "wrongFile": "Please select a .lua or .st file",
+    "filterName": "Lua/ST files"
   },
   "search": {
     "noSourceTitle": "No depot source configured",
@@ -791,5 +792,9 @@
     "steamcmdHttp": "steamcmd API returned HTTP {0}",
     "steamcmdRequest": "steamcmd API request failed: {0}",
     "steamcmdNoDepots": "steamcmd response missing depots for app {0}"
+  },
+  "shortcuts": {
+    "ctrl": "Ctrl",
+    "openFile": "Open a .lua or .st file"
   }
 }

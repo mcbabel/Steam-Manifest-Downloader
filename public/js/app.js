@@ -401,7 +401,7 @@ async function openFileDialog() {
   try {
     const { open } = window.__TAURI__.dialog;
     const filePath = await open({
-      filters: [{ name: 'Lua/ST Files', extensions: ['lua', 'st'] }]
+      filters: [{ name: window.i18n.t('upload.filterName'), extensions: ['lua', 'st'] }]
     });
     if (filePath) {
       await handleFilePath(filePath);
@@ -5720,6 +5720,77 @@ function getFocusable(modal) {
     .filter((el) => el.offsetParent !== null || el === document.activeElement);
 }
 
+function shortcutLabel(key) {
+  return `${window.i18n.t('shortcuts.ctrl')}+${key}`;
+}
+
+function applyShortcutHints() {
+  const hints = [
+    [els.btnHistory, 'header.history', 'H'],
+    [els.btnSettings, 'header.settings', ','],
+    [els.dropZone, 'shortcuts.openFile', 'O'],
+  ];
+  for (const [el, key, combo] of hints) {
+    if (el) el.title = `${window.i18n.t(key)} (${shortcutLabel(combo)})`;
+  }
+}
+
+function focusSearchField() {
+  if (state.currentStep === 1) {
+    switchTab('search');
+    refreshSourcesUI();
+    els.searchAppIdInput.focus();
+    els.searchAppIdInput.select();
+    return true;
+  }
+  if (state.currentStep === 2 && els.depotSearch) {
+    els.depotSearch.focus();
+    els.depotSearch.select();
+    return true;
+  }
+  return false;
+}
+
+function initShortcuts() {
+  applyShortcutHints();
+  document.addEventListener('keydown', (e) => {
+    if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || e.repeat) return;
+    const key = e.key.toLowerCase();
+    const modal = topmostVisibleDialog();
+    const historyOpen = modal === els.historyModal;
+    let handled = false;
+    if (key === 'h') {
+      if (historyOpen) {
+        closeHistory();
+        handled = true;
+      } else if (!modal) {
+        openHistory();
+        handled = true;
+      }
+    } else if (key === ',') {
+      if (!modal) {
+        openSettings();
+        handled = true;
+      }
+    } else if (key === 'o') {
+      if (!modal && state.currentStep === 1) {
+        switchTab('upload');
+        openFileDialog();
+        handled = true;
+      }
+    } else if (key === 'f') {
+      if (historyOpen) {
+        els.historySearch.focus();
+        els.historySearch.select();
+        handled = true;
+      } else if (!modal) {
+        handled = focusSearchField();
+      }
+    }
+    if (handled) e.preventDefault();
+  });
+}
+
 function topmostVisibleDialog() {
   const dialogs = document.querySelectorAll('[role="dialog"]');
   for (let i = dialogs.length - 1; i >= 0; i--) {
@@ -5912,6 +5983,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initUpload();
   initEvents();
   initHistoryToolbar();
+  initShortcuts();
   loadSettingsAndDefaults();
   initTauri();
   refreshSourcesUI();
