@@ -122,7 +122,20 @@
     "chooseLocationTitle": "Select the download location",
     "downloadCount": "Download ({count})",
     "downloadCountSize": "Download ({count}) — ~{size}",
-    "repairNotice": "Check mode: every file in <strong>{path}</strong> is compared with the installed version. Only damaged or missing parts are downloaded again, nothing is updated."
+    "repairNotice": "Check mode: every file in <strong>{path}</strong> is compared with the installed version. Only damaged or missing parts are downloaded again, nothing is updated.",
+    "autoSelect": "Pick like Steam",
+    "autoSelectTitle": "Picked like Steam would: {count} of {total} depots",
+    "autoSelectSkipped": "skipped: {list}",
+    "autoStartIn": "Starting in {seconds} s · Cancel",
+    "skipReason": {
+      "other_platform": "other platform",
+      "arch32": "32-bit",
+      "other_language": "other language",
+      "low_violence": "low-violence version",
+      "dlc": "DLC (off in settings)",
+      "optional_dlc": "optional DLC",
+      "redistributable": "shared redistributable"
+    }
   },
   "progress": {
     "diskSpaceLoading": "Checking disk space…",
@@ -639,7 +652,17 @@
     "speedLimitValue": "Maximum speed",
     "channelStable": "Stable",
     "channelDev": "Dev",
-    "channelDevLocal": "Dev (local)"
+    "channelDevLocal": "Dev (local)",
+    "depotSelection": "Depot selection",
+    "autoSelectDepots": "Pick depots automatically like Steam",
+    "autoSelectDepotsHint": "After a game is loaded, the depots Steam would install on this system are selected: the right platform, 64-bit, your language and the DLC in the file. You can still change the selection.",
+    "autoStartDownload": "Start the download right away",
+    "includeDlc": "Include DLC",
+    "targetPlatform": "Platform",
+    "targetPlatformHint": "Auto uses this system. When a game has no Linux build, the Windows version is picked (it runs with Proton). With \"Start the download right away\" you only pick the game, the download starts 5 seconds later.",
+    "auto": "Auto",
+    "gameLanguage": "Game language",
+    "gameLanguageAuto": "Auto (app language)"
   },
   "errors": {
     "noManifests": "No manifests found for this App ID in any configured depot source. Add or enable more sources in Settings.",
@@ -838,5 +861,37 @@
     "finished": "The queue is done: all downloads have finished.",
     "runningShort": "Queue running",
     "broken": "Could not read the queued download of {name}, skipped."
+  },
+  "steamLanguages": {
+    "english": "English",
+    "german": "German",
+    "french": "French",
+    "italian": "Italian",
+    "spanish": "Spanish (Spain)",
+    "latam": "Spanish (Latin America)",
+    "schinese": "Chinese (Simplified)",
+    "tchinese": "Chinese (Traditional)",
+    "japanese": "Japanese",
+    "koreana": "Korean",
+    "russian": "Russian",
+    "polish": "Polish",
+    "brazilian": "Portuguese (Brazil)",
+    "portuguese": "Portuguese (Portugal)",
+    "turkish": "Turkish",
+    "ukrainian": "Ukrainian",
+    "czech": "Czech",
+    "dutch": "Dutch",
+    "danish": "Danish",
+    "finnish": "Finnish",
+    "norwegian": "Norwegian",
+    "swedish": "Swedish",
+    "hungarian": "Hungarian",
+    "romanian": "Romanian",
+    "thai": "Thai",
+    "vietnamese": "Vietnamese",
+    "greek": "Greek",
+    "bulgarian": "Bulgarian",
+    "arabic": "Arabic",
+    "indonesian": "Indonesian"
   }
 }

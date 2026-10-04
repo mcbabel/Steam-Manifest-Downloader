@@ -240,6 +240,9 @@ smd history
 | `-o` / `SMD_OUTPUT_DIR` | Download folder (defaults to the one from the settings) |
 | `--data-dir` / `SMD_DATA_DIR` | Settings, history and caches. Defaults to the desktop app's directory, so both share their state |
 | `--mh-key` / `SMD_MANIFESTHUB_KEY` | ManifestHub API key (fallback source and custom manifests) |
+| `--depots` | Only these depots (comma separated). Without it, the depots Steam would install are picked: platform, 64-bit, language and DLC |
+| `--all-depots` | Download every depot in the file instead |
+| `--platform` / `--language` | Pick depots for another platform (`windows`, `linux`, `macos`) or game language (`german`, `english`, …). In Docker the default platform is Linux, so use `--platform windows` for the Windows version |
 | `--manifest DEPOT=ID` | Pin a depot to a specific manifest (repeatable) |
 | `--update <GAME_DIR>` | Update an existing download in place: only changed files are downloaded, files removed from the game are deleted |
 | `--shutdown` | Shut down the computer when the download has finished (60 s countdown, Ctrl+C aborts) |

@@ -33,6 +33,12 @@ pub struct DepotMetadata {
     #[serde(rename = "manifestGid", skip_serializing_if = "Option::is_none")]
     pub manifest_gid: Option<String>,
     pub role: DepotRole,
+    #[serde(rename = "lowViolence", default, skip_serializing_if = "std::ops::Not::not")]
+    pub low_violence: bool,
+    #[serde(rename = "optionalDlc", default, skip_serializing_if = "std::ops::Not::not")]
+    pub optional_dlc: bool,
+    #[serde(rename = "sharedInstall", default, skip_serializing_if = "std::ops::Not::not")]
+    pub shared_install: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -161,6 +167,13 @@ pub async fn fetch_depots_with_names(
                 .and_then(|c| c.get("language"))
                 .and_then(as_str)
                 .map(String::from);
+            let flag = |tbl: Option<&Table>, name: &str| {
+                tbl.and_then(|t| t.get(name)).and_then(as_str) == Some("1")
+            };
+            let low_violence = flag(config, "lowviolence");
+            let optional_dlc = flag(config, "optionaldlc");
+            let shared_install =
+                flag(Some(depot_tbl), "sharedinstall") || depot_tbl.get("depotfromapp").is_some();
             let manifest_gid = depot_tbl
                 .get("manifests")
                 .and_then(as_table)
@@ -181,6 +194,9 @@ pub async fn fetch_depots_with_names(
                 language,
                 manifest_gid,
                 role,
+                low_violence,
+                optional_dlc,
+                shared_install,
             });
         }
 

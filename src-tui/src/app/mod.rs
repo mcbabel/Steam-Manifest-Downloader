@@ -411,6 +411,7 @@ impl App {
         self.progress_tick();
         self.shutdown_tick();
         self.queue_tick();
+        self.auto_start_tick();
     }
 
     fn on_event(&mut self, ev: Event) {
@@ -596,6 +597,9 @@ impl App {
         match self.page {
             Page::History | Page::Settings => self.dispatch(Action::Nav(Page::Wizard)),
             Page::Wizard => match self.wiz.step {
+                Step::Select if self.wiz.auto_start_at.is_some() => {
+                    self.dispatch(Action::CancelAutoStart)
+                }
                 Step::Select => self.dispatch(Action::BackToSource),
                 Step::Emulator
                     if self

@@ -79,6 +79,17 @@ pub struct DownloadArgs {
     pub list: bool,
     #[arg(long, help = t("tui.cli.argIgnoreSpace"))]
     pub ignore_space: bool,
+    #[arg(long, help = t("tui.cli.argAllDepots"))]
+    pub all_depots: bool,
+    #[arg(
+        long,
+        value_name = "OS",
+        value_parser = ["windows", "linux", "macos"],
+        help = t("tui.cli.argPlatform")
+    )]
+    pub platform: Option<String>,
+    #[arg(long, value_name = "LANGUAGE", help = t("tui.cli.argLanguage"))]
+    pub language: Option<String>,
     #[arg(
         long,
         help = t("tui.cli.argJson")
@@ -236,6 +247,45 @@ async fn shutdown_signal() {
     let _ = tokio::signal::ctrl_c().await;
 }
 
+fn auto_choice_line(choice: &smd_core::services::depot_select::Selection, total: usize) -> String {
+    let lang_key = format!("steamLanguages.{}", choice.language);
+    let lang = match t(&lang_key) {
+        name if name == lang_key => choice.language.clone(),
+        name => name,
+    };
+    let platform = match choice.platform.as_str() {
+        "windows" => "Windows",
+        "linux" => "Linux",
+        "macos" => "macOS",
+        other => other,
+    };
+    let mut counts: Vec<(&'static str, usize)> = Vec::new();
+    for s in &choice.skipped {
+        match counts.iter_mut().find(|(k, _)| *k == s.reason.key()) {
+            Some((_, n)) => *n += 1,
+            None => counts.push((s.reason.key(), 1)),
+        }
+    }
+    let mut line = format!(
+        "{} — {} · {}",
+        tf(
+            "select.autoSelectTitle",
+            &[("count", &choice.selected.len()), ("total", &total)]
+        ),
+        platform,
+        lang
+    );
+    if !counts.is_empty() {
+        let list = counts
+            .iter()
+            .map(|(k, n)| format!("{}× {}", n, t(&format!("select.skipReason.{}", k))))
+            .collect::<Vec<_>>()
+            .join(", ");
+        line.push_str(&format!(" — {}", tf("select.autoSelectSkipped", &[("list", &list)])));
+    }
+    line
+}
+
 pub async fn stopped() {
     let notified = STOP_NOTIFY.notified();
     tokio::pin!(notified);
@@ -298,6 +348,48 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
         }
         for d in installed {
             pins.entry(d.depot_id).or_insert(d.manifest_id);
+        }
+    }
+    if wanted.is_empty()
+        && args.update.is_none()
+        && !args.all_depots
+        && (settings.auto_select_depots || args.platform.is_some() || args.language.is_some())
+    {
+        let meta = match plan.app_id.parse::<u32>() {
+            Ok(n) => tokio::select! {
+                r = smd_core::services::steam_pics::fetch_depots_with_names(core.steam_session.clone(), n) => r,
+                _ = stopped() => return 130,
+            },
+            Err(_) => Err("invalid app id".to_string()),
+        };
+        match meta {
+            Ok(meta) if !meta.is_empty() => {
+                let mut prefs_settings = settings.clone();
+                if let Some(p) = &args.platform {
+                    prefs_settings.target_platform = p.clone();
+                }
+                if let Some(l) = &args.language {
+                    prefs_settings.game_language = l.clone();
+                }
+                let prefs = smd_core::services::depot_select::prefs_from_settings(
+                    &prefs_settings,
+                    crate::i18n::language(),
+                );
+                let candidates: Vec<String> = plan.depots.iter().map(|(id, ..)| id.clone()).collect();
+                let choice = smd_core::services::depot_select::recommend(&meta, &candidates, &prefs);
+                if choice.known {
+                    if !args.json {
+                        println!("{}", auto_choice_line(&choice, candidates.len()));
+                    }
+                    wanted = choice.selected.clone();
+                }
+            }
+            Ok(_) => {}
+            Err(e) => {
+                if !args.json {
+                    errln!("{}", tf("tui.cli.autoSelectFailed", &[("message", &e)]));
+                }
+            }
         }
     }
     let chosen: Vec<_> = plan

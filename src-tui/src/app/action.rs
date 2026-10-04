@@ -86,6 +86,9 @@ pub enum SettingToggle {
     NativeDownloader,
     CancelKeepFiles,
     Telemetry,
+    AutoSelectDepots,
+    AutoStartDownload,
+    IncludeDlc,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -111,6 +114,8 @@ pub enum Action {
     PatchStart,
 
     ToggleDepot(usize),
+    AutoSelectDepots,
+    CancelAutoStart,
     SelectAll,
     DeselectAll,
     ToggleShowSelected,
@@ -180,6 +185,8 @@ pub enum Action {
 
     SettingsTab(usize),
     SettingsToggle(SettingToggle),
+    SettingsPlatform(&'static str),
+    SettingsGameLanguage(i32),
     SettingsLanguage(&'static str),
     SettingsTheme(ThemeMode),
     SettingsAddSource,

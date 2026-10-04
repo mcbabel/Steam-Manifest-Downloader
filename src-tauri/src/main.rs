@@ -40,6 +40,7 @@ fn main() {
             commands::search_steam_games,
             commands::fetch_depot_metadata,
             commands::fetch_depot_metadata_steam,
+            commands::recommend_depots,
             commands::fetch_latest_manifest_id,
             // Steam
             commands::get_steam_app_info,

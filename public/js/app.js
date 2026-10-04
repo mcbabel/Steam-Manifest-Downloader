@@ -134,6 +134,20 @@ const els = {
   appIdDisplay: $('#app-id-display'),
   depotCount: $('#depot-count'),
   depotList: $('#depot-list'),
+  btnAutoSelect: $('#btn-auto-select'),
+  autoSelectNote: $('#auto-select-note'),
+  autoSelectTitle: $('#auto-select-title'),
+  autoSelectDetail: $('#auto-select-detail'),
+  btnAutoStartCancel: $('#btn-auto-start-cancel'),
+  autoSelectDepotsToggle: $('#auto-select-depots-toggle'),
+  autoStartDownloadToggle: $('#auto-start-download-toggle'),
+  includeDlcToggle: $('#include-dlc-toggle'),
+  autoSelectOptions: $('#auto-select-options'),
+  targetPlatformOptions: $('#target-platform-options'),
+  gameLanguage: $('#game-language'),
+  gameLanguageButton: $('#game-language-button'),
+  gameLanguageLabel: $('#game-language-label'),
+  gameLanguageMenu: $('#game-language-menu'),
   btnSelectAll: $('#btn-select-all'),
   btnDeselectAll: $('#btn-deselect-all'),
   btnBack: $('#btn-back'),
@@ -316,6 +330,7 @@ const els = {
 
 function goToStep(step) {
   state.currentStep = step;
+  if (step !== 2) cancelAutoStart();
   renderUpdateNotice(step);
 
   const stepMap = {
@@ -1187,6 +1202,13 @@ function showSelectionStep() {
 
   els.depotList.innerHTML = '';
   state.selectedDepots.clear();
+  cancelAutoStart();
+  state.depotAutoPending = !autoSelectAllOnStep2;
+  state.depotSelectionTouched = false;
+  state.depotPicsList = null;
+  state.depotSkipReasons = {};
+  if (els.autoSelectNote) els.autoSelectNote.classList.add('hidden');
+  if (els.btnAutoSelect) els.btnAutoSelect.disabled = true;
 
   state.depotManifests = {};
 
@@ -1287,6 +1309,7 @@ async function fetchDepotNamesFromSteam(appId) {
   try {
     const depots = await invoke('fetch_depot_metadata_steam', { appId: String(appId) });
     if (!Array.isArray(depots)) return;
+    if (!state.parsedData || String(state.parsedData.mainAppId) !== String(appId)) return;
     state.depotNames = state.depotNames || {};
     state.depotPicsInfo = {};
     depots.forEach((d) => {
@@ -1317,9 +1340,133 @@ async function fetchDepotNamesFromSteam(appId) {
       }
     });
     reorderDepotCards();
+    state.depotPicsList = depots;
+    if (els.btnAutoSelect) els.btnAutoSelect.disabled = depots.length === 0;
+    await maybeAutoSelectDepots(depots);
   } catch (e) {
+    state.depotAutoPending = false;
     console.warn('fetch_depot_metadata_steam failed:', e);
   }
+}
+
+async function maybeAutoSelectDepots(depots) {
+  if (!state.depotAutoPending || !state.parsedData) return;
+  state.depotAutoPending = false;
+  let settings = {};
+  try {
+    settings = (await invoke('get_settings')) || {};
+  } catch (_) {}
+  if (settings.auto_select_depots === false || state.depotSelectionTouched || depots.length === 0) return;
+  const selection = await applyRecommendedDepots(depots);
+  if (selection && selection.known && selection.selected.length > 0 && settings.auto_start_download
+      && !state.depotSelectionTouched && !state.queueRunning) {
+    scheduleAutoStart();
+  }
+}
+
+async function applyRecommendedDepots(depots) {
+  const data = state.parsedData;
+  if (!data) return null;
+  let selection;
+  try {
+    selection = await invoke('recommend_depots', {
+      depots,
+      candidates: data.depots.map(d => String(d.depotId)),
+      uiLanguage: window.i18n.getCurrentLocale(),
+    });
+  } catch (e) {
+    console.warn('recommend_depots failed:', e);
+    return null;
+  }
+  if (!selection || !Array.isArray(selection.selected) || state.parsedData !== data) return null;
+  state.selectedDepots = new Set(selection.selected.map(String));
+  state.depotSkipReasons = {};
+  (selection.skipped || []).forEach(s => { state.depotSkipReasons[String(s.depotId)] = s.reason; });
+  $$('.depot-item').forEach(el => {
+    el.classList.toggle('selected', state.selectedDepots.has(el.dataset.depotId));
+    renderSkipTag(el);
+  });
+  reorderDepotCards();
+  updateDownloadButton();
+  renderAutoSelectNote(selection, data.depots.length);
+  return selection;
+}
+
+function renderSkipTag(item) {
+  const id = item.dataset.depotId;
+  const container = item.querySelector('.depot-item__header');
+  if (!container) return;
+  container.querySelectorAll('.depot-tag--skipped').forEach(n => n.remove());
+  const reason = state.depotSkipReasons && state.depotSkipReasons[id];
+  item.classList.toggle('is-skipped', !!reason);
+  if (!reason) return;
+  const tag = document.createElement('span');
+  tag.className = 'depot-tag depot-tag--skipped';
+  tag.textContent = window.i18n.t(`select.skipReason.${reason}`);
+  container.appendChild(tag);
+}
+
+function steamLanguageName(code) {
+  const key = `steamLanguages.${code}`;
+  const name = window.i18n.t(key);
+  return name === key ? capitalize(code) : name;
+}
+
+function platformName(platform) {
+  const names = { windows: 'Windows', linux: 'Linux', macos: 'macOS' };
+  return names[platform] || platform;
+}
+
+function renderAutoSelectNote(selection, total) {
+  if (!els.autoSelectNote) return;
+  if (!selection.known) {
+    els.autoSelectNote.classList.add('hidden');
+    return;
+  }
+  els.autoSelectTitle.textContent = window.i18n.t('select.autoSelectTitle', {
+    count: selection.selected.length,
+    total,
+  });
+  const counts = {};
+  (selection.skipped || []).forEach(s => { counts[s.reason] = (counts[s.reason] || 0) + 1; });
+  const parts = [`${platformName(selection.platform)} · ${steamLanguageName(selection.language)}`];
+  const skipped = Object.entries(counts)
+    .map(([reason, count]) => `${count}× ${window.i18n.t(`select.skipReason.${reason}`)}`);
+  if (skipped.length) parts.push(window.i18n.t('select.autoSelectSkipped', { list: skipped.join(', ') }));
+  els.autoSelectDetail.textContent = parts.join(' — ');
+  els.btnAutoStartCancel.classList.add('hidden');
+  els.autoSelectNote.classList.remove('hidden');
+}
+
+function scheduleAutoStart() {
+  cancelAutoStart();
+  let seconds = 5;
+  const tick = () => {
+    if (seconds <= 0) {
+      cancelAutoStart();
+      if (state.currentStep === 2 && state.selectedDepots.size > 0) startDownload();
+      return;
+    }
+    els.btnAutoStartCancel.textContent = window.i18n.t('select.autoStartIn', { seconds });
+    seconds -= 1;
+  };
+  els.btnAutoStartCancel.classList.remove('hidden');
+  tick();
+  state.autoStartTimer = setInterval(tick, 1000);
+}
+
+function cancelAutoStart() {
+  if (state.autoStartTimer) {
+    clearInterval(state.autoStartTimer);
+    state.autoStartTimer = null;
+  }
+  if (els.btnAutoStartCancel) els.btnAutoStartCancel.classList.add('hidden');
+}
+
+function markDepotSelectionTouched() {
+  state.depotSelectionTouched = true;
+  state.depotAutoPending = false;
+  cancelAutoStart();
 }
 
 function reorderDepotCards() {
@@ -1338,6 +1485,11 @@ function reorderDepotCards() {
 
 function depotSortKey(itemEl, hostOs) {
   const depotId = itemEl.dataset.depotId;
+  const skipped = state.depotSkipReasons && state.depotSkipReasons[String(depotId)] ? 200 : 0;
+  return skipped + depotRoleSortKey(depotId, hostOs);
+}
+
+function depotRoleSortKey(depotId, hostOs) {
   const info = state.depotPicsInfo ? state.depotPicsInfo[String(depotId)] : null;
   if (!info) return 100;
   switch (info.role) {
@@ -1375,7 +1527,7 @@ function depotRoleBadge(d) {
       break;
     case 'language':
       tag.textContent = d.language
-        ? window.i18n.t('depots.roleLanguageWithName', { name: capitalize(d.language) })
+        ? window.i18n.t('depots.roleLanguageWithName', { name: steamLanguageName(d.language.toLowerCase()) })
         : window.i18n.t('depots.roleLanguage');
       break;
     case 'shared_content':
@@ -1402,7 +1554,7 @@ function renderDepotTags(info) {
   if (osList.includes('macos') || osList.includes('mac')) tags.push(['mac', window.i18n.t('depotTags.macos')]);
   if (info.osarch === '64') tags.push(['arch', window.i18n.t('depotTags.arch64')]);
   else if (info.osarch === '32') tags.push(['arch', window.i18n.t('depotTags.arch32')]);
-  if (info.language) tags.push(['lang', capitalize(info.language)]);
+  if (info.language) tags.push(['lang', steamLanguageName(String(info.language).toLowerCase())]);
 
   container.innerHTML = tags.map(([cls, label]) =>
     `<span class="depot-tag depot-tag--${cls}">${escapeHtml(label)}</span>`
@@ -1415,6 +1567,7 @@ function capitalize(s) {
 }
 
 function toggleDepot(depotId, element) {
+  markDepotSelectionTouched();
   if (state.selectedDepots.has(depotId)) {
     state.selectedDepots.delete(depotId);
     element.classList.remove('selected');
@@ -2634,6 +2787,7 @@ async function openSettings() {
     if (els.ryuuApiKeyInput) els.ryuuApiKeyInput.value = settings.ryuu_api_key || '';
     if (els.nativeDownloaderToggle) els.nativeDownloaderToggle.checked = !!settings.use_native_downloader;
     if (els.cancelKeepFilesToggle) els.cancelKeepFilesToggle.checked = !!settings.cancel_keep_files;
+    populateDepotSelectionSettings(settings);
     els.notificationSoundToggle.checked = settings.notification_sound !== false;
     els.telemetryToggle.checked = settings.telemetry_consent === 'accepted';
   } catch (e) {
@@ -2916,6 +3070,13 @@ async function saveSettings() {
     if (els.cancelKeepFilesToggle) {
       currentSettings.cancel_keep_files = els.cancelKeepFilesToggle.checked;
     }
+    if (els.autoSelectDepotsToggle) {
+      currentSettings.auto_select_depots = els.autoSelectDepotsToggle.checked;
+      currentSettings.auto_start_download = els.autoStartDownloadToggle.checked;
+      currentSettings.include_dlc = els.includeDlcToggle.checked;
+      currentSettings.target_platform = state.targetPlatform || '';
+      currentSettings.game_language = state.gameLanguage || '';
+    }
     currentSettings.notification_sound = els.notificationSoundToggle.checked;
 
     await invoke('save_settings', { settings: currentSettings });
@@ -2978,6 +3139,120 @@ function setSpeedLimitEnabled(enabled, focus) {
   if (els.speedLimitToggle) els.speedLimitToggle.checked = enabled;
   if (els.speedLimitControls) els.speedLimitControls.classList.toggle('hidden', !enabled);
   if (enabled && focus && els.speedLimitInput) els.speedLimitInput.focus();
+}
+
+const GAME_LANGUAGES = ['english', 'german', 'french', 'italian', 'spanish', 'latam', 'schinese', 'tchinese',
+  'japanese', 'koreana', 'russian', 'polish', 'brazilian', 'portuguese', 'turkish', 'ukrainian', 'czech',
+  'dutch', 'danish', 'finnish', 'norwegian', 'swedish', 'hungarian', 'romanian', 'thai', 'vietnamese',
+  'greek', 'bulgarian', 'arabic', 'indonesian'];
+
+function populateDepotSelectionSettings(settings) {
+  if (!els.autoSelectDepotsToggle) return;
+  els.autoSelectDepotsToggle.checked = settings.auto_select_depots !== false;
+  els.autoStartDownloadToggle.checked = !!settings.auto_start_download;
+  els.includeDlcToggle.checked = settings.include_dlc !== false;
+  setTargetPlatform(settings.target_platform || '');
+  setGameLanguage(settings.game_language || '');
+  syncAutoSelectOptions();
+}
+
+function syncAutoSelectOptions() {
+  els.autoSelectOptions.classList.toggle('is-disabled', !els.autoSelectDepotsToggle.checked);
+}
+
+function setTargetPlatform(value) {
+  state.targetPlatform = value;
+  els.targetPlatformOptions.querySelectorAll('.segmented__option').forEach(btn => {
+    const on = btn.dataset.value === value;
+    btn.classList.toggle('is-active', on);
+    btn.setAttribute('aria-checked', on ? 'true' : 'false');
+  });
+}
+
+function gameLanguageOptions() {
+  return Array.from(els.gameLanguageMenu.querySelectorAll('.history-sort__option'));
+}
+
+function renderGameLanguageMenu() {
+  const values = [''].concat(GAME_LANGUAGES);
+  els.gameLanguageMenu.innerHTML = values.map(v => {
+    const label = v ? steamLanguageName(v) : window.i18n.t('settings.gameLanguageAuto');
+    return `<li class="history-sort__option" role="option" data-value="${escapeHtml(v)}">${escapeHtml(label)}</li>`;
+  }).join('');
+  gameLanguageOptions().forEach(opt => {
+    opt.addEventListener('click', () => chooseGameLanguage(opt.dataset.value));
+    opt.addEventListener('mouseenter', () => {
+      gameLanguageOptions().forEach(o => o.classList.toggle('is-focused', o === opt));
+    });
+  });
+}
+
+function setGameLanguage(value) {
+  state.gameLanguage = GAME_LANGUAGES.includes(value) ? value : '';
+  gameLanguageOptions().forEach(opt => {
+    const active = opt.dataset.value === state.gameLanguage;
+    opt.classList.toggle('is-active', active);
+    opt.setAttribute('aria-selected', active ? 'true' : 'false');
+    if (active) els.gameLanguageLabel.textContent = opt.textContent;
+  });
+}
+
+function setGameLanguageOpen(open) {
+  els.gameLanguageMenu.classList.toggle('hidden', !open);
+  els.gameLanguageButton.setAttribute('aria-expanded', open ? 'true' : 'false');
+  els.gameLanguage.classList.toggle('is-open', open);
+  if (open) {
+    const active = els.gameLanguageMenu.querySelector('.is-active') || els.gameLanguageMenu.firstElementChild;
+    gameLanguageOptions().forEach(o => o.classList.toggle('is-focused', o === active));
+    if (active) active.scrollIntoView({ block: 'nearest' });
+  }
+}
+
+function chooseGameLanguage(value) {
+  setGameLanguage(value);
+  setGameLanguageOpen(false);
+  els.gameLanguageButton.focus();
+}
+
+function bindDepotSelectionSettings() {
+  if (!els.autoSelectDepotsToggle) return;
+  renderGameLanguageMenu();
+  setGameLanguage('');
+  els.autoSelectDepotsToggle.addEventListener('change', syncAutoSelectOptions);
+  els.targetPlatformOptions.querySelectorAll('.segmented__option').forEach(btn => {
+    btn.addEventListener('click', () => setTargetPlatform(btn.dataset.value));
+  });
+  els.gameLanguageButton.addEventListener('click', () => {
+    setGameLanguageOpen(els.gameLanguageMenu.classList.contains('hidden'));
+  });
+  els.gameLanguage.addEventListener('keydown', (e) => {
+    const open = !els.gameLanguageMenu.classList.contains('hidden');
+    const options = gameLanguageOptions();
+    const focused = options.findIndex(o => o.classList.contains('is-focused'));
+    if (e.key === 'Escape' && open) {
+      e.preventDefault();
+      e.stopPropagation();
+      setGameLanguageOpen(false);
+      els.gameLanguageButton.focus();
+    } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (!open) {
+        setGameLanguageOpen(true);
+        return;
+      }
+      const next = (focused + (e.key === 'ArrowDown' ? 1 : options.length - 1)) % options.length;
+      options.forEach((o, i) => o.classList.toggle('is-focused', i === next));
+      options[next].scrollIntoView({ block: 'nearest' });
+    } else if ((e.key === 'Enter' || e.key === ' ') && open && focused >= 0) {
+      e.preventDefault();
+      chooseGameLanguage(options[focused].dataset.value);
+    } else if (e.key === 'Tab' && open) {
+      setGameLanguageOpen(false);
+    }
+  }, true);
+  document.addEventListener('click', (e) => {
+    if (!els.gameLanguage.contains(e.target)) setGameLanguageOpen(false);
+  });
 }
 
 function bindSpeedLimitControls() {
@@ -3678,8 +3953,13 @@ function initEvents() {
     });
   }
 
-  els.btnSelectAll.addEventListener('click', selectAll);
-  els.btnDeselectAll.addEventListener('click', deselectAll);
+  els.btnSelectAll.addEventListener('click', () => { markDepotSelectionTouched(); selectAll(); });
+  els.btnDeselectAll.addEventListener('click', () => { markDepotSelectionTouched(); deselectAll(); });
+  els.btnAutoSelect.addEventListener('click', () => {
+    markDepotSelectionTouched();
+    if (state.depotPicsList) applyRecommendedDepots(state.depotPicsList);
+  });
+  els.btnAutoStartCancel.addEventListener('click', cancelAutoStart);
   els.btnBack.addEventListener('click', () => goToStep(1));
   els.btnDownload.addEventListener('click', startDownload);
   els.btnQueueAdd.addEventListener('click', addToQueue);
@@ -3733,6 +4013,7 @@ function initEvents() {
   els.settingsModal.querySelector('.modal__backdrop').addEventListener('click', closeSettings);
 
   bindSpeedLimitControls();
+  bindDepotSelectionSettings();
   if (els.btnToggleAdvanced) {
     els.btnToggleAdvanced.addEventListener('click', toggleAdvancedSettings);
   }

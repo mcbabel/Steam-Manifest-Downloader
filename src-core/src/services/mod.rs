@@ -8,6 +8,7 @@ pub mod ryuu_api;
 pub mod depot_sources;
 pub mod depot_keys_generator;
 pub mod depot_runner;
+pub mod depot_select;
 pub mod steam_store_api;
 pub mod steam_assets;
 pub mod settings;

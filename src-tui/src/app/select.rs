@@ -1,16 +1,18 @@
 use std::path::PathBuf;
+use std::time::{Duration, Instant};
 
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::Modifier;
 use ratatui::text::{Line, Span};
 use smd_core::ops::download::{DepotConfig, DownloadConfig};
-use smd_core::services::steam_pics::DepotRole;
+use smd_core::services::depot_select;
+use smd_core::services::steam_pics::{DepotMetadata, DepotRole};
 
 use super::action::{Action, BrowsePurpose, InputId, ListId, ScrollTarget, Step};
 use super::state::ProgressState;
 use super::{apply, hint, App, Modal};
-use crate::i18n::{t, tf};
+use crate::i18n::{self, t, tf};
 use crate::theme;
 use crate::ui::widgets::{self, Btn, ButtonSpec, InputSpec, Tone};
 use crate::ui::{split_h, take_bottom, take_top, Ctx, Fid, Kind, ScrollView};
@@ -19,6 +21,7 @@ impl App {
     pub(super) fn dispatch_select(&mut self, a: &Action) -> bool {
         match a {
             Action::ToggleDepot(pos) => {
+                self.touch_depot_selection();
                 let vis = self.wiz.visible_depots();
                 if let (Some(&i), Some(p)) = (vis.get(*pos), self.wiz.parsed.as_ref()) {
                     let id = p.depots[i].depot_id.clone();
@@ -28,12 +31,21 @@ impl App {
                     self.wiz.depot_cursor = *pos;
                 }
             }
+            Action::AutoSelectDepots => {
+                self.touch_depot_selection();
+                self.apply_auto_selection(true);
+            }
+            Action::CancelAutoStart => self.wiz.auto_start_at = None,
             Action::SelectAll => {
+                self.touch_depot_selection();
                 if let Some(p) = &self.wiz.parsed {
                     self.wiz.selected = p.depots.iter().map(|d| d.depot_id.clone()).collect();
                 }
             }
-            Action::DeselectAll => self.wiz.selected.clear(),
+            Action::DeselectAll => {
+                self.touch_depot_selection();
+                self.wiz.selected.clear();
+            }
             Action::ToggleShowSelected => {
                 self.wiz.show_selected_only = !self.wiz.show_selected_only;
                 self.wiz.depot_cursor = 0;
@@ -70,6 +82,110 @@ impl App {
             _ => return false,
         }
         true
+    }
+
+    fn touch_depot_selection(&mut self) {
+        self.wiz.depot_touched = true;
+        self.wiz.depot_auto_pending = false;
+        self.wiz.auto_start_at = None;
+    }
+
+    pub(super) fn apply_auto_selection(&mut self, manual: bool) {
+        let pending = std::mem::take(&mut self.wiz.depot_auto_pending);
+        if !manual && (!pending || self.wiz.depot_touched || !self.settings.auto_select_depots) {
+            return;
+        }
+        let Some(parsed) = &self.wiz.parsed else {
+            return;
+        };
+        if self.wiz.depot_pics.is_empty() {
+            return;
+        }
+        let meta: Vec<DepotMetadata> = self.wiz.depot_pics.values().cloned().collect();
+        let candidates: Vec<String> = parsed.depots.iter().map(|d| d.depot_id.clone()).collect();
+        let prefs = depot_select::prefs_from_settings(&self.settings, i18n::language());
+        let choice = depot_select::recommend(&meta, &candidates, &prefs);
+        self.wiz.selected = choice.selected.iter().cloned().collect();
+        if !manual
+            && choice.known
+            && !choice.selected.is_empty()
+            && self.settings.auto_start_download
+            && !self.queue_running
+        {
+            self.wiz.auto_start_at = Some(Instant::now() + Duration::from_secs(5));
+        }
+        self.wiz.depot_choice = Some(choice);
+    }
+
+    pub(super) fn auto_start_tick(&mut self) {
+        let Some(at) = self.wiz.auto_start_at else {
+            return;
+        };
+        if self.wiz.step != Step::Select || self.modal.is_some() {
+            if self.wiz.step != Step::Select {
+                self.wiz.auto_start_at = None;
+            }
+            return;
+        }
+        if Instant::now() >= at {
+            self.wiz.auto_start_at = None;
+            if !self.wiz.selected.is_empty() {
+                self.dispatch(Action::StartDownload);
+            }
+        }
+    }
+
+    fn render_auto_note(&mut self, buf: &mut Buffer, area: Rect, ctx: &mut Ctx) {
+        let Some(choice) = self.wiz.depot_choice.as_ref().filter(|c| c.known) else {
+            return;
+        };
+        let total = self.wiz.parsed.as_ref().map(|p| p.depots.len()).unwrap_or(0);
+        let mut counts: Vec<(depot_select::SkipReason, usize)> = Vec::new();
+        for s in &choice.skipped {
+            match counts.iter_mut().find(|(r, _)| *r == s.reason) {
+                Some((_, n)) => *n += 1,
+                None => counts.push((s.reason, 1)),
+            }
+        }
+        let mut detail = format!(
+            "{} · {}",
+            platform_name(&choice.platform),
+            steam_language_name(&choice.language)
+        );
+        if !counts.is_empty() {
+            let list = counts
+                .iter()
+                .map(|(r, n)| format!("{}× {}", n, t(&format!("select.skipReason.{}", r.key()))))
+                .collect::<Vec<_>>()
+                .join(", ");
+            detail.push_str(&format!(" — {}", tf("select.autoSelectSkipped", &[("list", &list)])));
+        }
+        let mut row = area;
+        if let Some(at) = self.wiz.auto_start_at {
+            let secs = at.saturating_duration_since(Instant::now()).as_secs() + 1;
+            let spec = ButtonSpec::new(
+                tf("select.autoStartIn", &[("seconds", &secs)]),
+                Fid::new("select.autoStartCancel"),
+                Action::CancelAutoStart,
+                Btn::Secondary,
+            );
+            let bw = widgets::button_width(&spec.label);
+            widgets::button(buf, ctx, row.right().saturating_sub(bw), row.y, bw, &spec);
+            row.width = row.width.saturating_sub(bw + 1);
+        }
+        let title = tf(
+            "select.autoSelectTitle",
+            &[("count", &choice.selected.len()), ("total", &total)],
+        );
+        widgets::line(
+            buf,
+            row,
+            Line::from(vec![
+                Span::styled("★ ", theme::accent()),
+                Span::styled(title, theme::text().add_modifier(Modifier::BOLD)),
+                Span::styled(format!("  {}", detail), theme::dim()),
+            ]),
+        );
     }
 
     pub(super) fn set_depot_manifest(&mut self, idx: usize, path: PathBuf) {
@@ -377,7 +493,14 @@ impl App {
         if let Some(d) = &self.wiz.short_description {
             widgets::text(buf, take_top(&mut rest, 1), d, theme::dim());
         }
+        if self.wiz.depot_choice.as_ref().is_some_and(|c| c.known) {
+            let row = take_top(&mut rest, 1);
+            self.render_auto_note(buf, row, ctx);
+        }
         let _ = take_top(&mut rest, 1);
+        let Some(parsed) = &self.wiz.parsed else {
+            return;
+        };
 
         let footer = take_bottom(&mut rest, 1);
         let _ = take_bottom(&mut rest, 1);
@@ -473,6 +596,20 @@ impl App {
             row.y,
             row.width,
             &ButtonSpec::new(
+                t("select.autoSelect"),
+                Fid::new("select.auto"),
+                Action::AutoSelectDepots,
+                Btn::Secondary,
+            )
+            .enabled(!self.wiz.depot_pics.is_empty()),
+        ) + 1;
+        x += widgets::button(
+            buf,
+            ctx,
+            x,
+            row.y,
+            row.right().saturating_sub(x),
+            &ButtonSpec::new(
                 t("select.selectAll"),
                 Fid::new("select.all"),
                 Action::SelectAll,
@@ -520,6 +657,12 @@ impl App {
         let Some(parsed) = &self.wiz.parsed else {
             return;
         };
+        let skip_reasons: Vec<(String, depot_select::SkipReason)> = self
+            .wiz
+            .depot_choice
+            .as_ref()
+            .map(|c| c.skipped.iter().map(|x| (x.depot_id.clone(), x.reason)).collect())
+            .unwrap_or_default();
         for (row, pos) in range.enumerate() {
             let d = &parsed.depots[vis[pos]];
             let r = Rect::new(card.x, card.y + row as u16, card.width.saturating_sub(1), 1);
@@ -577,6 +720,13 @@ impl App {
             ) {
                 spans.push(Span::raw(" "));
                 spans.push(widgets::badge(&tag, color));
+            }
+            if let Some(reason) = skip_reasons.iter().find(|(id, _)| *id == d.depot_id).map(|(_, r)| *r) {
+                spans.push(Span::raw(" "));
+                spans.push(widgets::badge(
+                    &t(&format!("select.skipReason.{}", reason.key())),
+                    theme::get().text_muted,
+                ));
             }
             widgets::line(buf, r, Line::from(spans));
             if let Some(sz) = d.size_bytes {
@@ -876,13 +1026,33 @@ fn capitalize(s: &str) -> String {
     }
 }
 
+fn steam_language_name(code: &str) -> String {
+    let code = code.to_ascii_lowercase();
+    let key = format!("steamLanguages.{}", code);
+    let name = t(&key);
+    if name == key {
+        capitalize(&code)
+    } else {
+        name
+    }
+}
+
+fn platform_name(platform: &str) -> String {
+    match platform {
+        "windows" => "Windows".into(),
+        "linux" => "Linux".into(),
+        "macos" => "macOS".into(),
+        other => other.to_string(),
+    }
+}
+
 fn role_badge(role: DepotRole, language: Option<&str>) -> Option<(String, ratatui::style::Color)> {
     let th = theme::get();
     Some(match role {
         DepotRole::Dlc => (t("depots.roleDlc"), th.purple),
         DepotRole::Language => (
             match language.filter(|l| !l.is_empty()) {
-                Some(l) => tf("depots.roleLanguageWithName", &[("name", &capitalize(l))]),
+                Some(l) => tf("depots.roleLanguageWithName", &[("name", &steam_language_name(l))]),
                 None => t("depots.roleLanguage"),
             },
             th.warning,

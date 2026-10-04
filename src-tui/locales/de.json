@@ -199,7 +199,7 @@
       "cmdSearch": "Sucht ein Spiel über den Namen oder listet Quellen und Depots zu einer App-ID.",
       "cmdHistory": "Zeigt den Download-Verlauf.",
       "argSource": "Eine .lua-/.st-Depotdatei oder eine Steam-App-ID, die in den eingerichteten Depot-Quellen gesucht wird.",
-      "argDepots": "Depot-IDs, die geladen werden sollen (mit Komma getrennt). Standard: alle.",
+      "argDepots": "Depot-IDs, die geladen werden sollen (mit Komma getrennt). Standard: die Depots, die Steam installieren würde (siehe --all-depots).",
       "argOut": "Übergeordneter Ordner für den Spielordner. Standard: der Download-Ort aus den Einstellungen.",
       "argMhKey": "ManifestHub-API-Key, wird als Ersatzquelle (und für eigene Manifeste) genutzt.",
       "argResult": "Welches Suchergebnis genutzt wird, wenn SOURCE eine App-ID ist (siehe `smd search`).",
@@ -248,7 +248,11 @@
       "printHelpLong": "Hilfe anzeigen (Kurzfassung mit '-h')",
       "argIgnoreSpace": "Startet auch, wenn am Download-Ort nicht genug Speicherplatz frei ist.",
       "noSpace": "nicht genug Speicherplatz: der Download braucht etwa {needed}, unter {path} sind aber nur {free} frei (mit --ignore-space trotzdem starten)",
-      "argRepair": "Mit --update: prüft jede Datei gegen den installierten Stand und lädt nur beschädigte oder fehlende Teile neu, ohne zu aktualisieren."
+      "argRepair": "Mit --update: prüft jede Datei gegen den installierten Stand und lädt nur beschädigte oder fehlende Teile neu, ohne zu aktualisieren.",
+      "argAllDepots": "Alle Depots aus der Datei laden, statt sie wie Steam auszuwählen.",
+      "argPlatform": "Plattform, für die Depots wie bei Steam gewählt werden. Standard: dieses System, oder Windows, wenn es das Spiel dafür nicht gibt.",
+      "argLanguage": "Spielsprache für die Auswahl, so wie Steam sie nennt (zum Beispiel german, english, french). Standard: die App-Sprache.",
+      "autoSelectFailed": "Die Depot-Liste konnte nicht von Steam gelesen werden, deshalb werden alle Depots geladen: {message}"
     }
   }
 }

@@ -1,5 +1,7 @@
 use smd_core::ops::search::{self, LatestManifestResult};
 use smd_core::services::depot_info::{self, DepotInfo};
+use smd_core::services::depot_select::{self, Selection};
+use smd_core::services::settings;
 use smd_core::services::steam_pics::{self, DepotMetadata};
 use smd_core::services::steam_store_api;
 use smd_core::services::AppState;
@@ -64,6 +66,18 @@ pub async fn fetch_depot_metadata_steam(
         .parse()
         .map_err(|_| format!("Invalid app id '{}'", app_id))?;
     steam_pics::fetch_depots_with_names(state.steam_session.clone(), app_id_u).await
+}
+
+#[command]
+pub async fn recommend_depots(
+    app: AppHandle,
+    depots: Vec<DepotMetadata>,
+    candidates: Vec<String>,
+    ui_language: Option<String>,
+) -> Result<Selection, String> {
+    let settings = settings::load_settings(&app_data_dir(&app)).await;
+    let prefs = depot_select::prefs_from_settings(&settings, ui_language.as_deref().unwrap_or(""));
+    Ok(depot_select::recommend(&depots, &candidates, &prefs))
 }
 
 #[command]

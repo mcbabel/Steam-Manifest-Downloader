@@ -122,7 +122,20 @@
     "chooseLocationTitle": "Download-Ort auswählen",
     "downloadCount": "Herunterladen ({count})",
     "downloadCountSize": "Herunterladen ({count}) – ~{size}",
-    "repairNotice": "Prüfmodus: Jede Datei in <strong>{path}</strong> wird mit dem installierten Stand verglichen. Nur beschädigte oder fehlende Teile werden neu geladen, es wird nichts aktualisiert."
+    "repairNotice": "Prüfmodus: Jede Datei in <strong>{path}</strong> wird mit dem installierten Stand verglichen. Nur beschädigte oder fehlende Teile werden neu geladen, es wird nichts aktualisiert.",
+    "autoSelect": "Wie Steam wählen",
+    "autoSelectTitle": "Wie Steam gewählt: {count} von {total} Depots",
+    "autoSelectSkipped": "übersprungen: {list}",
+    "autoStartIn": "Start in {seconds} s · Abbrechen",
+    "skipReason": {
+      "other_platform": "andere Plattform",
+      "arch32": "32-Bit",
+      "other_language": "andere Sprache",
+      "low_violence": "entschärfte Version",
+      "dlc": "DLC (in den Einstellungen aus)",
+      "optional_dlc": "optionaler DLC",
+      "redistributable": "gemeinsame Laufzeitkomponente"
+    }
   },
   "progress": {
     "diskSpaceLoading": "Speicherplatz wird geprüft…",
@@ -639,7 +652,17 @@
     "speedLimitValue": "Höchstgeschwindigkeit",
     "channelStable": "Stabil",
     "channelDev": "Dev",
-    "channelDevLocal": "Dev (lokal)"
+    "channelDevLocal": "Dev (lokal)",
+    "depotSelection": "Depot-Auswahl",
+    "autoSelectDepots": "Depots automatisch wie Steam auswählen",
+    "autoSelectDepotsHint": "Sobald ein Spiel geladen ist, werden die Depots ausgewählt, die Steam auf diesem System installieren würde: passende Plattform, 64-Bit, deine Sprache und die DLCs aus der Datei. Du kannst die Auswahl trotzdem ändern.",
+    "autoStartDownload": "Download danach sofort starten",
+    "includeDlc": "DLCs mitladen",
+    "targetPlatform": "Plattform",
+    "targetPlatformHint": "Auto nimmt dieses System. Hat ein Spiel keine Linux-Version, wird die Windows-Version gewählt (läuft mit Proton). Mit „Download danach sofort starten“ wählst du nur noch das Spiel, der Download beginnt 5 Sekunden später.",
+    "auto": "Auto",
+    "gameLanguage": "Spielsprache",
+    "gameLanguageAuto": "Automatisch (App-Sprache)"
   },
   "errors": {
     "noManifests": "Für diese App-ID wurden in keiner konfigurierten Depot-Quelle Manifests gefunden. Füge weitere Quellen in den Einstellungen hinzu oder aktiviere sie.",
@@ -838,5 +861,37 @@
     "finished": "Die Warteschlange ist fertig: Alle Downloads sind durch.",
     "runningShort": "Warteschlange läuft",
     "broken": "Der vorgemerkte Download von {name} konnte nicht gelesen werden und wurde übersprungen."
+  },
+  "steamLanguages": {
+    "english": "Englisch",
+    "german": "Deutsch",
+    "french": "Französisch",
+    "italian": "Italienisch",
+    "spanish": "Spanisch (Spanien)",
+    "latam": "Spanisch (Lateinamerika)",
+    "schinese": "Chinesisch (vereinfacht)",
+    "tchinese": "Chinesisch (traditionell)",
+    "japanese": "Japanisch",
+    "koreana": "Koreanisch",
+    "russian": "Russisch",
+    "polish": "Polnisch",
+    "brazilian": "Portugiesisch (Brasilien)",
+    "portuguese": "Portugiesisch (Portugal)",
+    "turkish": "Türkisch",
+    "ukrainian": "Ukrainisch",
+    "czech": "Tschechisch",
+    "dutch": "Niederländisch",
+    "danish": "Dänisch",
+    "finnish": "Finnisch",
+    "norwegian": "Norwegisch",
+    "swedish": "Schwedisch",
+    "hungarian": "Ungarisch",
+    "romanian": "Rumänisch",
+    "thai": "Thailändisch",
+    "vietnamese": "Vietnamesisch",
+    "greek": "Griechisch",
+    "bulgarian": "Bulgarisch",
+    "arabic": "Arabisch",
+    "indonesian": "Indonesisch"
   }
 }

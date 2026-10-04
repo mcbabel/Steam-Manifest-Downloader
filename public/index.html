@@ -300,9 +300,19 @@
             <p id="depot-count"></p>
           </div>
           <div class="select-header__actions">
+            <button id="btn-auto-select" class="btn btn--small btn--outline" data-i18n="select.autoSelect" disabled>Pick like Steam</button>
             <button id="btn-select-all" class="btn btn--small" data-i18n="select.selectAll">Select All</button>
             <button id="btn-deselect-all" class="btn btn--small btn--outline" data-i18n="select.deselectAll">Deselect All</button>
           </div>
+        </div>
+
+        <div id="auto-select-note" class="auto-select-note hidden" role="status">
+          <svg class="auto-select-note__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.8L20 10l-5.1 3.6L16.5 20 12 16.4 7.5 20l1.6-6.4L4 10l6.1-1.2z"/></svg>
+          <div class="auto-select-note__text">
+            <strong id="auto-select-title"></strong>
+            <span id="auto-select-detail"></span>
+          </div>
+          <button type="button" id="btn-auto-start-cancel" class="btn btn--small btn--outline hidden"></button>
         </div>
 
         <div class="depot-filters">
@@ -1164,6 +1174,54 @@
           </div>
         </div>
         <p class="dd-path__hint" data-i18n="settings.speedLimitHint">Applies to the built-in downloader, also to a download that is already running. 100 Mbit/s is about 12 MB/s.</p>
+      </div>
+
+      <div class="settings-field">
+        <label class="settings-field__label" data-i18n="settings.depotSelection">Depot selection</label>
+        <div class="settings-field__toggle-wrap">
+          <label class="toggle-switch">
+            <input type="checkbox" id="auto-select-depots-toggle" checked>
+            <span class="toggle-switch__slider"></span>
+          </label>
+          <span class="settings-field__toggle-text" data-i18n="settings.autoSelectDepots">Pick depots automatically like Steam</span>
+        </div>
+        <p class="dd-path__hint" data-i18n="settings.autoSelectDepotsHint">After a game is loaded, the depots Steam would install on this system are selected: the right platform, 64-bit, your language and the DLC in the file. You can still change the selection.</p>
+        <div id="auto-select-options" class="auto-select-options">
+          <div class="settings-field__toggle-wrap">
+            <label class="toggle-switch">
+              <input type="checkbox" id="auto-start-download-toggle">
+              <span class="toggle-switch__slider"></span>
+            </label>
+            <span class="settings-field__toggle-text" data-i18n="settings.autoStartDownload">Start the download right away</span>
+          </div>
+          <div class="settings-field__toggle-wrap">
+            <label class="toggle-switch">
+              <input type="checkbox" id="include-dlc-toggle" checked>
+              <span class="toggle-switch__slider"></span>
+            </label>
+            <span class="settings-field__toggle-text" data-i18n="settings.includeDlc">Include DLC</span>
+          </div>
+          <div class="auto-select-options__row">
+            <span class="auto-select-options__label" data-i18n="settings.targetPlatform">Platform</span>
+            <div id="target-platform-options" class="segmented" role="radiogroup" data-i18n-attr="aria-label=settings.targetPlatform">
+              <button type="button" class="segmented__option is-active" data-value="" role="radio" aria-checked="true" data-i18n="settings.auto">Auto</button>
+              <button type="button" class="segmented__option" data-value="windows" role="radio" aria-checked="false">Windows</button>
+              <button type="button" class="segmented__option" data-value="linux" role="radio" aria-checked="false">Linux</button>
+              <button type="button" class="segmented__option" data-value="macos" role="radio" aria-checked="false">macOS</button>
+            </div>
+          </div>
+          <div class="auto-select-options__row">
+            <span class="auto-select-options__label" data-i18n="settings.gameLanguage">Game language</span>
+            <div id="game-language" class="history-sort">
+              <button type="button" id="game-language-button" class="history-sort__button" aria-haspopup="listbox" aria-expanded="false" data-i18n-attr="aria-label=settings.gameLanguage">
+                <span id="game-language-label" class="history-sort__label"></span>
+                <svg class="history-sort__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <ul id="game-language-menu" class="history-sort__menu history-sort__menu--scroll hidden" role="listbox" tabindex="-1" data-i18n-attr="aria-label=settings.gameLanguage"></ul>
+            </div>
+          </div>
+          <p class="dd-path__hint" data-i18n="settings.targetPlatformHint">Auto uses this system. When a game has no Linux build, the Windows version is picked (it runs with Proton).</p>
+        </div>
       </div>
 
       <div class="settings-advanced">

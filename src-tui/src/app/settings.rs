@@ -1,6 +1,7 @@
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::text::{Line, Span};
+use smd_core::services::depot_select;
 use smd_core::services::settings::{self as settings_service, TelemetryConsent};
 
 use super::action::{Action, BrowsePurpose, InputId, ListId, ScrollTarget, SettingToggle};
@@ -77,6 +78,13 @@ impl App {
                         d.use_native_downloader = !d.use_native_downloader
                     }
                     SettingToggle::CancelKeepFiles => d.cancel_keep_files = !d.cancel_keep_files,
+                    SettingToggle::AutoSelectDepots => {
+                        d.auto_select_depots = !d.auto_select_depots
+                    }
+                    SettingToggle::AutoStartDownload => {
+                        d.auto_start_download = !d.auto_start_download
+                    }
+                    SettingToggle::IncludeDlc => d.include_dlc = !d.include_dlc,
                     SettingToggle::Telemetry => {
                         let accept = self.settings.telemetry_consent != TelemetryConsent::Accepted;
                         let dir = self.data_dir.clone();
@@ -103,6 +111,26 @@ impl App {
                 self.set.dirty = true;
             }
             Action::SettingsLanguage(code) => self.set_language(code),
+            Action::SettingsPlatform(p) => {
+                self.set.draft.target_platform = p.to_string();
+                self.set.dirty = true;
+            }
+            Action::SettingsGameLanguage(step) => {
+                let list = depot_select::STEAM_LANGUAGES;
+                let n = list.len() as i32 + 1;
+                let cur = list
+                    .iter()
+                    .position(|l| *l == self.set.draft.game_language)
+                    .map(|i| i as i32 + 1)
+                    .unwrap_or(0);
+                let next = (cur + step).rem_euclid(n);
+                self.set.draft.game_language = if next == 0 {
+                    String::new()
+                } else {
+                    list[(next - 1) as usize].to_string()
+                };
+                self.set.dirty = true;
+            }
             Action::SettingsTheme(mode) => {
                 self.prefs.theme = *mode;
                 theme::apply(*mode);
@@ -216,6 +244,11 @@ impl App {
             s.auto_update = draft.auto_update;
             s.use_native_downloader = draft.use_native_downloader;
             s.cancel_keep_files = draft.cancel_keep_files;
+            s.auto_select_depots = draft.auto_select_depots;
+            s.auto_start_download = draft.auto_start_download;
+            s.include_dlc = draft.include_dlc;
+            s.target_platform = draft.target_platform.clone();
+            s.game_language = draft.game_language.clone();
             s.depot_sources = sources;
             let r = settings_service::save_settings(&dir, &s).await;
             apply(move |app| match r {
@@ -467,6 +500,7 @@ impl App {
             Fid::new("settings.keepFiles"),
             Action::SettingsToggle(SettingToggle::CancelKeepFiles),
         );
+        self.render_depot_selection(sv, ctx, w, &d);
 
         let fields: [(usize, &str, &str, &str); 5] = [
             (
@@ -525,6 +559,115 @@ impl App {
             hint(&mut sv.buf, r, &ht);
             sv.gap(1);
         }
+    }
+
+    fn render_depot_selection(
+        &mut self,
+        sv: &mut ScrollView,
+        ctx: &mut Ctx,
+        w: u16,
+        d: &smd_core::services::settings::Settings,
+    ) {
+        let r = sv.next(1);
+        widgets::heading(&mut sv.buf, r, &t("settings.depotSelection"));
+        self.toggle_row(
+            sv,
+            ctx,
+            w,
+            d.auto_select_depots,
+            &t("settings.autoSelectDepots"),
+            &t("settings.autoSelectDepotsHint"),
+            Fid::new("settings.autoSelect"),
+            Action::SettingsToggle(SettingToggle::AutoSelectDepots),
+        );
+        let r = sv.next(1);
+        let r = Rect::new(r.x + 4, r.y, r.width.saturating_sub(4), 1);
+        widgets::checkbox(
+            &mut sv.buf,
+            ctx,
+            r,
+            d.auto_start_download,
+            &t("settings.autoStartDownload"),
+            Fid::new("settings.autoStart"),
+            Action::SettingsToggle(SettingToggle::AutoStartDownload),
+            d.auto_select_depots,
+        );
+        let r = sv.next(1);
+        let r = Rect::new(r.x + 4, r.y, r.width.saturating_sub(4), 1);
+        widgets::checkbox(
+            &mut sv.buf,
+            ctx,
+            r,
+            d.include_dlc,
+            &t("settings.includeDlc"),
+            Fid::new("settings.includeDlc"),
+            Action::SettingsToggle(SettingToggle::IncludeDlc),
+            d.auto_select_depots,
+        );
+        sv.gap(1);
+        let r = sv.next(1);
+        let label = format!("{}: ", t("settings.targetPlatform"));
+        widgets::text(&mut sv.buf, r, &label, theme::text());
+        let mut x = r.x + widgets::width(&label);
+        let options: [(&'static str, String); 4] = [
+            ("", t("settings.auto")),
+            ("windows", "Windows".into()),
+            ("linux", "Linux".into()),
+            ("macos", "macOS".into()),
+        ];
+        for (i, (value, name)) in options.iter().enumerate() {
+            let room = r.right().saturating_sub(x);
+            let cell = Rect::new(x, r.y, room, 1);
+            x += widgets::radio(
+                &mut sv.buf,
+                ctx,
+                cell,
+                d.target_platform == *value,
+                name,
+                Fid::idx("settings.platform", i),
+                Action::SettingsPlatform(value),
+            ) + 2;
+        }
+        let r = sv.next(1);
+        let label = format!("{}: ", t("settings.gameLanguage"));
+        widgets::text(&mut sv.buf, r, &label, theme::text());
+        let mut x = r.x + widgets::width(&label);
+        let current = if d.game_language.is_empty() {
+            t("settings.gameLanguageAuto")
+        } else {
+            let key = format!("steamLanguages.{}", d.game_language);
+            let name = t(&key);
+            if name == key { d.game_language.clone() } else { name }
+        };
+        x += widgets::button(
+            &mut sv.buf,
+            ctx,
+            x,
+            r.y,
+            r.right().saturating_sub(x),
+            &ButtonSpec::new("◂", Fid::new("settings.gameLangPrev"), Action::SettingsGameLanguage(-1), Btn::Secondary),
+        ) + 1;
+        let cw = widgets::width(&current) + 2;
+        widgets::text(
+            &mut sv.buf,
+            Rect::new(x, r.y, cw.min(r.right().saturating_sub(x)), 1),
+            &format!(" {} ", current),
+            theme::accent(),
+        );
+        x += cw + 1;
+        widgets::button(
+            &mut sv.buf,
+            ctx,
+            x,
+            r.y,
+            r.right().saturating_sub(x),
+            &ButtonSpec::new("▸", Fid::new("settings.gameLangNext"), Action::SettingsGameLanguage(1), Btn::Secondary),
+        );
+        let ht = t("settings.targetPlatformHint");
+        let h = widgets::wrap_height(&ht, w);
+        let r = sv.next(h);
+        hint(&mut sv.buf, r, &ht);
+        sv.gap(1);
     }
 
     fn render_keys(&mut self, sv: &mut ScrollView, ctx: &mut Ctx, w: u16) {

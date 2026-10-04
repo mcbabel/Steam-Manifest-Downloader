@@ -510,6 +510,10 @@ impl App {
                 .download_dir
                 .set(self.settings.download_location.clone());
         }
+        self.wiz.depot_auto_pending = self.wiz.auto_select.is_none();
+        self.wiz.depot_touched = false;
+        self.wiz.depot_choice = None;
+        self.wiz.auto_start_at = None;
         if let Some(sel) = self.wiz.auto_select.take() {
             match sel {
                 Some(ids) if !ids.is_empty() => {
@@ -562,6 +566,7 @@ impl App {
                     if app.wiz.main_app_id().as_deref() == Some(app_id.as_str()) {
                         app.wiz.depot_pics =
                             list.into_iter().map(|d| (d.depot_id.clone(), d)).collect();
+                        app.apply_auto_selection(false);
                     }
                 }
             })
