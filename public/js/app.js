@@ -3074,6 +3074,22 @@ async function shutdownNow() {
   }
 }
 
+function askResumeMode() {
+  const modal = document.getElementById('resume-modal');
+  if (!modal) return Promise.resolve('verify');
+  return new Promise((resolve) => {
+    const finish = (mode) => {
+      modal.classList.add('hidden');
+      resolve(mode);
+    };
+    document.getElementById('btn-resume-fast').onclick = () => finish('fast');
+    document.getElementById('btn-resume-verify').onclick = () => finish('verify');
+    document.getElementById('btn-resume-cancel').onclick = () => finish(null);
+    modal.querySelector('.modal__backdrop').onclick = () => finish(null);
+    modal.classList.remove('hidden');
+  });
+}
+
 async function savePendingFollowup() {
   const hasNextSteps = state.shortcutSupported || state.steamLibrarySupported || state.emulatorAvailable;
   const appId = currentAppIdForSteam();
@@ -3648,6 +3664,8 @@ function renderHistory(entries) {
       e.stopPropagation();
       const entry = entryById.get(btn.dataset.entryId);
       if (!entry || !entry.resume_payload) return;
+      const resumeMode = await askResumeMode();
+      if (!resumeMode) return;
       closeHistory();
       state.emuStandalone = false;
       setEmuEditMode(false);
@@ -3683,7 +3701,7 @@ function renderHistory(entries) {
         })));
         await connectProgressListener();
 
-        const result = await invoke('start_download', { config: entry.resume_payload });
+        const result = await invoke('start_download', { config: { ...entry.resume_payload, resumeMode } });
         if (!state.jobId) state.jobId = result.jobId;
         state.downloadDir = result.downloadDir || entry.download_dir;
         try {

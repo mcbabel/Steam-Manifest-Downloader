@@ -215,6 +215,7 @@ impl App {
             },
             update_dir: self.wiz.active_update_dir(&parsed.main_app_id),
             speed_limit: None,
+            resume_mode: None,
         };
         let ids: Vec<String> = config.depots.iter().map(|d| d.depot_id.clone()).collect();
         self.begin_download(config, ids, native);

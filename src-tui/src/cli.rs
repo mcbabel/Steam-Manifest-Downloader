@@ -386,6 +386,7 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
             .as_ref()
             .map(|p| p.to_string_lossy().to_string()),
         speed_limit: args.speed_limit.clone(),
+        resume_mode: None,
     };
     if let Some(limit) = config.speed_limit.as_deref() {
         if let Err(e) = smd_core::services::speed_limit::parse_speed_limit(limit) {

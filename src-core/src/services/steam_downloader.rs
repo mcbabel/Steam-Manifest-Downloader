@@ -60,6 +60,89 @@ pub struct NativeDownloadOutcome {
     pub manifest_files: Vec<String>,
 }
 
+pub const RESUME_MARGIN: u64 = 64;
+const CHECKPOINT_INTERVAL: std::time::Duration = std::time::Duration::from_secs(1);
+
+#[derive(Clone, Debug, Default)]
+pub struct ResumeOptions {
+    pub checkpoint: Option<PathBuf>,
+    pub manifest_id: String,
+    pub trust_checkpoint: bool,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+struct Checkpoint {
+    manifest_id: String,
+    total_chunks: u64,
+    watermark: u64,
+}
+
+fn load_checkpoint(path: &Path, manifest_id: &str, total_chunks: u64) -> Option<u64> {
+    let bytes = std::fs::read(path).ok()?;
+    let cp: Checkpoint = serde_json::from_slice(&bytes).ok()?;
+    (cp.manifest_id == manifest_id && cp.total_chunks == total_chunks)
+        .then_some(cp.watermark.min(total_chunks))
+}
+
+fn trusted_end(watermark: u64) -> u64 {
+    watermark.saturating_sub(RESUME_MARGIN)
+}
+
+struct CheckpointTracker {
+    path: Option<PathBuf>,
+    manifest_id: String,
+    done: Vec<bool>,
+    watermark: u64,
+    saved_watermark: u64,
+    last_save: Instant,
+}
+
+impl CheckpointTracker {
+    fn new(path: Option<PathBuf>, manifest_id: String, total_chunks: u64) -> Self {
+        Self {
+            path,
+            manifest_id,
+            done: vec![false; total_chunks as usize],
+            watermark: 0,
+            saved_watermark: 0,
+            last_save: Instant::now(),
+        }
+    }
+
+    fn mark(&mut self, index: u64) {
+        if let Some(slot) = self.done.get_mut(index as usize) {
+            *slot = true;
+        }
+        while self.done.get(self.watermark as usize).copied().unwrap_or(false) {
+            self.watermark += 1;
+        }
+        if self.watermark > self.saved_watermark
+            && self.last_save.elapsed() >= CHECKPOINT_INTERVAL
+        {
+            self.save();
+        }
+    }
+
+    fn save(&mut self) {
+        let Some(path) = &self.path else {
+            return;
+        };
+        let cp = Checkpoint {
+            manifest_id: self.manifest_id.clone(),
+            total_chunks: self.done.len() as u64,
+            watermark: self.watermark,
+        };
+        let Ok(json) = serde_json::to_vec(&cp) else {
+            return;
+        };
+        let tmp = path.with_extension("json.tmp");
+        if std::fs::write(&tmp, json).is_ok() && std::fs::rename(&tmp, path).is_ok() {
+            self.saved_watermark = self.watermark;
+        }
+        self.last_save = Instant::now();
+    }
+}
+
 pub async fn download_depot_native(
     http: Client,
     session: Arc<SteamSession>,
@@ -72,6 +155,7 @@ pub async fn download_depot_native(
     pause: Arc<AtomicBool>,
     progress: impl Fn(NativeDownloadProgress) + Send + Sync + 'static,
     chunk_concurrency: u32,
+    resume: ResumeOptions,
 ) -> Result<NativeDownloadOutcome, String> {
     let servers = discover_cdn_servers(session.clone(), 0, 20).await?;
     if servers.is_empty() {
@@ -119,6 +203,7 @@ pub async fn download_depot_native(
         pause,
         progress,
         chunk_concurrency,
+        resume,
     )
     .await
 }
@@ -135,6 +220,7 @@ pub async fn download_depot_from_local_manifest(
     pause: Arc<AtomicBool>,
     progress: impl Fn(NativeDownloadProgress) + Send + Sync + 'static,
     chunk_concurrency: u32,
+    resume: ResumeOptions,
 ) -> Result<NativeDownloadOutcome, String> {
     let servers = discover_cdn_servers(session.clone(), 0, 20).await?;
     if servers.is_empty() {
@@ -154,6 +240,7 @@ pub async fn download_depot_from_local_manifest(
         pause,
         progress,
         chunk_concurrency,
+        resume,
     )
     .await
 }
@@ -171,12 +258,26 @@ async fn download_chunks_from_manifest(
     pause: Arc<AtomicBool>,
     progress: impl Fn(NativeDownloadProgress) + Send + Sync + 'static,
     chunk_concurrency: u32,
+    resume: ResumeOptions,
 ) -> Result<NativeDownloadOutcome, String> {
     crate::dlog!(
         "native",
         "depot {} download_chunks_with_manifest: pre-creating file structure",
         depot_id
     );
+    let existing_files: std::collections::HashSet<PathBuf> = if resume.trust_checkpoint {
+        manifest
+            .payload
+            .mappings
+            .iter()
+            .filter(|m| m.flags.unwrap_or(0) & 0x40 == 0)
+            .filter_map(|m| m.filename.as_ref())
+            .map(|rel| out_dir.join(sanitise_relative_path(rel)))
+            .filter(|p| p.is_file())
+            .collect()
+    } else {
+        Default::default()
+    };
     pre_create_files(&manifest, &out_dir).await?;
     let manifest_files = crate::services::install_state::manifest_files(&manifest);
 
@@ -216,6 +317,85 @@ async fn download_chunks_from_manifest(
     let last_emit_ms = Arc::new(AtomicU64::new(0));
     let start_instant = Instant::now();
 
+    let indexed: Vec<(PathBuf, u64)> = manifest
+        .payload
+        .mappings
+        .iter()
+        .filter(|m| m.flags.unwrap_or(0) & 0x40 == 0)
+        .filter_map(|m| m.filename.as_ref().map(|rel| (m, rel)))
+        .flat_map(|(m, rel)| {
+            let file_path = out_dir.join(sanitise_relative_path(rel));
+            m.chunks
+                .iter()
+                .filter(|c| c.sha.is_some())
+                .map(move |c| (file_path.clone(), c.cb_original.unwrap_or(0) as u64))
+        })
+        .collect();
+    let indexed_total = indexed.len() as u64;
+    let watermark = if resume.trust_checkpoint {
+        resume
+            .checkpoint
+            .as_deref()
+            .and_then(|p| load_checkpoint(p, &resume.manifest_id, indexed_total))
+    } else {
+        None
+    };
+    let trusted_until = watermark.map(trusted_end).unwrap_or(0);
+    let verify_range = watermark.map(|w| (trusted_until, w.saturating_add(RESUME_MARGIN)));
+    let tracker = Arc::new(std::sync::Mutex::new(CheckpointTracker::new(
+        resume.checkpoint.clone(),
+        resume.manifest_id.clone(),
+        indexed_total,
+    )));
+    let trusted: Arc<Vec<bool>> = Arc::new(
+        indexed
+            .iter()
+            .enumerate()
+            .map(|(i, (path, _))| (i as u64) < trusted_until && existing_files.contains(path))
+            .collect(),
+    );
+    let (trusted_count, trusted_bytes) = indexed
+        .iter()
+        .zip(trusted.iter())
+        .filter(|(_, ok)| **ok)
+        .fold((0u64, 0u64), |(n, b), ((_, len), _)| (n + 1, b + len));
+    if trusted_count > 0 {
+        {
+            let mut t = tracker.lock().unwrap_or_else(|e| e.into_inner());
+            for (i, ok) in trusted.iter().enumerate() {
+                if *ok {
+                    t.mark(i as u64);
+                }
+            }
+        }
+        *completed_chunks.lock().await = trusted_count;
+        *completed_bytes.lock().await = trusted_bytes;
+        *skipped_chunks.lock().await = trusted_count;
+        *skipped_bytes.lock().await = trusted_bytes;
+        crate::dlog!(
+            "native",
+            "depot {} resuming from checkpoint: {} of {} chunks trusted",
+            depot_id,
+            trusted_count,
+            indexed_total
+        );
+        progress(NativeDownloadProgress {
+            depot_id,
+            total_chunks,
+            completed_chunks: trusted_count,
+            total_bytes,
+            completed_bytes: trusted_bytes,
+            network_bytes: 0,
+            skipped_chunks: trusted_count,
+            skipped_bytes: trusted_bytes,
+            percent: if total_bytes > 0 {
+                trusted_bytes as f64 * 100.0 / total_bytes as f64
+            } else {
+                0.0
+            },
+        });
+    }
+
     let verified_chunks = run_verify_phase(
         &manifest,
         &out_dir,
@@ -230,6 +410,7 @@ async fn download_chunks_from_manifest(
         skipped_bytes.clone(),
         last_emit_ms.clone(),
         start_instant,
+        verify_range,
     )
     .await;
     crate::dlog!(
@@ -240,6 +421,7 @@ async fn download_chunks_from_manifest(
     );
 
     let mut tasks = FuturesUnordered::new();
+    let mut next_index: u64 = 0;
     for mapping in &manifest.payload.mappings {
         let Some(relative_path) = mapping.filename.clone() else {
             continue;
@@ -253,6 +435,23 @@ async fn download_chunks_from_manifest(
             let Some(sha) = chunk.sha.as_ref() else {
                 continue;
             };
+            let index = next_index;
+            next_index += 1;
+            let tracker = tracker.clone();
+            if trusted.get(index as usize).copied().unwrap_or(false) {
+                let file_path = file_path.clone();
+                let bytes = chunk.cb_original.unwrap_or(0) as u64;
+                tasks.push(tokio::spawn(async move {
+                    Ok(ChunkOutcome {
+                        file_path,
+                        bytes_written: bytes,
+                        network_bytes: 0,
+                        from_cache: true,
+                        pre_accounted: true,
+                    })
+                }));
+                continue;
+            }
             let chunk_meta = ChunkJob {
                 sha: sha.clone(),
                 offset: chunk.offset.unwrap_or(0),
@@ -291,6 +490,10 @@ async fn download_chunks_from_manifest(
                     chunk_meta.offset,
                     &chunk_meta.sha,
                 )) {
+                    tracker
+                        .lock()
+                        .unwrap_or_else(|e| e.into_inner())
+                        .mark(index);
                     return Ok(ChunkOutcome {
                         file_path: chunk_meta.file_path,
                         bytes_written: chunk_meta.cb_original as u64,
@@ -327,6 +530,12 @@ async fn download_chunks_from_manifest(
                     file_locks,
                 )
                 .await;
+                if res.is_ok() {
+                    tracker
+                        .lock()
+                        .unwrap_or_else(|e| e.into_inner())
+                        .mark(index);
+                }
                 if let Ok(ref outcome) = res {
                     let (cc_val, cb_val, nb_val) = if outcome.pre_accounted {
                         let cc_val = *completed_chunks.lock().await;
@@ -404,10 +613,21 @@ async fn download_chunks_from_manifest(
     let mut files_written_unique = std::collections::HashSet::new();
     let mut bytes_written = 0u64;
     while let Some(joined) = tasks.next().await {
-        let chunk_outcome = joined
-            .map_err(|e| format!("chunk task join failed: {}", e))??;
+        let chunk_outcome = match joined
+            .map_err(|e| format!("chunk task join failed: {}", e))
+            .and_then(|r| r)
+        {
+            Ok(outcome) => outcome,
+            Err(e) => {
+                tracker.lock().unwrap_or_else(|e| e.into_inner()).save();
+                return Err(e);
+            }
+        };
         bytes_written += chunk_outcome.bytes_written;
         files_written_unique.insert(chunk_outcome.file_path);
+    }
+    if let Some(path) = &resume.checkpoint {
+        let _ = std::fs::remove_file(path);
     }
 
     crate::dlog!(
@@ -574,8 +794,10 @@ async fn run_verify_phase(
     skipped_bytes: Arc<Mutex<u64>>,
     last_emit_ms: Arc<AtomicU64>,
     start_instant: Instant,
+    range: Option<(u64, u64)>,
 ) -> Arc<std::collections::HashSet<ChunkKey>> {
     let mut by_file: HashMap<PathBuf, Vec<(u64, u32, Vec<u8>)>> = HashMap::new();
+    let mut index: u64 = 0;
     for mapping in &manifest.payload.mappings {
         let Some(rel) = mapping.filename.as_ref() else {
             continue;
@@ -588,6 +810,13 @@ async fn run_verify_phase(
             let Some(sha) = chunk.sha.as_ref() else {
                 continue;
             };
+            let current = index;
+            index += 1;
+            if let Some((start, end)) = range {
+                if current < start || current >= end {
+                    continue;
+                }
+            }
             by_file.entry(file_path.clone()).or_default().push((
                 chunk.offset.unwrap_or(0),
                 chunk.cb_original.unwrap_or(0),
@@ -984,5 +1213,47 @@ mod chunk_concurrency_tests {
             let _held = lock.lock().await;
         }
         assert!(lock.try_lock().is_ok());
+    }
+}
+
+#[cfg(test)]
+mod checkpoint_tests {
+    use super::*;
+
+    #[test]
+    fn the_watermark_only_moves_over_a_gapless_prefix() {
+        let mut t = CheckpointTracker::new(None, "1".into(), 6);
+        t.mark(1);
+        t.mark(2);
+        assert_eq!(t.watermark, 0);
+        t.mark(0);
+        assert_eq!(t.watermark, 3);
+        t.mark(5);
+        assert_eq!(t.watermark, 3);
+        t.mark(3);
+        t.mark(4);
+        assert_eq!(t.watermark, 6);
+    }
+
+    #[test]
+    fn a_saved_checkpoint_is_only_used_for_the_same_manifest() {
+        let dir = std::env::temp_dir().join(format!("smd-checkpoint-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join(".smd-depot-1.resume.json");
+        let mut t = CheckpointTracker::new(Some(path.clone()), "777".into(), 200);
+        for i in 0..150 {
+            t.mark(i);
+        }
+        t.save();
+        assert_eq!(load_checkpoint(&path, "777", 200), Some(150));
+        assert_eq!(load_checkpoint(&path, "778", 200), None);
+        assert_eq!(load_checkpoint(&path, "777", 201), None);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn the_last_chunks_before_the_watermark_are_checked_again() {
+        assert_eq!(trusted_end(1000), 1000 - RESUME_MARGIN);
+        assert_eq!(trusted_end(10), 0);
     }
 }

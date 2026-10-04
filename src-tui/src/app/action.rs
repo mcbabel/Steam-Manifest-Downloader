@@ -153,6 +153,7 @@ pub enum Action {
     EmuDone,
 
     HistoryResume(usize),
+    HistoryResumeConfirmed(usize),
     HistoryRedownload(usize),
     HistoryUpdate(usize),
     ToggleShutdownAfter,

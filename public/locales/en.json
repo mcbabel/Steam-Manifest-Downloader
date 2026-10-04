@@ -285,6 +285,13 @@
       "discard": "Discard",
       "resume": "Continue",
       "dontAsk": "Don't ask again"
+    },
+    "resume": {
+      "title": "Resume Download",
+      "body": "Resume continues where the download stopped and only checks the last pieces before that point. Check Everything reads all files that were already downloaded and compares them, which can take several minutes for large games.",
+      "fast": "Resume",
+      "verify": "Check Everything",
+      "verifyCheck": "Check all files first"
     }
   },
   "emulator": {

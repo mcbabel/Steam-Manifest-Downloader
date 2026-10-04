@@ -1377,6 +1377,24 @@
     </div>
   </div>
 
+  <div id="resume-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="resume-modal-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content">
+      <div class="modal__icon modal__icon--accent" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="6 3 20 12 6 21 6 3"/>
+        </svg>
+      </div>
+      <h3 class="modal__title" id="resume-modal-title" data-i18n="modals.resume.title">Resume Download</h3>
+      <p class="modal__text" data-i18n="modals.resume.body">Resume continues where the download stopped and only checks the last pieces before that point. Check Everything reads all files that were already downloaded and compares them, which can take several minutes for large games.</p>
+      <div class="modal__actions modal__actions--stack">
+        <button id="btn-resume-cancel" class="btn btn--outline" data-modal-cancel data-i18n="common.cancel">Cancel</button>
+        <button id="btn-resume-verify" class="btn btn--outline" data-i18n="modals.resume.verify">Check Everything</button>
+        <button id="btn-resume-fast" class="btn btn--primary" data-i18n="modals.resume.fast">Resume</button>
+      </div>
+    </div>
+  </div>
+
 </div>
   <script src="js/i18n.js"></script>
   <script src="js/app.js"></script>

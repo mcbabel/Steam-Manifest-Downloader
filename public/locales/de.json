@@ -285,6 +285,13 @@
       "discard": "Verwerfen",
       "resume": "Weitermachen",
       "dontAsk": "Nicht mehr nachfragen"
+    },
+    "resume": {
+      "title": "Download fortsetzen",
+      "body": "Fortsetzen macht dort weiter, wo der Download aufgehört hat, und prüft nur die letzten Stücke davor. „Erst alles prüfen“ liest alle schon geladenen Dateien und vergleicht sie, das kann bei großen Spielen mehrere Minuten dauern.",
+      "fast": "Fortsetzen",
+      "verify": "Erst alles prüfen",
+      "verifyCheck": "Erst alle Dateien prüfen"
     }
   },
   "emulator": {

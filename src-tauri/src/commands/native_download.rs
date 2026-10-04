@@ -109,6 +109,7 @@ pub async fn native_download_depot(
             pause,
             progress_cb,
             chunk_concurrency,
+            Default::default(),
         )
         .await
     } else {
@@ -124,6 +125,7 @@ pub async fn native_download_depot(
             pause,
             progress_cb,
             chunk_concurrency,
+            Default::default(),
         )
         .await
     };

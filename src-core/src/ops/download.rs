@@ -20,6 +20,7 @@ use crate::services::ryuu_api;
 use crate::services::settings as settings_service;
 use crate::services::steam_downloader::{
     download_depot_from_local_manifest, download_depot_native, NativeDownloadProgress,
+    ResumeOptions,
 };
 use crate::services::steam_store_api;
 use crate::services::{AppState, JobInfo};
@@ -51,6 +52,8 @@ pub struct DownloadConfig {
     pub update_dir: Option<String>,
     #[serde(rename = "speedLimit", alias = "speed_limit", default)]
     pub speed_limit: Option<String>,
+    #[serde(rename = "resumeMode", alias = "resume_mode", default)]
+    pub resume_mode: Option<String>,
 }
 
 impl DownloadConfig {
@@ -897,6 +900,7 @@ async fn run_download_pipeline(
             app_data_dir,
             settings.native_chunk_concurrency,
             config.update_target().is_some(),
+            config.resume_mode.as_deref() == Some("fast"),
         )
         .await?
     } else {
@@ -1242,6 +1246,7 @@ async fn run_native_pipeline(
     app_data_dir: &Path,
     chunk_concurrency: u32,
     update_mode: bool,
+    trust_checkpoint: bool,
 ) -> Result<Vec<serde_json::Value>, String> {
     let app_id_u: u32 = app_id
         .parse()
@@ -1394,6 +1399,11 @@ async fn run_native_pipeline(
             .join(format!("{}_{}.manifest", depot.depot_id, depot.manifest_id))
             .exists();
 
+        let resume_opts = ResumeOptions {
+            checkpoint: Some(work_dir.join(format!(".smd-depot-{}.resume.json", depot.depot_id))),
+            manifest_id: depot.manifest_id.clone(),
+            trust_checkpoint: trust_checkpoint && !update_mode,
+        };
         let mut sources_tried: Vec<&'static str> = Vec::new();
         let mut no_fallback_left: Option<&'static str> = None;
 
@@ -1421,6 +1431,7 @@ async fn run_native_pipeline(
                         pause_flag.clone(),
                         progress_cb,
                         chunk_concurrency,
+                        resume_opts.clone(),
                     )
                     .await
                 }
@@ -1447,6 +1458,7 @@ async fn run_native_pipeline(
                 pause_flag.clone(),
                 progress_cb,
                 chunk_concurrency,
+                resume_opts.clone(),
             )
             .await;
 
@@ -1539,6 +1551,7 @@ async fn run_native_pipeline(
                                     pause_flag.clone(),
                                     progress_cb3,
                                     chunk_concurrency,
+                                    resume_opts.clone(),
                                 )
                                 .await;
                             }
@@ -1632,6 +1645,7 @@ async fn run_native_pipeline(
                                     pause_flag.clone(),
                                     progress_cb2,
                                     chunk_concurrency,
+                                    resume_opts.clone(),
                                 )
                                 .await;
                             }

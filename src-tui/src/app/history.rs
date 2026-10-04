@@ -85,7 +85,31 @@ impl App {
 
     pub(super) fn dispatch_history(&mut self, a: &Action) -> bool {
         match a {
-            Action::HistoryResume(pos) => self.history_resume(*pos),
+            Action::HistoryResume(pos) => {
+                let resumable = self
+                    .hist_entry(*pos)
+                    .is_some_and(|e| is_resumable(&e) && self.settings.use_native_downloader);
+                if resumable {
+                    let mut modal = Modal::confirm(
+                        t("modals.resume.title"),
+                        t("modals.resume.body"),
+                        t("modals.resume.fast"),
+                        t("common.cancel"),
+                        false,
+                        Action::HistoryResumeConfirmed(*pos),
+                    );
+                    if let Modal::Confirm(c) = &mut modal {
+                        c.check = Some((t("modals.resume.verifyCheck"), false));
+                    }
+                    self.queue_modal(modal);
+                }
+            }
+            Action::HistoryResumeConfirmed(pos) => {
+                let verify_all = matches!(&self.modal, Some(Modal::Confirm(c))
+                    if c.check.as_ref().is_some_and(|(_, on)| *on));
+                self.close_modal();
+                self.history_resume(*pos, if verify_all { "verify" } else { "fast" });
+            }
             Action::HistoryRedownload(pos) => self.history_redownload(*pos),
             Action::HistoryUpdate(pos) => self.history_update(*pos),
             Action::HistoryOpenFolder(pos) => {
@@ -219,7 +243,7 @@ impl App {
         true
     }
 
-    fn history_resume(&mut self, pos: usize) {
+    fn history_resume(&mut self, pos: usize, resume_mode: &str) {
         let Some(entry) = self.hist_entry(pos) else {
             return;
         };
@@ -227,13 +251,14 @@ impl App {
             return;
         }
         let payload = entry.resume_payload.clone().unwrap_or_default();
-        let config: DownloadConfig = match serde_json::from_value(payload) {
+        let mut config: DownloadConfig = match serde_json::from_value(payload) {
             Ok(c) => c,
             Err(e) => {
                 self.toast(Tone::Error, tf("history.resumeError", &[("message", &e)]));
                 return;
             }
         };
+        config.resume_mode = Some(resume_mode.to_string());
         self.emu = None;
         self.wiz.parsed = Some(Parsed {
             main_app_id: entry.app_id.clone(),
