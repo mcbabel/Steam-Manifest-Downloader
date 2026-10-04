@@ -118,7 +118,9 @@
     "customManifestPlaceholder": "Eigene Manifest-ID (optional)",
     "manifestFileError": "Manifest-Datei konnte nicht ausgewählt werden: {message}",
     "manifestFilesFilter": "Manifest-Dateien",
-    "chooseLocationTitle": "Download-Ort auswählen"
+    "chooseLocationTitle": "Download-Ort auswählen",
+    "downloadCount": "Herunterladen ({count})",
+    "downloadCountSize": "Herunterladen ({count}) – ~{size}"
   },
   "progress": {
     "diskSpaceLoading": "Speicherplatz wird geprüft…",
@@ -314,6 +316,11 @@
       "fast": "Fortsetzen",
       "verify": "Erst alles prüfen",
       "verifyCheck": "Erst alle Dateien prüfen"
+    },
+    "space": {
+      "title": "Nicht genug Speicherplatz",
+      "body": "Dieser Download braucht etwa {needed}, unter {path} sind aber nur {free} frei. Schaff Platz oder wähl einen anderen Download-Ort.",
+      "start": "Trotzdem starten"
     }
   },
   "emulator": {

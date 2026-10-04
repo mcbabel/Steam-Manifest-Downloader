@@ -243,7 +243,9 @@
       "printVersion": "Print version",
       "helpCommand": "Print this message or the help of the given subcommand(s)",
       "helpFor": "Print help for the subcommand(s)",
-      "printHelpLong": "Print help (see a summary with '-h')"
+      "printHelpLong": "Print help (see a summary with '-h')",
+      "argIgnoreSpace": "Start even when the download location does not have enough free space.",
+      "noSpace": "not enough disk space: the download needs about {needed}, but only {free} is free at {path} (use --ignore-space to start anyway)"
     }
   }
 }

@@ -1395,6 +1395,25 @@
     </div>
   </div>
 
+  <div id="confirm-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content">
+      <div class="modal__icon modal__icon--warning" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+      <h3 class="modal__title" id="confirm-modal-title"></h3>
+      <p class="modal__text" id="confirm-modal-body"></p>
+      <div class="modal__actions">
+        <button id="btn-confirm-no" class="btn btn--outline" data-modal-cancel></button>
+        <button id="btn-confirm-yes" class="btn btn--primary"></button>
+      </div>
+    </div>
+  </div>
+
 </div>
   <script src="js/i18n.js"></script>
   <script src="js/app.js"></script>

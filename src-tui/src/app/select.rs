@@ -9,7 +9,7 @@ use smd_core::services::steam_pics::DepotRole;
 
 use super::action::{Action, BrowsePurpose, InputId, ListId, ScrollTarget, Step};
 use super::state::ProgressState;
-use super::{apply, hint, App};
+use super::{apply, hint, App, Modal};
 use crate::i18n::{t, tf};
 use crate::theme;
 use crate::ui::widgets::{self, Btn, ButtonSpec, InputSpec, Tone};
@@ -51,7 +51,12 @@ impl App {
                     input.masked = !input.masked;
                 }
             }
-            Action::StartDownload => self.start_download(),
+            Action::StartDownload => {
+                if self.space_confirmed() {
+                    self.start_download();
+                }
+            }
+            Action::StartDownloadAnyway => self.start_download(),
             Action::BackToSource => {
                 self.wiz.step = Step::Source;
                 self.focus = None;
@@ -120,6 +125,47 @@ impl App {
                 }
             })
         });
+    }
+
+    fn space_confirmed(&mut self) -> bool {
+        let Some(parsed) = self.wiz.parsed.as_ref() else {
+            return true;
+        };
+        if self.wiz.active_update_dir(&parsed.main_app_id).is_some() {
+            return true;
+        }
+        let needed: u64 = parsed
+            .depots
+            .iter()
+            .filter(|d| self.wiz.selected.contains(&d.depot_id))
+            .filter_map(|d| d.size_bytes)
+            .sum();
+        if needed == 0 {
+            return true;
+        }
+        let dir = self.wiz.download_dir.trimmed();
+        let base = smd_core::ops::download::base_download_dir(Some(dir.as_str()).filter(|d| !d.is_empty()));
+        let check = smd_core::services::disk_space::check(&base, needed);
+        let Some(free) = check.free.filter(|_| !check.enough) else {
+            return true;
+        };
+        let modal = Modal::confirm(
+            t("modals.space.title"),
+            tf(
+                "modals.space.body",
+                &[
+                    ("needed", &widgets::fmt_bytes(needed)),
+                    ("free", &widgets::fmt_bytes(free)),
+                    ("path", &check.path),
+                ],
+            ),
+            t("modals.space.start"),
+            t("common.cancel"),
+            false,
+            Action::StartDownloadAnyway,
+        );
+        self.queue_modal(modal);
+        false
     }
 
     fn start_download(&mut self) {

@@ -118,6 +118,7 @@ pub enum Action {
     ClearDepotManifest(usize),
     ToggleMask(InputId),
     StartDownload,
+    StartDownloadAnyway,
     BackToSource,
 
     PauseResume,

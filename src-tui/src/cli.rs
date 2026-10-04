@@ -75,6 +75,8 @@ pub struct DownloadArgs {
     pub shutdown: bool,
     #[arg(long, help = t("tui.cli.argList"))]
     pub list: bool,
+    #[arg(long, help = t("tui.cli.argIgnoreSpace"))]
+    pub ignore_space: bool,
     #[arg(
         long,
         help = t("tui.cli.argJson")
@@ -402,6 +404,31 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
     if let Some(limit) = config.speed_limit.as_deref() {
         if let Err(e) = smd_core::services::speed_limit::parse_speed_limit(limit) {
             errln!("{}", tf("tui.cli.error", &[("message", &e)]));
+            return 1;
+        }
+    }
+    if !args.ignore_space && config.update_dir.is_none() {
+        let needed: u64 = chosen.iter().filter_map(|(_, _, _, size)| *size).sum();
+        let base = smd_core::ops::download::base_download_dir(config.download_location.as_deref());
+        let check = smd_core::services::disk_space::check(&base, needed);
+        if let Some(free) = check.free.filter(|_| needed > 0 && !check.enough) {
+            errln!(
+                "{}",
+                tf(
+                    "tui.cli.error",
+                    &[(
+                        "message",
+                        &tf(
+                            "tui.cli.noSpace",
+                            &[
+                                ("needed", &fmt_bytes(needed)),
+                                ("free", &fmt_bytes(free)),
+                                ("path", &check.path),
+                            ],
+                        )
+                    )]
+                )
+            );
             return 1;
         }
     }

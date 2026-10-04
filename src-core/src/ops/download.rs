@@ -120,12 +120,7 @@ pub async fn start_download(
         job_id
     );
 
-    let base_dir = resolve_download_dir(config.download_location.as_deref()).unwrap_or_else(|| {
-        let home = std::env::var("USERPROFILE")
-            .or_else(|_| std::env::var("HOME"))
-            .unwrap_or_else(|_| ".".to_string());
-        PathBuf::from(home).join("Documents").join("SteamDownloads")
-    });
+    let base_dir = base_download_dir(config.download_location.as_deref());
 
     tokio::fs::create_dir_all(&base_dir)
         .await
@@ -1911,6 +1906,15 @@ fn emit_manifest_source(
             "params": params,
         }),
     );
+}
+
+pub fn base_download_dir(location: Option<&str>) -> PathBuf {
+    resolve_download_dir(location).unwrap_or_else(|| {
+        let home = std::env::var("USERPROFILE")
+            .or_else(|_| std::env::var("HOME"))
+            .unwrap_or_else(|_| ".".to_string());
+        PathBuf::from(home).join("Documents").join("SteamDownloads")
+    })
 }
 
 fn resolve_download_dir(dir_path: Option<&str>) -> Option<PathBuf> {

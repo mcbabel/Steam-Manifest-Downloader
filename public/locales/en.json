@@ -118,7 +118,9 @@
     "customManifestPlaceholder": "Custom manifest ID (optional)",
     "manifestFileError": "Failed to select manifest file: {message}",
     "manifestFilesFilter": "Manifest files",
-    "chooseLocationTitle": "Select the download location"
+    "chooseLocationTitle": "Select the download location",
+    "downloadCount": "Download ({count})",
+    "downloadCountSize": "Download ({count}) — ~{size}"
   },
   "progress": {
     "diskSpaceLoading": "Checking disk space…",
@@ -314,6 +316,11 @@
       "fast": "Resume",
       "verify": "Check Everything",
       "verifyCheck": "Check all files first"
+    },
+    "space": {
+      "title": "Not Enough Disk Space",
+      "body": "This download needs about {needed}, but only {free} is free at {path}. Free up space or pick another download location.",
+      "start": "Start Anyway"
     }
   },
   "emulator": {

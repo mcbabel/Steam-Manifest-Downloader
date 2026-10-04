@@ -1440,10 +1440,15 @@ function updateDownloadButton() {
       }
     }
   }
-  const sizeLabel = hasSizeInfo ? ` — ~${formatBytes(totalBytes)} total` : '';
+  let label = window.i18n.t('select.downloadSelected');
+  if (count > 0) {
+    label = hasSizeInfo
+      ? window.i18n.t('select.downloadCountSize', { count, size: formatBytes(totalBytes) })
+      : window.i18n.t('select.downloadCount', { count });
+  }
 
   els.btnDownload.innerHTML = `
-    Download${count > 0 ? ` (${count})${sizeLabel}` : ''}
+    ${escapeHtml(label)}
     <svg class="btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
       <polyline points="7 10 12 15 17 10"/>
@@ -1457,6 +1462,7 @@ async function startDownload() {
   const selectedDepots = data.depots.filter(d => state.selectedDepots.has(d.depotId));
 
   if (selectedDepots.length === 0) return;
+  if (!(await confirmFreeSpace(selectedDepots, activeUpdateDir(data.mainAppId)))) return;
 
   let sourceCount = null;
   try {
@@ -3098,6 +3104,56 @@ async function shutdownNow() {
     els.btnShutdownNow.disabled = false;
     if (els.shutdownAfterToggle) els.shutdownAfterToggle.checked = false;
   }
+}
+
+function askConfirm({ title, body, confirm, cancel, danger = false }) {
+  const modal = document.getElementById('confirm-modal');
+  if (!modal) return Promise.resolve(true);
+  document.getElementById('confirm-modal-title').textContent = title;
+  document.getElementById('confirm-modal-body').textContent = body;
+  const yes = document.getElementById('btn-confirm-yes');
+  const no = document.getElementById('btn-confirm-no');
+  yes.textContent = confirm;
+  no.textContent = cancel || window.i18n.t('common.cancel');
+  yes.classList.toggle('btn--danger', danger);
+  yes.classList.toggle('btn--primary', !danger);
+  return new Promise((resolve) => {
+    const finish = (ok) => {
+      modal.classList.add('hidden');
+      resolve(ok);
+    };
+    yes.onclick = () => finish(true);
+    no.onclick = () => finish(false);
+    modal.querySelector('.modal__backdrop').onclick = () => finish(false);
+    modal.classList.remove('hidden');
+  });
+}
+
+function selectedDownloadBytes(depots) {
+  return depots.reduce((sum, d) => sum + (Number(d.sizeBytes) || 0), 0);
+}
+
+async function confirmFreeSpace(depots, updateDir) {
+  if (updateDir) return true;
+  const needed = selectedDownloadBytes(depots);
+  if (needed <= 0) return true;
+  let result = null;
+  try {
+    result = await invoke('check_free_space', { downloadDir: getDownloadDir() || null, needed });
+  } catch (e) {
+    console.error('check_free_space failed:', e);
+    return true;
+  }
+  if (!result || result.enough || result.free == null) return true;
+  return askConfirm({
+    title: window.i18n.t('modals.space.title'),
+    body: window.i18n.t('modals.space.body', {
+      needed: formatBytes(result.needed) || '0 MB',
+      free: formatBytes(result.free) || '0 MB',
+      path: result.path,
+    }),
+    confirm: window.i18n.t('modals.space.start'),
+  });
 }
 
 function askResumeMode() {

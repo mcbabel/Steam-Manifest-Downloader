@@ -36,6 +36,13 @@ pub async fn power_off_system() -> Result<(), String> {
 }
 
 #[command]
+pub fn check_free_space(download_dir: Option<String>, needed: u64) -> serde_json::Value {
+    let base = smd_core::ops::download::base_download_dir(download_dir.as_deref());
+    serde_json::to_value(smd_core::services::disk_space::check(&base, needed))
+        .unwrap_or(serde_json::Value::Null)
+}
+
+#[command]
 pub async fn check_dotnet() -> Result<serde_json::Value, String> {
     serde_json::to_value(smd_core::ops::system::check_dotnet()).map_err(|e| e.to_string())
 }

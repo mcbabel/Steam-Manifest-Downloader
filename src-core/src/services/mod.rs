@@ -27,6 +27,7 @@ pub mod steam_cdn;
 pub mod steam_chunks;
 pub mod steam_downloader;
 pub mod speed_limit;
+pub mod disk_space;
 pub mod manifest_code_provider;
 pub mod debug_log;
 pub mod diag;

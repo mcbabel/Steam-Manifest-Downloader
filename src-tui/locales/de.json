@@ -243,7 +243,9 @@
       "printVersion": "Version anzeigen",
       "helpCommand": "Zeigt diese Hilfe oder die Hilfe zu den angegebenen Befehlen",
       "helpFor": "Hilfe zu den Befehlen anzeigen",
-      "printHelpLong": "Hilfe anzeigen (Kurzfassung mit '-h')"
+      "printHelpLong": "Hilfe anzeigen (Kurzfassung mit '-h')",
+      "argIgnoreSpace": "Startet auch, wenn am Download-Ort nicht genug Speicherplatz frei ist.",
+      "noSpace": "nicht genug Speicherplatz: der Download braucht etwa {needed}, unter {path} sind aber nur {free} frei (mit --ignore-space trotzdem starten)"
     }
   }
 }
