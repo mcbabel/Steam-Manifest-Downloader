@@ -480,7 +480,8 @@
     "depotsDownloaded": "{done}/{total} Depots geladen",
     "empty": "Noch keine Downloads. Dein Download-Verlauf erscheint hier.",
     "loading": "Verlauf wird geladen…",
-    "loadFailed": "Verlauf konnte nicht geladen werden."
+    "loadFailed": "Verlauf konnte nicht geladen werden.",
+    "updateUnavailable": "Aktualisieren geht nur bei abgeschlossenen Downloads"
   },
   "depots": {
     "roleContent": "Hauptspiel · Content",

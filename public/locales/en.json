@@ -480,7 +480,8 @@
     "depotsDownloaded": "{done}/{total} depots downloaded",
     "empty": "No downloads yet. Your download history will appear here.",
     "loading": "Loading history…",
-    "loadFailed": "Failed to load history."
+    "loadFailed": "Failed to load history.",
+    "updateUnavailable": "Update is only available for completed downloads"
   },
   "depots": {
     "roleContent": "Main · Content",

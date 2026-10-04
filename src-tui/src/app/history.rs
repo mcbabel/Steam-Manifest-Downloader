@@ -18,6 +18,10 @@ fn is_resumable(e: &HistoryEntry) -> bool {
     e.status == "cancelled_resumable" && e.resume_payload.is_some()
 }
 
+fn can_update(e: &HistoryEntry) -> bool {
+    e.status == "complete" && !e.download_dir.is_empty()
+}
+
 fn status_badge(e: &HistoryEntry) -> (String, ratatui::style::Color) {
     let th = theme::get();
     match e.status.as_str() {
@@ -279,7 +283,7 @@ impl App {
         let Some(entry) = self.hist_entry(pos) else {
             return;
         };
-        if entry.download_dir.is_empty() || entry.status == "cancelled" {
+        if !can_update(&entry) {
             return;
         }
         let dir = entry.download_dir.clone();
@@ -534,7 +538,7 @@ impl App {
                 Action::HistoryUpdate(pos),
                 Btn::Secondary,
             )
-            .enabled(has_dir),
+            .enabled(can_update(e)),
             ButtonSpec::new(
                 t("tui.history.openFolder"),
                 Fid::new("history.open"),
