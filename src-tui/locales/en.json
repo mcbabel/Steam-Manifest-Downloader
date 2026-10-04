@@ -29,7 +29,7 @@
       "editing": "Text fields: start/end, delete to start/end, delete word",
       "select": "Depot selection: select all / none, filter, start download",
       "progress": "While downloading: pause/resume, cancel",
-      "history": "History: resume, download again, update, open folder, edit emulator, remove",
+      "history": "History: resume, download again, update, check (v), open folder, edit emulator, remove",
       "quit": "Quit (asks first while a download runs)",
       "mouse": "Everything is clickable: buttons, tabs, list rows (double-click opens), checkboxes. The mouse wheel scrolls lists and pages.",
       "drop": "Drag a .lua or .st file onto the terminal window — most terminals paste its path, which loads the file right away."
@@ -147,7 +147,8 @@
       "remove": "Remove",
       "opened": "Opened {path}",
       "copied": "Path copied to the clipboard: {path}",
-      "editEmu": "Emulator…"
+      "editEmu": "Emulator…",
+      "repair": "Check"
     },
     "settings": {
       "tabGeneral": "General",
@@ -245,7 +246,8 @@
       "helpFor": "Print help for the subcommand(s)",
       "printHelpLong": "Print help (see a summary with '-h')",
       "argIgnoreSpace": "Start even when the download location does not have enough free space.",
-      "noSpace": "not enough disk space: the download needs about {needed}, but only {free} is free at {path} (use --ignore-space to start anyway)"
+      "noSpace": "not enough disk space: the download needs about {needed}, but only {free} is free at {path} (use --ignore-space to start anyway)",
+      "argRepair": "With --update: check every file against the installed version and download only damaged or missing parts, without updating."
     }
   }
 }

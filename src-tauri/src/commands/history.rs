@@ -58,3 +58,9 @@ pub async fn clear_pending_followup(app: AppHandle) {
 pub async fn open_folder(path: String) -> Result<(), String> {
     system::open_folder(&path)
 }
+
+#[command]
+pub fn get_installed_depots(dir: String) -> serde_json::Value {
+    let list = smd_core::services::install_state::installed(std::path::Path::new(&dir));
+    serde_json::to_value(list).unwrap_or(serde_json::Value::Null)
+}

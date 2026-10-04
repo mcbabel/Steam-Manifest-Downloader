@@ -121,7 +121,8 @@
     "manifestFilesFilter": "Manifest files",
     "chooseLocationTitle": "Select the download location",
     "downloadCount": "Download ({count})",
-    "downloadCountSize": "Download ({count}) — ~{size}"
+    "downloadCountSize": "Download ({count}) — ~{size}",
+    "repairNotice": "Check mode: every file in <strong>{path}</strong> is compared with the installed version. Only damaged or missing parts are downloaded again, nothing is updated."
   },
   "progress": {
     "diskSpaceLoading": "Checking disk space…",
@@ -174,7 +175,9 @@
     "noLongerRunning": "The download is no longer running.",
     "ended": "The download has ended. You can start over.",
     "cancelFailed": "Cancelling failed: {message}",
-    "pausedShort": "paused"
+    "pausedShort": "paused",
+    "repairDone": "Check finished: {size} were damaged or missing and have been downloaded again.",
+    "repairClean": "Check finished: all files are fine, nothing had to be downloaded."
   },
   "shortcut": {
     "title": "Create Shortcuts",
@@ -537,7 +540,9 @@
     "sortOldest": "Oldest first",
     "sortName": "Name A–Z",
     "sortSize": "Largest first",
-    "noMatch": "No downloads match the search or filter."
+    "noMatch": "No downloads match the search or filter.",
+    "repairTooltip": "Check and repair: compare the files with the installed version and download only damaged or missing parts",
+    "repairUnavailable": "Checking is only available for completed downloads"
   },
   "depots": {
     "roleContent": "Main · Content",

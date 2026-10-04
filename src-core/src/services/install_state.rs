@@ -28,6 +28,23 @@ pub fn save(work_dir: &Path, install: &DepotInstall) -> Result<(), String> {
         .map_err(|e| format!("write install record: {}", e))
 }
 
+pub fn installed(work_dir: &Path) -> Vec<DepotInstall> {
+    let Ok(dir) = std::fs::read_dir(work_dir) else {
+        return Vec::new();
+    };
+    let mut list: Vec<DepotInstall> = dir
+        .filter_map(Result::ok)
+        .filter_map(|e| {
+            let name = e.file_name().to_string_lossy().to_string();
+            let id = name.strip_prefix(".smd-depot-")?.strip_suffix(".json")?.to_string();
+            id.chars().all(|c| c.is_ascii_digit()).then_some(id)
+        })
+        .filter_map(|id| load(work_dir, &id))
+        .collect();
+    list.sort_by(|a, b| a.depot_id.cmp(&b.depot_id));
+    list
+}
+
 pub fn normalize(rel: &str) -> String {
     rel.replace('\\', "/").trim_start_matches('/').to_string()
 }
@@ -115,6 +132,34 @@ pub fn other_manifest_files(work_dir: &Path, depot_id: &str, keep_manifest_id: &
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn lists_installed_depots_and_ignores_checkpoints() {
+        let dir = std::env::temp_dir().join(format!("smd-installed-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        for (id, manifest) in [("482", "2"), ("481", "1")] {
+            save(
+                &dir,
+                &DepotInstall {
+                    depot_id: id.to_string(),
+                    manifest_id: manifest.to_string(),
+                    files: vec![],
+                },
+            )
+            .unwrap();
+        }
+        std::fs::write(dir.join(".smd-depot-481.resume.json"), "{}").unwrap();
+        let found: Vec<(String, String)> = installed(&dir)
+            .into_iter()
+            .map(|d| (d.depot_id, d.manifest_id))
+            .collect();
+        assert_eq!(
+            found,
+            vec![("481".to_string(), "1".to_string()), ("482".to_string(), "2".to_string())]
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 
     fn s(v: &[&str]) -> Vec<String> {
         v.iter().map(|x| x.to_string()).collect()

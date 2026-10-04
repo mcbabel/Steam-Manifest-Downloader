@@ -232,6 +232,7 @@ pub struct Wizard {
     pub auto_redownload: bool,
     pub update_dir: Option<String>,
     pub update_app_id: Option<String>,
+    pub repair_manifests: Option<HashMap<String, String>>,
 
     pub job_id: Option<String>,
     pub result_dir: Option<String>,
@@ -261,6 +262,11 @@ pub struct Wizard {
 }
 
 impl Wizard {
+    pub fn active_repair(&self, app_id: &str) -> Option<&HashMap<String, String>> {
+        self.active_update_dir(app_id)
+            .and(self.repair_manifests.as_ref())
+    }
+
     pub fn active_update_dir(&self, app_id: &str) -> Option<String> {
         match (&self.update_dir, &self.update_app_id) {
             (Some(dir), Some(id)) if id == app_id => Some(dir.clone()),
@@ -315,6 +321,7 @@ impl Wizard {
             auto_redownload: false,
             update_dir: None,
             update_app_id: None,
+            repair_manifests: None,
             job_id: None,
             result_dir: None,
             progress: None,

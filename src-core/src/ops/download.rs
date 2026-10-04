@@ -54,6 +54,8 @@ pub struct DownloadConfig {
     pub speed_limit: Option<String>,
     #[serde(rename = "resumeMode", alias = "resume_mode", default)]
     pub resume_mode: Option<String>,
+    #[serde(default)]
+    pub repair: bool,
 }
 
 impl DownloadConfig {
@@ -941,7 +943,8 @@ async fn run_download_pipeline(
             app_data_dir,
             settings.native_chunk_concurrency,
             config.update_target().is_some(),
-            config.resume_mode.as_deref() == Some("fast"),
+            config.resume_mode.as_deref() == Some("fast") && !config.repair,
+            config.repair,
         )
         .await?
     } else {
@@ -1300,6 +1303,7 @@ async fn run_native_pipeline(
     chunk_concurrency: u32,
     update_mode: bool,
     trust_checkpoint: bool,
+    repair: bool,
 ) -> Result<Vec<serde_json::Value>, String> {
     let app_id_u: u32 = app_id
         .parse()
@@ -1367,6 +1371,7 @@ async fn run_native_pipeline(
 
         let installed = install_state::load(work_dir, &depot.depot_id);
         if update_mode
+            && !repair
             && installed
                 .as_ref()
                 .is_some_and(|i| i.manifest_id == depot.manifest_id)
@@ -1394,6 +1399,7 @@ async fn run_native_pipeline(
                 "success": true,
                 "filesWritten": 0,
                 "bytesWritten": 0,
+                "downloadedBytes": 0,
                 "upToDate": true,
                 "sourcesTried": Vec::<&str>::new(),
             }));
@@ -1770,6 +1776,7 @@ async fn run_native_pipeline(
                     "success": true,
                     "filesWritten": outcome.files_written,
                     "bytesWritten": outcome.bytes_written,
+                    "downloadedBytes": outcome.downloaded_bytes,
                     "sourcesTried": sources_tried,
                 }));
             }

@@ -29,7 +29,7 @@
       "editing": "Textfelder: Anfang/Ende, bis Anfang/Ende löschen, Wort löschen",
       "select": "Depot-Auswahl: alle / keine, filtern, Download starten",
       "progress": "Beim Download: pausieren/fortsetzen, abbrechen",
-      "history": "Verlauf: fortsetzen, erneut laden, aktualisieren, Ordner öffnen, Emulator bearbeiten, entfernen",
+      "history": "Verlauf: fortsetzen, erneut laden, aktualisieren, prüfen (v), Ordner öffnen, Emulator bearbeiten, entfernen",
       "quit": "Beenden (fragt nach, solange ein Download läuft)",
       "mouse": "Alles ist klickbar: Buttons, Tabs, Listenzeilen (Doppelklick öffnet), Checkboxen. Das Mausrad scrollt Listen und Seiten.",
       "drop": "Zieh eine .lua- oder .st-Datei auf das Terminalfenster – die meisten Terminals fügen dann ihren Pfad ein und die Datei wird sofort geladen."
@@ -147,7 +147,8 @@
       "remove": "Entfernen",
       "opened": "{path} geöffnet",
       "copied": "Pfad in die Zwischenablage kopiert: {path}",
-      "editEmu": "Emulator…"
+      "editEmu": "Emulator…",
+      "repair": "Prüfen"
     },
     "settings": {
       "tabGeneral": "Allgemein",
@@ -245,7 +246,8 @@
       "helpFor": "Hilfe zu den Befehlen anzeigen",
       "printHelpLong": "Hilfe anzeigen (Kurzfassung mit '-h')",
       "argIgnoreSpace": "Startet auch, wenn am Download-Ort nicht genug Speicherplatz frei ist.",
-      "noSpace": "nicht genug Speicherplatz: der Download braucht etwa {needed}, unter {path} sind aber nur {free} frei (mit --ignore-space trotzdem starten)"
+      "noSpace": "nicht genug Speicherplatz: der Download braucht etwa {needed}, unter {path} sind aber nur {free} frei (mit --ignore-space trotzdem starten)",
+      "argRepair": "Mit --update: prüft jede Datei gegen den installierten Stand und lädt nur beschädigte oder fehlende Teile neu, ohne zu aktualisieren."
     }
   }
 }

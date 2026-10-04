@@ -112,6 +112,7 @@ impl App {
             }
             Action::HistoryRedownload(pos) => self.history_redownload(*pos),
             Action::HistoryUpdate(pos) => self.history_update(*pos),
+            Action::HistoryRepair(pos) => self.history_repair(*pos),
             Action::HistoryOpenFolder(pos) => {
                 let dir = if *pos == usize::MAX {
                     self.wiz.result_dir.clone()
@@ -316,6 +317,30 @@ impl App {
         self.history_redownload(pos);
         self.wiz.update_dir = Some(dir);
         self.wiz.update_app_id = Some(app_id);
+    }
+
+    fn history_repair(&mut self, pos: usize) {
+        let Some(entry) = self.hist_entry(pos) else {
+            return;
+        };
+        if !can_update(&entry) {
+            return;
+        }
+        let installed =
+            smd_core::services::install_state::installed(std::path::Path::new(&entry.download_dir));
+        let manifests: std::collections::HashMap<String, String> = installed
+            .into_iter()
+            .map(|d| (d.depot_id, d.manifest_id))
+            .collect();
+        let dir = entry.download_dir.clone();
+        let app_id = entry.app_id.clone();
+        self.history_redownload(pos);
+        if !manifests.is_empty() {
+            self.wiz.auto_select = Some(Some(manifests.keys().cloned().collect()));
+        }
+        self.wiz.update_dir = Some(dir);
+        self.wiz.update_app_id = Some(app_id);
+        self.wiz.repair_manifests = Some(manifests);
     }
 
     fn history_edit_emu(&mut self, pos: usize) {
@@ -566,6 +591,13 @@ impl App {
                 format!("⇡ {}", t("tui.history.update")),
                 Fid::new("history.update"),
                 Action::HistoryUpdate(pos),
+                Btn::Secondary,
+            )
+            .enabled(can_update(e)),
+            ButtonSpec::new(
+                format!("✓ {}", t("tui.history.repair")),
+                Fid::new("history.repair"),
+                Action::HistoryRepair(pos),
                 Btn::Secondary,
             )
             .enabled(can_update(e)),

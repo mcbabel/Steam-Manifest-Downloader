@@ -57,6 +57,7 @@ pub struct NativeDownloadProgress {
 pub struct NativeDownloadOutcome {
     pub files_written: usize,
     pub bytes_written: u64,
+    pub downloaded_bytes: u64,
     pub manifest_files: Vec<String>,
 }
 
@@ -612,6 +613,7 @@ async fn download_chunks_from_manifest(
 
     let mut files_written_unique = std::collections::HashSet::new();
     let mut bytes_written = 0u64;
+    let mut downloaded_bytes = 0u64;
     while let Some(joined) = tasks.next().await {
         let chunk_outcome = match joined
             .map_err(|e| format!("chunk task join failed: {}", e))
@@ -624,6 +626,9 @@ async fn download_chunks_from_manifest(
             }
         };
         bytes_written += chunk_outcome.bytes_written;
+        if !chunk_outcome.from_cache && !chunk_outcome.pre_accounted {
+            downloaded_bytes += chunk_outcome.bytes_written;
+        }
         files_written_unique.insert(chunk_outcome.file_path);
     }
     if let Some(path) = &resume.checkpoint {
@@ -641,6 +646,7 @@ async fn download_chunks_from_manifest(
     Ok(NativeDownloadOutcome {
         files_written: files_written_unique.len(),
         bytes_written,
+        downloaded_bytes,
         manifest_files,
     })
 }

@@ -121,7 +121,8 @@
     "manifestFilesFilter": "Manifest-Dateien",
     "chooseLocationTitle": "Download-Ort auswählen",
     "downloadCount": "Herunterladen ({count})",
-    "downloadCountSize": "Herunterladen ({count}) – ~{size}"
+    "downloadCountSize": "Herunterladen ({count}) – ~{size}",
+    "repairNotice": "Prüfmodus: Jede Datei in <strong>{path}</strong> wird mit dem installierten Stand verglichen. Nur beschädigte oder fehlende Teile werden neu geladen, es wird nichts aktualisiert."
   },
   "progress": {
     "diskSpaceLoading": "Speicherplatz wird geprüft…",
@@ -174,7 +175,9 @@
     "noLongerRunning": "Der Download läuft nicht mehr.",
     "ended": "Der Download ist beendet. Du kannst neu starten.",
     "cancelFailed": "Abbrechen fehlgeschlagen: {message}",
-    "pausedShort": "pausiert"
+    "pausedShort": "pausiert",
+    "repairDone": "Prüfung fertig: {size} waren beschädigt oder fehlten und wurden neu geladen.",
+    "repairClean": "Prüfung fertig: Alle Dateien sind in Ordnung, nichts musste neu geladen werden."
   },
   "shortcut": {
     "title": "Verknüpfungen erstellen",
@@ -537,7 +540,9 @@
     "sortOldest": "Älteste zuerst",
     "sortName": "Name A–Z",
     "sortSize": "Größte zuerst",
-    "noMatch": "Keine Downloads passen zur Suche oder zum Filter."
+    "noMatch": "Keine Downloads passen zur Suche oder zum Filter.",
+    "repairTooltip": "Prüfen und reparieren: Dateien mit dem installierten Stand vergleichen und nur beschädigte oder fehlende Teile neu laden",
+    "repairUnavailable": "Prüfen geht nur bei abgeschlossenen Downloads"
   },
   "depots": {
     "roleContent": "Hauptspiel · Content",

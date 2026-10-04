@@ -201,6 +201,13 @@ impl App {
                     .uploaded_manifest
                     .as_ref()
                     .map(|p| p.to_string_lossy().to_string());
+                if let Some(pinned) = self
+                    .wiz
+                    .active_repair(&parsed.main_app_id)
+                    .and_then(|m| m.get(&d.depot_id))
+                {
+                    custom = Some(pinned.clone());
+                }
                 if custom.is_none() {
                     if let Some(p) = &d.uploaded_manifest {
                         custom = manifest_id_from_filename(
@@ -262,6 +269,7 @@ impl App {
             update_dir: self.wiz.active_update_dir(&parsed.main_app_id),
             speed_limit: None,
             resume_mode: None,
+            repair: self.wiz.active_repair(&parsed.main_app_id).is_some(),
         };
         let ids: Vec<String> = config.depots.iter().map(|d| d.depot_id.clone()).collect();
         self.begin_download(config, ids, native);
@@ -587,7 +595,17 @@ impl App {
             .as_ref()
             .and_then(|p| self.wiz.active_update_dir(&p.main_app_id));
         if let Some(dir) = update_dir {
-            let msg = tf("tui.select.updateNotice", &[("path", &dir)]);
+            let repair = self
+                .wiz
+                .parsed
+                .as_ref()
+                .is_some_and(|p| self.wiz.active_repair(&p.main_app_id).is_some());
+            let key = if repair {
+                "select.repairNotice"
+            } else {
+                "tui.select.updateNotice"
+            };
+            let msg = tf(key, &[("path", &dir)]);
             let h = widgets::status_height(&msg, w);
             let r_ = sv.next(h);
             widgets::status(&mut sv.buf, r_, Tone::Info, &msg, tick);

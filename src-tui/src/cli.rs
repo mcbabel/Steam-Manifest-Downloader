@@ -61,6 +61,8 @@ pub struct DownloadArgs {
         help = t("tui.cli.argUpdate")
     )]
     pub update: Option<PathBuf>,
+    #[arg(long, requires = "update", help = t("tui.cli.argRepair"))]
+    pub repair: bool,
     #[arg(
         long,
         value_name = "RATE",
@@ -279,7 +281,7 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
         .map(|d| d.trim().to_string())
         .filter(|d| !d.is_empty())
         .collect();
-    let pins: HashMap<String, String> = args
+    let mut pins: HashMap<String, String> = args
         .manifests
         .iter()
         .filter_map(|m| {
@@ -287,6 +289,17 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
                 .map(|(d, id)| (d.trim().to_string(), id.trim().to_string()))
         })
         .collect();
+    let mut wanted = wanted;
+    if args.repair {
+        let dir = args.update.clone().unwrap_or_default();
+        let installed = smd_core::services::install_state::installed(&dir);
+        if wanted.is_empty() {
+            wanted = installed.iter().map(|d| d.depot_id.clone()).collect();
+        }
+        for d in installed {
+            pins.entry(d.depot_id).or_insert(d.manifest_id);
+        }
+    }
     let chosen: Vec<_> = plan
         .depots
         .iter()
@@ -400,6 +413,7 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
             .map(|p| p.to_string_lossy().to_string()),
         speed_limit: args.speed_limit.clone(),
         resume_mode: None,
+        repair: args.repair,
     };
     if let Some(limit) = config.speed_limit.as_deref() {
         if let Err(e) = smd_core::services::speed_limit::parse_speed_limit(limit) {

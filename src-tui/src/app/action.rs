@@ -157,6 +157,7 @@ pub enum Action {
     HistoryResumeConfirmed(usize),
     HistoryRedownload(usize),
     HistoryUpdate(usize),
+    HistoryRepair(usize),
     ToggleShutdownAfter,
     ShutdownAbort,
     ShutdownNow,

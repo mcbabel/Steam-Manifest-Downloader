@@ -3831,7 +3831,7 @@ button:disabled,
 /* History Modal */
 .history-modal-content {
   text-align: left;
-  max-width: 600px;
+  max-width: 720px;
   max-height: calc(85vh - 2rem);
   overflow-y: auto;
 }

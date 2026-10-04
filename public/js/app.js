@@ -72,6 +72,7 @@ const ICONS = {
   moon: `<svg class="theme-icon theme-icon--moon" id="theme-icon" width="16" height="16" ${SVG_BASE}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`,
   settings: `<svg class="btn-icon" ${SVG_BASE}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
   play: `<svg class="btn-icon" ${SVG_BASE}><polygon points="5 3 19 12 5 21 5 3"/></svg>`,
+  shieldCheck: `<svg class="btn-icon" ${SVG_BASE}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>`,
 };
 
 const MH_APIKEY_STORAGE_KEY = 'manifestHubApiKey';
@@ -1499,6 +1500,8 @@ async function startDownload() {
   }
   saveDownloadDir();
 
+  const repairManifests = activeRepair(data.mainAppId);
+  state.repairRunning = !!repairManifests;
   const depotsWithCustomManifests = selectedDepots.map(depot => {
     const input = document.querySelector(`.custom-manifest-input[data-depot-id="${depot.depotId}"]`);
     const customManifestId = input ? input.value.trim() : '';
@@ -1509,6 +1512,9 @@ async function startDownload() {
       customManifestId: customManifestId || null,
       displayName: displayName || null,
     };
+    if (repairManifests && repairManifests[String(depot.depotId)]) {
+      result.customManifestId = repairManifests[String(depot.depotId)];
+    }
     if (depotManifest) {
       result.uploadedManifestPath = depotManifest.storedPath;
       // If no custom manifest ID typed, try to extract from filename
@@ -1535,7 +1541,8 @@ async function startDownload() {
       downloadDir: getDownloadDir() || null,
       gameName: state.gameName || null,
       headerImage: state.headerImage || null,
-      updateDir: activeUpdateDir(data.mainAppId)
+      updateDir: activeUpdateDir(data.mainAppId),
+      repair: !!repairManifests
     };
 
     if (state.mode === 'search') {
@@ -2122,6 +2129,16 @@ function handleComplete(msg) {
   }
 
   appendTerminalLine(`\n${summary}`, allOk ? 'success' : 'error');
+  if (state.repairRunning) {
+    const results = Array.isArray(msg.results) ? msg.results : [];
+    const repaired = results.reduce((sum, r) => sum + (Number(r.downloadedBytes) || 0), 0);
+    appendTerminalLine(
+      repaired > 0
+        ? `✓ ${window.i18n.t('progress.repairDone', { size: formatBytes(repaired) })}`
+        : `✓ ${window.i18n.t('progress.repairClean')}`,
+      'success'
+    );
+  }
 
   const gameName = state.gameName || window.i18n.t('common.game');
   if (allOk) {
@@ -2287,12 +2304,16 @@ function activeUpdateDir(appId) {
   return String(appId) === state.updateAppId ? state.updateDir : null;
 }
 
+function activeRepair(appId) {
+  return activeUpdateDir(appId) && state.repairManifests ? state.repairManifests : null;
+}
+
 function renderUpdateNotice(step) {
   const notice = document.getElementById('update-mode-notice');
   if (!notice) return;
   const appId = state.parsedData && state.parsedData.mainAppId;
   if (step === 2 && activeUpdateDir(appId)) {
-    notice.innerHTML = window.i18n.t('select.updateNotice', { path: escapeHtml(state.updateDir) });
+    notice.innerHTML = window.i18n.t(activeRepair(appId) ? 'select.repairNotice' : 'select.updateNotice', { path: escapeHtml(state.updateDir) });
     notice.classList.remove('hidden');
   } else {
     notice.classList.add('hidden');
@@ -2303,6 +2324,7 @@ function resetApp() {
   commitPendingHistory();
   state.updateDir = null;
   state.updateAppId = null;
+  state.repairManifests = null;
   if (state.jobId) {
     const orphanJob = state.jobId;
     emitEvent('download_abandoned', abandonProps());
@@ -3740,6 +3762,39 @@ function saveHistoryView() {
   } catch (_) {}
 }
 
+function startHistoryRedownload(appId, depotIds, target) {
+  state.updateDir = target ? target.dir : null;
+  state.updateAppId = target ? String(appId) : null;
+  state.repairManifests = target && target.manifests ? target.manifests : null;
+  closeHistory();
+  state.emuStandalone = false;
+  setEmuEditMode(false);
+  state.parsedData = null;
+  state.selectedDepots.clear();
+  state.jobId = null;
+  state.depotManifests = {};
+  state.searchRepos = [];
+  state.selectedRepo = null;
+  state.searchAppId = null;
+  state.searchSha = null;
+  state.searchKeyVdfKeys = null;
+  cleanupProgressListener();
+  els.gameInfoBanner.classList.add('hidden');
+  els.searchResults.classList.add('hidden');
+  els.searchNextRow.classList.add('hidden');
+  els.searchError.classList.add('hidden');
+  els.searchGameBanner.classList.add('hidden');
+  els.manifestLoading.classList.add('hidden');
+  resetUpload();
+  autoRedownloadPending = true;
+  autoSelectAllOnStep2 = true;
+  autoSelectDepotIds = depotIds.length > 0 ? depotIds : null;
+  switchTab('search');
+  els.searchAppIdInput.value = appId;
+  goToStep(1);
+  performSearch();
+}
+
 function historyEntryKind(entry) {
   if (entry.status === 'complete') return 'complete';
   if (entry.status === 'cancelled_resumable' && entry.resume_payload) return 'resumable';
@@ -3865,6 +3920,7 @@ function renderHistoryEntries(entries) {
             : ''}
           <button class="btn btn--small btn--outline history-action-redownload" data-app-id="${escapeHtml(entry.app_id)}" data-depot-ids="${escapeHtml((entry.depot_ids || []).join(','))}" title="${escapeHtml(window.i18n.t('history.redownloadTooltip'))}" aria-label="${escapeHtml(window.i18n.t('history.redownloadTooltip'))}">${ICONS.refresh}</button>
           <button class="btn btn--small btn--outline history-action-update" data-app-id="${escapeHtml(entry.app_id)}" data-depot-ids="${escapeHtml((entry.depot_ids || []).join(','))}" data-path="${escapeHtml(entry.download_dir)}" title="${escapeHtml(updateTip)}" aria-label="${escapeHtml(updateTip)}"${canUpdate ? '' : ' disabled'}>${ICONS.update}</button>
+          <button class="btn btn--small btn--outline history-action-repair" data-entry-id="${escapeHtml(entry.id)}" title="${escapeHtml(window.i18n.t(canUpdate ? 'history.repairTooltip' : 'history.repairUnavailable'))}" aria-label="${escapeHtml(window.i18n.t(canUpdate ? 'history.repairTooltip' : 'history.repairUnavailable'))}"${canUpdate ? '' : ' disabled'}>${ICONS.shieldCheck}</button>
           <button class="btn btn--small btn--outline history-action-folder" data-path="${escapeHtml(entry.download_dir)}" title="${escapeHtml(window.i18n.t('history.openFolderTooltip'))}" aria-label="${escapeHtml(window.i18n.t('history.openFolderTooltip'))}"${entry.status === 'cancelled' ? ' disabled' : ''}>${ICONS.folderOpen}</button>
           <button class="btn btn--small btn--outline history-action-edit-emu" data-entry-id="${escapeHtml(entry.id)}" title="${escapeHtml(editTip)}" aria-label="${escapeHtml(editTip)}"${entry.status === 'cancelled' || !entry.download_dir ? ' disabled' : ''}>${ICONS.settings}</button>
           <button class="btn btn--small btn--outline history-action-remove" data-entry-id="${escapeHtml(entry.id)}" title="${escapeHtml(window.i18n.t('history.removeTooltip'))}" aria-label="${escapeHtml(window.i18n.t('history.removeTooltip'))}">${ICONS.trash}</button>
@@ -3904,6 +3960,7 @@ function renderHistoryEntries(entries) {
           resumed: true,
         });
 
+        state.repairRunning = false;
         state.parsedData = { mainAppId: entry.app_id, depots: [] };
         state.gameName = entry.game_name || null;
         state.headerImage = entry.header_image || null;
@@ -3931,41 +3988,30 @@ function renderHistoryEntries(entries) {
     });
   });
 
+  els.historyList.querySelectorAll('.history-action-repair').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const entry = entryById.get(btn.dataset.entryId);
+      if (!entry || !entry.download_dir) return;
+      let installed = [];
+      try {
+        installed = await invoke('get_installed_depots', { dir: entry.download_dir }) || [];
+      } catch (err) {
+        console.error('get_installed_depots failed:', err);
+      }
+      const manifests = {};
+      installed.forEach((d) => { manifests[String(d.depot_id)] = String(d.manifest_id); });
+      const depotIds = installed.length ? Object.keys(manifests) : (entry.depot_ids || []);
+      startHistoryRedownload(entry.app_id, depotIds, { dir: entry.download_dir, manifests });
+    });
+  });
+
   els.historyList.querySelectorAll('.history-action-redownload, .history-action-update').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      const appId = btn.dataset.appId;
       const depotIds = (btn.dataset.depotIds || '').split(',').filter(Boolean);
       const isUpdate = btn.classList.contains('history-action-update');
-      state.updateDir = isUpdate ? (btn.dataset.path || null) : null;
-      state.updateAppId = isUpdate ? String(appId) : null;
-      closeHistory();
-      state.emuStandalone = false;
-      setEmuEditMode(false);
-      state.parsedData = null;
-      state.selectedDepots.clear();
-      state.jobId = null;
-      state.depotManifests = {};
-      state.searchRepos = [];
-      state.selectedRepo = null;
-      state.searchAppId = null;
-      state.searchSha = null;
-      state.searchKeyVdfKeys = null;
-      cleanupProgressListener();
-      els.gameInfoBanner.classList.add('hidden');
-      els.searchResults.classList.add('hidden');
-      els.searchNextRow.classList.add('hidden');
-      els.searchError.classList.add('hidden');
-      els.searchGameBanner.classList.add('hidden');
-      els.manifestLoading.classList.add('hidden');
-      resetUpload();
-      autoRedownloadPending = true;
-      autoSelectAllOnStep2 = true;
-      autoSelectDepotIds = depotIds.length > 0 ? depotIds : null;
-      switchTab('search');
-      els.searchAppIdInput.value = appId;
-      goToStep(1);
-      performSearch();
+      startHistoryRedownload(btn.dataset.appId, depotIds, isUpdate ? { dir: btn.dataset.path || null } : null);
     });
   });
 

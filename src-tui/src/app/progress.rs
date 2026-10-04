@@ -589,6 +589,25 @@ impl App {
             },
             format!("\n{}", message),
         );
+        let repairing = self
+            .wiz
+            .main_app_id()
+            .is_some_and(|id| self.wiz.active_repair(&id).is_some());
+        if repairing {
+            let repaired: u64 = results
+                .iter()
+                .filter_map(|r| r.get("downloadedBytes").and_then(|v| v.as_u64()))
+                .sum();
+            let line = if repaired > 0 {
+                tf(
+                    "progress.repairDone",
+                    &[("size", &widgets::fmt_bytes(repaired))],
+                )
+            } else {
+                t("progress.repairClean")
+            };
+            self.log(LogKind::Success, format!("✓ {}", line));
+        }
         self.record_success_history(&results);
         self.finish_download(all_ok, message);
         if outcome == "partial" {
