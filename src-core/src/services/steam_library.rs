@@ -363,6 +363,52 @@ fn shortcut_appid_in_entry(entry: &(String, VdfNode)) -> Option<u32> {
     None
 }
 
+fn shortcut_string_field<'a>(entry: &'a (String, VdfNode), name: &str) -> Option<&'a str> {
+    let VdfNode::Object(fields) = &entry.1 else {
+        return None;
+    };
+    fields.iter().find_map(|(k, v)| match v {
+        VdfNode::String(s) if k.eq_ignore_ascii_case(name) => Some(s.as_str()),
+        _ => None,
+    })
+}
+
+fn same_exe(a: &str, b: &str) -> bool {
+    let norm = |s: &str| s.trim().trim_matches('"').replace('\\', "/");
+    if cfg!(target_os = "windows") {
+        norm(a).eq_ignore_ascii_case(&norm(b))
+    } else {
+        norm(a) == norm(b)
+    }
+}
+
+pub fn find_shortcut_appid(exe_path: &str) -> Option<u32> {
+    let install = detect_steam().ok()?;
+    let path = PathBuf::from(&install.steam_dir)
+        .join("userdata")
+        .join(&install.user_id3)
+        .join("config")
+        .join("shortcuts.vdf");
+    let entries = parse_shortcuts(&std::fs::read(path).ok()?).ok()?;
+    entries
+        .iter()
+        .find(|e| shortcut_string_field(e, "Exe").is_some_and(|exe| same_exe(exe, exe_path)))
+        .and_then(shortcut_appid_in_entry)
+}
+
+pub fn run_shortcut(appid: u32) -> Result<(), String> {
+    let install = detect_steam()?;
+    let game_id = (u64::from(appid) << 32) | 0x0200_0000;
+    steam_command(Path::new(&install.steam_dir))
+        .arg(format!("steam://rungameid/{}", game_id))
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .map(|_| ())
+        .map_err(|e| format!("Could not start Steam: {}", e))
+}
+
 pub fn quote_exe(path: &str) -> String {
     format!("\"{}\"", path)
 }

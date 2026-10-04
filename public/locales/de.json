@@ -326,6 +326,11 @@
       "title": "Nicht genug Speicherplatz",
       "body": "Dieser Download braucht etwa {needed}, unter {path} sind aber nur {free} frei. Schaff Platz oder wähl einen anderen Download-Ort.",
       "start": "Trotzdem starten"
+    },
+    "launch": {
+      "title": "Welche Datei startet das Spiel?",
+      "body": "Wähl die Programmdatei des Spiels. SMD merkt sie sich für den nächsten Start.",
+      "start": "Spielen"
     }
   },
   "emulator": {
@@ -544,7 +549,14 @@
     "repairTooltip": "Prüfen und reparieren: Dateien mit dem installierten Stand vergleichen und nur beschädigte oder fehlende Teile neu laden",
     "repairUnavailable": "Prüfen geht nur bei abgeschlossenen Downloads",
     "updateAvailable": "Update verfügbar",
-    "updateAvailableTooltip": "Bei Steam gibt es eine neuere Version. Aktualisieren: nur geänderte Teile in den vorhandenen Ordner laden"
+    "updateAvailableTooltip": "Bei Steam gibt es eine neuere Version. Aktualisieren: nur geänderte Teile in den vorhandenen Ordner laden",
+    "playTooltip": "Spielen (Rechtsklick: andere Programmdatei wählen)",
+    "playNoExe": "Im Spielordner wurde keine Programmdatei gefunden.",
+    "playStarted": "{name} wird gestartet…",
+    "playStartedSteam": "{name} wird über Steam gestartet…",
+    "playStartedWine": "{name} wird mit Wine gestartet…",
+    "playNeedsProton": "Das ist ein Windows-Spiel. Unter Linux läuft es über Steam mit Proton: Füge es zur Steam-Bibliothek hinzu (Schritt 4) und schalte in Steam unter Eigenschaften → Kompatibilität Proton ein, oder installiere Wine. Danach startet „Spielen“ es von hier aus.",
+    "playFailed": "Das Spiel konnte nicht gestartet werden: {message}"
   },
   "depots": {
     "roleContent": "Hauptspiel · Content",

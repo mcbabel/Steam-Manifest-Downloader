@@ -73,3 +73,21 @@ pub async fn check_game_updates(
     let list = history_ops::check_updates(&app_data_dir(&app), state.steam_session.clone()).await?;
     serde_json::to_value(list).map_err(|e| e.to_string())
 }
+
+#[command]
+pub fn get_launch_exe(app: AppHandle, dir: String) -> Option<String> {
+    smd_core::ops::launch::saved_exe(&app_data_dir(&app), &dir)
+}
+
+#[command]
+pub async fn launch_game(app: AppHandle, dir: String, exe: String) -> Result<serde_json::Value, String> {
+    let data_dir = app_data_dir(&app);
+    let method = tauri::async_runtime::spawn_blocking(move || {
+        let method = smd_core::ops::launch::launch(&exe)?;
+        let _ = smd_core::ops::launch::remember_exe(&data_dir, &dir, &exe);
+        Ok::<_, String>(method)
+    })
+    .await
+    .map_err(|e| e.to_string())??;
+    serde_json::to_value(method).map_err(|e| e.to_string())
+}

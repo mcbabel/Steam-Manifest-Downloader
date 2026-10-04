@@ -1412,6 +1412,19 @@
     </div>
   </div>
 
+  <div id="launch-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="launch-modal-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content launch-modal-content">
+      <h3 class="modal__title" id="launch-modal-title" data-i18n="modals.launch.title">Which file starts the game?</h3>
+      <p class="modal__text" data-i18n="modals.launch.body">Pick the program file of the game. SMD remembers it for the next start.</p>
+      <div id="launch-list" class="launch-list" role="radiogroup"></div>
+      <div class="modal__actions">
+        <button id="btn-launch-cancel" class="btn btn--outline" data-modal-cancel data-i18n="common.cancel">Cancel</button>
+        <button id="btn-launch-start" class="btn btn--primary" data-i18n="modals.launch.start">Play</button>
+      </div>
+    </div>
+  </div>
+
   <div id="confirm-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title" aria-hidden="true">
     <div class="modal__backdrop"></div>
     <div class="modal__content">

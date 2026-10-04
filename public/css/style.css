@@ -4145,3 +4145,62 @@ button:disabled,
   background: var(--bg-card-solid);
   color: var(--text-primary);
 }
+
+.launch-modal-content {
+  max-width: 560px;
+  text-align: left;
+}
+
+.launch-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 1rem 0;
+  max-height: 45vh;
+  overflow-y: auto;
+}
+
+.launch-option {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas: "radio name size" "radio path path";
+  column-gap: 0.6rem;
+  row-gap: 0.1rem;
+  align-items: center;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  cursor: pointer;
+}
+
+.launch-option:has(input:checked) {
+  border-color: var(--accent);
+}
+
+.launch-option input {
+  grid-area: radio;
+  accent-color: var(--accent);
+}
+
+.launch-option__name {
+  grid-area: name;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.launch-option__path {
+  grid-area: path;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.launch-option__size {
+  grid-area: size;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}

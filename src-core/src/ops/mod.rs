@@ -3,6 +3,7 @@ pub mod download;
 pub mod emulator;
 pub mod files;
 pub mod history;
+pub mod launch;
 pub mod search;
 pub mod shortcuts;
 pub mod system;

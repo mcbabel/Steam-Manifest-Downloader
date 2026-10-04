@@ -18,6 +18,10 @@ fn is_resumable(e: &HistoryEntry) -> bool {
     e.status == "cancelled_resumable" && e.resume_payload.is_some()
 }
 
+fn can_play(e: &HistoryEntry) -> bool {
+    (e.status == "complete" || e.status == "partial") && !e.download_dir.is_empty()
+}
+
 fn can_update(e: &HistoryEntry) -> bool {
     e.status == "complete" && !e.download_dir.is_empty()
 }
@@ -152,6 +156,7 @@ impl App {
             Action::HistoryRedownload(pos) => self.history_redownload(*pos),
             Action::HistoryUpdate(pos) => self.history_update(*pos),
             Action::HistoryRepair(pos) => self.history_repair(*pos),
+            Action::HistoryPlay(pos) => self.history_play(*pos),
             Action::HistoryOpenFolder(pos) => {
                 let dir = if *pos == usize::MAX {
                     self.wiz.result_dir.clone()
@@ -356,6 +361,82 @@ impl App {
         self.history_redownload(pos);
         self.wiz.update_dir = Some(dir);
         self.wiz.update_app_id = Some(app_id);
+    }
+
+    fn history_play(&mut self, pos: usize) {
+        let Some(entry) = self.hist_entry(pos) else {
+            return;
+        };
+        if !can_play(&entry) {
+            return;
+        }
+        let data = self.data_dir.clone();
+        let name = entry
+            .game_name
+            .clone()
+            .unwrap_or_else(|| format!("App {}", entry.app_id));
+        self.spawn(async move {
+            let dir = entry.download_dir.clone();
+            let exe = match smd_core::ops::launch::saved_exe(&data, &dir) {
+                Some(exe) => Some(exe),
+                None => smd_core::ops::shortcuts::detect_executables(&dir)
+                    .await
+                    .ok()
+                    .and_then(|list| list.into_iter().next())
+                    .map(|e| e.path),
+            };
+            let result = match exe {
+                None => Err(None),
+                Some(exe) => tokio::task::spawn_blocking(move || {
+                    let r = smd_core::ops::launch::launch(&exe);
+                    if r.is_ok() {
+                        let _ = smd_core::ops::launch::remember_exe(&data, &dir, &exe);
+                    }
+                    r.map(|m| (m, exe))
+                })
+                .await
+                .map_err(|e| Some(e.to_string()))
+                .and_then(|r| r.map_err(Some)),
+            };
+            apply(move |app| match result {
+                Ok((method, exe)) => {
+                    let key = match method {
+                        smd_core::ops::launch::LaunchMethod::Steam => "history.playStartedSteam",
+                        smd_core::ops::launch::LaunchMethod::Wine => "history.playStartedWine",
+                        smd_core::ops::launch::LaunchMethod::Direct => "history.playStarted",
+                    };
+                    let file = std::path::Path::new(&exe)
+                        .file_name()
+                        .map(|f| f.to_string_lossy().to_string())
+                        .unwrap_or(exe);
+                    app.toast(
+                        Tone::Success,
+                        format!("{} ({})", tf(key, &[("name", &name)]), file),
+                    );
+                }
+                Err(None) => {
+                    app.hist.banner = Some((
+                        Tone::Error,
+                        t("history.playNoExe"),
+                        std::time::Instant::now(),
+                    ))
+                }
+                Err(Some(e)) if e == smd_core::ops::launch::NEEDS_PROTON => {
+                    app.hist.banner = Some((
+                        Tone::Warning,
+                        t("history.playNeedsProton"),
+                        std::time::Instant::now(),
+                    ))
+                }
+                Err(Some(e)) => {
+                    app.hist.banner = Some((
+                        Tone::Error,
+                        tf("history.playFailed", &[("message", &e)]),
+                        std::time::Instant::now(),
+                    ))
+                }
+            })
+        });
     }
 
     fn history_repair(&mut self, pos: usize) {
@@ -618,6 +699,13 @@ impl App {
         let resumable = is_resumable(e) && self.settings.use_native_downloader;
         let has_dir = e.status != "cancelled" && !e.download_dir.is_empty();
         vec![
+            ButtonSpec::new(
+                format!("▸ {}", t("tui.history.play")),
+                Fid::new("history.play"),
+                Action::HistoryPlay(pos),
+                Btn::Primary,
+            )
+            .enabled(can_play(e)),
             ButtonSpec::new(
                 format!("▶ {}", t("tui.history.resume")),
                 Fid::new("history.resume"),

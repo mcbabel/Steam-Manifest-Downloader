@@ -72,6 +72,7 @@ const ICONS = {
   moon: `<svg class="theme-icon theme-icon--moon" id="theme-icon" width="16" height="16" ${SVG_BASE}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`,
   settings: `<svg class="btn-icon" ${SVG_BASE}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
   play: `<svg class="btn-icon" ${SVG_BASE}><polygon points="5 3 19 12 5 21 5 3"/></svg>`,
+  gamepad: `<svg class="btn-icon" ${SVG_BASE}><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="15" y1="13" x2="15.01" y2="13"/><line x1="18" y1="11" x2="18.01" y2="11"/><rect x="2" y="6" width="20" height="12" rx="2"/></svg>`,
   shieldCheck: `<svg class="btn-icon" ${SVG_BASE}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>`,
 };
 
@@ -3762,6 +3763,66 @@ function saveHistoryView() {
   } catch (_) {}
 }
 
+function relativeToDir(path, dir) {
+  const norm = (p) => String(p || '').replace(/\\/g, '/').replace(/\/+$/, '');
+  const base = norm(dir);
+  const full = norm(path);
+  return base && full.toLowerCase().startsWith(`${base.toLowerCase()}/`) ? full.slice(base.length + 1) : full;
+}
+
+function chooseLaunchExe(candidates, dir) {
+  const modal = document.getElementById('launch-modal');
+  const list = document.getElementById('launch-list');
+  let chosen = (candidates.find((c) => c.recommended) || candidates[0]).path;
+  list.innerHTML = candidates.map((c, i) => `
+    <label class="launch-option">
+      <input type="radio" name="launch-exe" value="${i}"${c.path === chosen ? ' checked' : ''}>
+      <span class="launch-option__name">${escapeHtml(c.name)}</span>
+      <span class="launch-option__path" title="${escapeHtml(c.path)}">${escapeHtml(relativeToDir(c.path, dir))}</span>
+      <span class="launch-option__size">${escapeHtml(formatBytes(c.size) || '')}</span>
+    </label>`).join('');
+  list.querySelectorAll('input').forEach((input) => {
+    input.addEventListener('change', () => { chosen = candidates[Number(input.value)].path; });
+  });
+  return new Promise((resolve) => {
+    const finish = (value) => {
+      modal.classList.add('hidden');
+      resolve(value);
+    };
+    document.getElementById('btn-launch-start').onclick = () => finish(chosen);
+    document.getElementById('btn-launch-cancel').onclick = () => finish(null);
+    modal.querySelector('.modal__backdrop').onclick = () => finish(null);
+    modal.classList.remove('hidden');
+  });
+}
+
+async function playGame(entry, choose) {
+  const dir = entry.download_dir;
+  let exe = null;
+  try {
+    if (!choose) exe = await invoke('get_launch_exe', { dir });
+    if (!exe) {
+      const candidates = (await invoke('detect_executables', { downloadDir: dir })) || [];
+      if (candidates.length === 0) {
+        showHistoryBanner(window.i18n.t('history.playNoExe'));
+        return;
+      }
+      exe = candidates.length === 1 && !choose ? candidates[0].path : await chooseLaunchExe(candidates, dir);
+      if (!exe) return;
+    }
+    const method = await invoke('launch_game', { dir, exe });
+    const key = method === 'steam' ? 'history.playStartedSteam' : method === 'wine' ? 'history.playStartedWine' : 'history.playStarted';
+    showHistoryBanner(window.i18n.t(key, { name: entry.game_name || `App ${entry.app_id}` }), 5000, 'success');
+  } catch (err) {
+    const text = String(err);
+    if (text.includes('WINDOWS_GAME_NEEDS_PROTON')) {
+      showHistoryBanner(window.i18n.t('history.playNeedsProton'), 12000);
+    } else {
+      showHistoryBanner(window.i18n.t('history.playFailed', { message: window.i18n.localizeError(text) }));
+    }
+  }
+}
+
 function startHistoryRedownload(appId, depotIds, target) {
   state.updateDir = target ? target.dir : null;
   state.updateAppId = target ? String(appId) : null;
@@ -3932,6 +3993,7 @@ function renderHistoryEntries(entries) {
       : '<div class="history-entry__image history-entry__image--placeholder"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>';
     const name = entry.game_name ? escapeHtml(entry.game_name) : `App ${escapeHtml(entry.app_id)}`;
     const canUpdate = entry.status === 'complete' && !!entry.download_dir;
+    const canPlay = (entry.status === 'complete' || entry.status === 'partial') && !!entry.download_dir;
     const updateCheck = canUpdate ? updateCheckFor(entry) : null;
     const hasUpdate = !!(updateCheck && updateCheck.update_available);
     const updateTip = window.i18n.t(!canUpdate ? 'history.updateUnavailable' : hasUpdate ? 'history.updateAvailableTooltip' : 'history.updateTooltip');
@@ -3955,6 +4017,9 @@ function renderHistoryEntries(entries) {
         <div class="history-entry__actions">
           ${canResumeNow
             ? `<button class="btn btn--small btn--primary history-action-resume" data-entry-id="${escapeHtml(entry.id)}" title="${escapeHtml(window.i18n.t('history.resumeTooltip'))}" aria-label="${escapeHtml(window.i18n.t('history.resumeTooltip'))}">${ICONS.play}</button>`
+            : ''}
+          ${canPlay
+            ? `<button class="btn btn--small btn--outline history-action-play" data-entry-id="${escapeHtml(entry.id)}" title="${escapeHtml(window.i18n.t('history.playTooltip'))}" aria-label="${escapeHtml(window.i18n.t('history.playTooltip'))}">${ICONS.gamepad}</button>`
             : ''}
           <button class="btn btn--small btn--outline history-action-redownload" data-app-id="${escapeHtml(entry.app_id)}" data-depot-ids="${escapeHtml((entry.depot_ids || []).join(','))}" title="${escapeHtml(window.i18n.t('history.redownloadTooltip'))}" aria-label="${escapeHtml(window.i18n.t('history.redownloadTooltip'))}">${ICONS.refresh}</button>
           <button class="btn btn--small ${hasUpdate ? 'btn--primary' : 'btn--outline'} history-action-update" data-app-id="${escapeHtml(entry.app_id)}" data-depot-ids="${escapeHtml((entry.depot_ids || []).join(','))}" data-path="${escapeHtml(entry.download_dir)}" title="${escapeHtml(updateTip)}" aria-label="${escapeHtml(updateTip)}"${canUpdate ? '' : ' disabled'}>${ICONS.update}</button>
@@ -4023,6 +4088,18 @@ function renderHistoryEntries(entries) {
         alert(window.i18n.t('history.resumeError', { message: window.i18n.localizeError(err) }));
         openHistory();
       }
+    });
+  });
+
+  els.historyList.querySelectorAll('.history-action-play').forEach(btn => {
+    const entry = entryById.get(btn.dataset.entryId);
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (entry) playGame(entry, false);
+    });
+    btn.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      if (entry) playGame(entry, true);
     });
   });
 
