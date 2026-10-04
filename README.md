@@ -39,6 +39,7 @@ Upload `.lua` files or search by App ID across configurable sources (GitHub, arc
 | ⚡ | **Integrated DepotDownloaderMod** execution |
 | 📊 | **Real-time progress** with per-depot speed + ETA |
 | 🔄 | **Update downloaded games** — from the history, only changed files are downloaded and files removed from the game are deleted |
+| ⏯️ | **Resume where it stopped** — a cancelled download continues from a checkpoint instead of re-checking the whole game; a full check is optional |
 | 🐢 | **Speed limit** — cap downloads at e.g. 10 MB/s or 75 Mbit/s, also while a download is running |
 | ⏻ | **Shut down when finished** — optional, with a 60 second countdown that can be cancelled; the next start offers to continue with the skipped steps |
 | 🎮 | **Steam Store API** integration — game names + cover art |
@@ -46,7 +47,7 @@ Upload `.lua` files or search by App ID across configurable sources (GitHub, arc
 | 🔧 | **gbe_fork emulator** patching — Regular + Experimental variants, 21 settings, lobby_connect launcher |
 | 🛡️ | **DRM detection & removal** via Steamless (works through `mono` on Linux) |
 | 🪝 | **Steam-API-Check Bypass** — bundled `version.dll` hijack for stubborn integrity checks |
-| 🌙 | **Dark / Light theme** + English & German localisation |
+| 🌙 | **Dark / Light theme** + English & German localisation, including download log, error messages and `smd --help` |
 | 🔒 | **Fully self-contained** — DepotDownloaderMod embedded |
 | 🖥️ | **Terminal version** — full mouse-driven TUI plus headless CLI for servers & Docker ([details](#%EF%B8%8F-terminal-version-tui--cli)) |
 

@@ -205,7 +205,7 @@
         <div class="row__text">
           <h3>Two download engines</h3>
           <p>A pure Rust pipeline talks to Steam's CDN directly: anonymous login, manifest request codes, chunk download and chunk decryption, all in process, with no .NET involved. It is the default, and the app still labels it experimental. A bundled .NET engine, DepotDownloaderMod, is there when you would rather use that instead.</p>
-          <p>An interrupted download resumes by verifying the chunks already on disk, so a dropped connection costs you the remainder and not the whole run.</p>
+          <p>The Rust pipeline keeps a small checkpoint while it downloads. Resume a cancelled download from the history and it continues where it stopped, checking only a few chunks around that point instead of re-reading the whole game. A full check of every file is one click away when you want it.</p>
         </div>
         <div class="row__media">
           <div class="panel frame">
@@ -216,7 +216,7 @@
               <li><span>transfer</span><span>chunk download</span></li>
               <li><span>decrypt</span><span>chunk decryption, in process</span></li>
               <li><span>dotnet</span><span class="ok">not required</span></li>
-              <li><span>resume</span><span class="ok">verifies chunks on disk</span></li>
+              <li><span>resume</span><span class="ok">continues from a checkpoint</span></li>
             </ul>
             <div class="panel__bar panel__bar--mid"><span>engine</span><span>bundled dotnet</span></div>
             <ul class="readout">
@@ -404,7 +404,7 @@
         <li class="step">
           <span class="step__idx" aria-hidden="true">03</span>
           <h3>Download</h3>
-          <p>Run the pure Rust CDN pipeline or the bundled .NET engine. Contents are written to the folder you pick. An interrupted run resumes by verifying the chunks already on disk. A speed limit and a shutdown after the download are optional.</p>
+          <p>Run the pure Rust CDN pipeline or the bundled .NET engine. Contents are written to the folder you pick. A cancelled run continues from where it stopped. A speed limit and a shutdown after the download are optional.</p>
         </li>
         <li class="step">
           <span class="step__idx" aria-hidden="true">04</span>
@@ -598,7 +598,7 @@
         <div class="cell frame">
           <span class="cell__tag">power</span>
           <h3>Shut down when it is done</h3>
-          <p>Switch it on during a download and the PC shuts down afterwards. A 60 second countdown lets you change your mind.</p>
+          <p>Switch it on during a download and the PC shuts down afterwards. A 60 second countdown lets you change your mind, and the next start offers the steps that were skipped.</p>
         </div>
         <div class="cell frame">
           <span class="cell__tag">steam</span>
@@ -608,7 +608,7 @@
         <div class="cell frame">
           <span class="cell__tag">interface</span>
           <h3>Two themes, two languages</h3>
-          <p>Dark and light themes ship together. The desktop app and the terminal version are available in English and in German.</p>
+          <p>Dark and light themes ship together. The desktop app and the terminal version are available in English and in German, down to the download log, error messages and <code>smd --help</code>.</p>
         </div>
         <div class="cell frame">
           <span class="cell__tag">telemetry</span>
@@ -734,7 +734,7 @@
           <details class="qa">
             <summary><span>What happens if a download is interrupted?</span></summary>
             <div class="qa__body">
-              <p>Start it again and it resumes. The app verifies the chunks already on disk rather than pulling everything a second time.</p>
+              <p>Nothing is lost. Resume a cancelled download from the history and it continues from where it stopped, checking only the last chunks before that point. You can also choose to check every file first, which takes longer on big games. A download started again from scratch verifies the chunks already on disk rather than pulling everything a second time.</p>
             </div>
           </details>
           <details class="qa">
@@ -752,7 +752,7 @@
           <details class="qa">
             <summary><span>Can I limit the speed or shut down the PC afterwards?</span></summary>
             <div class="qa__body">
-              <p>Both. The speed limit sits in the settings and takes MB/s or Mbit/s. The switch to shut down the PC is on the download screen, and a 60 second countdown runs before the PC turns off, so you can still cancel.</p>
+              <p>Both. The speed limit sits in the settings and takes MB/s or Mbit/s. The switch to shut down the PC is on the download screen, and a 60 second countdown runs before the PC turns off, so you can still cancel. When you start SMD again it offers to continue with the steps that were skipped: shortcuts, Steam library and emulator.</p>
             </div>
           </details>
           <details class="qa">

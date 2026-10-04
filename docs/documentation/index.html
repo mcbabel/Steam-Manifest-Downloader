@@ -552,7 +552,7 @@ sudo zypper install libwebkit2gtk-4_1-0 libayatana-appindicator3-1 librsvg-2-2</
                 <li><strong>Depot keys generation.</strong> Creates a <code>steam.keys</code> file containing all known depot decryption keys</li>
                 <li><strong>Chunk download.</strong> Keeps up to 8 chunk fetches in flight against Steam's CDN (configurable under Settings, 1 to 64), decodes VZ1 (LZMA) or VSZTD (zstd) payloads and verifies each one against its CRC32 and SHA-1 before writing. Writes to the same file are serialized so concurrent chunks do not interleave. Failed chunks retry up to 8 times with exponential backoff, rotating CDN servers between attempts</li>
               </ol>
-              <p>Chunks that already match on disk are verified and skipped, so a restarted download picks up where it left off instead of starting over.</p>
+              <p>Chunks that already match on disk are verified and skipped, so a restarted download picks up where it left off instead of starting over. While it downloads, the native engine also writes a small checkpoint per depot, <code>.smd-depot-&lt;id&gt;.resume.json</code> in the game folder, that records up to which chunk everything is finished. It is deleted once the depot is complete.</p>
               <div class="note">
                 <p class="note__tag">Engines</p>
                 <p>This is the <strong>native engine</strong> and it is the default. If you switch <strong>Settings, Download engine</strong> back to DepotDownloaderMod, SMD instead collects the manifests and hands them to the embedded DDM binary, which requires the .NET runtime on Windows.</p>
@@ -662,6 +662,7 @@ sudo zypper install libwebkit2gtk-4_1-0 libayatana-appindicator3-1 librsvg-2-2</
                 <p class="note__tag">Careful</p>
                 <p>By default, cancelling a download deletes all partially downloaded files for that session. Turn on <strong>Cancel behaviour, Keep downloaded files when cancelling</strong> if you would rather resume later. The job then lands in your history as Resumable, with a <strong>Resume</strong> button.</p>
               </div>
+              <p>Before resuming, SMD asks how to continue. <strong>Resume</strong> uses the checkpoint: chunks well before the point where the download stopped are taken as they are, the last 64 chunks before and after it are checked again and the rest is downloaded, so a large game is not read from disk again. <strong>Check Everything</strong> reads and verifies every file that is already there first, which can take several minutes for large games. Downloads without a checkpoint, from older versions or the DepotDownloaderMod path, and updates always check everything. The terminal interface asks the same question with a checkbox.</p>
 
               <h3 id="step-update">Update a downloaded game <a class="alink" href="#step-update" aria-label="Permalink to Update a downloaded game">#</a></h3>
               <p>When a game you downloaded earlier gets a new version, you do not have to download it again. Open the history and click <strong>Update</strong>, the arrow button on the entry. SMD loads the current manifests and runs the usual steps, with a notice in step 2 that the download goes into the existing folder. Then:</p>
@@ -790,7 +791,7 @@ setManifestid(1392863, "4398981003384795747", 13789896785)</code></pre>
 
               <h3 id="settings-top">Top level settings <a class="alink" href="#settings-top" aria-label="Permalink to Top level settings">#</a></h3>
               <ul>
-                <li><strong>Language</strong>, the interface language. English and German are bundled, and the picker also runs on first launch</li>
+                <li><strong>Language</strong>, the interface language. English and German are bundled, and the picker also runs on first launch. It covers the whole program, including the download log and the error messages</li>
                 <li><strong>Auto-update</strong>, toggles whether SMD checks GitHub for new releases on startup and offers an in-app update prompt</li>
                 <li><strong>Speed limit</strong>, off by default. Switch it on and enter a value in MB/s or Mbit/s, see <a href="#speed-limit">Speed limit</a>. It applies to the native engine and takes effect at once, also for a running download</li>
               </ul>
@@ -803,7 +804,7 @@ setManifestid(1392863, "4398981003384795747", 13789896785)</code></pre>
               <p><strong>Max concurrent chunks</strong> sets how many chunks the native engine downloads and decrypts at once, 8 by default and 1 to 64. Lower it if downloads make the system lag.</p>
 
               <h4 id="cancel-behaviour">Cancel behaviour <a class="alink" href="#cancel-behaviour" aria-label="Permalink to Cancel behaviour">#</a></h4>
-              <p><strong>Keep downloaded files when cancelling</strong> is off by default. Enable it and cancelling leaves the partial files on disk. The job appears in your history as Resumable, and restarting it skips every chunk that already verifies.</p>
+              <p><strong>Keep downloaded files when cancelling</strong> is off by default. Enable it and cancelling leaves the partial files on disk. The job appears in your history as Resumable, and resuming it continues from where it stopped, see <a href="#step-cancel">Cancel a download</a>.</p>
 
               <h4 id="depotdownloader-arguments-depotdownloadermod-path-only">DepotDownloader arguments, DepotDownloaderMod path only <a class="alink" href="#depotdownloader-arguments-depotdownloadermod-path-only" aria-label="Permalink to DepotDownloader arguments, DepotDownloaderMod path only">#</a></h4>
               <ul>
@@ -963,6 +964,7 @@ smd history</code></pre>
                 <li><span class="rows__k rows__k--literal">--json</span><span class="rows__v">Machine readable output, only JSON lines on stdout</span></li>
                 <li><span class="rows__k rows__k--literal">-v</span><span class="rows__v">Backend diagnostics on stderr instead of the log file</span></li>
               </ul>
+              <p>The terminal version uses the language from the settings, or the system language from <code>LANG</code> when none is set, for its output and for <code>smd --help</code>. Machine readable <code>--json</code> output is the same in every language.</p>
               <p>Exit codes of <code>smd download</code>: <code>0</code> complete, <code>1</code> failed, <code>2</code> partially downloaded and resumable, <code>130</code> interrupted.</p>
 
               <h3 id="terminal-docker">Docker <a class="alink" href="#terminal-docker" aria-label="Permalink to Docker">#</a></h3>
