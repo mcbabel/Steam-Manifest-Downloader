@@ -29,6 +29,13 @@ pub fn get_build_info() -> serde_json::Value {
 }
 
 #[command]
+pub async fn power_off_system() -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(smd_core::ops::system::power_off)
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[command]
 pub async fn check_dotnet() -> Result<serde_json::Value, String> {
     serde_json::to_value(smd_core::ops::system::check_dotnet()).map_err(|e| e.to_string())
 }

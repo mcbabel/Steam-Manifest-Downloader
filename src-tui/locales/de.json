@@ -119,7 +119,9 @@
       "cancelling": "Breche Download ab…",
       "noLongerRunning": "Der Job läuft nicht mehr.",
       "ended": "Der Download ist beendet. Du kannst neu starten.",
-      "failed": "Fehlgeschlagen"
+      "failed": "Fehlgeschlagen",
+      "shutdownOn": "⏻ Danach herunterfahren: an",
+      "shutdownOff": "⏻ Danach herunterfahren: aus"
     },
     "shortcut": {
       "pickLocation": "Wähle mindestens einen Ort für die Verknüpfung.",

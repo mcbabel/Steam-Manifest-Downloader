@@ -147,7 +147,10 @@
     "depotDownloading": "Downloading…",
     "depotComplete": "Complete",
     "depotFailed": "Failed",
-    "depotError": "Error"
+    "depotError": "Error",
+    "shutdownAfter": "Shut down the PC when the download has finished",
+    "statusComplete": "Complete!",
+    "statusIncomplete": "Incomplete"
   },
   "shortcut": {
     "title": "Create Shortcuts",
@@ -266,6 +269,14 @@
       "title": "Folder not found",
       "body": "The download folder no longer exists. It may have been moved or deleted.",
       "close": "Close"
+    },
+    "shutdown": {
+      "title": "Shutting Down",
+      "body": "The download has finished. The PC will shut down in {seconds} seconds.",
+      "abort": "Cancel",
+      "now": "Shut Down Now",
+      "running": "Shutting down…",
+      "failed": "The PC could not be shut down: {message}"
     }
   },
   "emulator": {

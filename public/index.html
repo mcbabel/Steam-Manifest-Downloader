@@ -398,6 +398,14 @@
           <span id="download-eta" class="download-speed-info__eta"></span>
         </div>
 
+        <div class="settings-field__toggle-wrap shutdown-after">
+          <label class="toggle-switch">
+            <input type="checkbox" id="shutdown-after-toggle">
+            <span class="toggle-switch__slider"></span>
+          </label>
+          <label for="shutdown-after-toggle" class="settings-field__toggle-text" data-i18n="progress.shutdownAfter">Shut down the PC when the download has finished</label>
+        </div>
+
         <div id="terminal" class="terminal">
           <div class="terminal__header">
             <span class="terminal__dot terminal__dot--red"></span>
@@ -866,6 +874,24 @@
       <div class="modal__actions">
         <button id="btn-cancel-no" class="btn btn--outline" data-modal-cancel data-i18n="modals.cancel.no">No, Continue</button>
         <button id="btn-cancel-yes" class="btn btn--danger" data-i18n="modals.cancel.yes">Yes, Cancel &amp; Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="shutdown-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="shutdown-modal-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content">
+      <div class="modal__icon modal__icon--warning" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+          <line x1="12" y1="2" x2="12" y2="12"/>
+        </svg>
+      </div>
+      <h3 class="modal__title" id="shutdown-modal-title" data-i18n="modals.shutdown.title">Shutting Down</h3>
+      <p class="modal__text" id="shutdown-modal-body"></p>
+      <div class="modal__actions">
+        <button id="btn-shutdown-abort" class="btn btn--outline" data-modal-cancel data-i18n="modals.shutdown.abort">Cancel</button>
+        <button id="btn-shutdown-now" class="btn btn--danger" data-i18n="modals.shutdown.now">Shut Down Now</button>
       </div>
     </div>
   </div>

@@ -20,6 +20,7 @@ const SPEED_WINDOW: Duration = Duration::from_millis(3000);
 const SPEED_MIN_WINDOW: Duration = Duration::from_millis(1500);
 const ETA_INTERVAL: Duration = Duration::from_millis(1500);
 const LOG_CAP: usize = 5000;
+const SHUTDOWN_DELAY: Duration = Duration::from_secs(60);
 const SPEED_HISTORY: usize = 120;
 
 fn s(v: &Value, k: &str) -> Option<String> {
@@ -576,6 +577,7 @@ impl App {
             }
         }
         self.check_emulator_support();
+        self.schedule_shutdown();
     }
 
     fn record_success_history(&mut self, results: &[Value]) {
@@ -652,7 +654,68 @@ impl App {
             }
             self.emit("download_completed", Some(props));
             self.finish_download(false, message);
+            self.schedule_shutdown();
         }
+    }
+
+    fn schedule_shutdown(&mut self) {
+        if !self.shutdown_after {
+            return;
+        }
+        self.shutdown_deadline = Some(Instant::now() + SHUTDOWN_DELAY);
+        let mut modal = Modal::confirm(
+            t("modals.shutdown.title"),
+            tf("modals.shutdown.body", &[("seconds", &SHUTDOWN_DELAY.as_secs())]),
+            t("modals.shutdown.now"),
+            t("modals.shutdown.abort"),
+            true,
+            Action::ShutdownNow,
+        );
+        if let Modal::Confirm(c) = &mut modal {
+            c.on_no = Some(Action::ShutdownAbort);
+        }
+        self.show_modal(modal);
+    }
+
+    fn shutdown_modal_body(&mut self, body: String) {
+        if let Some(Modal::Confirm(c)) = self.modal.as_mut() {
+            if c.on_yes == Action::ShutdownNow {
+                c.body = body;
+            }
+        }
+    }
+
+    pub(super) fn shutdown_tick(&mut self) {
+        let Some(deadline) = self.shutdown_deadline else {
+            return;
+        };
+        let now = Instant::now();
+        if now >= deadline {
+            self.shutdown_now();
+            return;
+        }
+        let secs = (deadline - now).as_secs() + 1;
+        self.shutdown_modal_body(tf("modals.shutdown.body", &[("seconds", &secs)]));
+    }
+
+    fn shutdown_now(&mut self) {
+        self.shutdown_deadline = None;
+        self.shutdown_modal_body(t("modals.shutdown.running"));
+        self.spawn(async move {
+            let r = tokio::task::spawn_blocking(smd_core::ops::system::power_off)
+                .await
+                .map_err(|e| e.to_string())
+                .and_then(|r| r);
+            apply(move |app| {
+                if let Err(e) = r {
+                    app.shutdown_after = false;
+                    if matches!(&app.modal, Some(Modal::Confirm(c)) if c.on_yes == Action::ShutdownNow) {
+                        app.close_modal();
+                    }
+                    app.toast(Tone::Error, tf("modals.shutdown.failed", &[("message", &e)]));
+                }
+            })
+        });
     }
 
     fn on_cancelled(&mut self, msg: &Value) {
@@ -735,6 +798,13 @@ impl App {
             }
             Action::ProgressNext => self.progress_next(),
             Action::Home => self.reset_wizard(),
+            Action::ToggleShutdownAfter => self.shutdown_after = !self.shutdown_after,
+            Action::ShutdownAbort => {
+                self.shutdown_deadline = None;
+                self.shutdown_after = false;
+                self.close_modal();
+            }
+            Action::ShutdownNow => self.shutdown_now(),
             _ => return false,
         }
         true
@@ -856,6 +926,7 @@ impl App {
     }
 
     pub(super) fn render_progress(&mut self, buf: &mut Buffer, area: Rect, ctx: &mut Ctx) {
+        let shutdown_after = self.shutdown_after;
         let tick = self.tick;
         let Some(p) = self.wiz.progress.as_mut() else {
             return;
@@ -1136,6 +1207,16 @@ impl App {
                         .enabled(!p.cancelling),
                     );
                 }
+                specs.push(ButtonSpec::new(
+                    t(if shutdown_after {
+                        "tui.progress.shutdownOn"
+                    } else {
+                        "tui.progress.shutdownOff"
+                    }),
+                    Fid::new("progress.shutdown"),
+                    Action::ToggleShutdownAfter,
+                    Btn::Secondary,
+                ));
                 let label = if p.cancelling {
                     t("progress.cancelling")
                 } else {

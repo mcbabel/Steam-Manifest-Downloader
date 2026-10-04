@@ -95,6 +95,8 @@ pub struct App {
     pub shortcut_supported: bool,
     pub steam_install: Option<SteamInstall>,
     pub emulator_available: bool,
+    pub shutdown_after: bool,
+    pub shutdown_deadline: Option<Instant>,
 }
 
 impl App {
@@ -149,6 +151,8 @@ impl App {
             shortcut_supported: smd_core::ops::shortcuts::is_shortcut_supported(),
             steam_install: None,
             emulator_available: false,
+            shutdown_after: false,
+            shutdown_deadline: None,
         };
         (app, rx)
     }
@@ -379,6 +383,7 @@ impl App {
         }
         self.autocomplete_tick();
         self.progress_tick();
+        self.shutdown_tick();
     }
 
     fn on_event(&mut self, ev: Event) {

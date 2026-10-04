@@ -53,6 +53,7 @@ fn main() {
             // System
             commands::check_dotnet,
             commands::get_disk_space,
+            commands::power_off_system,
             commands::get_build_info,
             commands::get_debug_log_path,
             // Window

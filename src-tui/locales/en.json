@@ -119,7 +119,9 @@
       "cancelling": "Cancelling download…",
       "noLongerRunning": "The job is no longer running.",
       "ended": "The download ended. You can start over.",
-      "failed": "Failed"
+      "failed": "Failed",
+      "shutdownOn": "⏻ Shut down after: on",
+      "shutdownOff": "⏻ Shut down after: off"
     },
     "shortcut": {
       "pickLocation": "Select at least one shortcut location.",

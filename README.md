@@ -40,6 +40,7 @@ Upload `.lua` files or search by App ID across configurable sources (GitHub, arc
 | 📊 | **Real-time progress** with per-depot speed + ETA |
 | 🔄 | **Update downloaded games** — from the history, only changed files are downloaded and files removed from the game are deleted |
 | 🐢 | **Speed limit** — cap downloads at e.g. 10 MB/s or 75 Mbit/s, also while a download is running |
+| ⏻ | **Shut down when finished** — optional, with a 60 second countdown that can be cancelled |
 | 🎮 | **Steam Store API** integration — game names + cover art |
 | 🖼️ | **Add to Steam Library** — non-Steam shortcut with banner / hero / logo / icon (Linux step + Windows toggle) |
 | 🔧 | **gbe_fork emulator** patching — Regular + Experimental variants, 21 settings, lobby_connect launcher |
@@ -240,6 +241,7 @@ smd history
 | `--mh-key` / `SMD_MANIFESTHUB_KEY` | ManifestHub API key (fallback source and custom manifests) |
 | `--manifest DEPOT=ID` | Pin a depot to a specific manifest (repeatable) |
 | `--update <GAME_DIR>` | Update an existing download in place: only changed files are downloaded, files removed from the game are deleted |
+| `--shutdown` | Shut down the computer when the download has finished (60 s countdown, Ctrl+C aborts) |
 | `--speed-limit` / `SMD_SPEED_LIMIT` | Cap the download speed, e.g. `10MB/s` or `75Mbit/s` (`0` = unlimited, defaults to the setting) |
 | `--json` | Machine-readable output |
 | `-v` | Show backend diagnostics on stderr (otherwise written to a log file) |

@@ -3107,6 +3107,10 @@ button:disabled,
   margin-top: 0.75rem;
 }
 
+.shutdown-after {
+  margin: 0.75rem 0 1rem;
+}
+
 .speed-limit__field {
   display: flex;
   align-items: center;

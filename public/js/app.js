@@ -161,6 +161,11 @@ const els = {
   gameName: $('#game-name'),
   gameDescription: $('#game-description'),
   cancelModal: $('#cancel-modal'),
+  shutdownAfterToggle: $('#shutdown-after-toggle'),
+  shutdownModal: $('#shutdown-modal'),
+  shutdownModalBody: $('#shutdown-modal-body'),
+  btnShutdownAbort: $('#btn-shutdown-abort'),
+  btnShutdownNow: $('#btn-shutdown-now'),
   btnCancelYes: $('#btn-cancel-yes'),
   btnCancelNo: $('#btn-cancel-no'),
   btnThemeToggle: $('#btn-theme-toggle'),
@@ -2028,8 +2033,8 @@ function handleComplete(msg) {
 
   els.progressBarFill.style.width = '100%';
   els.progressStatus.innerHTML = allOk
-    ? `<span class="status-success">${ICONS.checkCircle} Complete!</span>`
-    : `<span class="status-warning">${ICONS.alertTriangle} Incomplete</span>`;
+    ? `<span class="status-success">${ICONS.checkCircle} ${escapeHtml(window.i18n.t('progress.statusComplete'))}</span>`
+    : `<span class="status-warning">${ICONS.alertTriangle} ${escapeHtml(window.i18n.t('progress.statusIncomplete'))}</span>`;
   updateDepotDownloadProgress(100);
   if (els.downloadSpeedInfo) els.downloadSpeedInfo.classList.add('hidden');
   emitEvent('download_completed', Object.assign({ success: allOk }, jobContext(), msg.diag || {}));
@@ -2055,6 +2060,7 @@ function handleComplete(msg) {
 
   cleanupProgressListener();
   checkEmulatorSupport();
+  maybeScheduleShutdown();
 }
 
 function handleError(msg) {
@@ -2073,6 +2079,7 @@ function handleError(msg) {
     showBrowserNotification(window.i18n.t('notifications.failedTitle'), window.i18n.t('notifications.failedBody', { message: msg.message }));
     playNotificationSound();
     cleanupProgressListener();
+    maybeScheduleShutdown();
   }
 }
 
@@ -3015,6 +3022,51 @@ function showBrowserNotification(title, body, icon) {
   }
 }
 
+const SHUTDOWN_DELAY_SECONDS = 60;
+
+function maybeScheduleShutdown() {
+  if (!els.shutdownAfterToggle || !els.shutdownAfterToggle.checked || !els.shutdownModal) return;
+  clearInterval(state.shutdownTimer);
+  state.shutdownRemaining = SHUTDOWN_DELAY_SECONDS;
+  renderShutdownCountdown();
+  els.btnShutdownNow.disabled = false;
+  els.shutdownModal.classList.remove('hidden');
+  state.shutdownTimer = setInterval(() => {
+    state.shutdownRemaining -= 1;
+    if (state.shutdownRemaining <= 0) {
+      shutdownNow();
+    } else {
+      renderShutdownCountdown();
+    }
+  }, 1000);
+}
+
+function renderShutdownCountdown() {
+  els.shutdownModalBody.textContent = window.i18n.t('modals.shutdown.body', { seconds: state.shutdownRemaining });
+}
+
+function abortScheduledShutdown() {
+  clearInterval(state.shutdownTimer);
+  state.shutdownTimer = null;
+  if (els.shutdownModal) els.shutdownModal.classList.add('hidden');
+  if (els.shutdownAfterToggle) els.shutdownAfterToggle.checked = false;
+}
+
+async function shutdownNow() {
+  clearInterval(state.shutdownTimer);
+  state.shutdownTimer = null;
+  els.btnShutdownNow.disabled = true;
+  els.shutdownModalBody.textContent = window.i18n.t('modals.shutdown.running');
+  await commitPendingHistory();
+  try {
+    await invoke('power_off_system');
+  } catch (e) {
+    els.shutdownModalBody.textContent = window.i18n.t('modals.shutdown.failed', { message: String(e) });
+    els.btnShutdownNow.disabled = false;
+    if (els.shutdownAfterToggle) els.shutdownAfterToggle.checked = false;
+  }
+}
+
 function playNotificationSound() {
   if (!state.notificationSoundEnabled) return;
   try {
@@ -3027,6 +3079,9 @@ function playNotificationSound() {
     oscillator.type = 'sine';
     gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
     gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+    oscillator.onended = () => {
+      ctx.close().catch(() => {});
+    };
     oscillator.start(ctx.currentTime);
     oscillator.stop(ctx.currentTime + 0.5);
   } catch (e) {
@@ -3187,6 +3242,11 @@ function initEvents() {
   els.btnCancelYes.addEventListener('click', cancelDownload);
   els.btnCancelNo.addEventListener('click', hideCancelModal);
   els.cancelModal.querySelector('.modal__backdrop').addEventListener('click', hideCancelModal);
+  if (els.shutdownModal) {
+    els.btnShutdownAbort.addEventListener('click', abortScheduledShutdown);
+    els.btnShutdownNow.addEventListener('click', shutdownNow);
+    els.shutdownModal.querySelector('.modal__backdrop').addEventListener('click', abortScheduledShutdown);
+  }
 
   els.btnHistory.addEventListener('click', openHistory);
   els.btnHistoryClose.addEventListener('click', closeHistory);

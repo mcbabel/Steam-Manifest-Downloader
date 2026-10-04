@@ -147,7 +147,10 @@
     "depotDownloading": "Lädt…",
     "depotComplete": "Fertig",
     "depotFailed": "Fehlgeschlagen",
-    "depotError": "Fehler"
+    "depotError": "Fehler",
+    "shutdownAfter": "PC nach dem Download herunterfahren",
+    "statusComplete": "Abgeschlossen!",
+    "statusIncomplete": "Unvollständig"
   },
   "shortcut": {
     "title": "Verknüpfungen erstellen",
@@ -266,6 +269,14 @@
       "title": "Ordner nicht gefunden",
       "body": "Der Download-Ordner existiert nicht mehr. Er wurde möglicherweise verschoben oder gelöscht.",
       "close": "Schließen"
+    },
+    "shutdown": {
+      "title": "PC wird heruntergefahren",
+      "body": "Der Download ist beendet. Der PC wird in {seconds} Sekunden heruntergefahren.",
+      "abort": "Abbrechen",
+      "now": "Herunterfahren",
+      "running": "Wird heruntergefahren…",
+      "failed": "Der PC konnte nicht heruntergefahren werden: {message}"
     }
   },
   "emulator": {

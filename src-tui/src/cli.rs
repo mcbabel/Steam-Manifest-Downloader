@@ -66,6 +66,11 @@ pub struct DownloadArgs {
         help = "Limit the download speed, e.g. 10MB/s or 75Mbit/s (built-in downloader only). Default: the speed limit from the settings, 0 for unlimited."
     )]
     pub speed_limit: Option<String>,
+    #[arg(
+        long,
+        help = "Shut down the computer when the download has finished. Waits 60 seconds first, Ctrl+C aborts. Not done when the download is interrupted."
+    )]
+    pub shutdown: bool,
     #[arg(long, help = "Only print the depots that would be downloaded.")]
     pub list: bool,
     #[arg(
@@ -457,8 +462,30 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
     printer.clear();
     if interrupted {
         tokio::time::sleep(Duration::from_millis(300)).await;
+        return code;
+    }
+    if args.shutdown {
+        shutdown_after_download().await;
     }
     code
+}
+
+async fn shutdown_after_download() {
+    errln!("Shutting down in 60 s, press Ctrl+C to abort.");
+    tokio::select! {
+        _ = tokio::time::sleep(Duration::from_secs(60)) => {}
+        _ = stopped() => {
+            errln!("shutdown aborted");
+            return;
+        }
+    }
+    let result = tokio::task::spawn_blocking(smd_core::ops::system::power_off)
+        .await
+        .map_err(|e| e.to_string())
+        .and_then(|r| r);
+    if let Err(e) = result {
+        errln!("error: shutdown failed: {}", e);
+    }
 }
 
 async fn record_history(
