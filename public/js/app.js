@@ -420,7 +420,7 @@ async function handleDepotManifestFile(depotId) {
   try {
     const { open } = window.__TAURI__.dialog;
     const filePath = await open({
-      filters: [{ name: 'Manifest Files', extensions: ['manifest'] }]
+      filters: [{ name: window.i18n.t('select.manifestFilesFilter'), extensions: ['manifest'] }]
     });
     if (!filePath) return;
 
@@ -437,7 +437,7 @@ async function handleDepotManifestFile(depotId) {
     if (btnEl) btnEl.classList.add('depot-manifest-action--active');
   } catch (error) {
     console.error('Failed to select manifest file:', error);
-    alert(window.i18n.t('select.manifestFileError', { message: String(error) }));
+    alert(window.i18n.t('select.manifestFileError', { message: window.i18n.localizeError(error) }));
     delete state.depotManifests[depotId];
   }
 }
@@ -474,7 +474,7 @@ async function fetchLatestManifestForDepot(depotId, btnEl) {
     if (statusEl) statusEl.innerHTML = `<span class="manifest-uploaded">${ICONS.check} ${escapeHtml(manifestId)}</span> <span class="manifest-source manifest-source--${escapeHtml(result.source)}">${escapeHtml(sourceLabel)}</span>`;
   } catch (e) {
     console.error('fetch_latest_manifest_id failed:', e);
-    if (statusEl) statusEl.innerHTML = `<span class="status-error">${escapeHtml(window.i18n.t('depots.fetchLatestError', { message: String(e) }))}</span>`;
+    if (statusEl) statusEl.innerHTML = `<span class="status-error">${escapeHtml(window.i18n.t('depots.fetchLatestError', { message: window.i18n.localizeError(e) }))}</span>`;
   } finally {
     if (btnEl) {
       btnEl.disabled = false;
@@ -497,7 +497,7 @@ async function fetchLatestManifestForDepot(depotId, btnEl) {
 async function handleFilePath(filePath) {
   const ext = filePath.split('.').pop().toLowerCase();
   if (ext !== 'lua' && ext !== 'st') {
-    showUploadError('Please select a .lua or .st file');
+    showUploadError(window.i18n.t('upload.wrongFile'));
     return;
   }
 
@@ -529,7 +529,7 @@ async function handleFilePath(filePath) {
     showSelectionStep();
   } catch (error) {
     els.uploadLoading.classList.add('hidden');
-    showUploadError(String(error));
+    showUploadError(window.i18n.localizeError(error));
   }
 }
 
@@ -676,7 +676,7 @@ async function startPatchOnlyEmulator() {
     scanned = await invoke('emu_scan_game_dir', { gameDir });
   } catch (e) {
     console.error('emu_scan_game_dir failed:', e);
-    showPatchOnlyError(window.i18n.t('patchOnly.errorScan', { message: String(e) }));
+    showPatchOnlyError(window.i18n.t('patchOnly.errorScan', { message: window.i18n.localizeError(e) }));
     return;
   } finally {
     els.patchOnlyLoading.classList.add('hidden');
@@ -809,7 +809,7 @@ async function performSearch() {
 
   const appId = parseInt(appIdStr, 10);
   if (isNaN(appId) || appId <= 0) {
-    showSearchError('Please enter a valid App ID');
+    showSearchError(window.i18n.t('search.invalidAppId'));
     return;
   }
 
@@ -855,7 +855,7 @@ async function performSearch() {
     els.searchLoading.classList.add('hidden');
     els.btnSearch.disabled = false;
     emitSearchOutcome(0, 'error');
-    showSearchError(String(error));
+    showSearchError(window.i18n.localizeError(error));
   }
 }
 
@@ -885,7 +885,7 @@ async function fetchSearchGameInfo(appId) {
 
       if (headerImage) {
         els.searchGameImage.src = headerImage;
-        els.searchGameImage.alt = name || 'Game Cover';
+        els.searchGameImage.alt = name || window.i18n.t('common.gameCover');
         state.headerImage = headerImage;
       }
 
@@ -1024,7 +1024,7 @@ async function proceedFromSearch() {
     els.manifestLoading.classList.add('hidden');
 
     if (depots.length === 0) {
-      showSearchError('No manifests found for this App ID in any configured depot source. Add or enable more sources in Settings.');
+      showSearchError(window.i18n.t('errors.noManifests'));
       els.searchNextRow.classList.remove('hidden');
       return;
     }
@@ -1037,7 +1037,7 @@ async function proceedFromSearch() {
     showSelectionStep();
   } catch (error) {
     els.manifestLoading.classList.add('hidden');
-    showSearchError(String(error));
+    showSearchError(window.i18n.localizeError(error));
     els.searchNextRow.classList.remove('hidden');
   }
 }
@@ -1079,7 +1079,7 @@ async function browseDownloadDir() {
     const selected = await open({
       directory: true,
       multiple: false,
-      title: 'Select Download Location'
+      title: window.i18n.t('select.chooseLocationTitle')
     });
     if (selected) {
       els.downloadDirInput.value = selected;
@@ -1108,7 +1108,7 @@ async function fetchGameInfo(appId) {
 
       if (headerImage) {
         els.gameHeaderImage.src = headerImage;
-        els.gameHeaderImage.alt = name || 'Game Cover';
+        els.gameHeaderImage.alt = name || window.i18n.t('common.gameCover');
         state.headerImage = headerImage;
       }
 
@@ -1154,7 +1154,7 @@ function showSelectionStep() {
   } else {
     if (state.headerImage) {
       els.gameHeaderImage.src = state.headerImage;
-      els.gameHeaderImage.alt = state.gameName || 'Game Cover';
+      els.gameHeaderImage.alt = state.gameName || window.i18n.t('common.gameCover');
     }
     if (state.gameName) els.gameName.textContent = state.gameName;
     els.gameInfoLoading.classList.add('hidden');
@@ -1549,7 +1549,8 @@ async function startDownload() {
     if (!state.jobId) state.jobId = result.jobId;
     state.downloadDir = result.downloadDir;
   } catch (error) {
-    appendTerminalLine(`Error: ${error}`, 'error');
+    const errorText = window.i18n.localizeError(error);
+    appendTerminalLine(window.i18n.t('progress.errorLine', { message: errorText }), 'error');
     emitEvent('download_completed', Object.assign({ success: false }, jobContext(), {
       outcome: 'failed',
       depots_total: state.dlDepotCount ?? 0,
@@ -1557,7 +1558,7 @@ async function startDownload() {
       duration_bucket: durationBucket(Date.now() - (state.dlStartedAt || Date.now())),
       engine: state.currentEngine || 'native',
     }, classifyStartFailure(error)));
-    showCompletion(false, String(error));
+    showCompletion(false, errorText);
   }
 }
 
@@ -1613,7 +1614,7 @@ async function connectProgressListener() {
     handleProgressMessage(event.payload);
   });
   state.unlistenProgress = unlisten;
-  appendTerminalLine('Connected to download engine...', 'info');
+  appendTerminalLine(window.i18n.t('progress.connected'), 'info');
 }
 
 function cleanupProgressListener() {
@@ -1681,11 +1682,17 @@ function handleStatusUpdate(msg) {
   switch (msg.step) {
     case 'checking_branch':
       els.progressStatus.textContent = window.i18n.t('progress.checkingBranch', { appId: msg.appId });
-      appendTerminalLine(`Checking branch for App ${msg.appId}...`, 'info');
+      appendTerminalLine(window.i18n.t('progress.checkingBranch', { appId: msg.appId }), 'info');
       break;
 
     case 'branch_found':
-      appendTerminalLine(`✓ Branch found. Last updated: ${msg.lastUpdated || 'unknown'}`, 'success');
+      appendTerminalLine(`✓ ${msg.key ? eventText(msg) : window.i18n.t('progress.branchFound', { info: msg.lastUpdated || '' })}`, 'success');
+      break;
+
+    case 'manifest_hub_rate_limited':
+    case 'depot_up_to_date':
+    case 'removed_stale_files':
+      if (msg.message) appendTerminalLine(eventText(msg), msg.step === 'manifest_hub_rate_limited' ? 'warn' : 'info');
       break;
 
     case 'downloading_manifests':
@@ -1699,23 +1706,23 @@ function handleStatusUpdate(msg) {
       }
       updateDepotStatus(msg.depotId, 'active', window.i18n.t('progress.depotManifest'));
       if (msg.filename) {
-        appendTerminalLine(`Downloading ${msg.filename}...`, 'info');
+        appendTerminalLine(window.i18n.t('progress.downloadingFile', { file: msg.filename }), 'info');
       }
       break;
 
     case 'downloading_manifest_hub':
       els.progressStatus.textContent = window.i18n.t('progress.customManifest', { depotId: msg.depotId });
-      updateDepotStatus(msg.depotId, 'active', `Custom manifest: ${msg.manifestId}`);
-      appendTerminalLine(`Downloading custom manifest for depot ${msg.depotId} (ID: ${msg.manifestId}) via ManifestHub API...`, 'info');
+      updateDepotStatus(msg.depotId, 'active', window.i18n.t('progress.customManifestStatus', { id: msg.manifestId }));
+      appendTerminalLine(window.i18n.t('progress.customManifestLine', { depotId: msg.depotId, manifestId: msg.manifestId }), 'info');
       break;
 
     case 'generating_keys':
       els.progressStatus.textContent = window.i18n.t('progress.generatingKeys');
-      appendTerminalLine('Generating steam.keys file...', 'info');
+      appendTerminalLine(window.i18n.t('progress.generatingKeys'), 'info');
       break;
 
     case 'keys_generated':
-      appendTerminalLine(`✓ Generated keys for ${msg.depotCount} depots`, 'success');
+      appendTerminalLine(`✓ ${window.i18n.t('progress.keysGenerated', { count: msg.depotCount })}`, 'success');
       break;
 
     case 'starting_downloader':
@@ -1744,22 +1751,38 @@ function handleStatusUpdate(msg) {
       }
       updateDepotStatus(msg.depotId, 'active', window.i18n.t('progress.depotDownloading'));
       if (msg.command) {
-        appendTerminalLine(`> ${msg.command}`, 'info');
+        appendTerminalLine(`> ${msg.key ? eventText(msg) : msg.command}`, 'info');
       }
       break;
   }
 }
 
+function eventText(msg) {
+  if (!msg) return '';
+  if (msg.key) {
+    const params = {};
+    for (const [name, value] of Object.entries(msg.params || {})) {
+      params[name] = name === 'error' || name === 'reason' ? window.i18n.localizeError(value) : value;
+    }
+    const text = window.i18n.t(msg.key, params);
+    if (text !== msg.key) return text;
+  }
+  return window.i18n.localizeError(msg.message || '');
+}
+
 function handleManifestSource(msg) {
-  const labels = {
-    steam: { prefix: 'Steam CDN', cls: 'info' },
-    manifesthub_fallback: { prefix: 'ManifestHub fallback', cls: 'warn' },
-    manifesthub_unavailable: { prefix: 'No fallback', cls: 'stderr' },
-    cached: { prefix: 'Cached', cls: 'info' },
+  const classes = {
+    manifesthub_fallback: 'warn',
+    manifesthub_unavailable: 'stderr',
   };
-  const meta = labels[msg.source] || { prefix: msg.source || 'Source', cls: 'info' };
-  const text = `[${meta.prefix}] depot ${msg.depotId}: ${msg.message}`;
-  appendTerminalLine(text, meta.cls);
+  const labelKey = `events.src.label.${msg.source}`;
+  const label = window.i18n.t(labelKey);
+  const text = window.i18n.t('events.line', {
+    label: label === labelKey ? (msg.source || '?') : label,
+    depot: msg.depotId,
+    text: eventText(msg),
+  });
+  appendTerminalLine(text, classes[msg.source] || 'info');
   if (msg.source === 'manifesthub_unavailable') {
     state.suggestMhKey = true;
   }
@@ -2044,7 +2067,8 @@ function handleComplete(msg) {
   if (els.downloadSpeedInfo) els.downloadSpeedInfo.classList.add('hidden');
   emitEvent('download_completed', Object.assign({ success: allOk }, jobContext(), msg.diag || {}));
   buildPendingHistoryEntry(msg);
-  showCompletion(allOk, msg.message);
+  const summary = eventText(msg);
+  showCompletion(allOk, summary);
 
   if (msg.results) {
     const results = Array.isArray(msg.results) ? msg.results : [];
@@ -2053,13 +2077,13 @@ function handleComplete(msg) {
     });
   }
 
-  appendTerminalLine(`\n${msg.message}`, allOk ? 'success' : 'error');
+  appendTerminalLine(`\n${summary}`, allOk ? 'success' : 'error');
 
   const gameName = state.gameName || window.i18n.t('common.game');
   if (allOk) {
     showBrowserNotification(window.i18n.t('notifications.completeTitle'), window.i18n.t('notifications.completeBody', { name: gameName }), state.headerImage);
   } else {
-    showBrowserNotification(window.i18n.t('notifications.partialTitle'), msg.message || window.i18n.t('notifications.partialBody', { name: gameName }), state.headerImage);
+    showBrowserNotification(window.i18n.t('notifications.partialTitle'), summary || window.i18n.t('notifications.partialBody', { name: gameName }), state.headerImage);
   }
   playNotificationSound();
 
@@ -2072,7 +2096,8 @@ function handleError(msg) {
   if (msg.depotId) {
     updateDepotStatus(msg.depotId, 'error', window.i18n.t('progress.depotError'));
   }
-  appendTerminalLine(`Error: ${msg.message}`, 'error');
+  const errorText = eventText(msg);
+  appendTerminalLine(window.i18n.t('progress.errorLine', { message: errorText }), 'error');
 
   // If it's a fatal error (no depotId = pipeline-level error), show Start Over and notify
   if (!msg.depotId) {
@@ -2080,8 +2105,8 @@ function handleError(msg) {
     state.speedTracker.staleTimer = null;
     if (els.downloadSpeedInfo) els.downloadSpeedInfo.classList.add('hidden');
     emitEvent('download_completed', Object.assign({ success: false }, jobContext(), msg.diag || {}));
-    showCompletion(false, msg.message);
-    showBrowserNotification(window.i18n.t('notifications.failedTitle'), window.i18n.t('notifications.failedBody', { message: msg.message }));
+    showCompletion(false, errorText);
+    showBrowserNotification(window.i18n.t('notifications.failedTitle'), window.i18n.t('notifications.failedBody', { message: errorText }));
     playNotificationSound();
     cleanupProgressListener();
     maybeScheduleShutdown();
@@ -2098,7 +2123,7 @@ function handleCancelled(msg) {
     ? window.i18n.t('progress.cancelledKept')
     : msg.step === 'cancelled_cleanup'
       ? window.i18n.t('progress.cancelledCleanup')
-      : (msg.message || window.i18n.t('progress.cancelledCleanup'));
+      : (msg.message ? eventText(msg) : window.i18n.t('progress.cancelledCleanup'));
   appendTerminalLine(`\n${localized}`, 'error');
   emitEvent('download_completed', Object.assign({ success: false }, jobContext(), {
     outcome: 'cancelled',
@@ -2331,9 +2356,9 @@ async function openSettings() {
 
 function channelLabel(channel) {
   switch (channel) {
-    case 'stable': return { text: 'Stable', cls: 'build-info__badge--stable' };
-    case 'dev':    return { text: 'Dev',    cls: 'build-info__badge--dev' };
-    case 'dev-local': return { text: 'Dev (local)', cls: 'build-info__badge--local' };
+    case 'stable': return { text: window.i18n.t('settings.channelStable'), cls: 'build-info__badge--stable' };
+    case 'dev':    return { text: window.i18n.t('settings.channelDev'), cls: 'build-info__badge--dev' };
+    case 'dev-local': return { text: window.i18n.t('settings.channelDevLocal'), cls: 'build-info__badge--local' };
     default:       return { text: channel || '—', cls: 'build-info__badge--local' };
   }
 }
@@ -2348,8 +2373,8 @@ async function loadBuildInfo() {
     els.buildInfoChannel.className = `build-info__badge ${cls}`;
 
     els.buildInfoVersion.textContent = info.version || '—';
-    els.buildInfoSha.textContent = info.gitSha || 'unknown';
-    els.buildInfoDate.textContent = info.buildDate || 'unknown';
+    els.buildInfoSha.textContent = info.gitSha || window.i18n.t('common.unknown');
+    els.buildInfoDate.textContent = info.buildDate || window.i18n.t('common.unknown');
     els.buildInfoProfile.textContent = info.profile || '—';
     els.buildInfoPlatform.textContent = `${info.targetOs || '?'} / ${info.targetArch || '?'}`;
   } catch (e) {
@@ -2847,7 +2872,7 @@ async function performUpdate() {
     // App will exit — this line may not be reached
   } catch (e) {
     console.error('[AutoUpdate] Install failed:', e);
-    els.updateProgressText.textContent = window.i18n.t('modals.update.failed', { message: String(e) });
+    els.updateProgressText.textContent = window.i18n.t('modals.update.failed', { message: window.i18n.localizeError(e) });
     els.updateProgressFill.classList.remove('progress-bar__fill--indeterminate');
     els.updateProgressFill.style.width = '0%';
     els.btnUpdateNow.textContent = window.i18n.t('common.retry');
@@ -2916,8 +2941,9 @@ function toggleTheme() {
 function updateThemeButton(theme) {
   if (els.btnThemeToggle) {
     els.btnThemeToggle.innerHTML = theme === 'dark' ? ICONS.moon : ICONS.sun;
-    els.btnThemeToggle.title = theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode';
-    els.btnThemeToggle.setAttribute('aria-label', theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+    const themeLabel = window.i18n.t(theme === 'dark' ? 'header.themeToLight' : 'header.themeToDark');
+    els.btnThemeToggle.title = themeLabel;
+    els.btnThemeToggle.setAttribute('aria-label', themeLabel);
   }
 }
 
@@ -2968,7 +2994,7 @@ async function cancelDownload() {
 
   els.btnCancel.disabled = true;
   els.btnCancel.innerHTML = escapeHtml(window.i18n.t('progress.cancelling'));
-  appendTerminalLine('Cancelling download...', 'info');
+  appendTerminalLine(window.i18n.t('progress.cancellingLine'), 'info');
 
   try {
     await invoke('cancel_download', { jobId: state.jobId });
@@ -2976,10 +3002,10 @@ async function cancelDownload() {
     const errStr = String(error);
     // If job is not running, the download already finished or errored — show Start Over
     if (errStr.toLowerCase().includes('not found') || errStr.toLowerCase().includes('not running')) {
-      appendTerminalLine('Job is no longer running.', 'info');
-      showCompletion(false, 'Download ended. You can start over.');
+      appendTerminalLine(window.i18n.t('progress.noLongerRunning'), 'info');
+      showCompletion(false, window.i18n.t('progress.ended'));
     } else {
-      appendTerminalLine(`Cancel request failed: ${errStr}`, 'error');
+      appendTerminalLine(window.i18n.t('progress.cancelFailed', { message: window.i18n.localizeError(errStr) }), 'error');
       // Still show Next so user isn't stuck
       if (els.btnNextStep) els.btnNextStep.classList.remove('hidden');
       els.btnCancel.classList.add('hidden');
@@ -3068,7 +3094,7 @@ async function shutdownNow() {
     await invoke('power_off_system');
   } catch (e) {
     if (followupSaved) invoke('clear_pending_followup').catch(() => {});
-    els.shutdownModalBody.textContent = window.i18n.t('modals.shutdown.failed', { message: String(e) });
+    els.shutdownModalBody.textContent = window.i18n.t('modals.shutdown.failed', { message: window.i18n.localizeError(e) });
     els.btnShutdownNow.disabled = false;
     if (els.shutdownAfterToggle) els.shutdownAfterToggle.checked = false;
   }
@@ -3711,7 +3737,7 @@ function renderHistory(entries) {
         }
       } catch (err) {
         console.error('resume start_download failed:', err);
-        alert(window.i18n.t('history.resumeError', { message: String(err) }));
+        alert(window.i18n.t('history.resumeError', { message: window.i18n.localizeError(err) }));
         openHistory();
       }
     });
@@ -3802,7 +3828,7 @@ async function clearHistory(deleteResumableFiles = false) {
     await loadHistory();
   } catch (e) {
     console.error('Failed to clear history:', e);
-    alert(String(e));
+    alert(window.i18n.localizeError(e));
     await loadHistory();
   }
 }
@@ -3869,7 +3895,7 @@ async function confirmHistoryRemove() {
     await loadHistory();
   } catch (err) {
     console.error('Failed to remove history entry:', err);
-    alert(String(err));
+    alert(window.i18n.localizeError(err));
     await loadHistory();
   }
 }
@@ -4003,7 +4029,7 @@ async function browseSteamExe() {
     const { open } = window.__TAURI__.dialog;
     const opts = {
       defaultPath: state.downloadDir || undefined,
-      title: 'Select Game Executable',
+      title: window.i18n.t('shortcut.chooseExeTitle'),
     };
     if (state.shortcutSupported) {
       opts.filters = [{ name: 'Executables', extensions: ['exe'] }];
@@ -4124,7 +4150,7 @@ async function performSteamLibraryAdd(closeSteam = false) {
       showSteamRunningPrompt();
       return false;
     }
-    setSteamLibraryResult('error', window.i18n.t('steamLibrary.error', { message: String(e) }));
+    setSteamLibraryResult('error', window.i18n.t('steamLibrary.error', { message: window.i18n.localizeError(e) }));
     return false;
   } finally {
     if (els.btnSteamAdd) els.btnSteamAdd.disabled = false;
@@ -4294,7 +4320,7 @@ async function performDlcMerge() {
     console.error('emu_merge_dlc_depots failed:', e);
     if (els.emuDlcMergeStatus) {
       els.emuDlcMergeStatus.textContent = window.i18n.t('emulator.dlcMergeError', {
-        message: String(e),
+        message: window.i18n.localizeError(e),
       });
     }
     if (els.btnEmuMergeDlcs) {
@@ -4431,7 +4457,7 @@ async function removeDrm() {
     const monoNeeded = /command not found|No such file|cannot run|exec format/i.test(errMsg)
       && /mono/i.test(errMsg);
     const hint = monoNeeded ? '\n\n' + window.i18n.t('emulator.drmMonoHint') : '';
-    setDrmStatus('error', withEmuHint(window.i18n.t('emulator.drmRemoveError', { message: errMsg }) + hint, errMsg));
+    setDrmStatus('error', withEmuHint(window.i18n.t('emulator.drmRemoveError', { message: window.i18n.localizeError(errMsg) }) + hint, errMsg));
   } finally {
     if (els.btnEmuDrmRemove) els.btnEmuDrmRemove.disabled = false;
   }
@@ -4617,7 +4643,7 @@ async function hydrateEmuPatchedContext() {
     } catch (e) {
       console.error('emu_read_emu_settings failed:', e);
       state.emuSettingsPrefillPath = null;
-      setEmuApplyStatus('error', window.i18n.t('emulator.settingsReadError', { message: String(e) }));
+      setEmuApplyStatus('error', window.i18n.t('emulator.settingsReadError', { message: window.i18n.localizeError(e) }));
     }
     let installed = false;
     try {
@@ -4683,7 +4709,7 @@ async function loadEmuReleaseInfo() {
   } catch (e) {
     console.error('emu_release_info failed:', e);
     els.emuReleaseStatus.classList.remove('emu-release-status--busy', 'emu-release-status--ready');
-    els.emuReleaseStatus.textContent = String(e);
+    els.emuReleaseStatus.textContent = window.i18n.localizeError(e);
   }
 }
 
@@ -4711,7 +4737,7 @@ async function syncEmuBypass(targets) {
       outcome = { ok: true, message: '' };
     } catch (e) {
       console.error('steam_api_bypass_revert failed:', e);
-      outcome = { ok: false, message: window.i18n.t('emulator.bypassError', { message: String(e) }) };
+      outcome = { ok: false, message: window.i18n.t('emulator.bypassError', { message: window.i18n.localizeError(e) }) };
     }
   }
   if (outcome.ok) state.bypassInitialState = want;
@@ -4736,7 +4762,7 @@ async function applySteamApiBypass(targets) {
     };
   } catch (e) {
     console.error('steam_api_bypass_apply failed:', e);
-    return { ok: false, message: window.i18n.t('emulator.bypassError', { message: String(e) }) };
+    return { ok: false, message: window.i18n.t('emulator.bypassError', { message: window.i18n.localizeError(e) }) };
   }
 }
 
@@ -4838,7 +4864,7 @@ async function applyEmuReplacement() {
     if (msg.includes('AV_BLOCKED')) {
       setEmuApplyAntivirusBlocked();
     } else {
-      setEmuApplyStatus('error', withEmuHint(window.i18n.t('emulator.applyError', { message: msg }), msg));
+      setEmuApplyStatus('error', withEmuHint(window.i18n.t('emulator.applyError', { message: window.i18n.localizeError(msg) }), msg));
     }
   } finally {
     setEmuBusy(false);
@@ -5093,7 +5119,7 @@ async function confirmEmuRevert() {
       fail_class: classifyEmuCommandError(e),
     });
     setEmuBusy(false);
-    setEmuApplyStatus('error', window.i18n.t('emulator.revertError', { message: String(e) }));
+    setEmuApplyStatus('error', window.i18n.t('emulator.revertError', { message: window.i18n.localizeError(e) }));
     return;
   }
 
@@ -5370,7 +5396,7 @@ async function browseExe() {
     const { open } = window.__TAURI__.dialog;
     const opts = {
       defaultPath: state.downloadDir || undefined,
-      title: 'Select Game Executable'
+      title: window.i18n.t('shortcut.chooseExeTitle')
     };
     if (state.shortcutSupported) {
       opts.filters = [{ name: 'Executables', extensions: ['exe'] }];
@@ -5393,7 +5419,7 @@ async function createShortcuts() {
   const createStartMenu = els.shortcutStartMenu.checked;
 
   if (!createDesktop && !createStartMenu) {
-    showShortcutStatus(false, 'Please select at least one shortcut location.');
+    showShortcutStatus(false, window.i18n.t('shortcut.noLocation'));
     return;
   }
 
@@ -5435,7 +5461,7 @@ async function createShortcuts() {
       await addToSteamLibraryFromShortcutStep(exePath);
     }
   } catch (e) {
-    showShortcutStatus(false, window.i18n.t('shortcut.failed', { message: String(e) }));
+    showShortcutStatus(false, window.i18n.t('shortcut.failed', { message: window.i18n.localizeError(e) }));
     els.btnCreateShortcuts.disabled = false;
     els.btnCreateShortcuts.textContent = window.i18n.t('shortcut.createShortcuts');
   }
@@ -5463,7 +5489,7 @@ async function addToSteamLibraryFromShortcutStep(exePath) {
     }
   } catch (e) {
     console.error('steam_library_add (windows toggle) failed:', e);
-    const errMsg = window.i18n.t('steamLibrary.error', { message: String(e) });
+    const errMsg = window.i18n.t('steamLibrary.error', { message: window.i18n.localizeError(e) });
     if (els.shortcutStatus) {
       const existing = els.shortcutStatus.textContent || '';
       els.shortcutStatus.textContent = existing ? existing + '\n\n' + errMsg : errMsg;

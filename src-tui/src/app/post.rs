@@ -173,7 +173,7 @@ impl App {
                             msgs.push(t("tui.shortcut.startMenuDone"));
                         }
                         if !res.errors.is_empty() {
-                            msgs.push(format!("Errors: {}", res.errors.join(", ")));
+                            msgs.push(tf("shortcut.errors", &[("list", &res.errors.iter().map(|e| crate::i18n::localize_error(e)).collect::<Vec<_>>().join(", "))]));
                         }
                         ok = (!desktop || res.desktop) && (!start || res.start_menu);
                         if ok {
@@ -205,7 +205,7 @@ impl App {
                 Tone::Error,
                 tf(
                     "steamLibrary.error",
-                    &[("message", &"no executable selected")],
+                    &[("message", &t("tui.errors.noExe"))],
                 ),
             ));
             return;
@@ -213,7 +213,7 @@ impl App {
         let Some(app_id) = self.wiz.main_app_id() else {
             self.wiz.steam_status = Some((
                 Tone::Error,
-                tf("steamLibrary.error", &[("message", &"missing app id")]),
+                tf("steamLibrary.error", &[("message", &t("tui.errors.noAppId"))]),
             ));
             return;
         };

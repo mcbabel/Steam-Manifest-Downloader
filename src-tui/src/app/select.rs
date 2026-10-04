@@ -251,7 +251,11 @@ impl App {
                     app.wiz.result_dir = v["downloadDir"].as_str().map(String::from);
                 }
                 Err(e) => {
-                    app.log(super::state::LogKind::Error, format!("Error: {}", e));
+                    let e = crate::i18n::localize_error(&e);
+                    app.log(
+                        super::state::LogKind::Error,
+                        tf("progress.errorLine", &[("message", &e)]),
+                    );
                     app.finish_download(false, e);
                 }
             })

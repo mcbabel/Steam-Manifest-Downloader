@@ -283,7 +283,11 @@ pub async fn start_download(
             Err(e) => {
                 if !is_cancelled {
                     let mut event = ProgressEvent::new("error", &job_id_clone);
-                    event.message = Some(format!("Unexpected error: {}", e));
+                    event.localized(
+                        format!("Unexpected error: {}", e),
+                        "events.unexpectedError",
+                        serde_json::json!({ "error": e.to_string() }),
+                    );
                     emit_progress(&sink_clone, &event);
                 }
 
@@ -398,13 +402,17 @@ async fn run_download_pipeline(
             event.step = Some("branch_found".to_string());
             event.app_id = Some(config.app_id.clone());
             event.last_updated = Some(format!("Source: {}", source_label));
+            event.key = Some("events.branchFoundIn".to_string());
+            event.params = Some(serde_json::json!({ "source": source_label }));
             emit_progress(sink, &event);
         } else {
             if depot_sources_list.is_empty() {
                 let mut event = ProgressEvent::new("error", job_id);
-                event.message = Some(
+                event.localized(
                     "No manifest sources configured. Add one in Settings → Advanced Settings → Manifest Sources."
                         .to_string(),
+                    "events.noSources",
+                    serde_json::json!({}),
                 );
                 emit_progress(sink, &event);
                 return Ok(());
@@ -418,14 +426,19 @@ async fn run_download_pipeline(
                     event.step = Some("branch_found".to_string());
                     event.app_id = Some(config.app_id.clone());
                     event.last_updated = Some("Source: configured manifest source".to_string());
+                    event.key = Some("events.branchFoundSources".to_string());
                     emit_progress(sink, &event);
                 }
                 depot_sources::ProbeOutcome::Missing => {
                     let mut event = ProgressEvent::new("error", job_id);
-                    event.message = Some(format!(
-                        "App {} is not present in any configured manifest source.",
-                        config.app_id
-                    ));
+                    event.localized(
+                        format!(
+                            "App {} is not present in any configured manifest source.",
+                            config.app_id
+                        ),
+                        "events.appMissing",
+                        serde_json::json!({ "app": config.app_id }),
+                    );
                     event.diag = Some(diag::summarize(
                         &[diag::DepotDiag::failed_at(
                             diag::Stage::SourceProbe,
@@ -441,11 +454,15 @@ async fn run_download_pipeline(
                 }
                 depot_sources::ProbeOutcome::Inconclusive(class) => {
                     let mut event = ProgressEvent::new("error", job_id);
-                    event.message = Some(format!(
-                        "Could not reach your manifest sources to check for app {} ({}). \
-                         This is a problem with the source, not with the app — try again shortly.",
-                        config.app_id, class
-                    ));
+                    event.localized(
+                        format!(
+                            "Could not reach your manifest sources to check for app {} ({}). \
+                             This is a problem with the source, not with the app — try again shortly.",
+                            config.app_id, class
+                        ),
+                        "events.sourcesUnreachable",
+                        serde_json::json!({ "app": config.app_id, "reason": class }),
+                    );
                     event.diag = Some(diag::summarize(
                         &[diag::DepotDiag::failed_at(
                             diag::Stage::SourceProbe,
@@ -461,9 +478,11 @@ async fn run_download_pipeline(
                 }
                 depot_sources::ProbeOutcome::NoSources => {
                     let mut event = ProgressEvent::new("error", job_id);
-                    event.message = Some(
+                    event.localized(
                         "No usable manifest sources configured. Add one in Settings → Advanced Settings → Manifest Sources."
                             .to_string(),
+                        "events.noUsableSources",
+                        serde_json::json!({}),
                     );
                     event.diag = Some(diag::summarize(
                         &[diag::DepotDiag::failed(
@@ -518,7 +537,11 @@ async fn run_download_pipeline(
                     event.depot_id = Some(depot.depot_id.clone());
                     event.manifest_id = Some(manifest_id.to_string());
                     event.filename = Some(filename);
-                    event.message = Some("Using uploaded manifest file".to_string());
+                    event.localized(
+                        "Using uploaded manifest file".to_string(),
+                        "events.usingUploaded",
+                        serde_json::json!({}),
+                    );
                     emit_progress(sink, &event);
                     manifest_results.push((depot.depot_id.clone(), true));
                     manifest_diags.push(diag::DepotDiag::ok(diag::SourceKind::Uploaded));
@@ -526,10 +549,14 @@ async fn run_download_pipeline(
                 Err(e) => {
                     let mut event = ProgressEvent::new("error", job_id);
                     event.depot_id = Some(depot.depot_id.clone());
-                    event.message = Some(format!(
-                        "Failed to use uploaded manifest for depot {}: {}",
-                        depot.depot_id, e
-                    ));
+                    event.localized(
+                        format!(
+                            "Failed to use uploaded manifest for depot {}: {}",
+                            depot.depot_id, e
+                        ),
+                        "events.uploadedFailed",
+                        serde_json::json!({ "depot": depot.depot_id, "error": e.to_string() }),
+                    );
                     emit_progress(sink, &event);
                     manifest_results.push((depot.depot_id.clone(), false));
                     manifest_diags.push(diag::DepotDiag::failed_at(
@@ -596,10 +623,14 @@ async fn run_download_pipeline(
             Err(e) => {
                 let mut event = ProgressEvent::new("error", job_id);
                 event.depot_id = Some(depot.depot_id.clone());
-                event.message = Some(format!(
-                    "Failed to download manifest for depot {}: {}",
-                    depot.depot_id, e
-                ));
+                event.localized(
+                    format!(
+                        "Failed to download manifest for depot {}: {}",
+                        depot.depot_id, e
+                    ),
+                    "events.manifestFailed",
+                    serde_json::json!({ "depot": depot.depot_id, "error": e.to_string() }),
+                );
                 emit_progress(sink, &event);
                 manifest_results.push((depot.depot_id.clone(), false));
                 let (stage, class) = diag::classify_pipeline_error(&e);
@@ -671,11 +702,15 @@ async fn run_download_pipeline(
                     let mut event = ProgressEvent::new("status", job_id);
                     event.step = Some("manifest_hub_rate_limited".to_string());
                     event.depot_id = Some(depot.depot_id.clone());
-                    event.message = Some(format!(
-                        "ManifestHub rate-limited depot {} — backing off {}s before retry",
-                        depot.depot_id,
-                        backoff_ms / 1000
-                    ));
+                    event.localized(
+                        format!(
+                            "ManifestHub rate-limited depot {} — backing off {}s before retry",
+                            depot.depot_id,
+                            backoff_ms / 1000
+                        ),
+                        "events.rateLimited",
+                        serde_json::json!({ "depot": depot.depot_id, "secs": backoff_ms / 1000 }),
+                    );
                     emit_progress(sink, &event);
                     tokio::time::sleep(std::time::Duration::from_millis(backoff_ms)).await;
                     if check_cancelled(state, job_id).await {
@@ -693,10 +728,14 @@ async fn run_download_pipeline(
             Some(e) => {
                 let mut event = ProgressEvent::new("error", job_id);
                 event.depot_id = Some(depot.depot_id.clone());
-                event.message = Some(format!(
-                    "Failed to download custom manifest for depot {}: {}",
-                    depot.depot_id, e
-                ));
+                event.localized(
+                    format!(
+                        "Failed to download custom manifest for depot {}: {}",
+                        depot.depot_id, e
+                    ),
+                    "events.customManifestFailed",
+                    serde_json::json!({ "depot": depot.depot_id, "error": e.to_string() }),
+                );
                 emit_progress(sink, &event);
                 manifest_results.push((depot.depot_id.clone(), false));
                 let class = if e.contains("429")
@@ -724,7 +763,11 @@ async fn run_download_pipeline(
     if success_count == 0 && !manifest_results.is_empty() {
         let error_msg = "All manifest downloads failed".to_string();
         let mut event = ProgressEvent::new("error", job_id);
-        event.message = Some(error_msg.clone());
+        event.localized(
+            error_msg.clone(),
+            "events.allManifestsFailed",
+            serde_json::json!({}),
+        );
         event.diag = Some(diag::summarize(
             &manifest_diags,
             &diag::tried_from_diags(&manifest_diags),
@@ -970,16 +1013,26 @@ async fn run_download_pipeline(
     all_diags.extend(manifest_diags.iter().filter(|d| !d.ok).copied());
 
     let mut event = ProgressEvent::new("complete", job_id);
-    event.message = Some(match outcome {
-        diag::Outcome::Complete => format!(
-            "Download complete. {}/{} depots downloaded successfully.",
-            dl_success_count, selected_total
-        ),
-        _ => format!(
-            "Download incomplete — {}/{} depots downloaded. The rest could not be fetched.",
-            dl_success_count, selected_total
-        ),
-    });
+    let complete_ok = matches!(outcome, diag::Outcome::Complete);
+    event.localized(
+        if complete_ok {
+            format!(
+                "Download complete. {}/{} depots downloaded successfully.",
+                dl_success_count, selected_total
+            )
+        } else {
+            format!(
+                "Download incomplete — {}/{} depots downloaded. The rest could not be fetched.",
+                dl_success_count, selected_total
+            )
+        },
+        if complete_ok {
+            "events.downloadComplete"
+        } else {
+            "events.downloadIncomplete"
+        },
+        serde_json::json!({ "ok": dl_success_count, "total": selected_total }),
+    );
     event.results = Some(serde_json::Value::Array(download_results));
     event.diag = Some(diag::summarize(
         &all_diags,
@@ -1322,10 +1375,14 @@ async fn run_native_pipeline(
             event.step = Some("depot_up_to_date".to_string());
             event.depot_id = Some(depot.depot_id.clone());
             event.manifest_id = Some(depot.manifest_id.clone());
-            event.message = Some(format!(
-                "Depot {} is already up to date (manifest {})",
-                depot.depot_id, depot.manifest_id
-            ));
+            event.localized(
+                format!(
+                    "Depot {} is already up to date (manifest {})",
+                    depot.depot_id, depot.manifest_id
+                ),
+                "events.depotUpToDate",
+                serde_json::json!({ "depot": depot.depot_id, "manifest": depot.manifest_id }),
+            );
             emit_progress(sink, &event);
             let mut done = ProgressEvent::new("depot_complete", job_id);
             done.depot_id = Some(depot.depot_id.clone());
@@ -1352,6 +1409,8 @@ async fn run_native_pipeline(
             "[native] depot {} manifest {}",
             depot.depot_id, depot.manifest_id
         ));
+        event.key = Some("events.nativeStart".to_string());
+        event.params = Some(serde_json::json!({ "depot": depot.depot_id, "manifest": depot.manifest_id }));
         emit_progress(sink, &event);
 
         let sink_cb = sink.clone();
@@ -1415,6 +1474,8 @@ async fn run_native_pipeline(
                 &depot.depot_id,
                 "cached",
                 "Using cached manifest already on disk",
+                "events.src.cached",
+                serde_json::json!({}),
             );
             let path = work_dir.join(format!("{}_{}.manifest", depot.depot_id, depot.manifest_id));
             match tokio::fs::read(&path).await {
@@ -1445,6 +1506,8 @@ async fn run_native_pipeline(
                 &depot.depot_id,
                 "steam",
                 "Fetching manifest directly from Steam CDN",
+                "events.src.steam",
+                serde_json::json!({}),
             );
             let mut steam_result = download_depot_native(
                 state.http_client.clone(),
@@ -1473,6 +1536,8 @@ async fn run_native_pipeline(
                         &depot.depot_id,
                         "hubcap_fallback",
                         &format!("Steam direct failed ({}). Trying Hubcap cache.", steam_err),
+                        "events.src.hubcap",
+                        serde_json::json!({ "error": steam_err }),
                     );
                     let path =
                         work_dir.join(format!("{}_{}.manifest", depot.depot_id, depot.manifest_id));
@@ -1498,6 +1563,8 @@ async fn run_native_pipeline(
                             "Steam direct failed ({}). Falling back to configured manifest source.",
                             steam_err
                         ),
+                        "events.src.depotSource",
+                        serde_json::json!({ "error": steam_err }),
                     );
                     source_attempt = Some(
                         depot_sources::download_manifest_file(
@@ -1579,6 +1646,8 @@ async fn run_native_pipeline(
                             "All sources failed ({}). No ManifestHub API key set — add one and retry.",
                             steam_err
                         ),
+                        "events.src.noKey",
+                        serde_json::json!({ "error": steam_err }),
                     );
                     no_fallback_left = Some(if depot_sources_list.is_empty() {
                         "no manifest sources configured and No ManifestHub API key"
@@ -1597,6 +1666,8 @@ async fn run_native_pipeline(
                             "Previous sources failed ({}). Falling back to ManifestHub.",
                             steam_err
                         ),
+                        "events.src.manifestHub",
+                        serde_json::json!({ "error": steam_err }),
                     );
                     match manifest_hub_api::download_from_manifest_hub(
                         &state.http_client,
@@ -1679,10 +1750,14 @@ async fn run_native_pipeline(
                     let mut event = ProgressEvent::new("status", job_id);
                     event.step = Some("removed_stale_files".to_string());
                     event.depot_id = Some(depot.depot_id.clone());
-                    event.message = Some(format!(
-                        "Removed {} file(s) that are no longer part of depot {}",
-                        removed, depot.depot_id
-                    ));
+                    event.localized(
+                        format!(
+                            "Removed {} file(s) that are no longer part of depot {}",
+                            removed, depot.depot_id
+                        ),
+                        "events.removedStale",
+                        serde_json::json!({ "count": removed, "depot": depot.depot_id }),
+                    );
                     emit_progress(sink, &event);
                 }
                 let mut done = ProgressEvent::new("depot_complete", job_id);
@@ -1700,10 +1775,14 @@ async fn run_native_pipeline(
             }
             Err(e) => {
                 let mut err_event = ProgressEvent::new("error", job_id);
-                err_event.message = Some(format!(
-                    "Native download failed for depot {}: {}",
-                    depot.depot_id, e
-                ));
+                err_event.localized(
+                    format!(
+                        "Native download failed for depot {}: {}",
+                        depot.depot_id, e
+                    ),
+                    "events.nativeFailed",
+                    serde_json::json!({ "depot": depot.depot_id, "error": e.to_string() }),
+                );
                 err_event.depot_id = Some(depot.depot_id.clone());
                 emit_progress(sink, &err_event);
                 let reported = match no_fallback_left {
@@ -1811,7 +1890,15 @@ fn sanitize_folder_segment(input: &str) -> String {
     }
 }
 
-fn emit_manifest_source(sink: &Sink, job_id: &str, depot_id: &str, source: &str, note: &str) {
+fn emit_manifest_source(
+    sink: &Sink,
+    job_id: &str,
+    depot_id: &str,
+    source: &str,
+    note: &str,
+    key: &str,
+    params: serde_json::Value,
+) {
     sink.emit(
         DOWNLOAD_PROGRESS,
         serde_json::json!({
@@ -1820,6 +1907,8 @@ fn emit_manifest_source(sink: &Sink, job_id: &str, depot_id: &str, source: &str,
             "depotId": depot_id,
             "source": source,
             "message": note,
+            "key": key,
+            "params": params,
         }),
     );
 }

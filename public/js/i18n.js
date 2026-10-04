@@ -37,6 +37,7 @@ async function loadLocale(code) {
   } else {
     fallback = null;
   }
+  backendPatterns = null;
   document.documentElement.setAttribute('lang', target);
 }
 
@@ -54,6 +55,35 @@ function t(key, params) {
     value = value.replace(/\{(\w+)\}/g, (_, name) => (params[name] !== undefined ? String(params[name]) : `{${name}}`));
   }
   return value;
+}
+
+let backendPatterns = null;
+
+function buildBackendPatterns() {
+  const source = fallback && fallback.backend;
+  if (!source) return [];
+  return Object.entries(source)
+    .filter(([, text]) => typeof text === 'string')
+    .map(([key, text]) => {
+      const parts = text.split(/\{\d+\}/);
+      const body = parts.map(p => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('([\\s\\S]*?)');
+      return { key, re: new RegExp(`^${body}$`), weight: parts.join('').length };
+    })
+    .sort((a, b) => b.weight - a.weight);
+}
+
+function localizeError(text, depth = 0) {
+  const s = String(text ?? '');
+  if (!s || currentCode === FALLBACK || depth > 4) return s;
+  if (!backendPatterns) backendPatterns = buildBackendPatterns();
+  for (const p of backendPatterns) {
+    const m = p.re.exec(s);
+    if (!m) continue;
+    const target = lookup(current, `backend.${p.key}`);
+    if (typeof target !== 'string') return s;
+    return target.replace(/\{(\d+)\}/g, (_, i) => localizeError(m[Number(i) + 1] ?? '', depth + 1));
+  }
+  return s;
 }
 
 function applyTranslations(root) {
@@ -90,4 +120,4 @@ function getCurrentLocale() {
   return currentCode;
 }
 
-window.i18n = { loadLocale, t, applyTranslations, detectBrowserLocale, getAvailableLocales, getCurrentLocale, FALLBACK };
+window.i18n = { loadLocale, t, localizeError, applyTranslations, detectBrowserLocale, getAvailableLocales, getCurrentLocale, FALLBACK };

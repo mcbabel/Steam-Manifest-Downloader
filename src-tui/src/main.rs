@@ -8,23 +8,21 @@ mod ui;
 use std::io::IsTerminal;
 use std::path::PathBuf;
 
-use clap::{CommandFactory, Parser, Subcommand};
+use clap::{CommandFactory, FromArgMatches, Parser, Subcommand};
 
 #[derive(Parser, Debug)]
 #[command(
     name = "smd",
     version = app::VERSION,
-    about = "Steam Manifest Downloader — terminal UI and headless CLI",
-    long_about = "Without a command, opens the interactive terminal UI (mouse and keyboard).\n\
-                  The commands below run without a UI, for servers, containers and scripts.\n\
-                  Settings, history and caches are shared with the desktop app."
+    about = i18n::t("tui.cli.about"),
+    long_about = i18n::t("tui.cli.longAbout")
 )]
 struct Cli {
     #[arg(
         long,
         global = true,
         env = "SMD_DATA_DIR",
-        help = "Data directory (settings, history, caches). Defaults to the desktop app's directory so both share their state."
+        help = i18n::t("tui.cli.argDataDir")
     )]
     data_dir: Option<PathBuf>,
 
@@ -32,7 +30,7 @@ struct Cli {
         long,
         short,
         global = true,
-        help = "Show the backend's diagnostic output on stderr instead of writing it to the log file (headless commands only)."
+        help = i18n::t("tui.cli.argVerbose")
     )]
     verbose: bool,
 
@@ -42,28 +40,40 @@ struct Cli {
 
 #[derive(Subcommand, Debug)]
 enum Command {
-    #[command(about = "Open the interactive terminal UI (default when started in a terminal).")]
+    #[command(about = i18n::t("tui.cli.cmdTui"))]
     Tui,
-    #[command(about = "Download depots from a .lua/.st file or an App ID.")]
+    #[command(about = i18n::t("tui.cli.cmdDownload"))]
     Download(cli::DownloadArgs),
-    #[command(about = "Look up a game by name, or list the sources and depots for an App ID.")]
+    #[command(about = i18n::t("tui.cli.cmdSearch"))]
     Search(cli::SearchArgs),
-    #[command(about = "Show the download history.")]
+    #[command(about = i18n::t("tui.cli.cmdHistory"))]
     History(cli::HistoryArgs),
 }
 
 fn main() {
-    let args = Cli::parse();
+    i18n::init_from_data_dir(&smd_core::paths::default_app_data_dir());
+    let matches = localized_command().get_matches();
+    let args = Cli::from_arg_matches(&matches).unwrap_or_else(|e| e.exit());
     let data_dir = args
         .data_dir
         .unwrap_or_else(smd_core::paths::default_app_data_dir);
+    i18n::init_from_data_dir(&data_dir);
     let runtime = match tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
     {
         Ok(r) => r,
         Err(e) => {
-            eprintln!("error: failed to start the async runtime: {}", e);
+            eprintln!(
+                "{}",
+                i18n::tf(
+                    "tui.cli.error",
+                    &[(
+                        "message",
+                        &i18n::tf("tui.cli.runtimeFailed", &[("message", &e)])
+                    )]
+                )
+            );
             std::process::exit(1);
         }
     };
@@ -71,13 +81,13 @@ fn main() {
     let interactive = std::io::stdout().is_terminal() && std::io::stdin().is_terminal();
     let code = match args.command {
         None if !interactive => {
-            let _ = Cli::command().print_help();
+            let _ = localized_command().print_help();
             0
         }
         None | Some(Command::Tui) => match runtime.block_on(run_tui(data_dir)) {
             Ok(()) => 0,
             Err(e) => {
-                eprintln!("error: {}", e);
+                eprintln!("{}", i18n::tf("tui.cli.error", &[("message", &e)]));
                 1
             }
         },
@@ -107,11 +117,62 @@ fn main() {
     std::process::exit(code);
 }
 
+#[derive(Clone, Copy)]
+struct Headings {
+    commands: &'static str,
+    options: &'static str,
+    arguments: &'static str,
+}
+
+fn localized_command() -> clap::Command {
+    let leak = |key: &str| -> &'static str { Box::leak(i18n::t(key).into_boxed_str()) };
+    let headings = Headings {
+        commands: leak("tui.cli.headCommands"),
+        options: leak("tui.cli.headOptions"),
+        arguments: leak("tui.cli.headArguments"),
+    };
+    let mut cmd = Cli::command();
+    cmd.build();
+    localize_command(cmd, headings)
+}
+
+fn localize_command(cmd: clap::Command, headings: Headings) -> clap::Command {
+    let style = cmd.get_styles().get_usage();
+    let template = format!(
+        "{{before-help}}{{about-with-newline}}\n{}{}{} {{usage}}\n\n{{all-args}}{{after-help}}",
+        style.render(),
+        i18n::t("tui.cli.headUsage"),
+        style.render_reset()
+    );
+    let is_help = cmd.get_name() == "help";
+    let mut cmd = cmd
+        .help_template(template)
+        .subcommand_help_heading(headings.commands)
+        .mut_args(|a| {
+            let heading = if a.is_positional() {
+                headings.arguments
+            } else {
+                headings.options
+            };
+            let a = a.help_heading(heading);
+            match a.get_id().as_str() {
+                "help" => a
+                    .help(i18n::t("tui.cli.printHelp"))
+                    .long_help(i18n::t("tui.cli.printHelpLong")),
+                "version" => a.help(i18n::t("tui.cli.printVersion")),
+                "subcommand" if is_help => a.help(i18n::t("tui.cli.helpFor")),
+                _ => a,
+            }
+        });
+    if is_help {
+        cmd = cmd.about(i18n::t("tui.cli.helpCommand"));
+    }
+    cmd.mut_subcommands(|c| localize_command(c, headings))
+}
+
 async fn run_tui(data_dir: PathBuf) -> std::io::Result<()> {
     if !std::io::stdout().is_terminal() || !std::io::stdin().is_terminal() {
-        return Err(std::io::Error::other(
-            "the terminal UI needs an interactive terminal — use `smd download` / `smd search` in scripts (see `smd --help`)",
-        ));
+        return Err(std::io::Error::other(i18n::t("tui.cli.noTerminal")));
     }
     let (app, rx) = app::App::new(data_dir).await;
     let mut terminal = term::init()?;

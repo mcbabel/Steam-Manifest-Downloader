@@ -114,7 +114,7 @@ impl App {
                         app.wiz.short_description = None;
                         app.show_selection_step();
                     }
-                    Err(e) => app.wiz.upload_error = Some(e),
+                    Err(e) => app.wiz.upload_error = Some(crate::i18n::localize_error(&e)),
                 }
             })
         });
@@ -202,7 +202,7 @@ impl App {
                         app.emit("search_performed", Some(serde_json::json!({
                             "found": false, "repo_count": 0, "source_probe": "error", "probe_class": null,
                         })));
-                        app.wiz.search_error = Some(e);
+                        app.wiz.search_error = Some(crate::i18n::localize_error(&e));
                         app.wiz.auto_redownload = false;
                     }
                 }
@@ -292,7 +292,7 @@ impl App {
                         app.wiz.from_search = true;
                         app.show_selection_step();
                     }
-                    Err(e) => app.wiz.search_error = Some(e),
+                    Err(e) => app.wiz.search_error = Some(crate::i18n::localize_error(&e)),
                 }
             })
         });

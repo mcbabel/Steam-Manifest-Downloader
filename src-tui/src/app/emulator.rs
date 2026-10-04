@@ -576,7 +576,7 @@ impl App {
         if e.app_id.is_empty() {
             e.status = Some((
                 Tone::Error,
-                tf("emulator.applyError", &[("message", &"missing app id")]),
+                tf("emulator.applyError", &[("message", &t("tui.errors.noAppId"))]),
             ));
             return;
         }
@@ -1137,7 +1137,7 @@ impl App {
                         .iter()
                         .find(|r| !r.success)
                         .and_then(|r| r.error.clone())
-                        .unwrap_or_else(|| "unknown error".into());
+                        .unwrap_or_else(|| t("tui.errors.unknown"));
                     let h = mono_hint(&msg);
                     e.drm_status = Some((
                         Tone::Error,

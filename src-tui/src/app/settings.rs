@@ -23,13 +23,13 @@ const TABS: [&str; 5] = [
 pub fn build_info() -> Vec<(String, String)> {
     let channel = option_env!("SMD_BUILD_CHANNEL").unwrap_or("dev-local");
     let channel_label = match channel {
-        "stable" => "Stable",
-        "dev" => "Dev",
-        "dev-local" => "Dev (local)",
-        other => other,
+        "stable" => t("settings.channelStable"),
+        "dev" => t("settings.channelDev"),
+        "dev-local" => t("settings.channelDevLocal"),
+        other => other.to_string(),
     };
     vec![
-        (t("settings.debugInfoChannel"), channel_label.to_string()),
+        (t("settings.debugInfoChannel"), channel_label),
         (t("settings.debugInfoVersion"), VERSION.to_string()),
         (
             t("settings.debugInfoCommit"),

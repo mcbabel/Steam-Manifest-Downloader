@@ -188,6 +188,10 @@ pub struct ProgressEvent {
     pub manifest_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub diag: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub key: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub params: Option<serde_json::Value>,
 }
 
 impl ProgressEvent {
@@ -212,7 +216,15 @@ impl ProgressEvent {
             filename: None,
             manifest_id: None,
             diag: None,
+            key: None,
+            params: None,
         }
+    }
+
+    pub fn localized(&mut self, message: String, key: &str, params: serde_json::Value) {
+        self.message = Some(message);
+        self.key = Some(key.to_string());
+        self.params = Some(params);
     }
 }
 
@@ -414,7 +426,11 @@ pub async fn run_all_depots(
             if let Some(job) = jobs.get(job_id) {
                 if job.status == "cancelled" {
                     let mut event = ProgressEvent::new("cancelled", job_id);
-                    event.message = Some("Download cancelled by user.".to_string());
+                    event.localized(
+                        "Download cancelled by user.".to_string(),
+                        "events.cancelledByUser",
+                        serde_json::json!({}),
+                    );
                     emit_progress(sink, &event);
                     break;
                 }
@@ -450,7 +466,11 @@ pub async fn run_all_depots(
                     if let Some(job) = jobs.get(job_id) {
                         if job.status == "cancelled" {
                             let mut event = ProgressEvent::new("cancelled", job_id);
-                            event.message = Some("Download cancelled by user.".to_string());
+                            event.localized(
+                        "Download cancelled by user.".to_string(),
+                        "events.cancelledByUser",
+                        serde_json::json!({}),
+                    );
                             emit_progress(sink, &event);
                             break;
                         }

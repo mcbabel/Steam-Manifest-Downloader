@@ -1308,7 +1308,8 @@ button:disabled,
   color: #e6edf3;
 }
 
-.terminal__line--stderr {
+.terminal__line--stderr,
+.terminal__line--warn {
   color: var(--warning);
 }
 

@@ -166,18 +166,23 @@ impl App {
             }
             "manifest_source" => {
                 let source = s(&msg, "source").unwrap_or_default();
-                let (prefix, kind) = match source.as_str() {
-                    "steam" => ("Steam CDN".to_string(), LogKind::Info),
-                    "manifesthub_fallback" => ("ManifestHub fallback".to_string(), LogKind::Warn),
-                    "manifesthub_unavailable" => ("No fallback".to_string(), LogKind::Stderr),
-                    "cached" => ("Cached".to_string(), LogKind::Info),
-                    other => (other.to_string(), LogKind::Info),
+                let kind = match source.as_str() {
+                    "manifesthub_fallback" => LogKind::Warn,
+                    "manifesthub_unavailable" => LogKind::Stderr,
+                    _ => LogKind::Info,
                 };
-                let line = format!(
-                    "[{}] depot {}: {}",
-                    prefix,
-                    s(&msg, "depotId").unwrap_or_default(),
-                    s(&msg, "message").unwrap_or_default()
+                let label_key = format!("events.src.label.{}", source);
+                let label = match t(&label_key) {
+                    l if l == label_key => source.clone(),
+                    l => l,
+                };
+                let line = tf(
+                    "events.line",
+                    &[
+                        ("label", &label),
+                        ("depot", &s(&msg, "depotId").unwrap_or_default()),
+                        ("text", &crate::i18n::event_text(&msg)),
+                    ],
                 );
                 self.log(kind, line);
                 if source == "manifesthub_unavailable" {
@@ -216,11 +221,15 @@ impl App {
                 );
             }
             "branch_found" => {
-                let upd = s(msg, "lastUpdated").unwrap_or_else(|| "unknown".into());
-                self.log(
-                    LogKind::Success,
-                    format!("✓ {}", tf("tui.progress.branchFound", &[("info", &upd)])),
-                );
+                let line = if msg.get("key").is_some() {
+                    crate::i18n::event_text(msg)
+                } else {
+                    tf(
+                        "tui.progress.branchFound",
+                        &[("info", &s(msg, "lastUpdated").unwrap_or_default())],
+                    )
+                };
+                self.log(LogKind::Success, format!("✓ {}", line));
             }
             "downloading_manifests" => {
                 set_status(
@@ -267,8 +276,13 @@ impl App {
                 );
             }
             "manifest_hub_rate_limited" => {
-                if let Some(m) = s(msg, "message") {
-                    self.log(LogKind::Warn, m);
+                if msg.get("message").is_some() {
+                    self.log(LogKind::Warn, crate::i18n::event_text(msg));
+                }
+            }
+            "depot_up_to_date" | "removed_stale_files" => {
+                if msg.get("message").is_some() {
+                    self.log(LogKind::Info, crate::i18n::event_text(msg));
                 }
             }
             "generating_keys" => {
@@ -324,7 +338,12 @@ impl App {
                 }
                 self.depot_status(&depot, DepotState::Active, t("tui.progress.depotActive"));
                 if let Some(cmd) = s(msg, "command") {
-                    self.log(LogKind::Info, format!("> {}", cmd));
+                    let text = if msg.get("key").is_some() {
+                        crate::i18n::event_text(msg)
+                    } else {
+                        cmd
+                    };
+                    self.log(LogKind::Info, format!("> {}", text));
                 }
             }
             "paused" | "resumed" => {}
@@ -522,7 +541,7 @@ impl App {
             .and_then(|r| r.as_array())
             .cloned()
             .unwrap_or_default();
-        let message = s(msg, "message").unwrap_or_default();
+        let message = crate::i18n::event_text(msg);
         if let Some(p) = self.wiz.progress.as_mut() {
             p.overall = 1.0;
             p.depot_ratio = 1.0;
@@ -630,19 +649,19 @@ impl App {
             let r = smd_core::services::history::add_entry(&data, entry).await;
             apply(move |app| {
                 if let Err(e) = r {
-                    app.toast(Tone::Error, e);
+                    app.toast(Tone::Error, crate::i18n::localize_error(&e));
                 }
             })
         });
     }
 
     fn on_error(&mut self, msg: &Value) {
-        let message = s(msg, "message").unwrap_or_default();
+        let message = crate::i18n::event_text(msg);
         let depot = s(msg, "depotId");
         if let Some(d) = &depot {
             self.depot_status(d, DepotState::Error, t("tui.progress.error"));
         }
-        self.log(LogKind::Error, format!("Error: {}", message));
+        self.log(LogKind::Error, tf("progress.errorLine", &[("message", &message)]));
         if depot.is_none() {
             let mut props = serde_json::json!({ "success": false });
             if let (Some(obj), Some(diag)) = (
@@ -810,7 +829,8 @@ impl App {
         let text = match s(msg, "step").as_deref() {
             Some("cancelled_kept") => t("progress.cancelledKept"),
             Some("cancelled_cleanup") => t("progress.cancelledCleanup"),
-            _ => s(msg, "message").unwrap_or_else(|| t("progress.cancelledCleanup")),
+            _ if msg.get("message").is_some() => crate::i18n::event_text(msg),
+            _ => t("progress.cancelledCleanup"),
         };
         if let Some(p) = self.wiz.progress.as_mut() {
             p.overall = 0.0;
@@ -967,7 +987,7 @@ impl App {
                         app.log(LogKind::Info, t("tui.progress.noLongerRunning"));
                         app.finish_download(false, t("tui.progress.ended"));
                     } else {
-                        app.log(LogKind::Error, format!("Cancel request failed: {}", e));
+                        app.log(LogKind::Error, tf("progress.cancelFailed", &[("message", &e)]));
                         if let Some(p) = app.wiz.progress.as_mut() {
                             p.cancelling = false;
                         }

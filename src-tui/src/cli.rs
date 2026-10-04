@@ -6,6 +6,8 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use clap::Args;
+
+use crate::i18n::{t, tf};
 use serde_json::Value;
 use smd_core::ops::download::{DepotConfig, DownloadConfig};
 use smd_core::services::events::{EventSink, DOWNLOAD_PROGRESS};
@@ -18,81 +20,81 @@ use tokio::sync::Notify;
 #[derive(Args, Debug)]
 pub struct DownloadArgs {
     #[arg(
-        help = "A .lua / .st depot file, or a numeric Steam App ID to look up in the configured depot sources."
+        help = t("tui.cli.argSource")
     )]
     pub source: String,
     #[arg(
         long,
         value_delimiter = ',',
-        help = "Depot IDs to download (comma separated). Default: all."
+        help = t("tui.cli.argDepots")
     )]
     pub depots: Vec<String>,
     #[arg(
         long,
         short,
         env = "SMD_OUTPUT_DIR",
-        help = "Parent folder for the game folder. Default: the download location from the settings."
+        help = t("tui.cli.argOut")
     )]
     pub out: Option<PathBuf>,
     #[arg(
         long,
         env = "SMD_MANIFESTHUB_KEY",
         hide_env_values = true,
-        help = "ManifestHub API key, used as fallback (and for custom manifests)."
+        help = t("tui.cli.argMhKey")
     )]
     pub mh_key: Option<String>,
     #[arg(
         long,
         default_value_t = 0,
-        help = "Which search result to use when SOURCE is an App ID (see `smd search`)."
+        help = t("tui.cli.argResult")
     )]
     pub result: usize,
     #[arg(
         long = "manifest",
         value_name = "DEPOT=MANIFEST",
-        help = "Pin a depot to a specific manifest: DEPOT=MANIFEST (repeatable)."
+        help = t("tui.cli.argManifest")
     )]
     pub manifests: Vec<String>,
     #[arg(
         long,
         value_name = "GAME_DIR",
-        help = "Update an existing download in place: only changed files are downloaded and files removed from the game are deleted."
+        help = t("tui.cli.argUpdate")
     )]
     pub update: Option<PathBuf>,
     #[arg(
         long,
         value_name = "RATE",
         env = "SMD_SPEED_LIMIT",
-        help = "Limit the download speed, e.g. 10MB/s or 75Mbit/s (built-in downloader only). Default: the speed limit from the settings, 0 for unlimited."
+        help = t("tui.cli.argSpeedLimit")
     )]
     pub speed_limit: Option<String>,
     #[arg(
         long,
-        help = "Shut down the computer when the download has finished. Waits 60 seconds first, Ctrl+C aborts. Not done when the download is interrupted."
+        help = t("tui.cli.argShutdown")
     )]
     pub shutdown: bool,
-    #[arg(long, help = "Only print the depots that would be downloaded.")]
+    #[arg(long, help = t("tui.cli.argList"))]
     pub list: bool,
     #[arg(
         long,
-        help = "Print progress events as JSON lines (stdout contains only JSON)."
+        help = t("tui.cli.argJson")
     )]
     pub json: bool,
 }
 
 #[derive(Args, Debug)]
 pub struct SearchArgs {
-    #[arg(help = "Steam App ID, or a game name to look up the App ID.")]
+    #[arg(help = t("tui.cli.argQuery"))]
     pub query: String,
-    #[arg(long, help = "Also list the depots of this search result.")]
+    #[arg(long, help = t("tui.cli.argManifests"))]
     pub manifests: Option<usize>,
-    #[arg(long, help = "Print the result as JSON.")]
+    #[arg(long, help = t("tui.cli.argSearchJson"))]
     pub json: bool,
 }
 
 #[derive(Args, Debug)]
 pub struct HistoryArgs {
-    #[arg(long, help = "Print the history as JSON.")]
+    #[arg(long, help = t("tui.cli.argHistoryJson"))]
     pub json: bool,
 }
 
@@ -136,9 +138,9 @@ async fn plan_from_source(
     if is_numeric(&args.source) {
         let res = smd_core::ops::search::search_repos(core, dir, &args.source).await?;
         let repo = res.repos.get(args.result).cloned().ok_or_else(|| {
-            format!(
-                "App {} not found in any configured depot source (result #{})",
-                args.source, args.result
+            tf(
+                "tui.cli.appNotFoundResult",
+                &[("app", &args.source), ("n", &args.result)],
             )
         })?;
         let m = smd_core::ops::search::get_repo_manifests(
@@ -176,7 +178,7 @@ async fn plan_from_source(
         let app_id = parsed
             .main_app_id
             .map(|i| i.to_string())
-            .ok_or_else(|| "The file does not name a main App ID".to_string())?;
+            .ok_or_else(|| t("tui.cli.noMainAppId"))?;
         Ok(Plan {
             app_id,
             depots: parsed
@@ -251,7 +253,7 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
     let mut plan = match planned {
         Ok(p) => p,
         Err(e) => {
-            errln!("error: {}", e);
+            errln!("{}", tf("tui.cli.error", &[("message", &e)]));
             return 1;
         }
     };
@@ -318,16 +320,22 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
         );
     } else {
         println!(
-            "{} — {} of {} depot(s)",
-            title,
-            chosen.len(),
-            plan.depots.len()
+            "{}",
+            tf(
+                "tui.cli.plan",
+                &[
+                    ("title", &title),
+                    ("count", &chosen.len()),
+                    ("total", &plan.depots.len()),
+                ],
+            )
         );
     }
     for (id, manifest, key, size) in chosen.iter().filter(|_| !args.json) {
         println!(
-            "  {:>10}  manifest {}{}{}",
+            "  {:>10}  {} {}{}{}",
             id,
+            t("tui.cli.manifest"),
             pins.get(id)
                 .or(manifest.as_ref())
                 .map(String::as_str)
@@ -335,9 +343,9 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
             size.map(|s| format!("  {}", fmt_bytes(s)))
                 .unwrap_or_default(),
             if key.is_none() {
-                "  (no key in file)"
+                format!("  {}", t("tui.cli.noKeyInFile"))
             } else {
-                ""
+                String::new()
             }
         );
     }
@@ -345,7 +353,10 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
         return 0;
     }
     if chosen.is_empty() {
-        errln!("error: none of the requested depots exist");
+        errln!(
+            "{}",
+            tf("tui.cli.error", &[("message", &t("tui.cli.noDepots"))])
+        );
         return 1;
     }
 
@@ -390,7 +401,7 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
     };
     if let Some(limit) = config.speed_limit.as_deref() {
         if let Err(e) = smd_core::services::speed_limit::parse_speed_limit(limit) {
-            errln!("error: {}", e);
+            errln!("{}", tf("tui.cli.error", &[("message", &e)]));
             return 1;
         }
     }
@@ -404,7 +415,7 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
         match smd_core::ops::download::start_download(sink.clone(), &core, &dir, config).await {
             Ok(v) => v,
             Err(e) => {
-                errln!("error: {}", e);
+                errln!("{}", tf("tui.cli.error", &[("message", &e)]));
                 return 1;
             }
         };
@@ -455,7 +466,7 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
             _ = &mut stop, if !interrupted => {
                 interrupted = true;
                 printer.clear();
-                errln!("\ninterrupted — cancelling…");
+                errln!("\n{}", t("tui.cli.interrupted"));
                 let _ = smd_core::ops::download::cancel_download(&sink, &core, &dir, job.clone()).await;
             }
         }
@@ -472,11 +483,11 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
 }
 
 async fn shutdown_after_download() {
-    errln!("Shutting down in 60 s, press Ctrl+C to abort.");
+    errln!("{}", t("tui.cli.shutdownIn"));
     tokio::select! {
         _ = tokio::time::sleep(Duration::from_secs(60)) => {}
         _ = stopped() => {
-            errln!("shutdown aborted");
+            errln!("{}", t("tui.cli.shutdownAborted"));
             return;
         }
     }
@@ -485,7 +496,13 @@ async fn shutdown_after_download() {
         .map_err(|e| e.to_string())
         .and_then(|r| r);
     if let Err(e) = result {
-        errln!("error: shutdown failed: {}", e);
+        errln!(
+            "{}",
+            tf(
+                "tui.cli.error",
+                &[("message", &tf("tui.cli.shutdownFailed", &[("message", &e)]))]
+            )
+        );
     }
 }
 
@@ -572,38 +589,64 @@ impl Printer {
         match ev["type"].as_str().unwrap_or("") {
             "status" => match ev["step"].as_str().unwrap_or("") {
                 "disk_space" => self.line(&format!(
-                    "  free disk space: {} GB on {}",
-                    ev["freeGB"],
-                    ev["drive"].as_str().unwrap_or("")
+                    "  {}",
+                    tf(
+                        "tui.cli.diskSpace",
+                        &[
+                            ("gb", &ev["freeGB"]),
+                            ("drive", &ev["drive"].as_str().unwrap_or("")),
+                        ],
+                    )
                 )),
                 "running_downloader" => {
                     self.samples.clear();
                     if let (Some(c), Some(t)) = (ev["current"].as_u64(), ev["total"].as_u64()) {
-                        self.line(&format!("[{}/{}] depot {}", c, t, depot));
+                        self.line(&tf(
+                            "tui.cli.depotHeader",
+                            &[("current", &c), ("total", &t), ("depot", &depot)],
+                        ));
                     }
                 }
                 "keys_generated" => self.line(&format!(
-                    "  generated keys for {} depot(s)",
-                    ev["depotCount"]
-                )),
-                "branch_found" => self.line(&format!(
                     "  {}",
-                    ev["lastUpdated"].as_str().unwrap_or("source found")
+                    tf("tui.progress.keysGenerated", &[("count", &ev["depotCount"])])
                 )),
+                "branch_found" => {
+                    let text = if ev.get("key").is_some() {
+                        crate::i18n::event_text(ev)
+                    } else {
+                        ev["lastUpdated"]
+                            .as_str()
+                            .map(str::to_string)
+                            .unwrap_or_else(|| t("tui.cli.sourceFound"))
+                    };
+                    self.line(&format!("  {}", text));
+                }
+                "manifest_hub_rate_limited" | "depot_up_to_date" | "removed_stale_files" => {
+                    self.line(&format!("  {}", crate::i18n::event_text(ev)))
+                }
                 _ => {}
             },
             "manifest_source" => {
                 let source = ev["source"].as_str().unwrap_or("");
+                let label_key = format!("events.src.label.{}", source);
+                let label = match t(&label_key) {
+                    l if l == label_key => source.to_string(),
+                    l => l,
+                };
                 self.line(&format!(
-                    "  [{}] depot {}: {}",
-                    source,
-                    depot,
-                    ev["message"].as_str().unwrap_or("")
+                    "  {}",
+                    tf(
+                        "events.line",
+                        &[
+                            ("label", &label),
+                            ("depot", &depot),
+                            ("text", &crate::i18n::event_text(ev)),
+                        ],
+                    )
                 ));
                 if source == "manifesthub_unavailable" {
-                    self.line(
-                        "  hint: pass a ManifestHub key with --mh-key <KEY> or SMD_MANIFESTHUB_KEY",
-                    );
+                    self.line(&format!("  {}", t("tui.cli.mhHint")));
                 }
             }
             "output" => {
@@ -631,8 +674,8 @@ impl Printer {
                     };
                     let pct = ev["percent"].as_f64().unwrap_or(0.0);
                     let text = format!(
-                        "  depot {}  {:5.1}%  {} / {}{}",
-                        depot,
+                        "  {}  {:5.1}%  {} / {}{}",
+                        tf("tui.cli.depotProgress", &[("depot", &depot)]),
                         pct,
                         fmt_bytes(done),
                         fmt_bytes(total),
@@ -652,9 +695,20 @@ impl Printer {
                     }
                 }
             }
-            "depot_complete" => self.line(&format!("  ✓ depot {} done", depot)),
-            "error" => self.line(&format!("  ✗ {}", ev["message"].as_str().unwrap_or(""))),
-            "complete" | "cancelled" => self.line(ev["message"].as_str().unwrap_or("")),
+            "depot_complete" => self.line(&format!(
+                "  {}",
+                tf("tui.cli.depotDone", &[("depot", &depot)])
+            )),
+            "error" => self.line(&format!("  ✗ {}", crate::i18n::event_text(ev))),
+            "cancelled" => {
+                let text = match ev["step"].as_str() {
+                    Some("cancelled_kept") => t("progress.cancelledKept"),
+                    Some("cancelled_cleanup") => t("progress.cancelledCleanup"),
+                    _ => crate::i18n::event_text(ev),
+                };
+                self.line(&text)
+            }
+            "complete" => self.line(&crate::i18n::event_text(ev)),
             _ => {}
         }
     }
@@ -674,7 +728,7 @@ pub async fn search(dir: PathBuf, args: SearchArgs) -> i32 {
                         serde_json::to_string_pretty(&hits).unwrap_or_default()
                     );
                 } else if hits.is_empty() {
-                    println!("no games found");
+                    println!("{}", t("tui.cli.noGames"));
                 } else {
                     for h in hits {
                         println!("{:>10}  {}", h.app_id, h.name);
@@ -683,7 +737,7 @@ pub async fn search(dir: PathBuf, args: SearchArgs) -> i32 {
                 0
             }
             Err(e) => {
-                errln!("error: {}", e);
+                errln!("{}", tf("tui.cli.error", &[("message", &e)]));
                 1
             }
         };
@@ -691,7 +745,7 @@ pub async fn search(dir: PathBuf, args: SearchArgs) -> i32 {
     let res = match smd_core::ops::search::search_repos(&core, &dir, &args.query).await {
         Ok(r) => r,
         Err(e) => {
-            errln!("error: {}", e);
+            errln!("{}", tf("tui.cli.error", &[("message", &e)]));
             return 1;
         }
     };
@@ -701,10 +755,7 @@ pub async fn search(dir: PathBuf, args: SearchArgs) -> i32 {
     }
     if !args.json {
         if res.repos.is_empty() {
-            println!(
-                "App {} was not found in any configured depot source.",
-                args.query
-            );
+            println!("{}", tf("tui.cli.appNotFound", &[("app", &args.query)]));
             return 1;
         }
         for (i, r) in res.repos.iter().enumerate() {
@@ -719,7 +770,13 @@ pub async fn search(dir: PathBuf, args: SearchArgs) -> i32 {
     }
     if let Some(idx) = args.manifests {
         let Some(repo) = res.repos.get(idx) else {
-            errln!("error: no result #{}", idx);
+            errln!(
+                "{}",
+                tf(
+                    "tui.cli.error",
+                    &[("message", &tf("tui.cli.noResult", &[("n", &idx)]))]
+                )
+            );
             return 1;
         };
         match smd_core::ops::search::get_repo_manifests(
@@ -737,23 +794,24 @@ pub async fn search(dir: PathBuf, args: SearchArgs) -> i32 {
                 } else {
                     for d in m.manifests {
                         println!(
-                            "  {:>10}  manifest {}{}{}",
+                            "  {:>10}  {} {}{}{}",
                             d.depot_id,
+                            t("tui.cli.manifest"),
                             d.manifest_id,
                             d.size_bytes
                                 .map(|s| format!("  {}", fmt_bytes(s)))
                                 .unwrap_or_default(),
                             if d.depot_key.is_some() || m.depot_keys.contains_key(&d.depot_id) {
-                                ""
+                                String::new()
                             } else {
-                                "  (no key)"
+                                format!("  {}", t("tui.cli.noKey"))
                             }
                         );
                     }
                 }
             }
             Err(e) => {
-                errln!("error: {}", e);
+                errln!("{}", tf("tui.cli.error", &[("message", &e)]));
                 return 1;
             }
         }
@@ -771,7 +829,7 @@ pub async fn history(dir: PathBuf, args: HistoryArgs) -> i32 {
         return 0;
     }
     if h.entries.is_empty() {
-        println!("no downloads yet");
+        println!("{}", t("tui.cli.noDownloads"));
     }
     for e in h.entries {
         println!(
@@ -784,7 +842,7 @@ pub async fn history(dir: PathBuf, args: HistoryArgs) -> i32 {
                 .collect::<String>()
                 .replace('T', " "),
             e.app_id,
-            e.status,
+            status_label(&e),
             e.depots_downloaded,
             e.depot_count,
             e.game_name.unwrap_or_default()
@@ -792,4 +850,14 @@ pub async fn history(dir: PathBuf, args: HistoryArgs) -> i32 {
         println!("{:>32} {}", "", e.download_dir);
     }
     0
+}
+
+fn status_label(e: &HistoryEntry) -> String {
+    match e.status.as_str() {
+        "complete" => t("history.statusComplete"),
+        "partial" => t("history.statusPartial"),
+        "cancelled_resumable" if e.resume_payload.is_some() => t("history.statusResumable"),
+        "cancelled" | "cancelled_resumable" => t("history.statusCancelled"),
+        _ => t("history.statusFailed"),
+    }
 }

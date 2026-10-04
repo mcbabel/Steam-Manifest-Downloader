@@ -181,7 +181,13 @@ impl App {
     }
 
     pub fn toast(&mut self, tone: Tone, msg: impl Into<String>) {
-        self.toast = Some((tone, msg.into(), Instant::now()));
+        let msg = msg.into();
+        let msg = if matches!(tone, Tone::Error) {
+            crate::i18n::localize_error(&msg)
+        } else {
+            msg
+        };
+        self.toast = Some((tone, msg, Instant::now()));
     }
 
     pub fn reload_settings(&mut self) {
