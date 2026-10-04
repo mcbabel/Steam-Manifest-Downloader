@@ -172,7 +172,8 @@
     "cancellingLine": "Cancelling the download…",
     "noLongerRunning": "The download is no longer running.",
     "ended": "The download has ended. You can start over.",
-    "cancelFailed": "Cancelling failed: {message}"
+    "cancelFailed": "Cancelling failed: {message}",
+    "pausedShort": "paused"
   },
   "shortcut": {
     "title": "Create Shortcuts",

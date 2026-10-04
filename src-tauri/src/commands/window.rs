@@ -18,6 +18,26 @@ pub async fn maximize_window(window: tauri::Window) -> Result<(), String> {
 }
 
 #[command]
+pub fn set_download_progress(
+    window: tauri::Window,
+    percent: Option<f64>,
+    paused: Option<bool>,
+    title: String,
+) {
+    use tauri::window::{ProgressBarState, ProgressBarStatus};
+    let status = match (percent, paused.unwrap_or(false)) {
+        (None, _) => ProgressBarStatus::None,
+        (Some(_), true) => ProgressBarStatus::Paused,
+        (Some(_), false) => ProgressBarStatus::Normal,
+    };
+    let _ = window.set_progress_bar(ProgressBarState {
+        status: Some(status),
+        progress: percent.map(|p| p.clamp(0.0, 100.0).round() as u64),
+    });
+    let _ = window.set_title(&title);
+}
+
+#[command]
 pub async fn close_window(window: tauri::Window) -> Result<(), String> {
     if let Some(state) = window.try_state::<AppState>() {
         if let Some(telemetry) = state.telemetry.clone() {

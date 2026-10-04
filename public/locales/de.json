@@ -172,7 +172,8 @@
     "cancellingLine": "Breche den Download ab…",
     "noLongerRunning": "Der Download läuft nicht mehr.",
     "ended": "Der Download ist beendet. Du kannst neu starten.",
-    "cancelFailed": "Abbrechen fehlgeschlagen: {message}"
+    "cancelFailed": "Abbrechen fehlgeschlagen: {message}",
+    "pausedShort": "pausiert"
   },
   "shortcut": {
     "title": "Verknüpfungen erstellen",

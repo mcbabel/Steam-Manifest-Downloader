@@ -1583,6 +1583,8 @@ function initProgressUI(depots) {
   els.btnCancel.innerHTML = `${ICONS.x} <span data-i18n="progress.cancel">${escapeHtml(window.i18n.t('progress.cancel'))}</span>`;
   state.paused = false;
   state.lastSkippedShown = 0;
+  resetTaskbarProgress();
+  setTaskbarProgress(0);
   const isNative = state.currentEngine === 'native';
   if (els.btnPause) {
     els.btnPause.classList.toggle('hidden', !isNative);
@@ -1754,6 +1756,9 @@ function handleStatusUpdate(msg) {
         state.speedTracker.currentDepotId = msg.depotId;
       }
       if (msg.current && msg.total) {
+        taskbar.depotIndex = msg.current;
+        taskbar.depotTotal = msg.total;
+        taskbarDepotProgress(0);
         els.progressStatus.textContent = window.i18n.t('progress.runningDdm', { current: msg.current, total: msg.total, depotId: msg.depotId });
         const baseProgress = state.parsedData ? state.selectedDepots.size : 0;
         updateOverallProgress(baseProgress + msg.current - 1, baseProgress + msg.total);
@@ -1831,7 +1836,36 @@ function handleOutput(msg) {
   }
 }
 
+const taskbar = { key: '', depotIndex: 0, depotTotal: 0, percent: null };
+
+function setTaskbarProgress(percent) {
+  const p = percent == null ? null : Math.max(0, Math.min(100, Math.floor(percent)));
+  taskbar.percent = p;
+  const paused = p != null && !!state.paused;
+  const key = `${p}|${paused}`;
+  if (key === taskbar.key) return;
+  taskbar.key = key;
+  const base = window.i18n.t('appName');
+  const title = p == null
+    ? base
+    : `${p}%${paused ? ` (${window.i18n.t('progress.pausedShort')})` : ''} · ${state.gameName ? `${state.gameName} – ` : ''}${base}`;
+  invoke('set_download_progress', { percent: p, paused, title }).catch(() => {});
+}
+
+function resetTaskbarProgress() {
+  taskbar.depotIndex = 0;
+  taskbar.depotTotal = 0;
+  setTaskbarProgress(null);
+}
+
+function taskbarDepotProgress(depotPercent) {
+  const total = taskbar.depotTotal || state.dlDepotCount || 1;
+  const done = Math.max(taskbar.depotIndex - 1, 0);
+  setTaskbarProgress(((done + Math.min(depotPercent, 100) / 100) / total) * 100);
+}
+
 function updateDepotDownloadProgressBytes(percent, completedBytes, totalBytes, networkBytes) {
+  taskbarDepotProgress(percent);
   if (els.depotProgressFill) {
     els.depotProgressFill.style.width = `${Math.min(percent, 100)}%`;
   }
@@ -1900,6 +1934,7 @@ function updateSpeedAndEtaBytes(completedBytes, totalBytes, networkBytes) {
 }
 
 function updateDepotDownloadProgress(percent) {
+  taskbarDepotProgress(percent);
   if (els.depotProgressFill) {
     els.depotProgressFill.style.width = `${Math.min(percent, 100)}%`;
   }
@@ -2190,6 +2225,7 @@ function appendTerminalLine(text, type = 'stdout') {
 }
 
 function showCompletion(success, message) {
+  resetTaskbarProgress();
   state.jobId = null;
   els.completionMessage.classList.remove('hidden', 'completion-message--success', 'completion-message--error');
   els.completionMessage.classList.add(success ? 'completion-message--success' : 'completion-message--error');
@@ -2982,6 +3018,7 @@ async function togglePauseDownload() {
   try {
     await invoke('pause_download', { jobId: state.jobId, paused: willPause });
     state.paused = willPause;
+    setTaskbarProgress(taskbar.percent);
     if (els.btnPause) {
       els.btnPause.textContent = willPause
         ? window.i18n.t('progress.resume')

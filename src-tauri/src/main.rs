@@ -54,6 +54,7 @@ fn main() {
             commands::check_dotnet,
             commands::get_disk_space,
             commands::check_free_space,
+            commands::set_download_progress,
             commands::power_off_system,
             commands::get_build_info,
             commands::get_debug_log_path,
