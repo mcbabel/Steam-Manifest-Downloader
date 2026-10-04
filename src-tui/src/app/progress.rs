@@ -6,6 +6,7 @@ use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Sparkline, Widget};
 use serde_json::Value;
+use smd_core::services::followup::PendingFollowup;
 use smd_core::services::history::HistoryEntry;
 
 use super::action::{Action, ListId, Page, ScrollTarget, Step};
@@ -698,14 +699,101 @@ impl App {
         self.shutdown_modal_body(tf("modals.shutdown.body", &[("seconds", &secs)]));
     }
 
+    fn pending_followup(&self) -> Option<PendingFollowup> {
+        let success = self
+            .wiz
+            .progress
+            .as_ref()
+            .and_then(|p| p.finished.as_ref())
+            .is_some_and(|f| f.success);
+        let has_next =
+            self.shortcut_supported || self.steam_install.is_some() || self.emulator_available;
+        if !success || !has_next {
+            return None;
+        }
+        Some(PendingFollowup {
+            app_id: self.wiz.main_app_id()?,
+            game_name: self.wiz.game_name.clone(),
+            header_image: self.wiz.header_image.clone(),
+            download_dir: self.wiz.result_dir.clone()?,
+            created_at: Some(chrono::Utc::now().to_rfc3339()),
+        })
+    }
+
+    pub(super) fn offer_followup(&mut self, followup: PendingFollowup) {
+        let name = followup
+            .game_name
+            .clone()
+            .unwrap_or_else(|| format!("App {}", followup.app_id));
+        let mut modal = Modal::confirm(
+            t("modals.followup.title"),
+            tf("modals.followup.body", &[("name", &name)]),
+            t("modals.followup.resume"),
+            t("modals.followup.later"),
+            false,
+            Action::FollowupResume,
+        );
+        if let Modal::Confirm(c) = &mut modal {
+            c.on_no = Some(Action::FollowupLater);
+            c.check = Some((t("modals.followup.dontAsk"), false));
+        }
+        self.followup = Some(followup);
+        self.queue_modal(modal);
+    }
+
+    fn followup_dont_ask(&self) -> bool {
+        matches!(&self.modal, Some(Modal::Confirm(c))
+            if c.on_yes == Action::FollowupResume
+                && c.check.as_ref().is_some_and(|(_, on)| *on))
+    }
+
+    fn clear_followup_file(&mut self) {
+        let dir = self.data_dir.clone();
+        self.spawn(async move {
+            smd_core::services::followup::clear(&dir).await;
+            apply(|_| {})
+        });
+    }
+
+    fn resume_followup(&mut self, followup: PendingFollowup) {
+        self.page = Page::Wizard;
+        self.wiz.result_dir = Some(followup.download_dir.clone());
+        self.wiz.game_name = followup.game_name;
+        self.wiz.header_image = followup.header_image;
+        self.wiz.search_app_id = Some(followup.app_id);
+        let dir = followup.download_dir;
+        self.spawn(async move {
+            let r = smd_core::ops::emulator::scan_game_dir(&dir).await;
+            apply(move |app| {
+                app.emulator_available = matches!(&r, Ok(v) if !v.is_empty());
+                if app.shortcut_supported {
+                    app.go_to_shortcut_step();
+                } else if app.steam_install.is_some() {
+                    app.go_to_steam_step();
+                } else if app.emulator_available {
+                    app.go_to_emulator_step();
+                }
+            })
+        });
+    }
+
     fn shutdown_now(&mut self) {
         self.shutdown_deadline = None;
         self.shutdown_modal_body(t("modals.shutdown.running"));
+        let followup = self.pending_followup();
+        let data = self.data_dir.clone();
         self.spawn(async move {
+            let saved = match &followup {
+                Some(f) => smd_core::services::followup::save(&data, f).await.is_ok(),
+                None => false,
+            };
             let r = tokio::task::spawn_blocking(smd_core::ops::system::power_off)
                 .await
                 .map_err(|e| e.to_string())
                 .and_then(|r| r);
+            if r.is_err() && saved {
+                smd_core::services::followup::clear(&data).await;
+            }
             apply(move |app| {
                 if let Err(e) = r {
                     app.shutdown_after = false;
@@ -805,6 +893,21 @@ impl App {
                 self.close_modal();
             }
             Action::ShutdownNow => self.shutdown_now(),
+            Action::FollowupResume => {
+                self.close_modal();
+                if let Some(f) = self.followup.take() {
+                    self.clear_followup_file();
+                    self.resume_followup(f);
+                }
+            }
+            Action::FollowupLater => {
+                let discard = self.followup_dont_ask();
+                self.close_modal();
+                self.followup = None;
+                if discard {
+                    self.clear_followup_file();
+                }
+            }
             _ => return false,
         }
         true

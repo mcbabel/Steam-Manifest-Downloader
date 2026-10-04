@@ -896,6 +896,24 @@
     </div>
   </div>
 
+  <div id="followup-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="followup-modal-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content">
+      <div class="modal__icon modal__icon--accent" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </div>
+      <h3 class="modal__title" id="followup-modal-title" data-i18n="modals.followup.title">Continue Where You Left Off?</h3>
+      <p class="modal__text" id="followup-modal-body"></p>
+      <div class="modal__actions modal__actions--stack">
+        <button id="btn-followup-later" class="btn btn--outline" data-modal-cancel data-i18n="modals.followup.later">Later</button>
+        <button id="btn-followup-discard" class="btn btn--outline" data-i18n="modals.followup.discard">Discard</button>
+        <button id="btn-followup-resume" class="btn btn--primary" data-i18n="modals.followup.resume">Continue</button>
+      </div>
+    </div>
+  </div>
+
   <div id="close-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="close-modal-title" aria-hidden="true">
     <div class="modal__backdrop"></div>
     <div class="modal__content">

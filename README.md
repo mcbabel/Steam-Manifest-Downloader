@@ -40,7 +40,7 @@ Upload `.lua` files or search by App ID across configurable sources (GitHub, arc
 | 📊 | **Real-time progress** with per-depot speed + ETA |
 | 🔄 | **Update downloaded games** — from the history, only changed files are downloaded and files removed from the game are deleted |
 | 🐢 | **Speed limit** — cap downloads at e.g. 10 MB/s or 75 Mbit/s, also while a download is running |
-| ⏻ | **Shut down when finished** — optional, with a 60 second countdown that can be cancelled |
+| ⏻ | **Shut down when finished** — optional, with a 60 second countdown that can be cancelled; the next start offers to continue with the skipped steps |
 | 🎮 | **Steam Store API** integration — game names + cover art |
 | 🖼️ | **Add to Steam Library** — non-Steam shortcut with banner / hero / logo / icon (Linux step + Windows toggle) |
 | 🔧 | **gbe_fork emulator** patching — Regular + Experimental variants, 21 settings, lobby_connect launcher |

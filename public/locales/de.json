@@ -277,6 +277,14 @@
       "now": "Herunterfahren",
       "running": "Wird heruntergefahren…",
       "failed": "Der PC konnte nicht heruntergefahren werden: {message}"
+    },
+    "followup": {
+      "title": "Weitermachen, wo du aufgehört hast?",
+      "body": "Der Download von „{name}“ war fertig, bevor der PC heruntergefahren wurde. Die Schritte danach kannst du jetzt nachholen: Verknüpfungen, Steam-Bibliothek und Emulator.",
+      "later": "Später",
+      "discard": "Verwerfen",
+      "resume": "Weitermachen",
+      "dontAsk": "Nicht mehr nachfragen"
     }
   },
   "emulator": {

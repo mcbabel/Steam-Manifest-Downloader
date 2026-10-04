@@ -2469,6 +2469,22 @@ button:disabled,
   justify-content: center;
 }
 
+.modal__actions--stack {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.modal__actions--stack .btn {
+  min-width: 0;
+  padding-inline: 0.75rem;
+}
+
+.modal__actions--stack .btn--primary {
+  grid-column: 1 / -1;
+  order: -1;
+  border: 1px solid transparent;
+}
+
 .btn--push-end {
   margin-right: auto;
 }

@@ -1,4 +1,5 @@
 use smd_core::ops::{history as history_ops, system};
+use smd_core::services::followup::{self as followup_service, PendingFollowup};
 use smd_core::services::history::{self as history_service, HistoryEntry};
 use tauri::{command, AppHandle};
 
@@ -36,6 +37,21 @@ pub async fn clear_history(
 #[command]
 pub async fn record_history_entry(app: AppHandle, entry: HistoryEntry) -> Result<(), String> {
     history_service::add_entry(&app_data_dir(&app), entry).await
+}
+
+#[command]
+pub async fn save_pending_followup(app: AppHandle, followup: PendingFollowup) -> Result<(), String> {
+    followup_service::save(&app_data_dir(&app), &followup).await
+}
+
+#[command]
+pub async fn get_pending_followup(app: AppHandle) -> Option<PendingFollowup> {
+    followup_service::load(&app_data_dir(&app)).await
+}
+
+#[command]
+pub async fn clear_pending_followup(app: AppHandle) {
+    followup_service::clear(&app_data_dir(&app)).await
 }
 
 #[command]

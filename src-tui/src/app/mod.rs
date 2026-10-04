@@ -97,6 +97,7 @@ pub struct App {
     pub emulator_available: bool,
     pub shutdown_after: bool,
     pub shutdown_deadline: Option<Instant>,
+    pub followup: Option<smd_core::services::followup::PendingFollowup>,
 }
 
 impl App {
@@ -153,6 +154,7 @@ impl App {
             emulator_available: false,
             shutdown_after: false,
             shutdown_deadline: None,
+            followup: None,
         };
         (app, rx)
     }
@@ -210,6 +212,15 @@ impl App {
                     .ok()
                     .and_then(Result::ok);
             apply(move |app| app.steam_install = install)
+        });
+        let dir = self.data_dir.clone();
+        self.spawn(async move {
+            let followup = smd_core::services::followup::load(&dir).await;
+            apply(move |app| {
+                if let Some(f) = followup {
+                    app.offer_followup(f);
+                }
+            })
         });
         if self.settings.auto_update {
             self.check_updates(false);

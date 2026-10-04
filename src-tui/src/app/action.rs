@@ -158,6 +158,8 @@ pub enum Action {
     ToggleShutdownAfter,
     ShutdownAbort,
     ShutdownNow,
+    FollowupResume,
+    FollowupLater,
     HistoryOpenFolder(usize),
     HistoryCopyPath(usize),
     HistoryEditEmu(usize),

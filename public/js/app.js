@@ -166,6 +166,11 @@ const els = {
   shutdownModalBody: $('#shutdown-modal-body'),
   btnShutdownAbort: $('#btn-shutdown-abort'),
   btnShutdownNow: $('#btn-shutdown-now'),
+  followupModal: $('#followup-modal'),
+  followupModalBody: $('#followup-modal-body'),
+  btnFollowupLater: $('#btn-followup-later'),
+  btnFollowupDiscard: $('#btn-followup-discard'),
+  btnFollowupResume: $('#btn-followup-resume'),
   btnCancelYes: $('#btn-cancel-yes'),
   btnCancelNo: $('#btn-cancel-no'),
   btnThemeToggle: $('#btn-theme-toggle'),
@@ -3058,12 +3063,77 @@ async function shutdownNow() {
   els.btnShutdownNow.disabled = true;
   els.shutdownModalBody.textContent = window.i18n.t('modals.shutdown.running');
   await commitPendingHistory();
+  const followupSaved = await savePendingFollowup();
   try {
     await invoke('power_off_system');
   } catch (e) {
+    if (followupSaved) invoke('clear_pending_followup').catch(() => {});
     els.shutdownModalBody.textContent = window.i18n.t('modals.shutdown.failed', { message: String(e) });
     els.btnShutdownNow.disabled = false;
     if (els.shutdownAfterToggle) els.shutdownAfterToggle.checked = false;
+  }
+}
+
+async function savePendingFollowup() {
+  const hasNextSteps = state.shortcutSupported || state.steamLibrarySupported || state.emulatorAvailable;
+  const appId = currentAppIdForSteam();
+  if (state.downloadFailed || !state.downloadDir || !appId || !hasNextSteps) return false;
+  try {
+    await invoke('save_pending_followup', {
+      followup: {
+        app_id: appId,
+        game_name: state.gameName || null,
+        header_image: state.headerImage || null,
+        download_dir: state.downloadDir,
+        created_at: new Date().toISOString(),
+      },
+    });
+    return true;
+  } catch (e) {
+    console.error('save_pending_followup failed:', e);
+    return false;
+  }
+}
+
+async function showPendingFollowupIfAny() {
+  if (!els.followupModal) return;
+  let followup = null;
+  try {
+    followup = await invoke('get_pending_followup');
+  } catch (e) {
+    console.error('get_pending_followup failed:', e);
+  }
+  if (!followup) return;
+  const name = followup.game_name || `App ${followup.app_id}`;
+  els.followupModalBody.textContent = window.i18n.t('modals.followup.body', { name });
+  const close = () => els.followupModal.classList.add('hidden');
+  els.btnFollowupLater.onclick = close;
+  els.followupModal.querySelector('.modal__backdrop').onclick = close;
+  els.btnFollowupDiscard.onclick = () => {
+    invoke('clear_pending_followup').catch(() => {});
+    close();
+  };
+  els.btnFollowupResume.onclick = () => {
+    invoke('clear_pending_followup').catch(() => {});
+    close();
+    resumePendingFollowup(followup);
+  };
+  els.followupModal.classList.remove('hidden');
+}
+
+async function resumePendingFollowup(followup) {
+  state.downloadDir = followup.download_dir;
+  state.gameName = followup.game_name || null;
+  state.headerImage = followup.header_image || null;
+  state.parsedData = { mainAppId: followup.app_id, depots: [] };
+  state.downloadFailed = false;
+  await checkEmulatorSupport();
+  if (state.shortcutSupported) {
+    goToShortcutStep();
+  } else if (state.steamLibrarySupported) {
+    goToSteamLibraryStep();
+  } else if (state.emulatorAvailable) {
+    goToEmulatorStep();
   }
 }
 
@@ -5617,5 +5687,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   bindSettingsLanguageCards();
   await showLanguagePickerIfNeeded(initSettings, hasStored);
   await initTelemetryConsent();
+  await showPendingFollowupIfAny();
   setTimeout(checkForUpdates, 1500);
 });

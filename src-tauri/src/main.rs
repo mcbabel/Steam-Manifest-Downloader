@@ -70,6 +70,9 @@ fn main() {
             commands::remove_history_entry,
             commands::clear_history,
             commands::record_history_entry,
+            commands::save_pending_followup,
+            commands::get_pending_followup,
+            commands::clear_pending_followup,
             commands::open_folder,
             // Shortcuts
             commands::is_shortcut_supported,

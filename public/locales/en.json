@@ -277,6 +277,14 @@
       "now": "Shut Down Now",
       "running": "Shutting down…",
       "failed": "The PC could not be shut down: {message}"
+    },
+    "followup": {
+      "title": "Continue Where You Left Off?",
+      "body": "The download of “{name}” finished before the PC shut down. You can now catch up on the steps after it: shortcuts, Steam library and emulator.",
+      "later": "Later",
+      "discard": "Discard",
+      "resume": "Continue",
+      "dontAsk": "Don't ask again"
     }
   },
   "emulator": {
