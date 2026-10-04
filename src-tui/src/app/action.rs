@@ -115,6 +115,7 @@ pub enum Action {
 
     ToggleDepot(usize),
     AutoSelectDepots,
+    ToggleDlcSelection,
     CancelAutoStart,
     SelectAll,
     DeselectAll,

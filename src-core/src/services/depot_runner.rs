@@ -301,6 +301,7 @@ pub async fn run_depot_downloader(
     extra_args: &[String],
     job_id: &str,
     state: &AppState,
+    merged: bool,
 ) -> Result<bool, String> {
     let manifest_file = format!("{}_{}.manifest", depot.depot_id, depot.manifest_id);
     let keys_file = "steam.keys";
@@ -317,6 +318,10 @@ pub async fn run_depot_downloader(
         "-manifestfile".to_string(),
         manifest_file,
     ];
+    if merged {
+        args.push("-dir".to_string());
+        args.push(work_dir.to_string_lossy().to_string());
+    }
     args.extend_from_slice(extra_args);
 
     let command_display = format!(
@@ -416,6 +421,7 @@ pub async fn run_all_depots(
     extra_args: &[String],
     job_id: &str,
     state: &AppState,
+    merged: bool,
 ) -> Result<Vec<serde_json::Value>, String> {
     let mut results = Vec::new();
     let total = depots.len();
@@ -444,7 +450,7 @@ pub async fn run_all_depots(
         event.total = Some(total);
         emit_progress(sink, &event);
 
-        match run_depot_downloader(sink, exe_path, app_id, depot, work_dir, extra_args, job_id, state).await {
+        match run_depot_downloader(sink, exe_path, app_id, depot, work_dir, extra_args, job_id, state, merged).await {
             Ok(success) => {
                 results.push(serde_json::json!({
                     "depotId": depot.depot_id,

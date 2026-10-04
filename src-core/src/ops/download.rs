@@ -56,6 +56,12 @@ pub struct DownloadConfig {
     pub resume_mode: Option<String>,
     #[serde(default)]
     pub repair: bool,
+    #[serde(rename = "likeSteam", alias = "like_steam", default)]
+    pub like_steam: Option<bool>,
+    #[serde(rename = "allAppIds", alias = "all_app_ids", default)]
+    pub all_app_ids: Option<Vec<String>>,
+    #[serde(rename = "includeDlc", alias = "include_dlc", default)]
+    pub include_dlc: Option<bool>,
 }
 
 impl DownloadConfig {
@@ -182,6 +188,7 @@ pub async fn start_download(
         None => (base_dir, folder_name),
     };
     let download_dir = base_dir.join(&folder_name);
+    let created_work_dir = !download_dir.exists();
 
     {
         let mut jobs = state.active_jobs.lock().await;
@@ -198,6 +205,7 @@ pub async fn start_download(
                 game_name: game_name.clone(),
                 header_image: header_image.clone(),
                 work_dir: Some(download_dir.to_string_lossy().to_string()),
+                created_work_dir,
                 history_written: false,
                 #[cfg(target_os = "windows")]
                 job_object: None,
@@ -342,6 +350,10 @@ async fn run_download_pipeline(
     let loaded_settings = settings_service::load_settings(app_data_dir).await;
     let depot_sources_list = loaded_settings.depot_sources.clone();
     let use_native = loaded_settings.use_native_downloader;
+    let merged = install_state::use_merged_layout(
+        &work_dir,
+        config.like_steam.unwrap_or(loaded_settings.auto_select_depots),
+    );
     let engine_label: &'static str = if use_native { "native" } else { "ddm" };
     let is_hubcap = config.source_type.as_deref() == Some("hubcap");
     let is_ryuu = config.source_type.as_deref() == Some("ryuu");
@@ -890,7 +902,7 @@ async fn run_download_pipeline(
         .map(|(id, _)| id.clone())
         .collect();
 
-    let run_depots: Vec<DepotRunConfig> = config
+    let mut run_depots: Vec<DepotRunConfig> = config
         .depots
         .iter()
         .filter(|d| successful_depot_ids.contains(&d.depot_id))
@@ -904,6 +916,9 @@ async fn run_download_pipeline(
             display_name: d.display_name.clone(),
         })
         .collect();
+    if merged {
+        run_depots.sort_by_key(|d| d.depot_id.parse::<u64>().unwrap_or(u64::MAX));
+    }
 
     let mut event = ProgressEvent::new("status", job_id);
     event.step = Some("starting_downloader".to_string());
@@ -945,10 +960,11 @@ async fn run_download_pipeline(
             config.update_target().is_some(),
             config.resume_mode.as_deref() == Some("fast") && !config.repair,
             config.repair,
+            merged,
         )
         .await?
     } else {
-        {
+        if !merged {
             let mut jobs = state.active_jobs.lock().await;
             if let Some(job) = jobs.get_mut(job_id) {
                 for depot in run_depots.iter() {
@@ -981,6 +997,7 @@ async fn run_download_pipeline(
             &extra_args,
             job_id,
             state,
+            merged,
         )
         .await?
     };
@@ -989,10 +1006,11 @@ async fn run_download_pipeline(
         return Ok(());
     }
 
-    let dd_cache = work_dir.join("depots").join(".DepotDownloader");
-    if dd_cache.exists() {
-        if let Err(e) = tokio::fs::remove_dir_all(&dd_cache).await {
-            eprintln!("[Cleanup] Failed to remove .DepotDownloader cache: {}", e);
+    for dd_cache in [work_dir.join("depots").join(".DepotDownloader"), work_dir.join(".DepotDownloader")] {
+        if dd_cache.exists() {
+            if let Err(e) = tokio::fs::remove_dir_all(&dd_cache).await {
+                eprintln!("[Cleanup] Failed to remove .DepotDownloader cache: {}", e);
+            }
         }
     }
 
@@ -1002,6 +1020,16 @@ async fn run_download_pipeline(
         .count();
     let selected_total = config.depots.len();
     let outcome = diag::Outcome::from_counts(dl_success_count, selected_total);
+    if dl_success_count > 0 {
+        let succeeded: Vec<String> = download_results
+            .iter()
+            .filter(|r| r["success"].as_bool().unwrap_or(false))
+            .filter_map(|r| r["depotId"].as_str().map(String::from))
+            .collect();
+        if merged {
+            record_dlc_choice(state, config, &work_dir, &succeeded).await;
+        }
+    }
 
     let mut all_diags = diag::from_download_results(
         &download_results,
@@ -1098,6 +1126,7 @@ pub async fn cancel_download(
         game_name,
         header_image,
         work_dir_str,
+        created_work_dir,
         claim_ok,
     ) = {
         let mut jobs = state.active_jobs.lock().await;
@@ -1116,6 +1145,7 @@ pub async fn cancel_download(
             job.game_name.clone(),
             job.header_image.clone(),
             job.work_dir.clone(),
+            job.created_work_dir,
             claim_ok,
         )
     };
@@ -1209,7 +1239,7 @@ pub async fn cancel_download(
         return Ok(());
     }
 
-    let depot_dirs_final: Vec<String> = if depot_dirs.is_empty() {
+    let mut depot_dirs_final: Vec<String> = if depot_dirs.is_empty() {
         let jobs = state.active_jobs.lock().await;
         jobs.get(&job_id)
             .map(|j| j.depot_dirs.clone())
@@ -1217,6 +1247,29 @@ pub async fn cancel_download(
     } else {
         depot_dirs
     };
+    let game_root = work_dir_str
+        .as_deref()
+        .map(PathBuf::from)
+        .filter(|p| created_work_dir && is_safe_game_root(p) && !install_state::has_depot_folders(p));
+    if game_root.is_some() {
+        depot_dirs_final.clear();
+    }
+
+    if let Some(root) = game_root {
+        tokio::spawn(async move {
+            tokio::time::sleep(tokio::time::Duration::from_millis(2500)).await;
+            for attempt in 0..6 {
+                match tokio::fs::remove_dir_all(&root).await {
+                    Ok(_) => break,
+                    Err(e) if e.kind() == std::io::ErrorKind::NotFound => break,
+                    Err(e) => {
+                        eprintln!("[Cancel] Attempt {} to delete {:?} failed: {}", attempt + 1, root, e);
+                        tokio::time::sleep(tokio::time::Duration::from_millis(1500)).await;
+                    }
+                }
+            }
+        });
+    }
 
     if !depot_dirs_final.is_empty() {
         tokio::spawn(async move {
@@ -1334,6 +1387,7 @@ async fn run_native_pipeline(
     update_mode: bool,
     trust_checkpoint: bool,
     repair: bool,
+    merged: bool,
 ) -> Result<Vec<serde_json::Value>, String> {
     let app_id_u: u32 = app_id
         .parse()
@@ -1345,7 +1399,7 @@ async fn run_native_pipeline(
         let mut jobs = state.active_jobs.lock().await;
         match jobs.get_mut(job_id) {
             Some(j) => {
-                for depot in run_depots.iter() {
+                for depot in run_depots.iter().filter(|_| !merged) {
                     let folder = depot
                         .display_name
                         .as_deref()
@@ -1370,6 +1424,7 @@ async fn run_native_pipeline(
         }
     };
 
+    let mut rewritten: std::collections::HashSet<String> = std::collections::HashSet::new();
     for (idx, depot) in run_depots.iter().enumerate() {
         if check_cancelled(state, job_id).await {
             return Ok(results);
@@ -1400,8 +1455,15 @@ async fn run_native_pipeline(
         };
 
         let installed = install_state::load(work_dir, &depot.depot_id);
+        let overwritten_by_earlier = merged
+            && installed.as_ref().is_some_and(|i| {
+                i.files
+                    .iter()
+                    .any(|f| rewritten.contains(&install_state::normalize(f).to_lowercase()))
+            });
         if update_mode
             && !repair
+            && !overwritten_by_earlier
             && installed
                 .as_ref()
                 .is_some_and(|i| i.manifest_id == depot.manifest_id)
@@ -1479,8 +1541,12 @@ async fn run_native_pipeline(
             .filter(|n| !n.trim().is_empty())
             .map(|n| format!("{} - {}", sanitize_folder_segment(n), depot.depot_id))
             .unwrap_or_else(|| depot.depot_id.clone());
-        let depot_out = work_dir.join("depots").join(&depot_folder_name);
-        {
+        let depot_out = if merged {
+            work_dir.to_path_buf()
+        } else {
+            work_dir.join("depots").join(&depot_folder_name)
+        };
+        if !merged {
             let mut jobs = state.active_jobs.lock().await;
             if let Some(job) = jobs.get_mut(job_id) {
                 let p = depot_out.to_string_lossy().to_string();
@@ -1781,7 +1847,11 @@ async fn run_native_pipeline(
                     installed.as_ref(),
                     &outcome.manifest_files,
                     update_mode,
+                    merged,
                 );
+                if merged && outcome.files_written > 0 {
+                    rewritten.extend(install_state::lower_set(&outcome.manifest_files));
+                }
                 if removed > 0 {
                     let mut event = ProgressEvent::new("status", job_id);
                     event.step = Some("removed_stale_files".to_string());
@@ -1839,6 +1909,46 @@ async fn run_native_pipeline(
     Ok(results)
 }
 
+async fn record_dlc_choice(
+    state: &AppState,
+    config: &DownloadConfig,
+    work_dir: &Path,
+    installed_depots: &[String],
+) {
+    let Some(all_app_ids) = config.all_app_ids.as_ref() else {
+        return;
+    };
+    let Ok(app_id) = config.app_id.parse::<u32>() else {
+        return;
+    };
+    let meta = crate::services::steam_pics::fetch_depots_with_names(state.steam_session.clone(), app_id)
+        .await
+        .unwrap_or_default();
+    let mut known_ids = all_app_ids.clone();
+    if known_ids.iter().all(|id| *id == config.app_id) && config.include_dlc == Some(true) {
+        if let Ok(info) = crate::services::steam_pics::fetch_dlc_info(state.steam_session.clone(), app_id, &[]).await {
+            known_ids.extend(info.listed.iter().map(|id| id.to_string()));
+        }
+    }
+    let mut chosen = crate::services::depot_select::chosen_dlcs(
+        &meta,
+        &config.app_id,
+        &known_ids,
+        installed_depots,
+        config.include_dlc,
+    );
+    if config.update_target().is_some() {
+        if let Some(previous) = install_state::load_dlc_choice(work_dir) {
+            chosen.extend(previous);
+            chosen.sort_by_key(|id| id.parse::<u64>().unwrap_or(u64::MAX));
+            chosen.dedup();
+        }
+    }
+    if let Err(e) = install_state::save_dlc_choice(work_dir, &chosen) {
+        eprintln!("[Download] {}", e);
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 fn finish_depot_install(
     work_dir: &Path,
@@ -1849,6 +1959,7 @@ fn finish_depot_install(
     installed: Option<&install_state::DepotInstall>,
     new_files: &[String],
     update_mode: bool,
+    merged: bool,
 ) -> usize {
     let mut removed = 0;
     if update_mode {
@@ -1863,7 +1974,10 @@ fn finish_depot_install(
                 .flat_map(|m| install_state::manifest_files(&m))
                 .collect(),
         };
-        let stale = install_state::stale_files(&old_files, new_files);
+        let mut stale = install_state::stale_files(&old_files, new_files);
+        if merged {
+            stale = install_state::keep_shared(stale, &install_state::files_of_other_depots(work_dir, depot_id));
+        }
         removed = install_state::remove_stale(depot_out, &stale);
         for old in old_manifests {
             let _ = std::fs::remove_file(old);
@@ -1878,6 +1992,10 @@ fn finish_depot_install(
         eprintln!("[Download] {}", e);
     }
     removed
+}
+
+fn is_safe_game_root(path: &Path) -> bool {
+    path.is_absolute() && path.components().count() >= 4 && path.to_string_lossy().len() >= 8
 }
 
 fn is_safe_depot_cleanup_path(path: &Path) -> bool {
@@ -2094,6 +2212,7 @@ mod update_install_tests {
             Some(&old),
             &s(&["game.exe", "new.pak"]),
             true,
+            false,
         );
         assert_eq!(removed, 1);
         assert!(depot.join("game.exe").exists());
@@ -2125,10 +2244,48 @@ mod update_install_tests {
             Some(&old),
             &s(&["game.exe"]),
             false,
+            false,
         );
         assert_eq!(removed, 0);
         assert!(depot.join("extra.txt").exists());
         assert_eq!(install_state::load(&work, "481").unwrap().manifest_id, "200");
+        let _ = std::fs::remove_dir_all(&work);
+    }
+    #[test]
+    fn a_merged_update_keeps_files_another_depot_still_ships() {
+        let work = tmp("merged");
+        for f in ["content.pak", "shared.dat", "old.pak"] {
+            std::fs::write(work.join(f), b"x").unwrap();
+        }
+        install_state::save(
+            &work,
+            &install_state::DepotInstall {
+                depot_id: "482".into(),
+                manifest_id: "1".into(),
+                files: s(&["Shared.dat"]),
+            },
+        )
+        .unwrap();
+        let old = install_state::DepotInstall {
+            depot_id: "481".into(),
+            manifest_id: "100".into(),
+            files: s(&["content.pak", "shared.dat", "old.pak"]),
+        };
+        let removed = finish_depot_install(
+            &work,
+            &work,
+            "481",
+            "200",
+            &[0u8; 32],
+            Some(&old),
+            &s(&["content.pak"]),
+            true,
+            true,
+        );
+        assert_eq!(removed, 1);
+        assert!(work.join("shared.dat").exists());
+        assert!(!work.join("old.pak").exists());
+        assert!(work.join("content.pak").exists());
         let _ = std::fs::remove_dir_all(&work);
     }
 }

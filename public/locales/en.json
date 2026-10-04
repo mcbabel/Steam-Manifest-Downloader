@@ -132,10 +132,12 @@
       "arch32": "32-bit",
       "other_language": "other language",
       "low_violence": "low-violence version",
-      "dlc": "DLC (off in settings)",
+      "dlc": "DLC (not selected)",
       "optional_dlc": "optional DLC",
       "redistributable": "shared redistributable"
-    }
+    },
+    "autoSelectDlc": "Add DLC",
+    "autoSelectNoDlc": "Remove DLC"
   },
   "progress": {
     "diskSpaceLoading": "Checking disk space…",
@@ -493,7 +495,9 @@
     "reapply": "Re-apply Patch",
     "settingsHintPatched": "These values were read from the steam_settings files in this folder. Clearing a field removes that setting when you save.",
     "settingsReadError": "Could not read the existing emulator settings: {message}. Saving is disabled so the current configuration is not overwritten.",
-    "applyNoSelection": "No files selected — tick at least one Steam API file."
+    "applyNoSelection": "No files selected — tick at least one Steam API file.",
+    "dlcActivated": "{count} DLC(s) marked as owned for gbe_fork, matching your download.",
+    "dlcNone": "No DLC was chosen for this download, so gbe_fork reports none as owned."
   },
   "steamLibrary": {
     "title": "Add to Steam Library",
@@ -654,10 +658,10 @@
     "channelDev": "Dev",
     "channelDevLocal": "Dev (local)",
     "depotSelection": "Depot selection",
-    "autoSelectDepots": "Pick depots automatically like Steam",
-    "autoSelectDepotsHint": "After a game is loaded, the depots Steam would install on this system are selected: the right platform, 64-bit, your language and the DLC in the file. You can still change the selection.",
+    "autoSelectDepots": "Like Steam: pick the depots and put them into one game folder",
+    "autoSelectDepotsHint": "Off: you pick the depots yourself and every depot gets its own subfolder, as before. On: the depots Steam would install on this system are selected (base game, right platform, 64-bit, your language) and written into one game folder, so the game is complete and starts right away. \"Add DLC\" in the depot list adds the DLC, which the emulator step then marks as owned for gbe_fork.",
     "autoStartDownload": "Start the download right away",
-    "includeDlc": "Include DLC",
+    "includeDlc": "Always include DLC",
     "targetPlatform": "Platform",
     "targetPlatformHint": "Auto uses this system. When a game has no Linux build, the Windows version is picked (it runs with Proton). With \"Start the download right away\" you only pick the game, the download starts 5 seconds later.",
     "auto": "Auto",

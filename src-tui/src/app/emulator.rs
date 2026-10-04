@@ -661,6 +661,13 @@ impl App {
                 if failed == 0 {
                     self.prefs.last_emu_settings = Some(gathered.unwrap_or_default());
                     self.save_prefs();
+                    let dlc_note = results.iter().find_map(|r| r.dlc_count).map(|n| {
+                        if n == 0 {
+                            t("emulator.dlcNone")
+                        } else {
+                            tf("emulator.dlcActivated", &[("count", &n)])
+                        }
+                    });
                     let targets_c = targets.clone();
                     self.sync_bypass(targets_c, move |app, extra| {
                         let Some(e) = app.emu.as_mut() else { return };
@@ -669,6 +676,10 @@ impl App {
                             "emulator.applySuccess",
                             &[("count", &success), ("total", &total)],
                         );
+                        if let Some(note) = &dlc_note {
+                            msg.push('\n');
+                            msg.push_str(note);
+                        }
                         if !extra.is_empty() {
                             msg.push_str("\n\n");
                             msg.push_str(&extra);

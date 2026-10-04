@@ -54,20 +54,16 @@ pub struct Settings {
     pub cancel_keep_files: bool,
     #[serde(default)]
     pub ryuu_api_key: String,
-    #[serde(default = "default_true")]
+    #[serde(default)]
     pub auto_select_depots: bool,
     #[serde(default)]
     pub auto_start_download: bool,
-    #[serde(default = "default_true")]
+    #[serde(default)]
     pub include_dlc: bool,
     #[serde(default)]
     pub game_language: String,
     #[serde(default)]
     pub target_platform: String,
-}
-
-fn default_true() -> bool {
-    true
 }
 
 fn default_use_native_downloader() -> bool {
@@ -142,9 +138,9 @@ impl Default for Settings {
             use_native_downloader: default_use_native_downloader(),
             cancel_keep_files: default_cancel_keep_files(),
             ryuu_api_key: String::new(),
-            auto_select_depots: true,
+            auto_select_depots: false,
             auto_start_download: false,
-            include_dlc: true,
+            include_dlc: false,
             game_language: String::new(),
             target_platform: String::new(),
         }

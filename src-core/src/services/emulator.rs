@@ -115,6 +115,18 @@ pub struct ReplaceResult {
     pub error: Option<String>,
     #[serde(default, rename = "failClass")]
     pub fail_class: Option<String>,
+    #[serde(default, rename = "dlcCount", skip_serializing_if = "Option::is_none")]
+    pub dlc_count: Option<usize>,
+}
+
+pub fn render_app_ini(dlcs: &[(String, String)]) -> String {
+    let mut out = String::from(INI_HEADER);
+    out.push_str("[app::dlcs]\nunlock_all=0\n");
+    for (id, name) in dlcs {
+        let name: String = name.chars().filter(|c| *c != '\n' && *c != '\r').collect();
+        out.push_str(&format!("{}={}\n", id.trim(), name.trim()));
+    }
+    out
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -858,6 +870,7 @@ pub fn apply_replacement(
     app_id: &str,
     installed_app_ids: &[String],
     emu_settings: Option<&EmuSettings>,
+    dlcs: Option<&[(String, String)]>,
 ) -> ReplaceResult {
     let mut result = ReplaceResult {
         path: target.to_string_lossy().to_string(),
@@ -865,6 +878,7 @@ pub fn apply_replacement(
         success: false,
         error: None,
         fail_class: None,
+        dlc_count: None,
     };
     crate::dlog!(
         "emu",
@@ -883,6 +897,7 @@ pub fn apply_replacement(
         app_id,
         installed_app_ids,
         emu_settings,
+        dlcs,
         &mut result,
     ) {
         Ok(()) => {
@@ -913,6 +928,7 @@ fn apply_to_target(
     app_id: &str,
     installed_app_ids: &[String],
     emu_settings: Option<&EmuSettings>,
+    dlcs: Option<&[(String, String)]>,
     result: &mut ReplaceResult,
 ) -> Result<(), TargetError> {
     let emu_dll = dll_source(platform_cache, variant, x64, platform)
@@ -967,6 +983,13 @@ fn apply_to_target(
         })?;
     }
 
+    if let Some(list) = dlcs {
+        fs::write(settings_dir.join("configs.app.ini"), render_app_ini(list)).map_err(|e| {
+            (fail::SETTINGS_WRITE_FAILED, format!("write configs.app.ini: {}", e))
+        })?;
+        result.dlc_count = Some(list.len());
+    }
+
     if let Some(s) = emu_settings {
         s.write_to_dir(&settings_dir)
             .map_err(|e| (fail::SETTINGS_WRITE_FAILED, format!("write emu settings: {}", e)))?;
@@ -1018,6 +1041,7 @@ pub fn revert_replacement(target: &Path) -> Result<(), TargetError> {
         let _ = fs::remove_file(settings_dir.join("steam_interfaces.txt"));
         let _ = fs::remove_file(settings_dir.join("steam_appid.txt"));
         let _ = fs::remove_file(settings_dir.join("installed_app_ids.txt"));
+        let _ = fs::remove_file(settings_dir.join("configs.app.ini"));
         let _ = fs::remove_dir(&settings_dir);
     }
     Ok(())
@@ -1162,6 +1186,7 @@ mod dll_source_tests {
             false,
             "480",
             &[],
+            None,
             None,
         );
         assert!(!r.success);

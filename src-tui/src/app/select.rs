@@ -36,6 +36,12 @@ impl App {
                 self.apply_auto_selection(true);
             }
             Action::CancelAutoStart => self.wiz.auto_start_at = None,
+            Action::ToggleDlcSelection => {
+                self.touch_depot_selection();
+                let on = self.wiz.depot_include_dlc.unwrap_or(self.settings.include_dlc);
+                self.wiz.depot_include_dlc = Some(!on);
+                self.apply_auto_selection(true);
+            }
             Action::SelectAll => {
                 self.touch_depot_selection();
                 if let Some(p) = &self.wiz.parsed {
@@ -103,7 +109,10 @@ impl App {
         }
         let meta: Vec<DepotMetadata> = self.wiz.depot_pics.values().cloned().collect();
         let candidates: Vec<String> = parsed.depots.iter().map(|d| d.depot_id.clone()).collect();
-        let prefs = depot_select::prefs_from_settings(&self.settings, i18n::language());
+        let mut prefs = depot_select::prefs_from_settings(&self.settings, i18n::language());
+        if let Some(dlc) = self.wiz.depot_include_dlc {
+            prefs.include_dlc = dlc;
+        }
         let choice = depot_select::recommend(&meta, &candidates, &prefs);
         self.wiz.selected = choice.selected.iter().cloned().collect();
         if !manual
@@ -115,6 +124,17 @@ impl App {
             self.wiz.auto_start_at = Some(Instant::now() + Duration::from_secs(5));
         }
         self.wiz.depot_choice = Some(choice);
+    }
+
+    fn has_dlc_depots(&self) -> bool {
+        self.wiz.parsed.as_ref().is_some_and(|p| {
+            p.depots.iter().any(|d| {
+                self.wiz
+                    .depot_pics
+                    .get(&d.depot_id)
+                    .is_some_and(|m| m.role == DepotRole::Dlc && !m.optional_dlc)
+            })
+        })
     }
 
     pub(super) fn auto_start_tick(&mut self) {
@@ -410,6 +430,9 @@ impl App {
             speed_limit: None,
             resume_mode: None,
             repair: self.wiz.active_repair(&parsed.main_app_id).is_some(),
+            like_steam: None,
+            all_app_ids: Some(parsed.all_app_ids.clone()),
+            include_dlc: self.wiz.depot_include_dlc,
         };
         let ids: Vec<String> = config.depots.iter().map(|d| d.depot_id.clone()).collect();
         Some((config, ids, native))
@@ -589,20 +612,38 @@ impl App {
         );
         let row = take_top(&mut rest, 1);
         let mut x = row.x;
-        x += widgets::button(
-            buf,
-            ctx,
-            x,
-            row.y,
-            row.width,
-            &ButtonSpec::new(
-                t("select.autoSelect"),
-                Fid::new("select.auto"),
-                Action::AutoSelectDepots,
-                Btn::Secondary,
-            )
-            .enabled(!self.wiz.depot_pics.is_empty()),
-        ) + 1;
+        if self.settings.auto_select_depots {
+            x += widgets::button(
+                buf,
+                ctx,
+                x,
+                row.y,
+                row.width,
+                &ButtonSpec::new(
+                    t("select.autoSelect"),
+                    Fid::new("select.auto"),
+                    Action::AutoSelectDepots,
+                    Btn::Secondary,
+                )
+                .enabled(!self.wiz.depot_pics.is_empty()),
+            ) + 1;
+        }
+        if self.settings.auto_select_depots && self.has_dlc_depots() {
+            let on = self.wiz.depot_include_dlc.unwrap_or(self.settings.include_dlc);
+            x += widgets::button(
+                buf,
+                ctx,
+                x,
+                row.y,
+                row.right().saturating_sub(x),
+                &ButtonSpec::new(
+                    t(if on { "select.autoSelectNoDlc" } else { "select.autoSelectDlc" }),
+                    Fid::new("select.dlc"),
+                    Action::ToggleDlcSelection,
+                    Btn::Secondary,
+                ),
+            ) + 1;
+        }
         x += widgets::button(
             buf,
             ctx,

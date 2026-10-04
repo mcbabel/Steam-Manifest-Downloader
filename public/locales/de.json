@@ -132,10 +132,12 @@
       "arch32": "32-Bit",
       "other_language": "andere Sprache",
       "low_violence": "entschärfte Version",
-      "dlc": "DLC (in den Einstellungen aus)",
+      "dlc": "DLC (nicht ausgewählt)",
       "optional_dlc": "optionaler DLC",
       "redistributable": "gemeinsame Laufzeitkomponente"
-    }
+    },
+    "autoSelectDlc": "DLCs auch auswählen",
+    "autoSelectNoDlc": "DLCs abwählen"
   },
   "progress": {
     "diskSpaceLoading": "Speicherplatz wird geprüft…",
@@ -493,7 +495,9 @@
     "reapply": "Patch erneut anwenden",
     "settingsHintPatched": "Diese Werte stammen aus den steam_settings-Dateien in diesem Ordner. Ein geleertes Feld entfernt die Einstellung beim Speichern.",
     "settingsReadError": "Die vorhandenen Emulator-Einstellungen konnten nicht gelesen werden: {message}. Speichern ist deaktiviert, damit die aktuelle Konfiguration nicht überschrieben wird.",
-    "applyNoSelection": "Keine Dateien ausgewählt — hake mindestens eine Steam-API-Datei an."
+    "applyNoSelection": "Keine Dateien ausgewählt — hake mindestens eine Steam-API-Datei an.",
+    "dlcActivated": "{count} DLC(s) für gbe_fork als vorhanden eingetragen, passend zu deinem Download.",
+    "dlcNone": "Für diesen Download wurden keine DLCs gewählt, gbe_fork meldet deshalb keine als vorhanden."
   },
   "steamLibrary": {
     "title": "Zur Steam-Bibliothek hinzufügen",
@@ -654,10 +658,10 @@
     "channelDev": "Dev",
     "channelDevLocal": "Dev (lokal)",
     "depotSelection": "Depot-Auswahl",
-    "autoSelectDepots": "Depots automatisch wie Steam auswählen",
-    "autoSelectDepotsHint": "Sobald ein Spiel geladen ist, werden die Depots ausgewählt, die Steam auf diesem System installieren würde: passende Plattform, 64-Bit, deine Sprache und die DLCs aus der Datei. Du kannst die Auswahl trotzdem ändern.",
+    "autoSelectDepots": "Wie Steam: Depots automatisch auswählen und in einen Spielordner laden",
+    "autoSelectDepotsHint": "Aus: Du wählst die Depots selbst und jedes Depot bekommt wie bisher einen eigenen Unterordner. An: Die Depots, die Steam auf diesem System installieren würde, werden ausgewählt (Hauptspiel, passende Plattform, 64-Bit, deine Sprache) und in einen Spielordner geladen, das Spiel ist vollständig und startet direkt. „DLCs auch auswählen“ in der Depot-Liste nimmt die DLCs dazu, der Emulator-Schritt trägt sie dann für gbe_fork als vorhanden ein.",
     "autoStartDownload": "Download danach sofort starten",
-    "includeDlc": "DLCs mitladen",
+    "includeDlc": "DLCs immer mitladen",
     "targetPlatform": "Plattform",
     "targetPlatformHint": "Auto nimmt dieses System. Hat ein Spiel keine Linux-Version, wird die Windows-Version gewählt (läuft mit Proton). Mit „Download danach sofort starten“ wählst du nur noch das Spiel, der Download beginnt 5 Sekunden später.",
     "auto": "Auto",

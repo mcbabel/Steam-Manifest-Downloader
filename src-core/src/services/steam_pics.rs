@@ -235,6 +235,58 @@ pub async fn fetch_depots_with_names(
     .map_err(|_| "Steam PICS batch query timed out".to_string())?
 }
 
+pub fn parse_dlc_list(app: &Table) -> Vec<u32> {
+    app.get("extended")
+        .and_then(as_table)
+        .and_then(|e| e.get("listofdlc"))
+        .and_then(as_str)
+        .map(|s| {
+            s.split(',')
+                .filter_map(|id| id.trim().parse::<u32>().ok())
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct DlcInfo {
+    pub listed: Vec<u32>,
+    pub names: HashMap<u32, String>,
+}
+
+pub async fn fetch_dlc_info(
+    session: Arc<SteamSession>,
+    app_id: u32,
+    extra_ids: &[u32],
+) -> Result<DlcInfo, String> {
+    let extra = extra_ids.to_vec();
+    timeout(PICS_BATCH_TIMEOUT, async move {
+        let conn = session.connection().await?;
+        let parent = pics_product_info_vdf(&conn, &[app_id]).await?;
+        let listed = parent.get(&app_id).map(parse_dlc_list).unwrap_or_default();
+        let mut ids: Vec<u32> = listed.iter().chain(extra.iter()).copied().collect();
+        ids.sort_unstable();
+        ids.dedup();
+        let mut names = HashMap::new();
+        for chunk in ids.chunks(100) {
+            let info = pics_product_info_vdf(&conn, chunk).await?;
+            for (id, app) in info {
+                if let Some(name) = app
+                    .get("common")
+                    .and_then(as_table)
+                    .and_then(|c| c.get("name"))
+                    .and_then(as_str)
+                {
+                    names.insert(id, name.to_string());
+                }
+            }
+        }
+        Ok::<_, String>(DlcInfo { listed, names })
+    })
+    .await
+    .map_err(|_| "Steam PICS batch query timed out".to_string())?
+}
+
 fn classify_role(
     dlc_app_id: Option<u32>,
     oslist: &Option<String>,
@@ -361,5 +413,21 @@ fn as_str(entry: &Entry) -> Option<&str> {
     match entry {
         Entry::Value(s) => Some(&**s),
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn reads_the_dlc_list() {
+        let app: Table = vdf_reader::from_str(
+            "\"common\" { \"name\" \"Game\" } \"extended\" { \"listofdlc\" \"20, 10,x\" }",
+        )
+        .unwrap();
+        assert_eq!(parse_dlc_list(&app), vec![20, 10]);
+        let empty: Table = vdf_reader::from_str("\"common\" { \"name\" \"Game\" }").unwrap();
+        assert!(parse_dlc_list(&empty).is_empty());
     }
 }

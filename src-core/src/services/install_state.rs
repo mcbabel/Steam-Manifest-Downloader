@@ -129,6 +129,82 @@ pub fn other_manifest_files(work_dir: &Path, depot_id: &str, keep_manifest_id: &
         .unwrap_or_default()
 }
 
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DlcChoice {
+    pub dlcs: Vec<String>,
+}
+
+pub fn dlc_choice_path(work_dir: &Path) -> PathBuf {
+    work_dir.join(".smd-dlcs.json")
+}
+
+pub fn save_dlc_choice(work_dir: &Path, dlcs: &[String]) -> Result<(), String> {
+    let json = serde_json::to_vec_pretty(&DlcChoice { dlcs: dlcs.to_vec() }).map_err(|e| e.to_string())?;
+    std::fs::write(dlc_choice_path(work_dir), json).map_err(|e| format!("write DLC choice: {}", e))
+}
+
+pub fn load_dlc_choice(work_dir: &Path) -> Option<Vec<String>> {
+    let bytes = std::fs::read(dlc_choice_path(work_dir)).ok()?;
+    serde_json::from_slice::<DlcChoice>(&bytes).ok().map(|c| c.dlcs)
+}
+
+pub fn find_game_root(path: &Path) -> Option<PathBuf> {
+    path.ancestors()
+        .take(8)
+        .find(|dir| dlc_choice_path(dir).is_file() || has_install_records(dir))
+        .map(Path::to_path_buf)
+}
+
+pub fn has_depot_folders(work_dir: &Path) -> bool {
+    std::fs::read_dir(work_dir.join("depots"))
+        .map(|entries| {
+            entries
+                .flatten()
+                .any(|e| e.path().is_dir() && !e.file_name().to_string_lossy().starts_with('.'))
+        })
+        .unwrap_or(false)
+}
+
+pub fn has_install_records(work_dir: &Path) -> bool {
+    std::fs::read_dir(work_dir)
+        .map(|entries| {
+            entries
+                .flatten()
+                .any(|e| e.file_name().to_string_lossy().starts_with(".smd-depot-"))
+        })
+        .unwrap_or(false)
+}
+
+pub fn use_merged_layout(work_dir: &Path, preferred: bool) -> bool {
+    if has_depot_folders(work_dir) {
+        return false;
+    }
+    if has_install_records(work_dir) || work_dir.join(".DepotDownloader").is_dir() {
+        return true;
+    }
+    preferred
+}
+
+pub fn files_of_other_depots(work_dir: &Path, depot_id: &str) -> HashSet<String> {
+    installed(work_dir)
+        .into_iter()
+        .filter(|d| d.depot_id != depot_id)
+        .flat_map(|d| d.files)
+        .map(|f| normalize(&f).to_lowercase())
+        .collect()
+}
+
+pub fn keep_shared(stale: Vec<String>, shared: &HashSet<String>) -> Vec<String> {
+    stale
+        .into_iter()
+        .filter(|f| !shared.contains(&normalize(f).to_lowercase()))
+        .collect()
+}
+
+pub fn lower_set(files: &[String]) -> HashSet<String> {
+    files.iter().map(|f| normalize(f).to_lowercase()).collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -213,6 +289,35 @@ mod tests {
         std::fs::write(root.join("4810_1.manifest"), b"").unwrap();
         let others = other_manifest_files(&root, "481", "123");
         assert_eq!(others, vec![root.join("481_99.manifest")]);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn picks_the_folder_layout() {
+        let root = std::env::temp_dir().join(format!("smd-layout-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(&root).unwrap();
+        assert!(use_merged_layout(&root, true));
+        assert!(!use_merged_layout(&root, false));
+        std::fs::create_dir_all(root.join("depots/.DepotDownloader")).unwrap();
+        assert!(!has_depot_folders(&root));
+        save(&root, &DepotInstall { depot_id: "221".into(), manifest_id: "1".into(), files: s(&["hl2.exe"]) }).unwrap();
+        assert!(use_merged_layout(&root, false));
+        std::fs::create_dir_all(root.join("depots/221 - Content")).unwrap();
+        assert!(!use_merged_layout(&root, true));
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn stale_files_of_another_depot_are_kept() {
+        let root = std::env::temp_dir().join(format!("smd-shared-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(&root).unwrap();
+        for (id, files) in [("221", s(&["a.pak", "Shared.dat"])), ("224", s(&["shared.dat", "de.pak"]))] {
+            save(&root, &DepotInstall { depot_id: id.into(), manifest_id: "1".into(), files }).unwrap();
+        }
+        let shared = files_of_other_depots(&root, "221");
+        assert_eq!(keep_shared(s(&["a.pak", "Shared.dat"]), &shared), s(&["a.pak"]));
         let _ = std::fs::remove_dir_all(&root);
     }
 }

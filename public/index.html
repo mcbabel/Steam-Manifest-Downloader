@@ -300,7 +300,8 @@
             <p id="depot-count"></p>
           </div>
           <div class="select-header__actions">
-            <button id="btn-auto-select" class="btn btn--small btn--outline" data-i18n="select.autoSelect" disabled>Pick like Steam</button>
+            <button id="btn-auto-select" class="btn btn--small btn--outline hidden" data-i18n="select.autoSelect" disabled>Pick like Steam</button>
+            <button id="btn-auto-select-dlc" class="btn btn--small btn--outline hidden">Add DLC</button>
             <button id="btn-select-all" class="btn btn--small" data-i18n="select.selectAll">Select All</button>
             <button id="btn-deselect-all" class="btn btn--small btn--outline" data-i18n="select.deselectAll">Deselect All</button>
           </div>
@@ -1180,12 +1181,12 @@
         <label class="settings-field__label" data-i18n="settings.depotSelection">Depot selection</label>
         <div class="settings-field__toggle-wrap">
           <label class="toggle-switch">
-            <input type="checkbox" id="auto-select-depots-toggle" checked>
+            <input type="checkbox" id="auto-select-depots-toggle">
             <span class="toggle-switch__slider"></span>
           </label>
-          <span class="settings-field__toggle-text" data-i18n="settings.autoSelectDepots">Pick depots automatically like Steam</span>
+          <span class="settings-field__toggle-text" data-i18n="settings.autoSelectDepots">Like Steam: pick the depots and put them into one game folder</span>
         </div>
-        <p class="dd-path__hint" data-i18n="settings.autoSelectDepotsHint">After a game is loaded, the depots Steam would install on this system are selected: the right platform, 64-bit, your language and the DLC in the file. You can still change the selection.</p>
+        <p class="dd-path__hint" data-i18n="settings.autoSelectDepotsHint">Off: you pick the depots yourself and every depot gets its own subfolder, as before. On: the depots Steam would install on this system are selected and written into one game folder, so the game is complete and starts right away. DLC chosen in the depot list are later marked as owned for gbe_fork.</p>
         <div id="auto-select-options" class="auto-select-options">
           <div class="settings-field__toggle-wrap">
             <label class="toggle-switch">

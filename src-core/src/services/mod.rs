@@ -60,6 +60,7 @@ pub struct JobInfo {
     pub game_name: Option<String>,
     pub header_image: Option<String>,
     pub work_dir: Option<String>,
+    pub created_work_dir: bool,
     pub history_written: bool,
     #[cfg(target_os = "windows")]
     pub job_object: Option<Arc<depot_runner::win_job::JobObject>>,

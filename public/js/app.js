@@ -135,6 +135,7 @@ const els = {
   depotCount: $('#depot-count'),
   depotList: $('#depot-list'),
   btnAutoSelect: $('#btn-auto-select'),
+  btnAutoSelectDlc: $('#btn-auto-select-dlc'),
   autoSelectNote: $('#auto-select-note'),
   autoSelectTitle: $('#auto-select-title'),
   autoSelectDetail: $('#auto-select-detail'),
@@ -1209,6 +1210,8 @@ function showSelectionStep() {
   state.depotSkipReasons = {};
   if (els.autoSelectNote) els.autoSelectNote.classList.add('hidden');
   if (els.btnAutoSelect) els.btnAutoSelect.disabled = true;
+  state.depotIncludeDlc = null;
+  syncSteamButtons();
 
   state.depotManifests = {};
 
@@ -1342,6 +1345,7 @@ async function fetchDepotNamesFromSteam(appId) {
     reorderDepotCards();
     state.depotPicsList = depots;
     if (els.btnAutoSelect) els.btnAutoSelect.disabled = depots.length === 0;
+    syncDlcButton();
     await maybeAutoSelectDepots(depots);
   } catch (e) {
     state.depotAutoPending = false;
@@ -1350,13 +1354,16 @@ async function fetchDepotNamesFromSteam(appId) {
 }
 
 async function maybeAutoSelectDepots(depots) {
-  if (!state.depotAutoPending || !state.parsedData) return;
+  if (!state.parsedData) return;
+  const pending = state.depotAutoPending;
   state.depotAutoPending = false;
   let settings = {};
   try {
     settings = (await invoke('get_settings')) || {};
   } catch (_) {}
-  if (settings.auto_select_depots === false || state.depotSelectionTouched || depots.length === 0) return;
+  state.steamMode = !!settings.auto_select_depots;
+  syncSteamButtons();
+  if (!pending || !state.steamMode || state.depotSelectionTouched || depots.length === 0) return;
   const selection = await applyRecommendedDepots(depots);
   if (selection && selection.known && selection.selected.length > 0 && settings.auto_start_download
       && !state.depotSelectionTouched && !state.queueRunning) {
@@ -1373,6 +1380,7 @@ async function applyRecommendedDepots(depots) {
       depots,
       candidates: data.depots.map(d => String(d.depotId)),
       uiLanguage: window.i18n.getCurrentLocale(),
+      includeDlc: state.depotIncludeDlc,
     });
   } catch (e) {
     console.warn('recommend_depots failed:', e);
@@ -1389,7 +1397,34 @@ async function applyRecommendedDepots(depots) {
   reorderDepotCards();
   updateDownloadButton();
   renderAutoSelectNote(selection, data.depots.length);
+  if (state.depotIncludeDlc === null) {
+    state.depotIncludeDlc = !(selection.skipped || []).some(s => s.reason === 'dlc')
+      && candidateDlcDepots().length > 0;
+  }
+  syncDlcButton();
   return selection;
+}
+
+function candidateDlcDepots() {
+  const data = state.parsedData;
+  if (!data || !state.depotPicsInfo) return [];
+  return data.depots.filter(d => {
+    const info = state.depotPicsInfo[String(d.depotId)];
+    return info && info.role === 'dlc' && !info.optionalDlc;
+  });
+}
+
+function syncSteamButtons() {
+  if (els.btnAutoSelect) els.btnAutoSelect.classList.toggle('hidden', !state.steamMode);
+  syncDlcButton();
+}
+
+function syncDlcButton() {
+  const btn = els.btnAutoSelectDlc;
+  if (!btn) return;
+  const show = !!state.steamMode && !!state.depotPicsList && candidateDlcDepots().length > 0;
+  btn.classList.toggle('hidden', !show);
+  btn.textContent = window.i18n.t(state.depotIncludeDlc ? 'select.autoSelectNoDlc' : 'select.autoSelectDlc');
 }
 
 function renderSkipTag(item) {
@@ -1662,7 +1697,9 @@ function buildDownloadConfig(data, depots, mhApiKey, repairManifests) {
     gameName: state.gameName || null,
     headerImage: state.headerImage || null,
     updateDir: activeUpdateDir(data.mainAppId),
-    repair: !!repairManifests
+    repair: !!repairManifests,
+    allAppIds: Array.isArray(data.allAppIds) ? data.allAppIds.map(String) : [],
+    includeDlc: typeof state.depotIncludeDlc === 'boolean' ? state.depotIncludeDlc : null
   };
   if (state.mode === 'search') {
     if (state.searchRepo) downloadConfig.repo = state.searchRepo;
@@ -3148,9 +3185,9 @@ const GAME_LANGUAGES = ['english', 'german', 'french', 'italian', 'spanish', 'la
 
 function populateDepotSelectionSettings(settings) {
   if (!els.autoSelectDepotsToggle) return;
-  els.autoSelectDepotsToggle.checked = settings.auto_select_depots !== false;
+  els.autoSelectDepotsToggle.checked = !!settings.auto_select_depots;
   els.autoStartDownloadToggle.checked = !!settings.auto_start_download;
-  els.includeDlcToggle.checked = settings.include_dlc !== false;
+  els.includeDlcToggle.checked = !!settings.include_dlc;
   setTargetPlatform(settings.target_platform || '');
   setGameLanguage(settings.game_language || '');
   syncAutoSelectOptions();
@@ -3960,6 +3997,11 @@ function initEvents() {
     if (state.depotPicsList) applyRecommendedDepots(state.depotPicsList);
   });
   els.btnAutoStartCancel.addEventListener('click', cancelAutoStart);
+  els.btnAutoSelectDlc.addEventListener('click', () => {
+    markDepotSelectionTouched();
+    state.depotIncludeDlc = !state.depotIncludeDlc;
+    if (state.depotPicsList) applyRecommendedDepots(state.depotPicsList);
+  });
   els.btnBack.addEventListener('click', () => goToStep(1));
   els.btnDownload.addEventListener('click', startDownload);
   els.btnQueueAdd.addEventListener('click', addToQueue);
@@ -5810,7 +5852,13 @@ async function applyEmuReplacement() {
     if (failed === 0) {
       const bypassMessage = await syncEmuBypass(selectedTargets);
       const extra = bypassMessage ? '\n\n' + bypassMessage : '';
-      setEmuApplyStatus('success', window.i18n.t('emulator.applySuccess', { count: success, total }) + extra);
+      const dlcResult = results.find(r => typeof r.dlcCount === 'number');
+      const dlcNote = dlcResult
+        ? '\n' + (dlcResult.dlcCount === 0
+          ? window.i18n.t('emulator.dlcNone')
+          : window.i18n.t('emulator.dlcActivated', { count: dlcResult.dlcCount }))
+        : '';
+      setEmuApplyStatus('success', window.i18n.t('emulator.applySuccess', { count: success, total }) + dlcNote + extra);
       saveLastEmuSettings(gathered);
       if (state.emuStandalone) {
         await refreshEmuScanInPlace();

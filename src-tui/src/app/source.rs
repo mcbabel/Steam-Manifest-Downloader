@@ -512,6 +512,7 @@ impl App {
         }
         self.wiz.depot_auto_pending = self.wiz.auto_select.is_none();
         self.wiz.depot_touched = false;
+        self.wiz.depot_include_dlc = None;
         self.wiz.depot_choice = None;
         self.wiz.auto_start_at = None;
         if let Some(sel) = self.wiz.auto_select.take() {

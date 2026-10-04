@@ -81,6 +81,10 @@ pub struct DownloadArgs {
     pub ignore_space: bool,
     #[arg(long, help = t("tui.cli.argAllDepots"))]
     pub all_depots: bool,
+    #[arg(long, help = t("tui.cli.argDlc"))]
+    pub dlc: bool,
+    #[arg(long, conflicts_with = "all_depots", help = t("tui.cli.argLikeSteam"))]
+    pub like_steam: bool,
     #[arg(
         long,
         value_name = "OS",
@@ -143,6 +147,7 @@ struct Plan {
     repo: Option<String>,
     game_name: Option<String>,
     header_image: Option<String>,
+    all_app_ids: Vec<String>,
 }
 
 async fn plan_from_source(
@@ -186,6 +191,7 @@ async fn plan_from_source(
             repo: Some(repo.repo),
             game_name: info.as_ref().and_then(|i| i.name.clone()),
             header_image: info.and_then(|i| i.header_image),
+            all_app_ids: Vec::new(),
         })
     } else {
         let path = crate::ui::file_browser::expand_tilde(&args.source);
@@ -194,6 +200,7 @@ async fn plan_from_source(
             .main_app_id
             .map(|i| i.to_string())
             .ok_or_else(|| t("tui.cli.noMainAppId"))?;
+        let all_app_ids = parsed.all_app_ids.iter().map(|i| i.to_string()).collect();
         Ok(Plan {
             app_id,
             depots: parsed
@@ -213,6 +220,7 @@ async fn plan_from_source(
             repo: None,
             game_name: None,
             header_image: None,
+            all_app_ids,
         })
     }
 }
@@ -350,11 +358,8 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
             pins.entry(d.depot_id).or_insert(d.manifest_id);
         }
     }
-    if wanted.is_empty()
-        && args.update.is_none()
-        && !args.all_depots
-        && (settings.auto_select_depots || args.platform.is_some() || args.language.is_some())
-    {
+    let like_steam = args.like_steam || (settings.auto_select_depots && !args.all_depots);
+    if wanted.is_empty() && args.update.is_none() && like_steam {
         let meta = match plan.app_id.parse::<u32>() {
             Ok(n) => tokio::select! {
                 r = smd_core::services::steam_pics::fetch_depots_with_names(core.steam_session.clone(), n) => r,
@@ -370,6 +375,9 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
                 }
                 if let Some(l) = &args.language {
                     prefs_settings.game_language = l.clone();
+                }
+                if args.dlc {
+                    prefs_settings.include_dlc = true;
                 }
                 let prefs = smd_core::services::depot_select::prefs_from_settings(
                     &prefs_settings,
@@ -506,6 +514,9 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
         speed_limit: args.speed_limit.clone(),
         resume_mode: None,
         repair: args.repair,
+        like_steam: Some(like_steam),
+        all_app_ids: Some(plan.all_app_ids.clone()),
+        include_dlc: args.dlc.then_some(true),
     };
     if let Some(limit) = config.speed_limit.as_deref() {
         if let Err(e) = smd_core::services::speed_limit::parse_speed_limit(limit) {

@@ -74,9 +74,13 @@ pub async fn recommend_depots(
     depots: Vec<DepotMetadata>,
     candidates: Vec<String>,
     ui_language: Option<String>,
+    include_dlc: Option<bool>,
 ) -> Result<Selection, String> {
     let settings = settings::load_settings(&app_data_dir(&app)).await;
-    let prefs = depot_select::prefs_from_settings(&settings, ui_language.as_deref().unwrap_or(""));
+    let mut prefs = depot_select::prefs_from_settings(&settings, ui_language.as_deref().unwrap_or(""));
+    if let Some(dlc) = include_dlc {
+        prefs.include_dlc = dlc;
+    }
     Ok(depot_select::recommend(&depots, &candidates, &prefs))
 }
 

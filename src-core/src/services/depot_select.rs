@@ -265,6 +265,40 @@ pub fn recommend(meta: &[DepotMetadata], candidates: &[String], prefs: &Prefs) -
     }
 }
 
+pub fn chosen_dlcs(
+    meta: &[DepotMetadata],
+    main_app_id: &str,
+    all_app_ids: &[String],
+    selected_depots: &[String],
+    include_dlc: Option<bool>,
+) -> Vec<String> {
+    let mut chosen: Vec<String> = meta
+        .iter()
+        .filter(|m| selected_depots.contains(&m.depot_id))
+        .filter_map(|m| m.dlc_app_id)
+        .map(|id| id.to_string())
+        .filter(|id| id != main_app_id)
+        .collect();
+    if include_dlc.unwrap_or(!chosen.is_empty()) {
+        let with_depots: Vec<String> = meta
+            .iter()
+            .filter_map(|m| m.dlc_app_id)
+            .map(|id| id.to_string())
+            .collect();
+        chosen.extend(
+            all_app_ids
+                .iter()
+                .filter(|id| *id != main_app_id)
+                .filter(|id| !with_depots.contains(id))
+                .filter(|id| !selected_depots.contains(id))
+                .cloned(),
+        );
+    }
+    chosen.sort_by_key(|id| id.parse::<u64>().unwrap_or(u64::MAX));
+    chosen.dedup();
+    chosen
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -410,5 +444,26 @@ mod tests {
         assert_eq!(steam_language("en-US"), "english");
         assert_eq!(steam_language("schinese"), "schinese");
         assert_eq!(steam_language(""), "english");
+    }
+
+    #[test]
+    fn dlcs_follow_the_selection() {
+        let mut dlc_a = depot("31", DepotRole::Dlc);
+        dlc_a.dlc_app_id = Some(300);
+        let mut dlc_b = depot("41", DepotRole::Dlc);
+        dlc_b.dlc_app_id = Some(400);
+        let meta = vec![depot("11", DepotRole::SharedContent), dlc_a, dlc_b];
+        let all = ids(&["10", "300", "400", "500", "600"]);
+        assert!(chosen_dlcs(&meta, "10", &all, &ids(&["11"]), None).is_empty());
+        assert!(chosen_dlcs(&meta, "10", &all, &ids(&["11"]), Some(false)).is_empty());
+        assert_eq!(
+            chosen_dlcs(&meta, "10", &all, &ids(&["11", "31"]), None),
+            ids(&["300", "500", "600"])
+        );
+        assert_eq!(
+            chosen_dlcs(&meta, "10", &all, &ids(&["11", "31", "41"]), Some(true)),
+            ids(&["300", "400", "500", "600"])
+        );
+        assert_eq!(chosen_dlcs(&meta, "10", &all, &ids(&["11", "31"]), Some(false)), ids(&["300"]));
     }
 }

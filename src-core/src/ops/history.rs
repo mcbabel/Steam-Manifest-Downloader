@@ -59,13 +59,30 @@ fn collect_resumable_depot_dirs(entry: &HistoryEntry) -> Vec<PathBuf> {
     if entry.download_dir.trim().is_empty() {
         return Vec::new();
     }
+    let is_update = entry
+        .resume_payload
+        .as_ref()
+        .and_then(|p| p.get("updateDir"))
+        .and_then(|v| v.as_str())
+        .is_some_and(|d| !d.trim().is_empty());
+    if is_update {
+        return Vec::new();
+    }
     let work_dir = PathBuf::from(&entry.download_dir);
     if !is_safe_workdir(&work_dir) {
         return Vec::new();
     }
     let depots_root = work_dir.join("depots");
-    if !depots_root.is_dir() {
-        return Vec::new();
+    if !crate::services::install_state::has_depot_folders(&work_dir) {
+        let resumable = std::fs::read_dir(&work_dir)
+            .map(|entries| {
+                entries.flatten().any(|e| {
+                    let name = e.file_name().to_string_lossy().to_string();
+                    name.starts_with(".smd-depot-") || name.ends_with(".manifest")
+                })
+            })
+            .unwrap_or(false);
+        return if resumable { vec![work_dir] } else { Vec::new() };
     }
 
     let mut wanted_ids: Vec<String> = entry.depot_ids.clone();
@@ -269,5 +286,36 @@ mod update_check_tests {
     fn unknown_depots_give_no_answer() {
         let latest = std::collections::HashMap::new();
         assert!(compare_installed(&entry(), &[installed("71", "1")], &latest).is_none());
+    }
+}
+
+#[cfg(test)]
+mod resumable_cleanup_tests {
+    use super::*;
+
+    fn resumable(dir: &Path, payload: serde_json::Value) -> HistoryEntry {
+        serde_json::from_value(serde_json::json!({
+            "id": "r", "app_id": "70", "game_name": null, "header_image": null,
+            "depot_count": 1, "depots_downloaded": 0, "status": "cancelled_resumable",
+            "download_dir": dir.to_string_lossy(), "started_at": "", "completed_at": null,
+            "source_repo": null, "depot_ids": ["71"], "resume_payload": payload
+        }))
+        .unwrap()
+    }
+
+    #[test]
+    fn a_merged_download_removes_its_game_folder_but_never_an_update() {
+        let dir = std::env::temp_dir()
+            .join(format!("smd-resumable-{}", std::process::id()))
+            .join("games")
+            .join("70 - Half-Life");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join(".smd-depot-71.resume.json"), "{}").unwrap();
+        let fresh = resumable(&dir, serde_json::json!({ "mainAppId": "70" }));
+        assert_eq!(collect_resumable_depot_dirs(&fresh), vec![dir.clone()]);
+        let update = resumable(&dir, serde_json::json!({ "updateDir": dir.to_string_lossy() }));
+        assert!(collect_resumable_depot_dirs(&update).is_empty());
+        let _ = std::fs::remove_dir_all(dir.parent().unwrap().parent().unwrap());
     }
 }

@@ -515,6 +515,7 @@ pub async fn apply_replacement(
     let cache_root = PathBuf::from(&info.cache_root);
 
     let settings_ref = emu_settings.as_ref();
+    let dlcs = resolve_dlcs(state, &targets, &app_id).await;
     let mut results = Vec::with_capacity(targets.len());
     for t in &targets {
         let path = Path::new(&t.path);
@@ -529,6 +530,7 @@ pub async fn apply_replacement(
             &app_id,
             &installed_app_ids,
             settings_ref,
+            dlcs.as_deref(),
         ));
     }
     let succeeded = results.iter().filter(|r| r.success).count();
@@ -539,6 +541,52 @@ pub async fn apply_replacement(
         results.len()
     );
     Ok(results)
+}
+
+async fn resolve_dlcs(
+    state: &AppState,
+    targets: &[ScannedFile],
+    app_id: &str,
+) -> Option<Vec<(String, String)>> {
+    let root = targets
+        .iter()
+        .find_map(|t| crate::services::install_state::find_game_root(Path::new(&t.path)))?;
+    let app_id_u: u32 = app_id.trim().parse().ok()?;
+    let ids = match crate::services::install_state::load_dlc_choice(&root) {
+        Some(ids) => ids,
+        None => {
+            let installed: Vec<String> = crate::services::install_state::installed(&root)
+                .into_iter()
+                .map(|d| d.depot_id)
+                .collect();
+            let meta = crate::services::steam_pics::fetch_depots_with_names(state.steam_session.clone(), app_id_u)
+                .await
+                .ok()?;
+            let ids = crate::services::depot_select::chosen_dlcs(&meta, app_id.trim(), &[], &installed, Some(false));
+            if ids.is_empty() {
+                return None;
+            }
+            ids
+        }
+    };
+    let numeric: Vec<u32> = ids.iter().filter_map(|id| id.parse().ok()).collect();
+    let info = crate::services::steam_pics::fetch_dlc_info(state.steam_session.clone(), app_id_u, &numeric)
+        .await
+        .unwrap_or_default();
+    Some(dlc_entries(&ids, &info))
+}
+
+fn dlc_entries(ids: &[String], info: &crate::services::steam_pics::DlcInfo) -> Vec<(String, String)> {
+    ids.iter()
+        .filter_map(|id| {
+            let n: u32 = id.parse().ok()?;
+            if !info.listed.is_empty() && !info.listed.contains(&n) {
+                return None;
+            }
+            let name = info.names.get(&n).cloned().unwrap_or_else(|| format!("DLC {}", n));
+            Some((id.clone(), name))
+        })
+        .collect()
 }
 
 pub fn read_emu_settings(target_path: &str) -> Result<EmuSettings, String> {
@@ -559,6 +607,7 @@ pub async fn revert_replacement(targets: Vec<String>) -> Result<Vec<ReplaceResul
             success: false,
             error: None,
             fail_class: None,
+            dlc_count: None,
         };
         match emulator::revert_replacement(&path) {
             Ok(()) => r.success = true,
@@ -578,4 +627,27 @@ pub async fn revert_replacement(targets: Vec<String>) -> Result<Vec<ReplaceResul
         results.len()
     );
     Ok(results)
+}
+
+#[cfg(test)]
+mod dlc_tests {
+    use super::*;
+
+    #[test]
+    fn lists_only_real_dlcs_with_their_names() {
+        let info = crate::services::steam_pics::DlcInfo {
+            listed: vec![300, 400],
+            names: [(300, "Soundtrack".to_string())].into_iter().collect(),
+        };
+        let ids = vec!["228980".to_string(), "300".to_string(), "400".to_string()];
+        assert_eq!(
+            dlc_entries(&ids, &info),
+            vec![
+                ("300".to_string(), "Soundtrack".to_string()),
+                ("400".to_string(), "DLC 400".to_string())
+            ]
+        );
+        let ini = emulator::render_app_ini(&dlc_entries(&ids, &info));
+        assert!(ini.contains("[app::dlcs]\nunlock_all=0\n300=Soundtrack\n400=DLC 400\n"));
+    }
 }

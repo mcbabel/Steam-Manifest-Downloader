@@ -199,7 +199,7 @@
       "cmdSearch": "Look up a game by name, or list the sources and depots for an App ID.",
       "cmdHistory": "Show the download history.",
       "argSource": "A .lua / .st depot file, or a numeric Steam App ID to look up in the configured depot sources.",
-      "argDepots": "Depot IDs to download (comma separated). Default: the depots Steam would install (see --all-depots).",
+      "argDepots": "Depot IDs to download (comma separated). Default: all, or with --like-steam the depots Steam would install.",
       "argOut": "Parent folder for the game folder. Default: the download location from the settings.",
       "argMhKey": "ManifestHub API key, used as fallback (and for custom manifests).",
       "argResult": "Which search result to use when SOURCE is an App ID (see `smd search`).",
@@ -249,10 +249,12 @@
       "argIgnoreSpace": "Start even when the download location does not have enough free space.",
       "noSpace": "not enough disk space: the download needs about {needed}, but only {free} is free at {path} (use --ignore-space to start anyway)",
       "argRepair": "With --update: check every file against the installed version and download only damaged or missing parts, without updating.",
-      "argAllDepots": "Download every depot in the file instead of picking them like Steam.",
-      "argPlatform": "Platform to pick depots for when choosing like Steam. Default: this system, or Windows when the game has no build for it.",
-      "argLanguage": "Game language to pick depots for, as Steam names it (for example german, english, french). Default: the app language.",
-      "autoSelectFailed": "Could not read the depot list from Steam, so every depot is downloaded: {message}"
+      "argAllDepots": "Download every depot in the file into separate subfolders, even when \"Like Steam\" is on in the settings.",
+      "argPlatform": "With --like-steam: platform to pick depots for. Default: this system, or Windows when the game has no build for it.",
+      "argLanguage": "With --like-steam: game language as Steam names it (for example german, english, french). Default: the app language.",
+      "autoSelectFailed": "Could not read the depot list from Steam, so every depot is downloaded: {message}",
+      "argDlc": "With --like-steam: also download the DLC in the file and mark them as owned for gbe_fork.",
+      "argLikeSteam": "Work like Steam for this download: pick the depots Steam would install and put them into one game folder (default: the setting)."
     }
   }
 }
