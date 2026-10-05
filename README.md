@@ -12,7 +12,7 @@
 ![Downloads](https://img.shields.io/github/downloads/MCbabel/Steam-Manifest-Downloader/total?color=brightgreen)
 [![Lines of Code](https://img.shields.io/endpoint?url=https%3A%2F%2Ftokei.kojix2.net%2Fbadge%2Fgithub%2FMCbabel%2FSteam-Manifest-Downloader%2Flines)](https://tokei.kojix2.net/github/MCbabel/Steam-Manifest-Downloader)
 
-Upload `.lua` files or search by App ID across configurable sources (GitHub, archive.org, plain HTTPS folders). The app aggregates depots from every source, downloads them via the integrated DepotDownloaderMod engine, optionally creates Steam library entries with full grid art, and can even patch games with the gbe_fork emulator + Steamless DRM removal.
+Upload `.lua` / `.st` files or search by App ID across configurable sources (GitHub, archive.org, plain HTTPS folders, Hubcap, Ryuu). The app downloads the depots straight from Steam's CDN with its built-in Rust engine (DepotDownloaderMod stays available as an option), keeps games up to date from the history, optionally creates Steam library entries with full grid art, and can patch games with the gbe_fork emulator + Steamless DRM removal. Desktop app, terminal version and Docker image.
 
 </div>
 
@@ -32,22 +32,29 @@ Upload `.lua` files or search by App ID across configurable sources (GitHub, arc
 
 | | Feature |
 |---|---|
-| 📂 | **Drag & drop** `.lua` / `.vdf` / `.st` upload |
-| 🔍 | **Configurable depot sources** — GitHub, archive.org, plain HTTPS; all queried in parallel and merged |
+| 📂 | **Drag & drop** `.lua` / `.st` upload, or search by App ID |
+| 🔍 | **Configurable depot sources** — GitHub, archive.org, plain HTTPS, plus Hubcap and Ryuu with your own key; asked in the order you set |
 | 🏷️ | **Live depot metadata** — Windows / Linux / macOS, 32/64-bit and language tags via Steam PICS |
 | 🔑 | **Automatic depot keys** generation |
-| ⚡ | **Integrated DepotDownloaderMod** execution |
-| 📊 | **Real-time progress** with per-depot speed + ETA |
-| 🔄 | **Update downloaded games** — from the history, only changed files are downloaded and files removed from the game are deleted |
+| ⚡ | **Built-in Rust download engine** — anonymous login, manifests and chunks straight from Steam's CDN, no .NET needed; DepotDownloaderMod is still there as an option |
+| 📊 | **Real-time progress** with per-depot speed + ETA, also on the taskbar and in the window title |
+| 🧭 | **Like Steam mode** (optional) — picks the base game depots for your system and language, puts them into one game folder like Steam, and adds DLC on request, marked as owned for gbe_fork |
+| 📋 | **Download queue** — line up several games, kept across restarts, run one after another |
+| 🔄 | **Update downloaded games** — from the history, only changed files are downloaded and files removed from the game are deleted; an *Update available* badge shows when Steam has a newer version |
+| 🩺 | **Check & repair** — compares every file of a downloaded game and fetches only what is damaged or missing |
+| ▶️ | **Play from the history** — starts the game directly, on Linux Windows games run through Steam + Proton or Wine |
+| 🗂️ | **History** with portrait covers, search, status filter and sorting |
 | ⏯️ | **Resume where it stopped** — a cancelled download continues from a checkpoint instead of re-checking the whole game; a full check is optional |
 | 🐢 | **Speed limit** — cap downloads at e.g. 10 MB/s or 75 Mbit/s, also while a download is running |
 | ⏻ | **Shut down when finished** — optional, with a 60 second countdown that can be cancelled; the next start offers to continue with the skipped steps |
+| 💾 | **Disk space check** — warns before a download that does not fit |
+| 🌐 | **Proxy with a test button** — HTTP, HTTPS or SOCKS5 for every connection, retries on connection errors, readable error messages that never show API keys |
 | 🎮 | **Steam Store API** integration — game names + cover art |
 | 🖼️ | **Add to Steam Library** — non-Steam shortcut with banner / hero / logo / icon (Linux step + Windows toggle). Steam is found automatically (registry, usual folders, Flatpak, Snap) or set under Settings → Steam folder |
-| 🔧 | **gbe_fork emulator** patching — Regular + Experimental variants, 21 settings, lobby_connect launcher |
+| 🔧 | **gbe_fork emulator** patching — Regular + Experimental variants, 21 settings, per file selection; edit or revert later, or patch a folder that is already on disk |
 | 🛡️ | **DRM detection & removal** via Steamless (works through `mono` on Linux) |
 | 🪝 | **Steam-API-Check Bypass** — bundled `version.dll` hijack for stubborn integrity checks |
-| 🌙 | **Dark / Light theme** + English & German localisation, including download log, error messages and `smd --help` |
+| 🌙 | **Dark / Light theme** + English & German localisation, including download log, error messages and `smd --help`; keyboard shortcuts `Ctrl+O` / `Ctrl+F` / `Ctrl+H` / `Ctrl+,` |
 | 🔒 | **Fully self-contained** — DepotDownloaderMod embedded |
 | 🖥️ | **Terminal version** — full mouse-driven TUI plus headless CLI for servers & Docker ([details](#%EF%B8%8F-terminal-version-tui--cli)) |
 
@@ -69,16 +76,16 @@ the access.
 
 ## 🚀 Quick Start
 
-1. 📥 **Install** — grab the latest build from [Releases](../../releases) (NSIS for Windows, AppImage for Linux, AUR for Arch, `smd` for the terminal)
+1. 📥 **Install** — grab the latest build from [Releases](../../releases) (installer or standalone ZIP for Windows, AppImage for Linux, AUR for Arch, `smd` for the terminal, or the Docker image)
 2. 🌍 **First launch** — pick your language, accept or decline anonymous telemetry, done
 
 Then walk through the 5-step pipeline:
 
 | Step | What it does |
 |---|---|
-| 1 · Upload | Drop a `.lua` / `.vdf` / `.st` file or search by App ID |
-| 2 · Select | Pick depots — each row shows OS / arch / language tags from Steam PICS |
-| 3 · Download | Integrated DepotDownloaderMod streams every selected depot |
+| 1 · Upload | Drop a `.lua` / `.st` file or search by App ID |
+| 2 · Select | Pick depots — each row shows OS / arch / language tags from Steam PICS — or let Like Steam mode pick them; *Add to Queue* for later |
+| 3 · Download | The built-in engine (or DepotDownloaderMod) downloads every selected depot, after checking the free disk space |
 | 4 · Shortcuts / Steam Library | Optional — Windows shortcut or non-Steam Steam library entry with grid art |
 | 5 · Emulator | Optional — patch with gbe_fork, remove DRM via Steamless, install API-check bypass |
 
@@ -104,7 +111,7 @@ Two options on the [**Releases**](../../releases) page, neither needs admin righ
 | | Download | What it is |
 |---|---|---|
 | 🧰 | `Steam-Manifest-Downloader_<version>_windows-standalone.zip` | **Standalone, no install.** Extract the ZIP into a folder of your own (e.g. Documents) and start `Steam Manifest Downloader.exe`. Already contains everything the emulator step needs (gbe_fork, Steamless, Steam API bypass), so it works without extra downloads. Instructions in German and English are inside the ZIP. |
-| 📦 | `Steam Manifest Downloader_<version>_x64-setup.exe` | **Installer.** Installs per user and adds a Start Menu entry. Downloads the emulator tools the first time you use that step. |
+| 📦 | `Steam.Manifest.Downloader_<version>_x64-setup.exe` | **Installer.** Installs per user and adds a Start Menu entry. Downloads the emulator tools the first time you use that step. |
 
 > [!NOTE]
 > The default built-in downloader needs no .NET runtime. Only if you switch to the DepotDownloaderMod engine in the settings, install the [.NET 9.0 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.16-windows-x64-installer); the app tells you if it's missing.
@@ -168,12 +175,12 @@ sudo zypper install libwebkit2gtk-4_1-0 libayatana-appindicator3-1 librsvg-2-2
 Then make the AppImage executable and launch it:
 
 ```bash
-chmod +x Steam\ Manifest\ Downloader_*_amd64.AppImage
-./Steam\ Manifest\ Downloader_*_amd64.AppImage
+chmod +x Steam.Manifest.Downloader_*_amd64.AppImage
+./Steam.Manifest.Downloader_*_amd64.AppImage
 ```
 
 > [!NOTE]
-> On **NixOS**, portable binaries can't find system libs through the normal loader paths. Launch via `steam-run ./Steam\ Manifest\ Downloader_*_amd64.AppImage`, or wrap the binary in a Nix derivation that lists `webkitgtk_4_1`, `libayatana-appindicator`, `librsvg` and `gtk3` as build inputs.
+> On **NixOS**, portable binaries can't find system libs through the normal loader paths. Launch via `steam-run ./Steam.Manifest.Downloader_*_amd64.AppImage`, or wrap the binary in a Nix derivation that lists `webkitgtk_4_1`, `libayatana-appindicator`, `librsvg` and `gtk3` as build inputs.
 
 ---
 
@@ -216,7 +223,7 @@ checkboxes — and the mouse wheel scrolls. Keyboard works just as well:
 | `PgUp` / `PgDn` | Scroll long pages and the output log |
 | `a` / `n`, `/`, `d` | Depot selection: all / none, filter, start download |
 | `p` / `c` | While downloading: pause/resume, cancel |
-| `r` `d` `u` `o` `e` `x` | History: resume, download again, update, open folder, edit emulator, remove |
+| `p` `r` `d` `u` `v` `o` `e` `x` | History: play, resume, download again, update, check, open folder, edit emulator, remove |
 | `Ctrl+Q` / `F10` | Quit (asks first while a download runs) |
 
 Dragging a `.lua` / `.st` file onto the terminal window loads it right away
@@ -247,6 +254,9 @@ smd history
 | `--platform` / `--language` | With `--like-steam`: pick depots for another platform (`windows`, `linux`, `macos`) or game language (`german`, `english`, …). In Docker the default platform is Linux, so use `--platform windows` for the Windows version |
 | `--manifest DEPOT=ID` | Pin a depot to a specific manifest (repeatable) |
 | `--update <GAME_DIR>` | Update an existing download in place: only changed files are downloaded, files removed from the game are deleted |
+| `--repair` | With `--update`: check every file and repair what is damaged or missing, without updating |
+| `--list` | Show the depots that would be downloaded and stop |
+| `--ignore-space` | Start even when the download does not fit on the disk |
 | `--shutdown` | Shut down the computer when the download has finished (60 s countdown, Ctrl+C aborts) |
 | `--speed-limit` / `SMD_SPEED_LIMIT` | Cap the download speed, e.g. `10MB/s` or `75Mbit/s` (`0` = unlimited, defaults to the setting) |
 | `--json` | Machine-readable output |
@@ -296,7 +306,7 @@ Build the image yourself from source with `docker build -t smd .`.
 
 - **Rust** (latest stable) + **Cargo** — [Install via rustup](https://rustup.rs/)
 - **Tauri CLI** — `cargo install tauri-cli`
-- **.NET 9.0 Desktop Runtime** — Required to run the embedded DepotDownloaderMod ([Download](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.16-windows-x64-installer))
+- **.NET 9.0 Desktop Runtime** *(optional)* — Only needed to run the optional DepotDownloaderMod engine on Windows ([Download](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.16-windows-x64-installer))
 - **Mono** *(Linux/macOS, optional)* — Only needed for step 5's DRM removal via Steamless: `pacman -S mono` / `apt install mono-runtime` / `brew install mono`
 - **Linux additional:** `libwebkit2gtk-4.1-dev`, `libappindicator3-dev`, `librsvg2-dev`, `patchelf` (for AppImage)
 
@@ -418,8 +428,8 @@ The `include_bytes!` macro in `src-core/src/services/embedded_tools.rs` embeds t
 | **Frontend** | HTML / CSS / JS (vanilla) |
 | **Terminal UI** | ratatui, crossterm, clap |
 | **Framework** | Tauri v2 |
-| **Downloader** | DepotDownloaderMod (.NET 9) |
-| **Emulator** | gbe_fork (downloaded on demand from GitHub releases) |
+| **Downloader** | Built-in Rust engine (steam-vent), DepotDownloaderMod (.NET 9) as an option |
+| **Emulator** | gbe_fork (downloaded on demand from GitHub releases, bundled in the Windows standalone ZIP) |
 | **DRM tooling** | Steamless v3.1.0.5 (CC-BY-NC-ND), Steam-API-Check-Bypass |
 
 ---

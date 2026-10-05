@@ -408,7 +408,7 @@
 
               <h4 id="windows-nsis-installer">Windows, NSIS installer <a class="alink" href="#windows-nsis-installer" aria-label="Permalink to Windows, NSIS installer">#</a></h4>
               <ol>
-                <li>Download <code>Steam Manifest Downloader_&lt;version&gt;_x64-setup.exe</code> from the <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases">releases page</a></li>
+                <li>Download <code>Steam.Manifest.Downloader_&lt;version&gt;_x64-setup.exe</code> from the <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases">releases page</a></li>
                 <li>Run the installer and follow the setup wizard. It installs per user and does not ask for admin rights</li>
                 <li>Launch <strong>Steam Manifest Downloader</strong> from your start menu or desktop</li>
               </ol>
@@ -465,8 +465,8 @@ sudo zypper install libwebkit2gtk-4_1-0 libayatana-appindicator3-1 librsvg-2-2</
                   <p class="snip__lang">bash</p>
                   <button class="copy" type="button" aria-label="Copy the commands that make the AppImage executable and run it"><span class="copy__label">Copy</span></button>
                 </div>
-                <pre tabindex="0"><code>chmod +x Steam\ Manifest\ Downloader_*_amd64.AppImage
-./Steam\ Manifest\ Downloader_*_amd64.AppImage</code></pre>
+                <pre tabindex="0"><code>chmod +x Steam.Manifest.Downloader_*_amd64.AppImage
+./Steam.Manifest.Downloader_*_amd64.AppImage</code></pre>
               </div>
               <div class="note">
                 <p class="note__tag">Note</p>
@@ -1266,8 +1266,8 @@ dotnet publish -c Release -r linux-x64 --self-contained true \
                 <summary><span>Linux: the AppImage will not launch</span></summary>
                 <div class="qa__body">
                   <p>Make sure WebKitGTK is installed, see <a href="#linux-appimage">Linux, AppImage</a>. AppImages also require FUSE to run. If FUSE is not available on your system, set the environment variable before launching:</p>
-                  <p><code>APPIMAGE_EXTRACT_AND_RUN=1 ./Steam\ Manifest\ Downloader_*_amd64.AppImage</code></p>
-                  <p>Also make sure the file is executable: <code>chmod +x Steam\ Manifest\ Downloader_*_amd64.AppImage</code>. On NixOS, start it with <code>steam-run</code>.</p>
+                  <p><code>APPIMAGE_EXTRACT_AND_RUN=1 ./Steam.Manifest.Downloader_*_amd64.AppImage</code></p>
+                  <p>Also make sure the file is executable: <code>chmod +x Steam.Manifest.Downloader_*_amd64.AppImage</code>. On NixOS, start it with <code>steam-run</code>.</p>
                 </div>
               </details>
               <details class="qa">

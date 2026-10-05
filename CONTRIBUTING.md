@@ -25,7 +25,8 @@ are reviewed.
 ## Development setup
 
 This is a [Tauri v2](https://v2.tauri.app/) app — Rust backend, vanilla JS
-frontend, with an embedded .NET tool (DepotDownloaderMod).
+frontend — plus a terminal version (`src-tui`). Both share the Rust core in
+`src-core`. DepotDownloaderMod is embedded as an optional download engine.
 
 ### Prerequisites
 
@@ -38,7 +39,7 @@ frontend, with an embedded .NET tool (DepotDownloaderMod).
   - Windows: Visual Studio Build Tools with C++ workload, WebView2.
   - Linux: `webkit2gtk-4.1`, `libayatana-appindicator3`, `librsvg2`,
     `build-essential`, `curl`, `wget`, `file`.
-- **.NET 9 runtime** (for the embedded DepotDownloaderMod at runtime).
+- **.NET 9 runtime** *(optional)*, only to test the DepotDownloaderMod engine.
 
 See [the build guide in the docs](./docs/documentation/index.html#building-from-source)
 for more detailed, up-to-date instructions.
