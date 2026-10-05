@@ -388,7 +388,7 @@
                 </li>
                 <li>
                   <span class="rows__k">linux</span>
-                  <span class="rows__v">Most modern distributions with GTK3 and WebKit2GTK. For the AppImage: FUSE support, or <code>APPIMAGE_EXTRACT_AND_RUN=1</code></span>
+                  <span class="rows__v">Ubuntu 22.04, Debian 12 or newer, or a comparable distribution. The AppImage brings WebKitGTK along and needs FUSE support, or <code>APPIMAGE_EXTRACT_AND_RUN=1</code>. The AUR packages use WebKitGTK from the system</span>
                 </li>
                 <li>
                   <span class="rows__k">terminal</span>
@@ -438,28 +438,11 @@ paru -S steam-manifest-downloader</code></pre>
               <p>Updates come through your package manager, and the in-app updater points you there instead of fetching an AppImage.</p>
 
               <h4 id="linux-appimage">Linux, AppImage <a class="alink" href="#linux-appimage" aria-label="Permalink to Linux, AppImage">#</a></h4>
+              <p>The AppImage brings WebKitGTK and the other libraries it needs, so nothing has to be installed. It runs on distributions from Ubuntu 22.04 and Debian 12 on.</p>
               <ol>
-                <li>Install WebKitGTK for your distribution, since the AppImage uses the system copy instead of bundling it</li>
                 <li>Download the latest <code>.AppImage</code> file from the <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases">releases page</a></li>
                 <li>Make it executable, then run it</li>
               </ol>
-              <div class="snip">
-                <div class="snip__bar">
-                  <p class="snip__lang">bash</p>
-                  <button class="copy" type="button" aria-label="Copy the WebKitGTK install commands for Debian, Arch, Fedora and openSUSE"><span class="copy__label">Copy</span></button>
-                </div>
-                <pre tabindex="0"><code><span class="cm"># Ubuntu, Debian</span>
-sudo apt install libwebkit2gtk-4.1-0 libayatana-appindicator3-1 librsvg2-2
-
-<span class="cm"># Arch, CachyOS, Manjaro</span>
-sudo pacman -S webkit2gtk-4.1 libayatana-appindicator librsvg
-
-<span class="cm"># Fedora</span>
-sudo dnf install webkit2gtk4.1 libappindicator-gtk3 librsvg2
-
-<span class="cm"># openSUSE</span>
-sudo zypper install libwebkit2gtk-4_1-0 libayatana-appindicator3-1 librsvg-2-2</code></pre>
-              </div>
               <div class="snip">
                 <div class="snip__bar">
                   <p class="snip__lang">bash</p>
@@ -1099,10 +1082,10 @@ smd history</code></pre>
                   <button class="copy" type="button" aria-label="Copy the Linux build dependency commands for Debian, Ubuntu, Arch and CachyOS"><span class="copy__label">Copy</span></button>
                 </div>
                 <pre tabindex="0"><code><span class="cm"># Debian/Ubuntu</span>
-sudo apt install libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+sudo apt install libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf gstreamer1.0-plugins-base gstreamer1.0-plugins-good
 
 <span class="cm"># Arch/CachyOS</span>
-sudo pacman -S webkit2gtk-4.1 libappindicator-gtk3 librsvg patchelf</code></pre>
+sudo pacman -S webkit2gtk-4.1 libappindicator-gtk3 librsvg patchelf gst-plugins-base gst-plugins-good</code></pre>
               </div>
 
               <h3 id="build-ddm">Step 1: building DepotDownloaderMod, optional <a class="alink" href="#build-ddm" aria-label="Permalink to Step 1: building DepotDownloaderMod, optional">#</a></h3>
@@ -1265,9 +1248,9 @@ dotnet publish -c Release -r linux-x64 --self-contained true \
               <details class="qa">
                 <summary><span>Linux: the AppImage will not launch</span></summary>
                 <div class="qa__body">
-                  <p>Make sure WebKitGTK is installed, see <a href="#linux-appimage">Linux, AppImage</a>. AppImages also require FUSE to run. If FUSE is not available on your system, set the environment variable before launching:</p>
+                  <p>AppImages require FUSE to run. If FUSE is not available on your system, set the environment variable before launching:</p>
                   <p><code>APPIMAGE_EXTRACT_AND_RUN=1 ./Steam.Manifest.Downloader_*_amd64.AppImage</code></p>
-                  <p>Also make sure the file is executable: <code>chmod +x Steam.Manifest.Downloader_*_amd64.AppImage</code>. On NixOS, start it with <code>steam-run</code>.</p>
+                  <p>Also make sure the file is executable: <code>chmod +x Steam.Manifest.Downloader_*_amd64.AppImage</code>. On NixOS, start it with <code>appimage-run</code>.</p>
                 </div>
               </details>
               <details class="qa">
@@ -1279,7 +1262,7 @@ dotnet publish -c Release -r linux-x64 --self-contained true \
               <details class="qa">
                 <summary><span>The app crashes or shows a white screen</span></summary>
                 <div class="qa__body">
-                  <p>On Windows, make sure the <strong>Microsoft Edge WebView2 Runtime</strong> is installed. It is included with Windows 10 1803 and later and with Windows 11. On Linux, make sure <strong>WebKit2GTK</strong> is installed, with <code>sudo apt install libwebkit2gtk-4.1-0</code> on Debian and Ubuntu.</p>
+                  <p>On Windows, make sure the <strong>Microsoft Edge WebView2 Runtime</strong> is installed. It is included with Windows 10 1803 and later and with Windows 11. On Linux, the AppImage brings its own WebKitGTK. With the AUR packages, make sure <strong>webkit2gtk-4.1</strong> is up to date. If the window stays white on Wayland, try starting SMD with <code>WEBKIT_DISABLE_DMABUF_RENDERER=1</code>.</p>
                 </div>
               </details>
               <details class="qa">

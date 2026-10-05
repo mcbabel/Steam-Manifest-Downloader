@@ -529,12 +529,12 @@
           <article class="route">
             <p class="route__tag">Other Linux</p>
             <h3>AppImage</h3>
-            <p>Take the AppImage from the <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest">latest release</a>. It uses WebKitGTK from your system rather than bundling it. On Arch the dependencies are:</p>
+            <p>Take the AppImage from the <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest">latest release</a>. It brings WebKitGTK and everything else it needs, so nothing has to be installed. Make it executable and start it:</p>
             <div class="cmd">
-              <code>sudo pacman -S webkit2gtk-4.1 libayatana-appindicator librsvg</code>
-              <button class="copy" type="button" data-copy="sudo pacman -S webkit2gtk-4.1 libayatana-appindicator librsvg" aria-label="Copy the pacman command for the WebKitGTK dependencies on Arch"><span class="copy__label">Copy</span></button>
+              <code>chmod +x Steam.Manifest.Downloader_*_amd64.AppImage</code>
+              <button class="copy" type="button" data-copy="chmod +x Steam.Manifest.Downloader_*_amd64.AppImage" aria-label="Copy the command that makes the AppImage executable"><span class="copy__label">Copy</span></button>
             </div>
-            <p class="cmd__note">Arch example. The Debian, Fedora and openSUSE equivalents are in the <a href="./documentation/">documentation</a>.</p>
+            <p class="cmd__note">Runs on Ubuntu 22.04, Debian 12 and newer.</p>
           </article>
 
           <article class="route">
@@ -737,7 +737,7 @@
           <details class="qa">
             <summary><span>Which systems does it run on?</span></summary>
             <div class="qa__body">
-              <p>Windows 10 and 11, and Linux. On Windows there is an NSIS installer that installs per user, and a standalone ZIP that needs no installation, neither asks for admin rights. On Arch, CachyOS and Manjaro there are two AUR packages, and everywhere else on Linux there is an AppImage that uses system WebKitGTK. The terminal version runs on both systems, and its Docker image anywhere Docker runs on an Intel or AMD processor.</p>
+              <p>Windows 10 and 11, and Linux. On Windows there is an NSIS installer that installs per user, and a standalone ZIP that needs no installation, neither asks for admin rights. On Arch, CachyOS and Manjaro there are two AUR packages, and everywhere else on Linux there is an AppImage that brings everything it needs. The terminal version runs on both systems, and its Docker image anywhere Docker runs on an Intel or AMD processor.</p>
             </div>
           </details>
           <details class="qa">

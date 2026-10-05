@@ -9,72 +9,11 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Build binary in Arch Linux container
-        run: |
-          docker run --rm \
-            -v "${{ github.workspace }}:/workspace" \
-            -w /workspace \
-            archlinux:latest \
-            bash -c '
-              set -e
-              pacman -Syu --noconfirm
-              pacman -S --noconfirm \
-                base-devel webkit2gtk-4.1 gtk3 libappindicator-gtk3 \
-                librsvg patchelf curl wget file openssl pkgconf
-
-              curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
-              source /root/.cargo/env
-
-              cargo install cargo-binstall --locked
-              cargo binstall tauri-cli --version "^2.0" -y
-
-              NO_STRIP=true cargo tauri build --no-bundle
-              ls -la src-tauri/target/release/steam-manifest-downloader
-            '
-
-      - name: Create AppImage
-        env:
-          NO_STRIP: "true"
-        run: |
-          set -e
-          BINARY="src-tauri/target/release/steam-manifest-downloader"
-          APP_NAME="Steam Manifest Downloader"
-          VERSION=$(grep -oP '"version":\s*"\K[^"]+' src-tauri/tauri.conf.json)
-
-          if [ ! -f "$BINARY" ]; then echo "ERROR: Binary not found"; exit 1; fi
-
-          mkdir -p AppDir/usr/bin AppDir/usr/share/applications AppDir/usr/share/icons/hicolor/256x256/apps
-          cp "$BINARY" AppDir/usr/bin/steam-manifest-downloader
-          chmod +x AppDir/usr/bin/steam-manifest-downloader
-
-          cat > AppDir/usr/share/applications/steam-manifest-downloader.desktop << 'DESKTOP'
-          [Desktop Entry]
-          Categories=Utility;
-          Exec=steam-manifest-downloader
-          Icon=steam-manifest-downloader
-          Name=Steam Manifest Downloader
-          Type=Application
-          Terminal=false
-          DESKTOP
-          sed -i 's/^          //' AppDir/usr/share/applications/steam-manifest-downloader.desktop
-
-          cp assets/icon.png AppDir/usr/share/icons/hicolor/256x256/apps/steam-manifest-downloader.png
-
-          cat > AppDir/AppRun << 'APPRUN'
-          #!/bin/bash
-          SELF_DIR="$(dirname "$(readlink -f "$0")")"
-          export PATH="${SELF_DIR}/usr/bin:${PATH}"
-          exec "${SELF_DIR}/usr/bin/steam-manifest-downloader" "$@"
-          APPRUN
-          sed -i 's/^          //' AppDir/AppRun
-          chmod +x AppDir/AppRun
-
-          ln -sf usr/share/applications/steam-manifest-downloader.desktop AppDir/steam-manifest-downloader.desktop
-          ln -sf usr/share/icons/hicolor/256x256/apps/steam-manifest-downloader.png AppDir/steam-manifest-downloader.png
-
-          wget -q "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage" -O appimagetool
-          chmod +x appimagetool
-          ARCH=x86_64 ./appimagetool AppDir "${APP_NAME}_${VERSION}_amd64.AppImage"
+      - name: Build AppImage
+        uses: ./.github/actions/linux-appimage
+        with:
+          channel: dev-local
+          git-sha: ${{ github.sha }}
 
       - name: Upload AppImage
         uses: actions/upload-artifact@v7

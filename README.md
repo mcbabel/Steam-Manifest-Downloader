@@ -97,7 +97,7 @@ Then walk through the 5-step pipeline:
 |---|---|---|
 | 💻 | **Operating System** | Windows 10 / 11 (64-bit) or a modern Linux distro (glibc ≥ 2.35) |
 | ⚙️ | **Runtime (Windows)** | Nothing extra for the default built-in downloader. The optional DepotDownloaderMod engine needs the [.NET 9.0 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.16-windows-x64-installer) |
-| 📦 | **Runtime (Linux)** | `webkit2gtk-4.1`, `libayatana-appindicator3`, `librsvg2` (install commands below) |
+| 📦 | **Runtime (Linux)** | Nothing extra for the AppImage, it brings WebKitGTK and everything else it needs. The AUR packages pull in `webkit2gtk-4.1` through pacman |
 | 🌐 | **Network** | Internet connection |
 
 ---
@@ -138,41 +138,9 @@ Sources: [steam-manifest-downloader-bin](https://aur.archlinux.org/packages/stea
 
 Download the latest `.AppImage` from [**Releases**](../../releases).
 
-Tauri apps on Linux don't bundle their own browser engine — they render the UI through the system **WebKitGTK**. Install the runtime for your distro:
+The AppImage brings WebKitGTK and the other libraries it needs, so nothing has to be installed. It runs on distributions from Ubuntu 22.04 / Debian 12 on.
 
-<details>
-<summary><b>Ubuntu / Debian</b> (22.04+ / 12+)</summary>
-
-```bash
-sudo apt install libwebkit2gtk-4.1-0 libayatana-appindicator3-1 librsvg2-2
-```
-</details>
-
-<details>
-<summary><b>Arch / CachyOS / Manjaro</b></summary>
-
-```bash
-sudo pacman -S webkit2gtk-4.1 libayatana-appindicator librsvg
-```
-</details>
-
-<details>
-<summary><b>Fedora</b></summary>
-
-```bash
-sudo dnf install webkit2gtk4.1 libappindicator-gtk3 librsvg2
-```
-</details>
-
-<details>
-<summary><b>openSUSE</b> (Tumbleweed / Leap 15.6+)</summary>
-
-```bash
-sudo zypper install libwebkit2gtk-4_1-0 libayatana-appindicator3-1 librsvg-2-2
-```
-</details>
-
-Then make the AppImage executable and launch it:
+Make it executable and launch it:
 
 ```bash
 chmod +x Steam.Manifest.Downloader_*_amd64.AppImage
@@ -180,7 +148,7 @@ chmod +x Steam.Manifest.Downloader_*_amd64.AppImage
 ```
 
 > [!NOTE]
-> On **NixOS**, portable binaries can't find system libs through the normal loader paths. Launch via `steam-run ./Steam.Manifest.Downloader_*_amd64.AppImage`, or wrap the binary in a Nix derivation that lists `webkitgtk_4_1`, `libayatana-appindicator`, `librsvg` and `gtk3` as build inputs.
+> On **NixOS**, start it with `appimage-run ./Steam.Manifest.Downloader_*_amd64.AppImage`. Without FUSE, set `APPIMAGE_EXTRACT_AND_RUN=1` before launching it.
 
 ---
 
@@ -308,7 +276,7 @@ Build the image yourself from source with `docker build -t smd .`.
 - **Tauri CLI** — `cargo install tauri-cli`
 - **.NET 9.0 Desktop Runtime** *(optional)* — Only needed to run the optional DepotDownloaderMod engine on Windows ([Download](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.16-windows-x64-installer))
 - **Mono** *(Linux/macOS, optional)* — Only needed for step 5's DRM removal via Steamless: `pacman -S mono` / `apt install mono-runtime` / `brew install mono`
-- **Linux additional:** `libwebkit2gtk-4.1-dev`, `libappindicator3-dev`, `librsvg2-dev`, `patchelf` (for AppImage)
+- **Linux additional:** `libwebkit2gtk-4.1-dev`, `libappindicator3-dev`, `librsvg2-dev`, and for the AppImage build `patchelf`, `gstreamer1.0-plugins-base` and `gstreamer1.0-plugins-good`
 
 ---
 

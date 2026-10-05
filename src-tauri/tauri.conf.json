@@ -28,6 +28,7 @@
   "bundle": {
     "active": true,
     "targets": ["nsis", "appimage"],
+    "category": "Utility",
     "icon": [
       "../assets/icon.png"
     ],
@@ -35,6 +36,11 @@
     "windows": {
       "nsis": {
         "installMode": "currentUser"
+      }
+    },
+    "linux": {
+      "appimage": {
+        "bundleMediaFramework": true
       }
     }
   }
