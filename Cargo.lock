@@ -3350,7 +3350,7 @@ checksum = "f9395f0f0eee849a9b707b2f06bb92a6a422090e2123bb2ef8e87a0e61892a8e"
 
 [[package]]
 name = "smd-core"
-version = "1.4.3"
+version = "1.5.0"
 dependencies = [
  "aes 0.9.3",
  "base64 0.23.1",
@@ -3388,7 +3388,7 @@ dependencies = [
 
 [[package]]
 name = "smd-tui"
-version = "1.4.3"
+version = "1.5.0"
 dependencies = [
  "chrono",
  "clap",

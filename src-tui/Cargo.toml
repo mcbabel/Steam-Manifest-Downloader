@@ -1,6 +1,6 @@
 [package]
 name = "smd-tui"
-version = "1.4.3"
+version = "1.5.0"
 edition = "2021"
 license = "GPL-2.0-or-later"
 description = "Terminal UI and headless CLI for Steam Manifest Downloader"
