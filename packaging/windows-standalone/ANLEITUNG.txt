@@ -1,0 +1,51 @@
+Steam Manifest Downloader – Standalone-Version
+==============================================
+
+Diese Version braucht keine Installation und keine Administratorrechte.
+Alles, was der Emulator-Schritt braucht, ist schon enthalten.
+
+
+So startest du
+--------------
+1. Entpacke die ZIP-Datei komplett in einen eigenen Ordner, zum Beispiel
+   "Dokumente\Steam Manifest Downloader".
+   Wichtig: Nicht direkt aus der ZIP heraus starten und nicht nach
+   "C:\Programme" entpacken.
+2. Doppelklick auf "Steam Manifest Downloader.exe".
+3. Falls Windows "Der Computer wurde durch Windows geschützt" anzeigt:
+   auf "Weitere Informationen" und dann "Trotzdem ausführen" klicken.
+
+Der Ordner "third-party" muss neben der .exe liegen bleiben. Darin sind der
+Emulator (gbe_fork), Steamless und der Steam-API-Bypass.
+
+
+Was du NICHT brauchst
+---------------------
+- Keine .NET-Runtime. Der eingebaute Downloader kommt ohne aus. Nur wenn du
+  in den Einstellungen auf die "DepotDownloaderMod"-Engine umschaltest,
+  wird .NET 9 gebraucht.
+- Keine Extra-Downloads für den Emulator.
+
+
+Tipps, wenn etwas nicht klappt
+------------------------------
+- Spiel in die Steam-Bibliothek eintragen: Steam muss dabei geschlossen
+  sein. Läuft Steam, bietet die App an, Steam kurz zu beenden und danach
+  wieder zu starten.
+- Steam ist woanders installiert und die App findet es nicht: Klicke neben
+  "Auch zur Steam-Bibliothek hinzufügen" auf "Steam-Ordner wählen" oder lege
+  ihn unter Einstellungen -> Steam-Ordner fest. Wähle den Ordner, in dem
+  steam.exe liegt. Dafür sind keine Adminrechte nötig.
+- Emulator: Lade Spiele in einen eigenen Ordner (z. B. Dokumente oder
+  Desktop), nicht nach "C:\Programme". Dort darf ohne Adminrechte nichts
+  geändert werden.
+- Virenschutz: Windows Defender meldet Emulator-Dateien manchmal fälschlich
+  als Bedrohung und löscht sie. Du kannst sie unter "Windows-Sicherheit ->
+  Viren- & Bedrohungsschutz -> Schutzverlauf" wieder zulassen. Dafür können
+  Administratorrechte nötig sein. Darfst du den Virenschutz auf diesem PC
+  nicht ändern, lässt sich der Emulator hier leider nicht nutzen.
+- Die WebView2-Laufzeit von Microsoft ist bei Windows 10 und 11 normalerweise
+  schon installiert. Startet die App gar nicht, fehlt sie vermutlich. Hilfe
+  und Fehlermeldungen: https://github.com/mcbabel/Steam-Manifest-Downloader/issues
+
+Lizenzen der enthaltenen Programme: siehe THIRD-PARTY-NOTICES.txt

@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 use tauri::{command, AppHandle, Manager};
-use crate::services::settings as settings_service;
+use smd_core::services::settings as settings_service;
 
 #[command]
 pub async fn get_settings(app: AppHandle) -> Result<serde_json::Value, String> {
@@ -17,4 +17,9 @@ pub async fn save_settings(app: AppHandle, settings: serde_json::Value) -> Resul
         .map_err(|e| format!("Invalid settings format: {}", e))?;
 
     settings_service::save_settings(&app_data_dir, &new_settings).await
+}
+
+#[command]
+pub async fn test_proxy(proxy: String) -> Result<smd_core::services::net::ProxyTest, String> {
+    smd_core::services::net::test_proxy(&proxy).await
 }

@@ -1,9 +1,9 @@
 use std::path::{Path, PathBuf};
 use tauri::{command, AppHandle, Manager};
 
-use crate::services::emulator::ScannedFile;
-use crate::services::steam_api_bypass::{self, BypassApplyResult};
-use crate::services::AppState;
+use smd_core::services::emulator::ScannedFile;
+use smd_core::services::steam_api_bypass::{self, BypassApplyResult};
+use smd_core::services::AppState;
 
 fn app_data_dir(app: &AppHandle) -> PathBuf {
     app.path().app_data_dir().unwrap_or_else(|_| PathBuf::from("."))

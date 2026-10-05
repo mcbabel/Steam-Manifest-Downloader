@@ -7,7 +7,7 @@ use axum::{
     Router,
 };
 use chrono::Utc;
-use dryoc::dryocbox::{DryocBox, KeyPair, SecretKey};
+use dryoc::dryocbox::{DryocBox, SecretKey, StackKeyPair as KeyPair};
 use dryoc::types::ByteArray;
 use serde_json::Value;
 use std::{net::SocketAddr, path::PathBuf, sync::Arc};
@@ -92,7 +92,7 @@ async fn ingest(
         warn!(bytes = body.len(), "failed to parse sealed box");
         (StatusCode::BAD_REQUEST, "parse failed")
     })?;
-    let plaintext = sealed.unseal_to_vec(&state.keypair).map_err(|_| {
+    let plaintext = sealed.open_to_vec(&state.keypair).map_err(|_| {
         warn!(bytes = body.len(), "failed to decrypt sealed box");
         (StatusCode::BAD_REQUEST, "decrypt failed")
     })?;
@@ -139,14 +139,14 @@ fn keypair_from_secret(secret: &[u8; 32]) -> KeyPair {
 }
 
 fn gen_keypair() -> Result<()> {
-    let kp = KeyPair::gen();
+    let kp = KeyPair::generate();
     let priv_hex = hex::encode(kp.secret_key.as_array());
     let pub_bytes = kp.public_key.as_array();
 
     eprintln!("== Server PRIVATE key (server env: TELEMETRY_PRIVATE_KEY_HEX) ==");
     println!("{}", priv_hex);
     eprintln!();
-    eprintln!("== Server PUBLIC key (paste into src-tauri/src/services/telemetry.rs SERVER_PUBLIC_KEY) ==");
+    eprintln!("== Server PUBLIC key (paste into src-core/src/services/telemetry.rs SERVER_PUBLIC_KEY) ==");
     eprintln!("const SERVER_PUBLIC_KEY: [u8; 32] = [");
     for chunk in pub_bytes.chunks(12) {
         let formatted: Vec<String> = chunk.iter().map(|b| format!("0x{:02x}", b)).collect();

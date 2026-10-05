@@ -3,10 +3,12 @@ use std::sync::Arc;
 
 use tauri::{command, AppHandle, Emitter};
 
-use crate::services::steam_downloader::{
+use smd_core::services::steam_downloader::{
     download_depot_from_local_manifest, download_depot_native, NativeDownloadProgress,
 };
-use crate::services::AppState;
+use smd_core::services::AppState;
+
+use super::app_data_dir;
 
 #[derive(Debug, serde::Deserialize)]
 pub struct NativeDownloadRequest {
@@ -88,6 +90,9 @@ pub async fn native_download_depot(
 
     let cancel = Arc::new(std::sync::atomic::AtomicBool::new(false));
     let pause = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let chunk_concurrency = smd_core::services::settings::load_settings(&app_data_dir(&app))
+        .await
+        .native_chunk_concurrency;
     let outcome = if let Some(path) = request.manifest_path.as_deref() {
         let bytes = tokio::fs::read(path)
             .await
@@ -103,6 +108,8 @@ pub async fn native_download_depot(
             cancel,
             pause,
             progress_cb,
+            chunk_concurrency,
+            Default::default(),
         )
         .await
     } else {
@@ -117,6 +124,8 @@ pub async fn native_download_depot(
             cancel,
             pause,
             progress_cb,
+            chunk_concurrency,
+            Default::default(),
         )
         .await
     };

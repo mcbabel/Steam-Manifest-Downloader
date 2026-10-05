@@ -1,8 +1,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod commands;
-mod services;
 
+use smd_core::services;
 use tauri::{Emitter, Manager};
 
 fn main() {
@@ -22,7 +22,7 @@ fn main() {
                 app_version,
                 channel,
             );
-            telemetry.clone().spawn_background_flush();
+            tauri::async_runtime::spawn(telemetry.clone().run_background_flush());
 
             let mut state = services::AppState::new();
             state.telemetry = Some(telemetry);
@@ -40,6 +40,7 @@ fn main() {
             commands::search_steam_games,
             commands::fetch_depot_metadata,
             commands::fetch_depot_metadata_steam,
+            commands::recommend_depots,
             commands::fetch_latest_manifest_id,
             // Steam
             commands::get_steam_app_info,
@@ -50,9 +51,24 @@ fn main() {
             // Settings
             commands::get_settings,
             commands::save_settings,
+            commands::test_proxy,
             // System
             commands::check_dotnet,
             commands::get_disk_space,
+            commands::check_free_space,
+            commands::set_download_progress,
+            commands::get_installed_depots,
+            commands::check_game_updates,
+            commands::get_covers,
+            commands::get_launch_exe,
+            commands::launch_game,
+            commands::queue_list,
+            commands::queue_add,
+            commands::queue_remove,
+            commands::queue_move,
+            commands::queue_take_next,
+            commands::queue_clear,
+            commands::power_off_system,
             commands::get_build_info,
             commands::get_debug_log_path,
             // Window
@@ -69,6 +85,9 @@ fn main() {
             commands::remove_history_entry,
             commands::clear_history,
             commands::record_history_entry,
+            commands::save_pending_followup,
+            commands::get_pending_followup,
+            commands::clear_pending_followup,
             commands::open_folder,
             // Shortcuts
             commands::is_shortcut_supported,
@@ -90,6 +109,7 @@ fn main() {
             commands::emu_write_emu_settings,
             // Steam library (non-Steam shortcut + grid art)
             commands::steam_library_detect,
+            commands::steam_library_check_dir,
             commands::steam_library_add,
             // Steamless (DRM detection + removal)
             commands::steamless_scan,
@@ -108,7 +128,29 @@ fn main() {
                     api.prevent_close();
                     let window = window.clone();
                     window.emit("close-requested", ()).ok();
+                    return;
                 }
+
+                if state
+                    .shutdown_flush_done
+                    .swap(true, std::sync::atomic::Ordering::SeqCst)
+                {
+                    return;
+                }
+
+                let Some(telemetry) = state.telemetry.clone() else {
+                    return;
+                };
+                api.prevent_close();
+                let window = window.clone();
+                tauri::async_runtime::spawn(async move {
+                    let _ = tokio::time::timeout(
+                        std::time::Duration::from_secs(5),
+                        telemetry.flush(),
+                    )
+                    .await;
+                    let _ = window.close();
+                });
             }
         })
         .run(tauri::generate_context!())

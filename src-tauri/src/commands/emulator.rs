@@ -1,22 +1,18 @@
-use std::path::{Path, PathBuf};
-use tauri::{command, AppHandle, Manager};
-
-use crate::services::emulator::{
+use smd_core::ops::emulator::{self as emu_ops, DlcMergePlan};
+use smd_core::services::emulator::{
     self, EmuSettings, Platform, ReleaseInfo, ReplaceResult, ScannedFile, Variant,
 };
-use crate::services::AppState;
+use smd_core::services::AppState;
+use tauri::{command, AppHandle};
 
-fn app_data_dir(app: &AppHandle) -> PathBuf {
-    app.path().app_data_dir().unwrap_or_else(|_| PathBuf::from("."))
-}
+use super::{app_data_dir, sink};
 
 #[command]
 pub async fn emu_release_info(
     state: tauri::State<'_, AppState>,
     app: AppHandle,
 ) -> Result<ReleaseInfo, String> {
-    let dir = app_data_dir(&app);
-    emulator::fetch_release_info(&state.http_client, &dir).await
+    emulator::fetch_release_info(&state.http_client, &app_data_dir(&app)).await
 }
 
 #[command]
@@ -25,310 +21,21 @@ pub async fn emu_ensure_cached(
     app: AppHandle,
     platform: Platform,
 ) -> Result<ReleaseInfo, String> {
-    let dir = app_data_dir(&app);
-    let info = emulator::fetch_release_info(&state.http_client, &dir).await?;
-    emulator::ensure_cached(&state.http_client, &info, platform).await?;
-    let refreshed = emulator::fetch_release_info(&state.http_client, &dir).await?;
-    Ok(refreshed)
+    emu_ops::ensure_cached(&state, &app_data_dir(&app), platform).await
 }
 
 #[command]
 pub async fn emu_scan_game_dir(game_dir: String) -> Result<Vec<ScannedFile>, String> {
-    let path = PathBuf::from(&game_dir);
-    if !path.exists() {
-        return Err(format!("Path not found: {}", game_dir));
-    }
-    Ok(emulator::scan_game_dir(&path))
-}
-
-#[derive(Debug, serde::Serialize)]
-pub struct MergeCandidate {
-    #[serde(rename = "depotId")]
-    pub depot_id: String,
-    pub path: String,
-    pub role: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub label: Option<String>,
-}
-
-#[derive(Debug, serde::Serialize)]
-pub struct DlcMergePlan {
-    #[serde(rename = "mainDepotDir")]
-    pub main_depot_dir: String,
-    #[serde(rename = "mainDepotId")]
-    pub main_depot_id: String,
-    #[serde(rename = "mainLabel", skip_serializing_if = "Option::is_none")]
-    pub main_label: Option<String>,
-    #[serde(rename = "toMerge")]
-    pub to_merge: Vec<MergeCandidate>,
-    pub skipped: Vec<MergeCandidate>,
-    #[serde(rename = "dlcDepotDirs")]
-    pub dlc_depot_dirs: Vec<String>,
+    emu_ops::scan_game_dir(&game_dir).await
 }
 
 #[command]
 pub async fn emu_scan_for_dlc_merge(
-    state: tauri::State<'_, crate::services::AppState>,
+    state: tauri::State<'_, AppState>,
     game_dir: String,
     app_id: Option<String>,
 ) -> Result<Option<DlcMergePlan>, String> {
-    let work = PathBuf::from(&game_dir);
-    let depots_root = work.join("depots");
-    if !depots_root.exists() {
-        return Ok(None);
-    }
-    let mut entries = tokio::fs::read_dir(&depots_root)
-        .await
-        .map_err(|e| format!("read depots dir: {}", e))?;
-    let mut depot_dirs: Vec<PathBuf> = Vec::new();
-    while let Some(entry) = entries
-        .next_entry()
-        .await
-        .map_err(|e| format!("walk depots dir: {}", e))?
-    {
-        let p = entry.path();
-        if !p.is_dir() {
-            continue;
-        }
-        if let Some(name) = p.file_name().and_then(|n| n.to_str()) {
-            if name.starts_with('.') {
-                continue;
-            }
-        }
-        depot_dirs.push(p);
-    }
-    if depot_dirs.len() < 2 {
-        return Ok(None);
-    }
-
-    let mut candidates: Vec<(PathBuf, crate::services::emulator::Platform)> = Vec::new();
-    for d in &depot_dirs {
-        if let Some(first) = emulator::scan_game_dir(d).into_iter().next() {
-            candidates.push((d.clone(), first.platform));
-        }
-    }
-    if candidates.is_empty() {
-        return Ok(None);
-    }
-    let host_os = std::env::consts::OS;
-    let host_preferred = candidates
-        .iter()
-        .find(|(_, p)| match (p, host_os) {
-            (crate::services::emulator::Platform::Windows, "windows") => true,
-            (crate::services::emulator::Platform::Linux, "linux") => true,
-            _ => false,
-        })
-        .cloned();
-    let (main_dir, main_platform) = host_preferred.unwrap_or_else(|| candidates[0].clone());
-    let main_os = match main_platform {
-        crate::services::emulator::Platform::Windows => "windows",
-        crate::services::emulator::Platform::Linux => "linux",
-    };
-
-    let pics_map = if let Some(app_str) = app_id.as_deref() {
-        if let Ok(app_id_u) = app_str.parse::<u32>() {
-            match crate::services::steam_pics::fetch_depots_with_names(
-                state.steam_session.clone(),
-                app_id_u,
-            )
-            .await
-            {
-                Ok(list) => list
-                    .into_iter()
-                    .map(|d| (d.depot_id.clone(), d))
-                    .collect::<std::collections::HashMap<_, _>>(),
-                Err(e) => {
-                    eprintln!("[merge-scan] PICS lookup failed: {}", e);
-                    std::collections::HashMap::new()
-                }
-            }
-        } else {
-            std::collections::HashMap::new()
-        }
-    } else {
-        std::collections::HashMap::new()
-    };
-
-    let main_depot_id = extract_depot_id_from_folder(&main_dir).unwrap_or_default();
-    let main_label = pics_map
-        .get(&main_depot_id)
-        .and_then(|d| d.name.clone());
-
-    let mut to_merge: Vec<MergeCandidate> = Vec::new();
-    let mut skipped: Vec<MergeCandidate> = Vec::new();
-    for d in &depot_dirs {
-        if d == &main_dir {
-            continue;
-        }
-        let depot_id = extract_depot_id_from_folder(d).unwrap_or_default();
-        let info = pics_map.get(&depot_id);
-        let path_str = d.to_string_lossy().to_string();
-        let label = info.and_then(|m| m.name.clone());
-        let has_own_exe = depot_dir_has_executable(d);
-
-        if let Some(meta) = info {
-            let role_str = match meta.role {
-                crate::services::steam_pics::DepotRole::Platform => "platform",
-                crate::services::steam_pics::DepotRole::SharedContent => "shared_content",
-                crate::services::steam_pics::DepotRole::Dlc => "dlc",
-                crate::services::steam_pics::DepotRole::Language => "language",
-                crate::services::steam_pics::DepotRole::Other => "other",
-            }
-            .to_string();
-
-            let same_platform_as_main = meta
-                .oslist
-                .as_deref()
-                .map(|os| os.to_ascii_lowercase().contains(main_os))
-                .unwrap_or(false);
-
-            let should_merge = if has_own_exe {
-                false
-            } else {
-                match meta.role {
-                    crate::services::steam_pics::DepotRole::SharedContent => true,
-                    crate::services::steam_pics::DepotRole::Dlc => meta
-                        .oslist
-                        .as_deref()
-                        .map(|os| same_platform(os, main_os))
-                        .unwrap_or(true),
-                    crate::services::steam_pics::DepotRole::Language => true,
-                    crate::services::steam_pics::DepotRole::Platform => same_platform_as_main,
-                    crate::services::steam_pics::DepotRole::Other => true,
-                }
-            };
-
-            let cand = MergeCandidate {
-                depot_id: depot_id.clone(),
-                path: path_str,
-                role: role_str,
-                label,
-            };
-            if should_merge {
-                to_merge.push(cand);
-            } else {
-                skipped.push(cand);
-            }
-        } else if has_own_exe {
-            skipped.push(MergeCandidate {
-                depot_id: depot_id.clone(),
-                path: path_str,
-                role: "standalone".to_string(),
-                label,
-            });
-        } else {
-            to_merge.push(MergeCandidate {
-                depot_id: depot_id.clone(),
-                path: path_str,
-                role: "unknown".to_string(),
-                label,
-            });
-        }
-    }
-
-    if to_merge.is_empty() && skipped.is_empty() {
-        return Ok(None);
-    }
-
-    let dlc_depot_dirs: Vec<String> = to_merge.iter().map(|c| c.path.clone()).collect();
-
-    Ok(Some(DlcMergePlan {
-        main_depot_dir: main_dir.to_string_lossy().to_string(),
-        main_depot_id,
-        main_label,
-        to_merge,
-        skipped,
-        dlc_depot_dirs,
-    }))
-}
-
-fn depot_dir_has_executable(dir: &Path) -> bool {
-    depot_dir_has_executable_recursive(dir, 0)
-}
-
-fn depot_dir_has_executable_recursive(dir: &Path, depth: usize) -> bool {
-    if depth > 5 {
-        return false;
-    }
-    let entries = match std::fs::read_dir(dir) {
-        Ok(e) => e,
-        Err(_) => return false,
-    };
-    for entry in entries.flatten() {
-        let path = entry.path();
-        let Ok(ft) = entry.file_type() else { continue };
-        if ft.is_symlink() {
-            continue;
-        }
-        if ft.is_dir() {
-            if depot_dir_has_executable_recursive(&path, depth + 1) {
-                return true;
-            }
-            continue;
-        }
-        if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
-            let lower = name.to_lowercase();
-            if lower.ends_with(".exe") {
-                return true;
-            }
-            if lower.ends_with(".dll")
-                || lower.ends_with(".so")
-                || lower.ends_with(".dylib")
-                || lower.ends_with(".pak")
-                || lower.ends_with(".dat")
-                || lower.ends_with(".txt")
-                || lower.ends_with(".json")
-                || lower.ends_with(".ini")
-                || lower.ends_with(".vdf")
-                || lower.ends_with(".manifest")
-                || lower.ends_with(".png")
-                || lower.ends_with(".jpg")
-                || lower.ends_with(".pdb")
-                || lower.ends_with(".lua")
-            {
-                continue;
-            }
-            if is_elf_executable_sync(&path) {
-                return true;
-            }
-        }
-    }
-    false
-}
-
-fn is_elf_executable_sync(path: &Path) -> bool {
-    use std::io::Read;
-    let Ok(mut file) = std::fs::File::open(path) else {
-        return false;
-    };
-    let mut header = [0u8; 20];
-    if file.read_exact(&mut header).is_err() {
-        return false;
-    }
-    if &header[..4] != b"\x7fELF" {
-        return false;
-    }
-    let e_type = u16::from_le_bytes([header[16], header[17]]);
-    e_type == 2 || e_type == 3
-}
-
-fn extract_depot_id_from_folder(p: &Path) -> Option<String> {
-    let name = p.file_name()?.to_str()?;
-    let last_token = name.rsplit(" - ").next()?.trim();
-    if last_token.chars().all(|c| c.is_ascii_digit()) && !last_token.is_empty() {
-        Some(last_token.to_string())
-    } else if name.chars().all(|c| c.is_ascii_digit()) {
-        Some(name.to_string())
-    } else {
-        None
-    }
-}
-
-fn same_platform(depot_os: &str, main_os: &str) -> bool {
-    if main_os.is_empty() {
-        return true;
-    }
-    depot_os.to_ascii_lowercase().contains(main_os)
+    emu_ops::scan_for_dlc_merge(&state, game_dir, app_id).await
 }
 
 #[command]
@@ -336,103 +43,11 @@ pub async fn emu_merge_dlc_depots(
     main_depot_dir: String,
     dlc_depot_dirs: Vec<String>,
 ) -> Result<u64, String> {
-    let main = PathBuf::from(&main_depot_dir);
-    if !main.is_dir() {
-        return Err(format!("Main depot dir not a directory: {}", main_depot_dir));
-    }
-    if !is_safe_depot_path(&main) {
-        return Err(format!("Refusing unsafe main depot path: {}", main_depot_dir));
-    }
-    let mut moved: u64 = 0;
-    for src in dlc_depot_dirs {
-        let src_path = PathBuf::from(&src);
-        if !src_path.is_dir() {
-            continue;
-        }
-        if !is_safe_depot_path(&src_path) {
-            eprintln!("[Merge] Refusing unsafe DLC depot path: {:?}", src_path);
-            continue;
-        }
-        moved += merge_dir_into(&src_path, &main).await?;
-        if let Err(e) = tokio::fs::remove_dir_all(&src_path).await {
-            eprintln!("[Merge] Failed to remove drained DLC dir {:?}: {}", src_path, e);
-        }
-    }
-    Ok(moved)
-}
-
-fn is_safe_depot_path(path: &Path) -> bool {
-    if !path.is_absolute() {
-        return false;
-    }
-    let s = path.to_string_lossy();
-    if s.trim().is_empty() || s.len() < 6 {
-        return false;
-    }
-    if path.components().count() < 4 {
-        return false;
-    }
-    path.components().any(|c| {
-        c.as_os_str()
-            .to_str()
-            .map(|seg| seg == "depots")
-            .unwrap_or(false)
-    })
-}
-
-fn merge_dir_into<'a>(
-    src: &'a Path,
-    dst: &'a Path,
-) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<u64, String>> + Send + 'a>> {
-    Box::pin(async move {
-        tokio::fs::create_dir_all(dst)
-            .await
-            .map_err(|e| format!("create dst {}: {}", dst.display(), e))?;
-        let mut files_moved: u64 = 0;
-        let mut entries = tokio::fs::read_dir(src)
-            .await
-            .map_err(|e| format!("read {}: {}", src.display(), e))?;
-        while let Some(entry) = entries
-            .next_entry()
-            .await
-            .map_err(|e| format!("walk {}: {}", src.display(), e))?
-        {
-            let path = entry.path();
-            let name = entry.file_name();
-            let target = dst.join(&name);
-            if path.is_dir() {
-                files_moved += merge_dir_into(&path, &target).await?;
-            } else {
-                if target.exists() {
-                    continue;
-                }
-                if let Err(e) = tokio::fs::rename(&path, &target).await {
-                    tokio::fs::copy(&path, &target).await.map_err(|copy_err| {
-                        format!(
-                            "rename + copy failed ({} / {}): {} / {}",
-                            path.display(),
-                            target.display(),
-                            e,
-                            copy_err
-                        )
-                    })?;
-                    if let Err(rm_err) = tokio::fs::remove_file(&path).await {
-                        eprintln!(
-                            "[Merge] Copied {} -> {} but failed to remove source: {}",
-                            path.display(),
-                            target.display(),
-                            rm_err
-                        );
-                    }
-                }
-                files_moved += 1;
-            }
-        }
-        Ok(files_moved)
-    })
+    emu_ops::merge_dlc_depots(main_depot_dir, dlc_depot_dirs).await
 }
 
 #[command]
+#[allow(clippy::too_many_arguments)]
 pub async fn emu_apply_replacement(
     state: tauri::State<'_, AppState>,
     app: AppHandle,
@@ -441,44 +56,25 @@ pub async fn emu_apply_replacement(
     app_id: String,
     installed_app_ids: Vec<String>,
     emu_settings: Option<EmuSettings>,
+    allow_download: bool,
 ) -> Result<Vec<ReplaceResult>, String> {
-    let dir = app_data_dir(&app);
-    let info = emulator::fetch_release_info(&state.http_client, &dir).await?;
-
-    let need_windows = targets.iter().any(|t| t.platform == Platform::Windows);
-    let need_linux = targets.iter().any(|t| t.platform == Platform::Linux);
-    if need_windows {
-        emulator::ensure_cached(&state.http_client, &info, Platform::Windows).await?;
-    }
-    if need_linux {
-        emulator::ensure_cached(&state.http_client, &info, Platform::Linux).await?;
-    }
-    let cache_root = PathBuf::from(&info.cache_root);
-
-    let settings_ref = emu_settings.as_ref();
-    let mut results = Vec::with_capacity(targets.len());
-    for t in &targets {
-        let path = Path::new(&t.path);
-        let platform_cache = cache_root.join(t.platform.cache_subdir());
-        let x64 = t.arch == "x64";
-        results.push(emulator::apply_replacement(
-            path,
-            &platform_cache,
-            variant,
-            t.platform,
-            x64,
-            &app_id,
-            &installed_app_ids,
-            settings_ref,
-        ));
-    }
-    Ok(results)
+    emu_ops::apply_replacement(
+        &sink(&app),
+        &state,
+        &app_data_dir(&app),
+        targets,
+        variant,
+        app_id,
+        installed_app_ids,
+        emu_settings,
+        allow_download,
+    )
+    .await
 }
 
 #[command]
 pub async fn emu_read_emu_settings(target_path: String) -> Result<EmuSettings, String> {
-    let path = PathBuf::from(&target_path);
-    emulator::read_emu_settings_for_target(&path)
+    emu_ops::read_emu_settings(&target_path)
 }
 
 #[command]
@@ -486,26 +82,10 @@ pub async fn emu_write_emu_settings(
     target_path: String,
     settings: EmuSettings,
 ) -> Result<(), String> {
-    let path = PathBuf::from(&target_path);
-    emulator::write_emu_settings_for_target(&path, &settings)
+    emu_ops::write_emu_settings(&target_path, &settings)
 }
 
 #[command]
 pub async fn emu_revert_replacement(targets: Vec<String>) -> Result<Vec<ReplaceResult>, String> {
-    let mut results = Vec::with_capacity(targets.len());
-    for target in targets {
-        let path = PathBuf::from(&target);
-        let mut r = ReplaceResult {
-            path: target.clone(),
-            backup_path: None,
-            success: false,
-            error: None,
-        };
-        match emulator::revert_replacement(&path) {
-            Ok(()) => r.success = true,
-            Err(e) => r.error = Some(e),
-        }
-        results.push(r);
-    }
-    Ok(results)
+    emu_ops::revert_replacement(targets).await
 }

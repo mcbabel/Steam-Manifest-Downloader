@@ -1,7 +1,7 @@
 use tauri::command;
 use tauri::Manager;
 
-use crate::services::AppState;
+use smd_core::services::AppState;
 
 #[command]
 pub async fn minimize_window(window: tauri::Window) -> Result<(), String> {
@@ -15,6 +15,26 @@ pub async fn maximize_window(window: tauri::Window) -> Result<(), String> {
     } else {
         window.maximize().map_err(|e| e.to_string())
     }
+}
+
+#[command]
+pub fn set_download_progress(
+    window: tauri::Window,
+    percent: Option<f64>,
+    paused: Option<bool>,
+    title: String,
+) {
+    use tauri::window::{ProgressBarState, ProgressBarStatus};
+    let status = match (percent, paused.unwrap_or(false)) {
+        (None, _) => ProgressBarStatus::None,
+        (Some(_), true) => ProgressBarStatus::Paused,
+        (Some(_), false) => ProgressBarStatus::Normal,
+    };
+    let _ = window.set_progress_bar(ProgressBarState {
+        status: Some(status),
+        progress: percent.map(|p| p.clamp(0.0, 100.0).round() as u64),
+    });
+    let _ = window.set_title(&title);
 }
 
 #[command]

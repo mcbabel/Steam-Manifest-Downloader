@@ -3,11 +3,6 @@ name: PR Build
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-    paths:
-      - 'src-tauri/**'
-      - 'public/**'
-      - 'assets/**'
-      - '.github/workflows/pr-build.yml'
 
 concurrency:
   group: pr-build-${{ github.event.pull_request.number }}
@@ -17,10 +12,58 @@ permissions:
   contents: read
 
 jobs:
-  build-windows:
+  changes:
+    name: Detect relevant changes
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - id: filter
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          git fetch --no-tags origin "$BASE_REF"
+          if git diff --name-only "origin/$BASE_REF...HEAD" \
+            | grep -qE '^(src-tauri|src-core|src-tui|public|assets|tools|\.github/workflows|\.github/actions)/|^Cargo\.(toml|lock)$'; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  test:
+    name: Backend tests
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            src-tauri
+            .
+
+      - name: Run tests
+        working-directory: src-tauri
+        run: cargo test --bin steam-manifest-downloader
+
+      - name: Run core and terminal app tests
+        run: cargo test --workspace --locked
+
+  build-windows:
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
@@ -50,91 +93,90 @@ jobs:
              "src-tauri/target/release/Steam-Manifest-Downloader_${VERSION}-pr${{ github.event.pull_request.number }}-${SHA}_portable.exe"
 
       - name: Upload portable EXE
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: windows-portable-pr${{ github.event.pull_request.number }}
           path: src-tauri/target/release/Steam-Manifest-Downloader_*_portable.exe
 
   build-linux:
+    needs: test
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Build binary in Arch Linux container
+      - name: AppImage name
+        id: name
+        run: |
+          VERSION=$(grep -oP '"version":\s*"\K[^"]+' src-tauri/tauri.conf.json)
+          SHA=$(echo "${{ github.event.pull_request.head.sha }}" | cut -c1-7)
+          echo "file=Steam Manifest Downloader_${VERSION}-pr${{ github.event.pull_request.number }}-${SHA}_amd64.AppImage" >> "$GITHUB_OUTPUT"
+
+      - name: Build AppImage
+        uses: ./.github/actions/linux-appimage
+        with:
+          channel: pr-${{ github.event.pull_request.number }}
+          git-sha: ${{ github.event.pull_request.head.sha }}
+          output: ${{ steps.name.outputs.file }}
+
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v7
+        with:
+          name: linux-appimage-pr${{ github.event.pull_request.number }}
+          path: "Steam Manifest Downloader_*_amd64.AppImage"
+
+  build-tui-linux:
+    name: Terminal app (Linux, static)
+    needs: test
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-musl
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: tui-musl
+      - name: Install musl toolchain
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+      - name: Build
         env:
           SMD_BUILD_CHANNEL: pr-${{ github.event.pull_request.number }}
           SMD_GIT_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           export SMD_BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-          docker run --rm \
-            -e SMD_BUILD_CHANNEL -e SMD_GIT_SHA -e SMD_BUILD_DATE \
-            -v "${{ github.workspace }}:/workspace" \
-            -w /workspace \
-            archlinux:latest \
-            bash -c '
-              set -e
-              pacman -Syu --noconfirm
-              pacman -S --noconfirm \
-                base-devel webkit2gtk-4.1 gtk3 libappindicator-gtk3 \
-                librsvg patchelf curl wget file openssl pkgconf
-
-              curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
-              source /root/.cargo/env
-
-              cargo install cargo-binstall --locked
-              cargo binstall tauri-cli --version "^2.0" -y
-
-              NO_STRIP=true cargo tauri build --no-bundle
-              ls -la src-tauri/target/release/steam-manifest-downloader
-            '
-
-      - name: Create AppImage
-        run: |
-          set -e
-          BINARY="src-tauri/target/release/steam-manifest-downloader"
-          APP_NAME="Steam Manifest Downloader"
-          VERSION=$(grep -oP '"version":\s*"\K[^"]+' src-tauri/tauri.conf.json)
-          SHA=$(echo "${{ github.event.pull_request.head.sha }}" | cut -c1-7)
-
-          if [ ! -f "$BINARY" ]; then echo "ERROR: Binary not found"; exit 1; fi
-
-          mkdir -p AppDir/usr/bin AppDir/usr/share/applications AppDir/usr/share/icons/hicolor/256x256/apps
-          cp "$BINARY" AppDir/usr/bin/steam-manifest-downloader
-          chmod +x AppDir/usr/bin/steam-manifest-downloader
-
-          cat > AppDir/usr/share/applications/steam-manifest-downloader.desktop << 'DESKTOP'
-          [Desktop Entry]
-          Categories=Utility;
-          Exec=steam-manifest-downloader
-          Icon=steam-manifest-downloader
-          Name=Steam Manifest Downloader
-          Type=Application
-          Terminal=false
-          DESKTOP
-          sed -i 's/^          //' AppDir/usr/share/applications/steam-manifest-downloader.desktop
-
-          cp assets/icon.png AppDir/usr/share/icons/hicolor/256x256/apps/steam-manifest-downloader.png
-
-          cat > AppDir/AppRun << 'APPRUN'
-          #!/bin/bash
-          SELF_DIR="$(dirname "$(readlink -f "$0")")"
-          export PATH="${SELF_DIR}/usr/bin:${PATH}"
-          exec "${SELF_DIR}/usr/bin/steam-manifest-downloader" "$@"
-          APPRUN
-          sed -i 's/^          //' AppDir/AppRun
-          chmod +x AppDir/AppRun
-
-          ln -sf usr/share/applications/steam-manifest-downloader.desktop AppDir/steam-manifest-downloader.desktop
-          ln -sf usr/share/icons/hicolor/256x256/apps/steam-manifest-downloader.png AppDir/steam-manifest-downloader.png
-
-          wget -q "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage" -O appimagetool
-          chmod +x appimagetool
-          ARCH=x86_64 ./appimagetool AppDir "${APP_NAME}_${VERSION}-pr${{ github.event.pull_request.number }}-${SHA}_amd64.AppImage"
-
-      - name: Upload AppImage
-        uses: actions/upload-artifact@v4
+          cargo build --release --locked --target x86_64-unknown-linux-musl -p smd-tui
+      - name: Upload binary
+        uses: actions/upload-artifact@v7
         with:
-          name: linux-appimage-pr${{ github.event.pull_request.number }}
-          path: "Steam Manifest Downloader_*_amd64.AppImage"
+          name: tui-linux-pr${{ github.event.pull_request.number }}
+          path: target/x86_64-unknown-linux-musl/release/smd
+
+  build-tui-windows:
+    name: Terminal app (Windows)
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: tui
+      - name: Build
+        env:
+          SMD_BUILD_CHANNEL: pr-${{ github.event.pull_request.number }}
+          SMD_GIT_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          export SMD_BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          cargo build --release --locked -p smd-tui
+      - name: Upload binary
+        uses: actions/upload-artifact@v7
+        with:
+          name: tui-windows-pr${{ github.event.pull_request.number }}
+          path: target/release/smd.exe

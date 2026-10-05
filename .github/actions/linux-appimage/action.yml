@@ -1,0 +1,67 @@
+name: Linux AppImage
+description: Builds the desktop app as an AppImage that brings WebKitGTK and the libraries it needs
+
+inputs:
+  channel:
+    description: Value for SMD_BUILD_CHANNEL
+    required: true
+  git-sha:
+    description: Value for SMD_GIT_SHA
+    required: true
+  output:
+    description: File name of the AppImage in the workspace. Empty keeps the name from the bundler.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Install build dependencies
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev \
+          gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
+          patchelf file
+
+    - uses: dtolnay/rust-toolchain@stable
+
+    - uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: src-tauri
+        key: appimage
+
+    - name: Install Tauri CLI
+      shell: bash
+      run: cargo install cargo-binstall --locked && cargo binstall tauri-cli --version "^2.0" -y
+
+    - name: Build AppImage
+      id: build
+      shell: bash
+      env:
+        SMD_BUILD_CHANNEL: ${{ inputs.channel }}
+        SMD_GIT_SHA: ${{ inputs.git-sha }}
+        NO_STRIP: "true"
+        APPIMAGE_EXTRACT_AND_RUN: "1"
+        OUTPUT: ${{ inputs.output }}
+      run: |
+        export SMD_BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+        cargo tauri build --bundles appimage
+        BUILT=$(ls src-tauri/target/release/bundle/appimage/*.AppImage)
+        NAME="$OUTPUT"
+        [ -n "$NAME" ] || NAME=$(basename "$BUILT")
+        mv "$BUILT" "$NAME"
+        ls -la "$NAME"
+        echo "file=$NAME" >> "$GITHUB_OUTPUT"
+
+    - name: Check that WebKitGTK is inside
+      shell: bash
+      env:
+        FILE: ${{ steps.build.outputs.file }}
+      run: |
+        chmod +x "$FILE"
+        rm -rf squashfs-root
+        "./$FILE" --appimage-extract >/dev/null
+        ls squashfs-root/usr/lib/libwebkit2gtk-4.1.so.0 squashfs-root/usr/lib/libjavascriptcoregtk-4.1.so.0
+        rm -rf squashfs-root

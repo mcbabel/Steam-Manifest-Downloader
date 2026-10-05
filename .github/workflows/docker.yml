@@ -1,0 +1,109 @@
+name: Docker Image
+
+on:
+  workflow_call:
+    inputs:
+      channel:
+        required: true
+        type: string
+      release-tag:
+        required: true
+        type: string
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      release-tag:
+        description: "Release whose smd binary is packaged (e.g. v1.5.0 or dev-latest)"
+        required: true
+        type: string
+      channel:
+        description: "stable: version + latest tags, dev: dev tags"
+        required: true
+        default: stable
+        type: choice
+        options: [stable, dev]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    name: Publish to ghcr.io
+    if: github.event_name != 'release' || (!github.event.release.prerelease && !github.event.release.draft)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Resolve release
+        id: info
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+            CHANNEL=stable
+          else
+            TAG="${{ inputs.release-tag }}"
+            CHANNEL="${{ inputs.channel }}"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
+          echo "image=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Download smd binary from the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "${{ steps.info.outputs.tag }}" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern 'Steam-Manifest-Downloader-Terminal_*_linux-x64' \
+            --pattern 'smd_*_linux-x86_64' \
+            --output smd
+          chmod +x smd
+          ./smd --version
+
+      - name: Compute tags
+        id: tags
+        run: |
+          IMAGE="${{ steps.info.outputs.image }}"
+          VERSION=$(./smd --version | awk '{print $2}')
+          SHORT_SHA=$(echo "$GITHUB_SHA" | cut -c1-7)
+          if [ "${{ steps.info.outputs.channel }}" = "stable" ]; then
+            MAJOR=${VERSION%%.*}
+            MINOR=$(echo "$VERSION" | cut -d. -f1-2)
+            TAGS="$IMAGE:$VERSION $IMAGE:$MINOR $IMAGE:$MAJOR $IMAGE:latest"
+          else
+            TAGS="$IMAGE:dev $IMAGE:$VERSION-dev $IMAGE:dev-$SHORT_SHA"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to ghcr.io
+        run: echo "${{ github.token }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Build image
+        run: |
+          TAG_ARGS=""
+          for t in ${{ steps.tags.outputs.tags }}; do TAG_ARGS="$TAG_ARGS -t $t"; done
+          docker build --target prebuilt $TAG_ARGS \
+            --label org.opencontainers.image.source="${{ github.server_url }}/${{ github.repository }}" \
+            --label org.opencontainers.image.title="Steam Manifest Downloader (smd)" \
+            --label org.opencontainers.image.description="Terminal UI and headless CLI of Steam Manifest Downloader" \
+            --label org.opencontainers.image.version="${{ steps.tags.outputs.version }}" \
+            --label org.opencontainers.image.revision="$GITHUB_SHA" \
+            --label org.opencontainers.image.licenses="GPL-2.0" \
+            .
+
+      - name: Smoke test
+        run: |
+          IMAGE=$(echo "${{ steps.tags.outputs.tags }}" | awk '{print $1}')
+          docker run --rm "$IMAGE" --version
+          docker run --rm "$IMAGE" history
+
+      - name: Push
+        run: |
+          for t in ${{ steps.tags.outputs.tags }}; do docker push "$t"; done
+          {
+            echo "### Docker image published"
+            for t in ${{ steps.tags.outputs.tags }}; do echo "- \`$t\`"; done
+          } >> "$GITHUB_STEP_SUMMARY"

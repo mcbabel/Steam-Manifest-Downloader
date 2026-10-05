@@ -4,7 +4,7 @@ use tauri::command;
 use std::os::windows::process::CommandExt;
 #[command]
 pub fn get_debug_log_path() -> Option<String> {
-    crate::services::debug_log::log_path().map(|p| p.to_string_lossy().to_string())
+    smd_core::services::debug_log::log_path().map(|p| p.to_string_lossy().to_string())
 }
 
 // SMD_BUILD_CHANNEL / SMD_GIT_SHA / SMD_BUILD_DATE are injected by CI
@@ -29,48 +29,22 @@ pub fn get_build_info() -> serde_json::Value {
 }
 
 #[command]
+pub async fn power_off_system() -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(smd_core::ops::system::power_off)
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[command]
+pub fn check_free_space(download_dir: Option<String>, needed: u64) -> serde_json::Value {
+    let base = smd_core::ops::download::base_download_dir(download_dir.as_deref());
+    serde_json::to_value(smd_core::services::disk_space::check(&base, needed))
+        .unwrap_or(serde_json::Value::Null)
+}
+
+#[command]
 pub async fn check_dotnet() -> Result<serde_json::Value, String> {
-    // DDM is shipped self-contained on Linux.
-    #[cfg(target_os = "linux")]
-    {
-        return Ok(serde_json::json!({
-            "installed": true,
-            "version": "self-contained",
-        }));
-    }
-
-    #[cfg(target_os = "windows")]
-    {
-        let mut cmd = std::process::Command::new("dotnet");
-        cmd.args(["--list-runtimes"]);
-        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
-        match cmd.output() {
-            Ok(output) => {
-                let stdout = String::from_utf8_lossy(&output.stdout);
-                let mut found_version: Option<String> = None;
-
-                for line in stdout.lines() {
-                    if line.contains("Microsoft.NETCore.App 9.") {
-                        if let Some(version_part) = line.strip_prefix("Microsoft.NETCore.App ") {
-                            if let Some(ver) = version_part.split_whitespace().next() {
-                                found_version = Some(ver.to_string());
-                            }
-                        }
-                        break;
-                    }
-                }
-
-                Ok(serde_json::json!({
-                    "installed": found_version.is_some(),
-                    "version": found_version,
-                }))
-            }
-            Err(_) => Ok(serde_json::json!({
-                "installed": false,
-                "version": null,
-            })),
-        }
-    }
+    serde_json::to_value(smd_core::ops::system::check_dotnet()).map_err(|e| e.to_string())
 }
 
 #[command]

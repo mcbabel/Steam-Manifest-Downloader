@@ -1,0 +1,10 @@
+*
+!Cargo.toml
+!Cargo.lock
+!src-core
+!src-tui
+!src-tauri/tauri.conf.json
+!public/locales
+!smd
+src-core/target
+src-tui/target
