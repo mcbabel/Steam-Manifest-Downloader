@@ -64,6 +64,8 @@ pub struct Settings {
     pub game_language: String,
     #[serde(default)]
     pub target_platform: String,
+    #[serde(default)]
+    pub steam_path: String,
 }
 
 fn default_use_native_downloader() -> bool {
@@ -143,6 +145,7 @@ impl Default for Settings {
             include_dlc: false,
             game_language: String::new(),
             target_platform: String::new(),
+            steam_path: String::new(),
         }
     }
 }
@@ -188,11 +191,13 @@ pub async fn load_settings(app_data_dir: &Path) -> Settings {
     if let Err(e) = crate::services::net::apply_proxy(&settings.proxy) {
         eprintln!("[Settings] {}", e);
     }
+    crate::services::steam_library::set_custom_dir(&settings.steam_path);
     settings
 }
 
 pub async fn save_settings(app_data_dir: &Path, settings: &Settings) -> Result<(), String> {
     crate::services::net::apply_proxy(&settings.proxy)?;
+    crate::services::steam_library::set_custom_dir(&settings.steam_path);
     let speed_limit =
         crate::services::speed_limit::parse_speed_limit(&settings.download_speed_limit)
             .ok()

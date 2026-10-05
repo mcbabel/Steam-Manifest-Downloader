@@ -22,6 +22,14 @@ pub fn derive_start_dir(exe: &str) -> String {
 }
 
 impl App {
+    fn steam_missing_note(&self) -> String {
+        let reason = match &self.steam_error {
+            Some(e) => crate::i18n::localize_error(e),
+            None => t("steamLibrary.notDetected"),
+        };
+        format!("{} {}", reason, t("tui.settings.steamPathWhere"))
+    }
+
     pub(super) fn go_to_shortcut_step(&mut self) {
         self.wiz.step = Step::Shortcut;
         self.wiz.shortcuts_done = false;
@@ -425,7 +433,7 @@ impl App {
         let note = if steam_ok {
             t("steamLibrary.windowsToggleHint")
         } else {
-            t("steamLibrary.notDetected")
+            self.steam_missing_note()
         };
         let h = widgets::wrap_height(&note, w.saturating_sub(4));
         let r = sv.next(h);
@@ -497,14 +505,9 @@ impl App {
                 );
             }
             None => {
-                let r_ = sv.next(1);
-                widgets::status(
-                    &mut sv.buf,
-                    r_,
-                    Tone::Warning,
-                    &t("steamLibrary.notDetected"),
-                    0,
-                );
+                let note = self.steam_missing_note();
+                let r_ = sv.next(widgets::status_height(&note, w));
+                widgets::status(&mut sv.buf, r_, Tone::Warning, &note, 0);
             }
         }
         sv.gap(1);

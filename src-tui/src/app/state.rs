@@ -639,6 +639,7 @@ pub struct SettingsPage {
     pub source_offset: usize,
     pub status: Option<(Tone, String)>,
     pub proxy_status: Option<(Tone, String)>,
+    pub steam_status: Option<(Tone, String)>,
     pub scroll: u16,
     pub dirty: bool,
 }
@@ -652,6 +653,7 @@ pub const SETTING_PROXY: usize = 5;
 pub const SETTING_HUBCAP: usize = 6;
 pub const SETTING_RYUU: usize = 7;
 pub const SETTING_MH: usize = 8;
+pub const SETTING_STEAM: usize = 9;
 
 impl SettingsPage {
     pub fn new(settings: &Settings, mh_key: &str) -> Self {
@@ -665,6 +667,7 @@ impl SettingsPage {
             source_offset: 0,
             status: None,
             proxy_status: None,
+            steam_status: None,
             scroll: 0,
             dirty: false,
         };
@@ -684,6 +687,7 @@ impl SettingsPage {
             TextInput::new(s.hubcap_api_key.clone()).masked(),
             TextInput::new(s.ryuu_api_key.clone()).masked(),
             TextInput::new(mh_key).masked(),
+            TextInput::new(s.steam_path.clone()),
         ];
         self.dirty = false;
     }

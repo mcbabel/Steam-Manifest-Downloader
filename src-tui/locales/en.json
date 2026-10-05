@@ -177,7 +177,9 @@
       "dataDirHint": "Use --data-dir or {env} to point the app somewhere else (portable or container setups).",
       "revert": "Revert",
       "saved": "Settings saved.",
-      "copied": "Debug info copied to the clipboard."
+      "copied": "Debug info copied to the clipboard.",
+      "steamPathCheck": "Check",
+      "steamPathWhere": "Set the Steam folder under Settings → Downloads."
     },
     "update": {
       "openRelease": "Open release page",

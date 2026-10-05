@@ -497,6 +497,7 @@
             <div class="shortcut-option__text">
               <span class="shortcut-option__label" data-i18n="steamLibrary.windowsToggle">Also add to Steam library</span>
               <p class="shortcut-option__hint" data-i18n="steamLibrary.windowsToggleHint">Creates a non-Steam shortcut with grid art so the game appears in your Steam library too.</p>
+              <button type="button" id="btn-shortcut-steam-choose" class="btn btn--small btn--outline shortcut-option__action hidden" data-i18n="steamLibrary.chooseFolder">Choose Steam folder</button>
             </div>
             <label class="toggle-switch">
               <input type="checkbox" id="shortcut-steam-library">
@@ -1223,6 +1224,16 @@
           </div>
           <p class="dd-path__hint" data-i18n="settings.targetPlatformHint">Auto uses this system. When a game has no Linux build, the Windows version is picked (it runs with Proton).</p>
         </div>
+      </div>
+
+      <div class="settings-field">
+        <label for="steam-path-input" class="settings-field__label" data-i18n="settings.steamPath">Steam folder</label>
+        <div class="dd-path__input-wrap dd-path__input-wrap--with-btn">
+          <input type="text" id="steam-path-input" class="dd-path__input" data-i18n-attr="placeholder=settings.steamPathPlaceholder" autocomplete="off">
+          <button type="button" id="btn-steam-path-browse" class="btn btn--small btn--outline" data-i18n="shortcut.browse">Browse</button>
+        </div>
+        <p id="steam-path-status" class="proxy-status hidden" role="status"></p>
+        <p class="dd-path__hint" data-i18n="settings.steamPathHint">Needed to add games to the Steam library and to start them through Steam. Leave it empty to find Steam automatically.</p>
       </div>
 
       <div class="settings-advanced">

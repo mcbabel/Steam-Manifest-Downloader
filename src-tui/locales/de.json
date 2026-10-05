@@ -177,7 +177,9 @@
       "dataDirHint": "Mit --data-dir oder {env} lässt sich ein anderes Verzeichnis nutzen (portabel oder im Container).",
       "revert": "Verwerfen",
       "saved": "Einstellungen gespeichert.",
-      "copied": "Debug-Infos in die Zwischenablage kopiert."
+      "copied": "Debug-Infos in die Zwischenablage kopiert.",
+      "steamPathCheck": "Prüfen",
+      "steamPathWhere": "Lege den Steam-Ordner unter Einstellungen → Downloads fest."
     },
     "update": {
       "openRelease": "Release-Seite öffnen",

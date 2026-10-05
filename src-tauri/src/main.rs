@@ -109,6 +109,7 @@ fn main() {
             commands::emu_write_emu_settings,
             // Steam library (non-Steam shortcut + grid art)
             commands::steam_library_detect,
+            commands::steam_library_check_dir,
             commands::steam_library_add,
             // Steamless (DRM detection + removal)
             commands::steamless_scan,

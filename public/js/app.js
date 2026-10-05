@@ -329,6 +329,10 @@ const els = {
   btnSteamAdd: $('#btn-steam-add'),
   btnSteamSkip: $('#btn-steam-skip'),
   shortcutSteamRow: $('#shortcut-steam-row'),
+  btnShortcutSteamChoose: $('#btn-shortcut-steam-choose'),
+  steamPathInput: $('#steam-path-input'),
+  btnSteamPathBrowse: $('#btn-steam-path-browse'),
+  steamPathStatus: $('#steam-path-status'),
   shortcutSteamLibrary: $('#shortcut-steam-library'),
 };
 
@@ -2824,6 +2828,10 @@ async function openSettings() {
     setSpeedLimitUnit(speedLimit.unit);
     setSpeedLimitEnabled(speedLimit.value !== '', false);
     els.proxyInput.value = settings.proxy || '';
+    if (els.steamPathInput) {
+      els.steamPathInput.value = settings.steam_path || '';
+      refreshSteamPathStatus();
+    }
     if (els.proxyError) els.proxyError.classList.add('hidden');
     setProxyStatus(null);
     if (els.hubcapApiKeyInput) els.hubcapApiKeyInput.value = settings.hubcap_api_key || '';
@@ -3113,6 +3121,9 @@ async function saveSettings() {
     if (els.cancelKeepFilesToggle) {
       currentSettings.cancel_keep_files = els.cancelKeepFilesToggle.checked;
     }
+    if (els.steamPathInput) {
+      currentSettings.steam_path = els.steamPathInput.value.trim();
+    }
     if (els.autoSelectDepotsToggle) {
       currentSettings.auto_select_depots = els.autoSelectDepotsToggle.checked;
       currentSettings.auto_start_download = els.autoStartDownloadToggle.checked;
@@ -3125,6 +3136,7 @@ async function saveSettings() {
     await invoke('save_settings', { settings: currentSettings });
     state.notificationSoundEnabled = currentSettings.notification_sound;
     checkDotNet();
+    checkSteamLibrarySupport();
 
     if (els.btnSettingsSave && els.btnSettingsSave.dataset.languageRestart === '1') {
       await invoke('restart_app');
@@ -3326,6 +3338,75 @@ async function testProxy() {
   } finally {
     els.btnProxyTest.disabled = false;
   }
+}
+
+async function pickSteamFolder() {
+  try {
+    const { open } = window.__TAURI__.dialog;
+    const picked = await open({
+      directory: true,
+      title: window.i18n.t('steamLibrary.chooseFolderTitle'),
+    });
+    return typeof picked === 'string' ? picked : null;
+  } catch (e) {
+    console.error('Steam folder dialog failed:', e);
+    return null;
+  }
+}
+
+function setSteamPathStatus(kind, text) {
+  if (!els.steamPathStatus) return;
+  els.steamPathStatus.className = 'proxy-status' + (kind ? ` proxy-status--${kind}` : ' hidden');
+  els.steamPathStatus.textContent = text || '';
+}
+
+async function refreshSteamPathStatus() {
+  if (!els.steamPathInput) return null;
+  const path = els.steamPathInput.value.trim();
+  setSteamPathStatus('busy', window.i18n.t('steamLibrary.detecting'));
+  try {
+    const install = path
+      ? await invoke('steam_library_check_dir', { path })
+      : await invoke('steam_library_detect');
+    const params = { dir: install.steam_dir, name: install.persona_name || install.user_id3 };
+    setSteamPathStatus('ok', '✓ ' + window.i18n.t(path ? 'settings.steamPathFound' : 'settings.steamPathAuto', params));
+    return install;
+  } catch (e) {
+    setSteamPathStatus('error', '✗ ' + window.i18n.localizeError(String(e)));
+    return null;
+  }
+}
+
+async function saveSteamPath(path) {
+  const current = await invoke('get_settings');
+  current.steam_path = path;
+  await invoke('save_settings', { settings: current });
+}
+
+async function chooseSteamFolderForShortcut() {
+  const picked = await pickSteamFolder();
+  if (!picked) return;
+  const hint = els.shortcutSteamRow ? els.shortcutSteamRow.querySelector('.shortcut-option__hint') : null;
+  try {
+    await invoke('steam_library_check_dir', { path: picked });
+    await saveSteamPath(picked);
+    await checkSteamLibrarySupport();
+    if (els.shortcutSteamLibrary && state.steamLibrarySupported) els.shortcutSteamLibrary.checked = true;
+  } catch (e) {
+    if (hint) hint.textContent = window.i18n.localizeError(String(e));
+  }
+}
+
+function bindSteamPathControls() {
+  if (els.btnShortcutSteamChoose) els.btnShortcutSteamChoose.addEventListener('click', chooseSteamFolderForShortcut);
+  if (!els.steamPathInput) return;
+  els.btnSteamPathBrowse.addEventListener('click', async () => {
+    const picked = await pickSteamFolder();
+    if (!picked) return;
+    els.steamPathInput.value = picked;
+    refreshSteamPathStatus();
+  });
+  els.steamPathInput.addEventListener('change', refreshSteamPathStatus);
 }
 
 function bindProxyControls() {
@@ -4104,6 +4185,7 @@ function initEvents() {
 
   bindSpeedLimitControls();
   bindProxyControls();
+  bindSteamPathControls();
   bindDepotSelectionSettings();
   if (els.btnToggleAdvanced) {
     els.btnToggleAdvanced.addEventListener('click', toggleAdvancedSettings);
@@ -5001,9 +5083,11 @@ async function checkSteamLibrarySupport() {
     const install = await invoke('steam_library_detect');
     state.steamLibrarySupported = true;
     state.steamLibraryUser = install;
+    state.steamLibraryError = null;
   } catch (e) {
     state.steamLibrarySupported = false;
     state.steamLibraryUser = null;
+    state.steamLibraryError = String(e);
   }
 
   const showLinuxStep = state.steamLibrarySupported && !state.shortcutSupported;
@@ -5022,7 +5106,10 @@ async function checkSteamLibrarySupport() {
     if (hint) {
       hint.textContent = state.steamLibrarySupported
         ? window.i18n.t('steamLibrary.windowsToggleHint')
-        : window.i18n.t('steamLibrary.notDetected');
+        : (state.steamLibraryError ? window.i18n.localizeError(state.steamLibraryError) : window.i18n.t('steamLibrary.notDetected'));
+    }
+    if (els.btnShortcutSteamChoose) {
+      els.btnShortcutSteamChoose.classList.toggle('hidden', state.steamLibrarySupported);
     }
   }
 }

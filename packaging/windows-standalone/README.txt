@@ -30,6 +30,10 @@ Tips if something does not work
 -------------------------------
 - Adding a game to your Steam library: Steam has to be closed while it is
   added. If Steam is running, the app offers to close it and start it again.
+- Steam is installed somewhere else and the app does not find it: click
+  "Choose Steam folder" next to "Also add to Steam library", or set it under
+  Settings -> Steam folder. Pick the folder that contains steam.exe. No
+  administrator rights are needed for this.
 - Emulator: download games into a folder you own (e.g. Documents or the
   Desktop), not into "C:\Program Files". Nothing can be changed there
   without administrator rights.

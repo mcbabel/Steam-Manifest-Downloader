@@ -190,11 +190,45 @@ fn home_dir() -> Option<PathBuf> {
     std::env::var_os("HOME").map(PathBuf::from)
 }
 
+static CUSTOM_DIR: std::sync::RwLock<Option<PathBuf>> = std::sync::RwLock::new(None);
+
+pub fn normalize_steam_dir(raw: &str) -> Option<PathBuf> {
+    let raw = raw.trim().trim_matches('"');
+    if raw.is_empty() {
+        return None;
+    }
+    let path = PathBuf::from(raw);
+    let is_launcher = path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .map(|n| n.to_ascii_lowercase())
+        .is_some_and(|n| matches!(n.as_str(), "steam.exe" | "steam.sh" | "steam"));
+    if path.is_file() || is_launcher && !path.is_dir() {
+        return path.parent().map(Path::to_path_buf);
+    }
+    Some(path)
+}
+
+pub fn set_custom_dir(raw: &str) {
+    if let Ok(mut dir) = CUSTOM_DIR.write() {
+        *dir = normalize_steam_dir(raw);
+    }
+}
+
+fn custom_dir() -> Option<PathBuf> {
+    CUSTOM_DIR.read().ok().and_then(|d| d.clone())
+}
+
 fn linux_steam_candidates() -> Vec<PathBuf> {
     let mut out = Vec::new();
+    if let Some(data) = std::env::var_os("XDG_DATA_HOME").filter(|d| !d.is_empty()) {
+        out.push(PathBuf::from(data).join("Steam"));
+    }
     if let Some(home) = home_dir() {
         out.push(home.join(".steam").join("steam"));
+        out.push(home.join(".steam").join("root"));
         out.push(home.join(".local").join("share").join("Steam"));
+        out.push(home.join("snap").join("steam").join("common").join(".local").join("share").join("Steam"));
         out.push(
             home.join(".var")
                 .join("app")
@@ -208,17 +242,29 @@ fn linux_steam_candidates() -> Vec<PathBuf> {
 }
 
 #[cfg(target_os = "windows")]
-fn registry_steam_path() -> Option<PathBuf> {
+fn registry_value(key: &str, name: &str) -> Option<PathBuf> {
     use std::os::windows::process::CommandExt;
     let output = std::process::Command::new("reg")
-        .args(["query", r"HKCU\Software\Valve\Steam", "/v", "SteamPath"])
+        .args(["query", key, "/v", name])
         .creation_flags(0x08000000)
         .output()
         .ok()?;
     if !output.status.success() {
         return None;
     }
-    parse_reg_query_value(&String::from_utf8_lossy(&output.stdout), "SteamPath")
+    parse_reg_query_value(&String::from_utf8_lossy(&output.stdout), name)
+}
+
+#[cfg(target_os = "windows")]
+fn registry_steam_paths() -> Vec<PathBuf> {
+    [
+        (r"HKCU\Software\Valve\Steam", "SteamPath"),
+        (r"HKLM\SOFTWARE\WOW6432Node\Valve\Steam", "InstallPath"),
+        (r"HKLM\SOFTWARE\Valve\Steam", "InstallPath"),
+    ]
+    .iter()
+    .filter_map(|(key, name)| registry_value(key, name))
+    .collect()
 }
 
 #[cfg(any(target_os = "windows", test))]
@@ -240,10 +286,7 @@ fn parse_reg_query_value(text: &str, name: &str) -> Option<PathBuf> {
 
 #[cfg(target_os = "windows")]
 fn windows_steam_candidates() -> Vec<PathBuf> {
-    let mut out = Vec::new();
-    if let Some(p) = registry_steam_path() {
-        out.push(p);
-    }
+    let mut out = registry_steam_paths();
     if let Ok(pf86) = std::env::var("ProgramFiles(x86)") {
         out.push(PathBuf::from(pf86).join("Steam"));
     }
@@ -259,50 +302,92 @@ fn windows_steam_candidates() -> Vec<PathBuf> {
 }
 
 fn steam_candidates() -> Vec<PathBuf> {
-    let mut out = linux_steam_candidates();
+    let mut out: Vec<PathBuf> = custom_dir().into_iter().collect();
+    out.extend(linux_steam_candidates());
     out.extend(windows_steam_candidates());
     out
 }
 
-pub fn detect_steam() -> Result<SteamInstall, String> {
-    for candidate in steam_candidates() {
-        let resolved = match std::fs::canonicalize(&candidate) {
-            Ok(p) => p,
-            Err(_) => continue,
-        };
-        let loginusers = resolved.join("config").join("loginusers.vdf");
-        if !loginusers.exists() {
-            continue;
-        }
-        let text = match std::fs::read_to_string(&loginusers) {
-            Ok(t) => t,
-            Err(_) => continue,
-        };
-        let users = parse_text_vdf_loginusers(&text);
-        let chosen = users
-            .iter()
-            .find(|(_, m)| m.get("MostRecent").map(|v| v == "1").unwrap_or(false))
-            .cloned()
-            .or_else(|| users.first().cloned());
-        let Some((id64_str, fields)) = chosen else {
-            continue;
-        };
-        let id64: u64 = id64_str
-            .parse()
-            .map_err(|e| format!("invalid SteamID64 '{}': {}", id64_str, e))?;
-        let id3 = (id64 - STEAMID_BASE).to_string();
-        let userdata_dir = resolved.join("userdata").join(&id3);
-        if !userdata_dir.exists() {
-            continue;
-        }
-        return Ok(SteamInstall {
-            steam_dir: resolved.to_string_lossy().to_string(),
-            user_id3: id3,
-            user_id64: id64_str,
-            persona_name: fields.get("PersonaName").cloned(),
-        });
+#[derive(Debug, PartialEq, Eq)]
+enum Inspect {
+    Missing,
+    NotSteam,
+    NoUser,
+}
+
+fn looks_like_steam(dir: &Path) -> bool {
+    ["steam.exe", "steam.sh", "steam", "steamapps", "config"]
+        .iter()
+        .any(|entry| dir.join(entry).exists())
+}
+
+fn inspect_dir(dir: &Path) -> Result<SteamInstall, Inspect> {
+    let resolved = std::fs::canonicalize(dir).map_err(|_| Inspect::Missing)?;
+    if !resolved.is_dir() {
+        return Err(Inspect::Missing);
     }
-    Err("No Steam installation with an active user was found".into())
+    if !looks_like_steam(&resolved) {
+        return Err(Inspect::NotSteam);
+    }
+    let text = std::fs::read_to_string(resolved.join("config").join("loginusers.vdf"))
+        .map_err(|_| Inspect::NoUser)?;
+    let users = parse_text_vdf_loginusers(&text);
+    let chosen = users
+        .iter()
+        .find(|(_, m)| m.get("MostRecent").map(|v| v == "1").unwrap_or(false))
+        .cloned()
+        .or_else(|| users.first().cloned());
+    let (id64_str, fields) = chosen.ok_or(Inspect::NoUser)?;
+    let id64: u64 = id64_str.parse().map_err(|_| Inspect::NoUser)?;
+    let id3 = id64.checked_sub(STEAMID_BASE).ok_or(Inspect::NoUser)?.to_string();
+    if !resolved.join("userdata").join(&id3).exists() {
+        return Err(Inspect::NoUser);
+    }
+    Ok(SteamInstall {
+        steam_dir: resolved.to_string_lossy().to_string(),
+        user_id3: id3,
+        user_id64: id64_str,
+        persona_name: fields.get("PersonaName").cloned(),
+    })
+}
+
+fn inspect_error(dir: &Path, problem: Inspect) -> String {
+    let shown = dir.to_string_lossy();
+    match problem {
+        Inspect::Missing => format!("Folder not found: {}", shown),
+        Inspect::NotSteam => format!("No Steam installation in this folder: {}", shown),
+        Inspect::NoUser => format!(
+            "Steam was found in {}, but no user has signed in there yet. Start Steam and sign in once.",
+            shown
+        ),
+    }
+}
+
+pub fn check_steam_dir(raw: &str) -> Result<SteamInstall, String> {
+    let dir = normalize_steam_dir(raw).ok_or_else(|| "No folder selected".to_string())?;
+    inspect_dir(&dir).map_err(|problem| inspect_error(&dir, problem))
+}
+
+pub fn detect_steam() -> Result<SteamInstall, String> {
+    let custom = custom_dir();
+    let mut without_user: Option<PathBuf> = None;
+    for candidate in steam_candidates() {
+        match inspect_dir(&candidate) {
+            Ok(install) => return Ok(install),
+            Err(problem) => {
+                if custom.as_deref() == Some(candidate.as_path()) {
+                    return Err(inspect_error(&candidate, problem));
+                }
+                if problem == Inspect::NoUser && without_user.is_none() {
+                    without_user = Some(candidate);
+                }
+            }
+        }
+    }
+    match without_user {
+        Some(dir) => Err(inspect_error(&dir, Inspect::NoUser)),
+        None => Err("Steam was not found. Choose your Steam folder in the settings.".into()),
+    }
 }
 
 pub fn generate_shortcut_appid(exe: &str, app_name: &str) -> u32 {
@@ -719,4 +804,45 @@ mod tests {
     fn reg_query_value_missing() {
         assert_eq!(parse_reg_query_value("ERROR: not found", "SteamPath"), None);
     }
+
+    fn fake_steam(root: &Path, signed_in: bool) {
+        std::fs::create_dir_all(root.join("config")).unwrap();
+        std::fs::write(root.join("steam.exe"), b"MZ").unwrap();
+        if signed_in {
+            std::fs::write(
+                root.join("config/loginusers.vdf"),
+                "\"users\"\n{\n\t\"76561197960287930\"\n\t{\n\t\t\"PersonaName\"\t\"Gabe\"\n\t\t\"MostRecent\"\t\"1\"\n\t}\n}\n",
+            )
+            .unwrap();
+            std::fs::create_dir_all(root.join("userdata/22202")).unwrap();
+        }
+    }
+
+    #[test]
+    fn checks_a_chosen_steam_folder() {
+        let root = std::env::temp_dir().join(format!("smd-steamdir-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let steam = root.join("Games/Steam");
+        fake_steam(&steam, true);
+        let install = check_steam_dir(&steam.to_string_lossy()).unwrap();
+        assert_eq!(install.user_id3, "22202");
+        assert_eq!(install.persona_name.as_deref(), Some("Gabe"));
+        let via_exe = check_steam_dir(&steam.join("steam.exe").to_string_lossy()).unwrap();
+        assert_eq!(via_exe.steam_dir, install.steam_dir);
+        let fresh = root.join("Fresh/Steam");
+        fake_steam(&fresh, false);
+        assert!(check_steam_dir(&fresh.to_string_lossy()).unwrap_err().contains("no user has signed in"));
+        std::fs::create_dir_all(root.join("Other")).unwrap();
+        assert!(check_steam_dir(&root.join("Other").to_string_lossy()).unwrap_err().starts_with("No Steam installation"));
+        assert!(check_steam_dir(&root.join("Nope").to_string_lossy()).unwrap_err().starts_with("Folder not found"));
+        assert!(check_steam_dir("  ").is_err());
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn launcher_paths_point_at_their_folder() {
+        assert_eq!(normalize_steam_dir("\"/opt/steam/steam.sh\""), Some(PathBuf::from("/opt/steam")));
+        assert_eq!(normalize_steam_dir(""), None);
+    }
 }
+

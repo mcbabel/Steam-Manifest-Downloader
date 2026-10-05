@@ -527,7 +527,9 @@
     "startOver": "Start Over",
     "startNewDownload": "Start New Download",
     "skip": "Skip",
-    "next": "Next"
+    "next": "Next",
+    "chooseFolder": "Choose Steam folder",
+    "chooseFolderTitle": "Choose the Steam folder (the one with steam.exe)"
   },
   "depotTags": {
     "windows": "Windows",
@@ -673,7 +675,12 @@
     "proxyOk": "Proxy works: Steam answered in {ms} ms.",
     "proxyOkDirect": "No proxy entered, the direct connection works: Steam answered in {ms} ms.",
     "proxyFailed": "Proxy does not work: {error}",
-    "proxyFailedDirect": "No proxy entered and the direct connection fails: {error}"
+    "proxyFailedDirect": "No proxy entered and the direct connection fails: {error}",
+    "steamPath": "Steam folder",
+    "steamPathPlaceholder": "Find automatically",
+    "steamPathHint": "Needed to add games to the Steam library and to start them through Steam. Leave it empty to find Steam automatically (registry on Windows, the usual folders on Linux including Flatpak and Snap). Pick the folder that contains steam.exe or steam.sh.",
+    "steamPathAuto": "Found automatically: {dir} (account {name})",
+    "steamPathFound": "Steam found: {dir} (account {name})"
   },
   "errors": {
     "noManifests": "No manifests found for this App ID in any configured depot source. Add or enable more sources in Settings.",
@@ -858,7 +865,12 @@
     "proxyDns": "Proxy address not found, check the host name ({0})",
     "directDns": "Steam could not be found, check your DNS or internet connection ({0})",
     "timeout": "No answer in time, the connection is blocked or too slow ({0})",
-    "tlsIntercept": "Secure connection failed, an antivirus or company proxy may be intercepting HTTPS ({0})"
+    "tlsIntercept": "Secure connection failed, an antivirus or company proxy may be intercepting HTTPS ({0})",
+    "steamFolderMissing": "Folder not found: {0}",
+    "steamNotInFolder": "No Steam installation in this folder: {0}",
+    "steamNoUser": "Steam was found in {0}, but no user has signed in there yet. Start Steam and sign in once.",
+    "steamNotFound": "Steam was not found. Choose your Steam folder in the settings.",
+    "noFolderSelected": "No folder selected"
   },
   "shortcuts": {
     "ctrl": "Ctrl",

@@ -9,6 +9,11 @@ pub async fn steam_library_detect() -> Result<SteamInstall, String> {
 }
 
 #[command]
+pub async fn steam_library_check_dir(path: String) -> Result<SteamInstall, String> {
+    steam_library::check_steam_dir(&path)
+}
+
+#[command]
 pub async fn steam_library_add(
     state: tauri::State<'_, AppState>,
     app_id: String,

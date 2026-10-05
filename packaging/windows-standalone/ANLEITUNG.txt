@@ -32,6 +32,10 @@ Tipps, wenn etwas nicht klappt
 - Spiel in die Steam-Bibliothek eintragen: Steam muss dabei geschlossen
   sein. Läuft Steam, bietet die App an, Steam kurz zu beenden und danach
   wieder zu starten.
+- Steam ist woanders installiert und die App findet es nicht: Klicke neben
+  "Auch zur Steam-Bibliothek hinzufügen" auf "Steam-Ordner wählen" oder lege
+  ihn unter Einstellungen -> Steam-Ordner fest. Wähle den Ordner, in dem
+  steam.exe liegt. Dafür sind keine Adminrechte nötig.
 - Emulator: Lade Spiele in einen eigenen Ordner (z. B. Dokumente oder
   Desktop), nicht nach "C:\Programme". Dort darf ohne Adminrechte nichts
   geändert werden.

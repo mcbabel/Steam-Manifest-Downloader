@@ -43,7 +43,7 @@ Upload `.lua` files or search by App ID across configurable sources (GitHub, arc
 | 🐢 | **Speed limit** — cap downloads at e.g. 10 MB/s or 75 Mbit/s, also while a download is running |
 | ⏻ | **Shut down when finished** — optional, with a 60 second countdown that can be cancelled; the next start offers to continue with the skipped steps |
 | 🎮 | **Steam Store API** integration — game names + cover art |
-| 🖼️ | **Add to Steam Library** — non-Steam shortcut with banner / hero / logo / icon (Linux step + Windows toggle) |
+| 🖼️ | **Add to Steam Library** — non-Steam shortcut with banner / hero / logo / icon (Linux step + Windows toggle). Steam is found automatically (registry, usual folders, Flatpak, Snap) or set under Settings → Steam folder |
 | 🔧 | **gbe_fork emulator** patching — Regular + Experimental variants, 21 settings, lobby_connect launcher |
 | 🛡️ | **DRM detection & removal** via Steamless (works through `mono` on Linux) |
 | 🪝 | **Steam-API-Check Bypass** — bundled `version.dll` hijack for stubborn integrity checks |

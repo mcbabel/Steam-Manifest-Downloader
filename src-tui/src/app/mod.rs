@@ -95,6 +95,7 @@ pub struct App {
 
     pub shortcut_supported: bool,
     pub steam_install: Option<SteamInstall>,
+    pub steam_error: Option<String>,
     pub emulator_available: bool,
     pub shutdown_after: bool,
     pub shutdown_deadline: Option<Instant>,
@@ -155,6 +156,7 @@ impl App {
             toast: None,
             shortcut_supported: smd_core::ops::shortcuts::is_shortcut_supported(),
             steam_install: None,
+            steam_error: None,
             emulator_available: false,
             shutdown_after: false,
             shutdown_deadline: None,
@@ -218,14 +220,7 @@ impl App {
         if self.settings.language.is_empty() {
             self.queue_modal(Modal::language(i18n::language()));
         }
-        self.spawn(async {
-            let install =
-                tokio::task::spawn_blocking(smd_core::services::steam_library::detect_steam)
-                    .await
-                    .ok()
-                    .and_then(Result::ok);
-            apply(move |app| app.steam_install = install)
-        });
+        self.redetect_steam();
         let dir = self.data_dir.clone();
         self.spawn(async move {
             let followup = smd_core::services::followup::load(&dir).await;
@@ -393,6 +388,24 @@ impl App {
                 }
             }
         }
+    }
+
+    pub(super) fn redetect_steam(&mut self) {
+        self.spawn(async {
+            let result = tokio::task::spawn_blocking(smd_core::services::steam_library::detect_steam)
+                .await
+                .unwrap_or_else(|e| Err(e.to_string()));
+            apply(move |app| match result {
+                Ok(install) => {
+                    app.steam_install = Some(install);
+                    app.steam_error = None;
+                }
+                Err(e) => {
+                    app.steam_install = None;
+                    app.steam_error = Some(e);
+                }
+            })
+        });
     }
 
     fn on_tick(&mut self) {

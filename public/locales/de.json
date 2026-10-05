@@ -527,7 +527,9 @@
     "startOver": "Neu beginnen",
     "startNewDownload": "Neuen Download starten",
     "skip": "Überspringen",
-    "next": "Weiter"
+    "next": "Weiter",
+    "chooseFolder": "Steam-Ordner wählen",
+    "chooseFolderTitle": "Steam-Ordner wählen (der mit steam.exe)"
   },
   "depotTags": {
     "windows": "Windows",
@@ -673,7 +675,12 @@
     "proxyOk": "Proxy funktioniert: Steam hat in {ms} ms geantwortet.",
     "proxyOkDirect": "Kein Proxy eingetragen, die direkte Verbindung funktioniert: Steam hat in {ms} ms geantwortet.",
     "proxyFailed": "Proxy funktioniert nicht: {error}",
-    "proxyFailedDirect": "Kein Proxy eingetragen und die direkte Verbindung scheitert: {error}"
+    "proxyFailedDirect": "Kein Proxy eingetragen und die direkte Verbindung scheitert: {error}",
+    "steamPath": "Steam-Ordner",
+    "steamPathPlaceholder": "Automatisch finden",
+    "steamPathHint": "Wird gebraucht, um Spiele zur Steam-Bibliothek hinzuzufügen und über Steam zu starten. Leer lassen, um Steam automatisch zu finden (unter Windows über die Registry, unter Linux in den üblichen Ordnern inklusive Flatpak und Snap). Wähle den Ordner, in dem steam.exe bzw. steam.sh liegt.",
+    "steamPathAuto": "Automatisch gefunden: {dir} (Konto {name})",
+    "steamPathFound": "Steam gefunden: {dir} (Konto {name})"
   },
   "errors": {
     "noManifests": "Für diese App-ID wurden in keiner konfigurierten Depot-Quelle Manifests gefunden. Füge weitere Quellen in den Einstellungen hinzu oder aktiviere sie.",
@@ -858,7 +865,12 @@
     "proxyDns": "Proxy-Adresse nicht gefunden, prüfe den Hostnamen ({0})",
     "directDns": "Steam wurde nicht gefunden, prüfe DNS oder Internetverbindung ({0})",
     "timeout": "Keine Antwort in der Zeit, die Verbindung wird blockiert oder ist zu langsam ({0})",
-    "tlsIntercept": "Sichere Verbindung fehlgeschlagen, eventuell fängt ein Virenscanner oder Firmen-Proxy HTTPS ab ({0})"
+    "tlsIntercept": "Sichere Verbindung fehlgeschlagen, eventuell fängt ein Virenscanner oder Firmen-Proxy HTTPS ab ({0})",
+    "steamFolderMissing": "Ordner nicht gefunden: {0}",
+    "steamNotInFolder": "In diesem Ordner ist keine Steam-Installation: {0}",
+    "steamNoUser": "Steam wurde in {0} gefunden, aber dort hat sich noch niemand angemeldet. Starte Steam und melde dich einmal an.",
+    "steamNotFound": "Steam wurde nicht gefunden. Wähle deinen Steam-Ordner in den Einstellungen.",
+    "noFolderSelected": "Kein Ordner ausgewählt"
   },
   "shortcuts": {
     "ctrl": "Strg",

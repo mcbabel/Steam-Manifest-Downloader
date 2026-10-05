@@ -4526,3 +4526,7 @@ button:disabled,
 .proxy-status--error {
   color: var(--error);
 }
+
+.shortcut-option__action {
+  margin-top: 0.5rem;
+}

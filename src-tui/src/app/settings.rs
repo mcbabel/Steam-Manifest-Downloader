@@ -187,6 +187,37 @@ impl App {
                 self.toast(Tone::Success, t("tui.settings.copied"));
             }
             Action::CheckUpdates => self.check_updates(true),
+            Action::CheckSteamDir => {
+                let path = self.set.inputs[SETTING_STEAM].trimmed();
+                self.set.steam_status = Some((Tone::Busy, t("steamLibrary.detecting")));
+                self.spawn(async move {
+                    let probe = path.clone();
+                    let r = tokio::task::spawn_blocking(move || {
+                        if probe.is_empty() {
+                            smd_core::services::steam_library::detect_steam()
+                        } else {
+                            smd_core::services::steam_library::check_steam_dir(&probe)
+                        }
+                    })
+                    .await
+                    .unwrap_or_else(|e| Err(e.to_string()));
+                    apply(move |app| {
+                        app.set.steam_status = Some(match r {
+                            Ok(inst) => (
+                                Tone::Success,
+                                tf(
+                                    if path.is_empty() { "settings.steamPathAuto" } else { "settings.steamPathFound" },
+                                    &[
+                                        ("dir", &inst.steam_dir),
+                                        ("name", &inst.persona_name.clone().unwrap_or(inst.user_id3.clone())),
+                                    ],
+                                ),
+                            ),
+                            Err(e) => (Tone::Error, i18n::localize_error(&e)),
+                        });
+                    })
+                });
+            }
             Action::TestProxy => {
                 let proxy = self.set.inputs[SETTING_PROXY].trimmed();
                 let key = if proxy.is_empty() { "settings.proxyTestingDirect" } else { "settings.proxyTesting" };
@@ -265,6 +296,7 @@ impl App {
             };
             s.download_speed_limit = inputs[SETTING_SPEED].clone();
             s.proxy = inputs[SETTING_PROXY].clone();
+            s.steam_path = inputs[SETTING_STEAM].clone();
             s.hubcap_api_key = inputs[SETTING_HUBCAP].clone();
             s.ryuu_api_key = inputs[SETTING_RYUU].clone();
             s.auto_update = draft.auto_update;
@@ -286,6 +318,7 @@ impl App {
                     let mh = app.prefs.mh_api_key.clone();
                     app.set.load(&s, &mh);
                     app.set.status = Some((Tone::Success, t("tui.settings.saved")));
+                    app.redetect_steam();
                 }
                 Err(e) => app.set.status = Some((Tone::Error, i18n::localize_error(&e))),
             })
@@ -504,6 +537,35 @@ impl App {
             },
             &browse,
         );
+        sv.gap(1);
+        let check = ButtonSpec::new(
+            t("tui.settings.steamPathCheck"),
+            Fid::new("settings.steamCheck"),
+            Action::CheckSteamDir,
+            Btn::Secondary,
+        );
+        let r = sv.next(3);
+        super::source::input_with_button(
+            &mut sv.buf,
+            ctx,
+            r,
+            &mut self.set.inputs[SETTING_STEAM],
+            InputSpec {
+                label: &t("settings.steamPath"),
+                placeholder: &t("settings.steamPathPlaceholder"),
+                fid: Fid::idx("settings.input", SETTING_STEAM),
+                id: InputId::Setting(SETTING_STEAM),
+                error: false,
+            },
+            &check,
+        );
+        if let Some((tone, msg)) = self.set.steam_status.clone() {
+            let r = sv.next(widgets::status_height(&msg, w));
+            widgets::status(&mut sv.buf, r, tone, &msg, self.tick);
+        }
+        let ht = t("settings.steamPathHint");
+        let r = sv.next(widgets::wrap_height(&ht, w));
+        hint(&mut sv.buf, r, &ht);
         sv.gap(1);
         let d = self.set.draft.clone();
         self.toggle_row(

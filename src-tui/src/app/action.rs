@@ -198,6 +198,7 @@ pub enum Action {
     CopyBuildInfo,
     CheckUpdates,
     TestProxy,
+    CheckSteamDir,
 
     ModalToggleCheck,
     BrowserUp,
