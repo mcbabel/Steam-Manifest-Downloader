@@ -29,7 +29,7 @@
       "editing": "Textfelder: Anfang/Ende, bis Anfang/Ende löschen, Wort löschen",
       "select": "Depot-Auswahl: alle / keine, filtern, Download starten",
       "progress": "Beim Download: pausieren/fortsetzen, abbrechen",
-      "history": "Verlauf: spielen (p), fortsetzen, erneut laden, aktualisieren, prüfen (v), Ordner öffnen, Emulator bearbeiten, entfernen",
+      "history": "Verlauf: spielen, fortsetzen, erneut laden, aktualisieren, prüfen, Ordner öffnen, Emulator bearbeiten, entfernen",
       "quit": "Beenden (fragt nach, solange ein Download läuft)",
       "mouse": "Alles ist klickbar: Buttons, Tabs, Listenzeilen (Doppelklick öffnet), Checkboxen. Das Mausrad scrollt Listen und Seiten.",
       "drop": "Zieh eine .lua- oder .st-Datei auf das Terminalfenster – die meisten Terminals fügen dann ihren Pfad ein und die Datei wird sofort geladen."

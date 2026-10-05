@@ -29,7 +29,7 @@
       "editing": "Text fields: start/end, delete to start/end, delete word",
       "select": "Depot selection: select all / none, filter, start download",
       "progress": "While downloading: pause/resume, cancel",
-      "history": "History: play (p), resume, download again, update, check (v), open folder, edit emulator, remove",
+      "history": "History: play, resume, download again, update, check, open folder, edit emulator, remove",
       "quit": "Quit (asks first while a download runs)",
       "mouse": "Everything is clickable: buttons, tabs, list rows (double-click opens), checkboxes. The mouse wheel scrolls lists and pages.",
       "drop": "Drag a .lua or .st file onto the terminal window — most terminals paste its path, which loads the file right away."
