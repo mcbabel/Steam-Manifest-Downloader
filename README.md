@@ -4,7 +4,7 @@
 
 **A sleek desktop app for downloading Steam game depots, adding them to Steam, and patching them with gbe_fork — all in one pipeline.**
 
-![Version](https://img.shields.io/badge/version-1.4.3-blue)
+![Version](https://img.shields.io/badge/version-1.5.0-blue)
 ![License](https://img.shields.io/badge/license-GPL--2.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-0078D6?logo=windows)
 ![Built with](https://img.shields.io/badge/built_with-Rust-dea584?logo=rust)
@@ -264,8 +264,8 @@ as a Raspberry Pi are not supported yet.
 
 | Tag | Content |
 |---|---|
-| `latest`, `1`, `1.4`, `1.4.3` | Latest stable release / that version |
-| `dev`, `1.4.3-dev`, `dev-<commit>` | Latest dev build from the `dev` branch |
+| `latest`, `1`, `1.5`, `1.5.0` | Latest stable release / that version |
+| `dev`, `1.5.0-dev`, `dev-<commit>` | Latest dev build from the `dev` branch |
 
 ```bash
 docker run --rm \

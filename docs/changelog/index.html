@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Changelog, Steam Manifest Downloader</title>
-<meta name="description" content="Every release of Steam Manifest Downloader from 1.0.0 to 1.4.3, with what was added, changed, fixed and removed in each one.">
+<meta name="description" content="Every release of Steam Manifest Downloader from 1.0.0 to 1.5.0, with what was added, changed, fixed and removed in each one.">
 <meta name="theme-color" content="#06060A">
 <meta property="og:title" content="Changelog, Steam Manifest Downloader">
-<meta property="og:description" content="Every release of Steam Manifest Downloader from 1.0.0 to 1.4.3, with what was added, changed, fixed and removed in each one.">
+<meta property="og:description" content="Every release of Steam Manifest Downloader from 1.0.0 to 1.5.0, with what was added, changed, fixed and removed in each one.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://smd.mcbabel.de/changelog/">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Changelog, Steam Manifest Downloader">
-<meta name="twitter:description" content="Every release from 1.0.0 to 1.4.3.">
+<meta name="twitter:description" content="Every release from 1.0.0 to 1.5.0.">
 <link rel="icon" href="../icon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -28,7 +28,7 @@
     <a class="brand" href="../" aria-label="Steam Manifest Downloader, home">
       <img src="../icon.svg" alt="" width="26" height="26" decoding="async">
       <span class="brand__mark">SMD</span>
-      <span class="brand__ver">1.4.3</span>
+      <span class="brand__ver">1.5.0</span>
     </a>
     <nav class="nav" aria-label="Site">
       <a href="../">Home</a>
@@ -78,17 +78,18 @@
     </div>
 
     <div class="wrap">
-      <p class="kicker hero__kicker"><span class="kicker__idx">00</span> Version history, 1.0.0 to 1.4.3</p>
+      <p class="kicker hero__kicker"><span class="kicker__idx">00</span> Version history, 1.0.0 to 1.5.0</p>
 
       <h1 id="h-log" class="display">
         <span class="ln ln-1">Changelog</span>
-        <span class="ln ln-2"><span class="stroke">[ 8 Releases ]</span></span>
+        <span class="ln ln-2"><span class="stroke">[ 9 Releases ]</span></span>
         <span class="ln ln-3">every change, newest first</span>
       </h1>
 
-      <p class="lead hero__deck">What was added, changed, fixed and removed in each release, plus the Linux specific entries. Dates are release dates.</p>
+      <p class="lead hero__deck">What was added, changed, fixed and removed in each release, plus the Linux specific entries. Dates are release dates. Entries that came from someone's report, idea or pull request name them.</p>
 
       <nav class="hero__cta" aria-label="Jump to a release">
+        <a class="btn btn--ghost btn--sm" href="#v150">1.5.0</a>
         <a class="btn btn--ghost btn--sm" href="#v143">1.4.3</a>
         <a class="btn btn--ghost btn--sm" href="#v142">1.4.2</a>
         <a class="btn btn--ghost btn--sm" href="#v141">1.4.1</a>
@@ -102,11 +103,11 @@
       <dl class="facts frame">
         <div class="fact">
           <dt>Current release</dt>
-          <dd>1.4.3</dd>
+          <dd>1.5.0</dd>
         </div>
         <div class="fact">
           <dt>Releases listed</dt>
-          <dd>08</dd>
+          <dd>09</dd>
         </div>
         <div class="fact">
           <dt>First release</dt>
@@ -131,6 +132,120 @@
       <p class="lead">Each card is one release. The label on each line says whether the entry was added, changed, fixed or removed, or whether it applies to Linux.</p>
 
       <div class="relist">
+
+        <article class="rel frame" id="v150">
+          <div class="rel__head">
+            <h3 class="rel__ver">v1.5.0</h3>
+            <p class="rel__date">October 5, 2026</p>
+          </div>
+          <ul class="log">
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Terminal version <code>smd</code>, one binary for Windows and Linux. Without arguments it opens a full interface in the terminal with all five steps, the history and the settings, usable with mouse or keyboard. <code>smd search</code>, <code>smd download</code> and <code>smd history</code> work headless for servers and scripts, with <code>--json</code> output. The Linux build is static and runs on any distribution. <span class="log__by">Requested by <a href="https://github.com/Cohinem">@Cohinem</a> in <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/issues/3">#3</a></span></p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Docker image on <code>ghcr.io/mcbabel/steam-manifest-downloader</code> for every release and dev build, with <code>/games</code> and <code>/data</code> volumes and a clean stop on <code>docker stop</code>.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Windows standalone ZIP. The portable app with gbe_fork, Steamless and the Steam API check bypass in a <code>third-party</code> folder, so nothing has to be installed or downloaded, with instructions in English and German. <span class="log__by">Requested by <a href="https://github.com/marlohowe">@marlohowe</a> in <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/issues/46">#46</a></span></p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Update a downloaded game in place from the history. Only changed parts are downloaded, depots whose manifest did not change are skipped, files the new version no longer has are deleted, and saves, emulator settings and your own files stay. Terminal: <code>smd download --update &lt;folder&gt;</code>. <span class="log__by">Requested by <a href="https://github.com/Ansh2209">@Ansh2209</a> in <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/issues/4">#4</a></span></p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d"><strong>Patch Existing Folder</strong> in step 1 runs the emulator step on a game that is already on disk. Folders that are already patched can be edited, saved and reverted there. <span class="log__by">Requested by <a href="https://github.com/Ansh2209">@Ansh2209</a> in <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/issues/6">#6</a></span></p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d"><strong>Like Steam</strong> mode, off by default. SMD picks the depots of the base game for your system and language and writes them into one game folder, like Steam. <strong>Add DLC</strong> adds the DLC, which the emulator step marks as owned for gbe_fork in <code>configs.app.ini</code>. Terminal: <code>--like-steam</code>, <code>--dlc</code>, <code>--platform</code>, <code>--language</code>.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Choose the Steam folder when SMD does not find Steam, in the settings or right in the Steam library step. On Windows the install path is also read from the machine wide registry key, on Linux more places are searched. <span class="log__by">Requested by <a href="https://github.com/marlohowe">@marlohowe</a> in <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/issues/52">#52</a></span></p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Download queue. <strong>Add to Queue</strong> in step 2 keeps games waiting, also across restarts, and runs them one after another. Shutting down waits for the last one.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">More in the history: portrait covers, search, status filter and sorting, an <strong>Update available</strong> badge, <strong>Check</strong> to repair damaged or missing files, and <strong>Play</strong> to start the game, on Linux through Steam and Proton or Wine for Windows games.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">A working speed limit in MB/s or Mbit/s that applies live, and a switch to shut the PC down after the download, with a 60 second countdown. The next start offers the steps that were skipped.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Resume from a checkpoint. A cancelled download continues where it stopped and only checks a few chunks around that point instead of the whole game.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">A warning before a download that does not fit on the disk, progress on the taskbar and in the window title, and keyboard shortcuts <code>Ctrl+O</code>, <code>Ctrl+F</code>, <code>Ctrl+H</code> and <code>Ctrl+,</code>.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">The whole program in English and German, including the download log, error messages and <code>smd --help</code>.</p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">Credits in the changelog for everyone whose report, idea or pull request led to a change. <span class="log__by">Suggested by <a href="https://github.com/marlohowe">@marlohowe</a> in <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/issues/51">#51</a></span></p>
+            </li>
+            <li>
+              <span class="tag tag--add">Added</span>
+              <p class="log__d">A Test button for the proxy that shows whether Steam answers through it, and how fast. <span class="log__by">Reported by <a href="https://github.com/Accroon">@Accroon</a> in <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/issues/49">#49</a></span></p>
+            </li>
+            <li>
+              <span class="tag tag--chg">Changed</span>
+              <p class="log__d">The proxy setting now applies to every connection, Steam's CDN, depot sources, ManifestHub, Hubcap, Ryuu, images and updates, and supports HTTP, HTTPS and SOCKS5. <strong>Max retries on error</strong> also works for the native engine. Network errors name the real cause and never show API keys. If nothing gets through, the download stops early with a clear message. System certificates are trusted, so company proxies and antivirus HTTPS scanning work. <span class="log__by">Reported by <a href="https://github.com/Accroon">@Accroon</a> in <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/issues/49">#49</a></span></p>
+            </li>
+            <li>
+              <span class="tag tag--chg">Changed</span>
+              <p class="log__d">gbe_fork is taken from the newest release that has the needed files, the download asks first and shows its progress. <span class="log__by">Reported by <a href="https://github.com/citaru">@citaru</a> and <a href="https://github.com/victorsouzaleal">@victorsouzaleal</a> in <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/issues/44">#44</a></span></p>
+            </li>
+            <li>
+              <span class="tag tag--chg">Changed</span>
+              <p class="log__d">Easier setup without admin rights: the .NET warning only shows for the DepotDownloaderMod engine, SMD checks whether Steam is running before adding a game and can restart it, emulator errors explain the common causes, and Windows shortcuts no longer need PowerShell. <span class="log__by">Reported by <a href="https://github.com/marlohowe">@marlohowe</a> in <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/issues/46">#46</a></span></p>
+            </li>
+            <li>
+              <span class="tag tag--chg">Changed</span>
+              <p class="log__d">Steam library entries get complete artwork through Steam's store API. The emulator step points to Achievement Watcher for achievement pop-ups, and the native engine's chunk concurrency is configurable.</p>
+            </li>
+            <li>
+              <span class="tag tag--fix">Fixed</span>
+              <p class="log__d">One depot without a key or manifest no longer stops the whole download. With shutdown switched on, the PC no longer turns off after the first depot.</p>
+            </li>
+            <li>
+              <span class="tag tag--fix">Fixed</span>
+              <p class="log__d">Partial downloads are shown as incomplete instead of successful, fast failures no longer leave the app on Initializing, and the history no longer keeps a stale resumable entry next to the finished one.</p>
+            </li>
+            <li>
+              <span class="tag tag--fix">Fixed</span>
+              <p class="log__d">Resuming or downloading into an existing folder could leave repeated content as zeroes on disk. The native verify step now checks each chunk at its own position.</p>
+            </li>
+            <li>
+              <span class="tag tag--fix">Fixed</span>
+              <p class="log__d">gbe_fork patching found only the 64-bit library after gbe_fork renamed its 32-bit folder.</p>
+            </li>
+            <li>
+              <span class="tag tag--fix">Fixed</span>
+              <p class="log__d">The history sort menu, the status filters and the completion sound that sometimes played again.</p>
+            </li>
+            <li>
+              <span class="tag tag--fix">Fixed</span>
+              <p class="log__d">Changelog layout and a typo on the changelog page. <span class="log__by">Contributed by <a href="https://github.com/TheRedstoneDEV-DE">@TheRedstoneDEV-DE</a> in <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/pull/7">#7</a></span></p>
+            </li>
+            <li>
+              <span class="tag tag--os">Linux</span>
+              <p class="log__d">Native Linux game binaries are found as the program file to start and to add to Steam, not only Windows <code>.exe</code> files.</p>
+            </li>
+          </ul>
+          <p class="rel__thanks">Thanks to <a href="https://github.com/Cohinem">@Cohinem</a>, <a href="https://github.com/Ansh2209">@Ansh2209</a>, <a href="https://github.com/marlohowe">@marlohowe</a>, <a href="https://github.com/Accroon">@Accroon</a>, <a href="https://github.com/citaru">@citaru</a>, <a href="https://github.com/victorsouzaleal">@victorsouzaleal</a>, <a href="https://github.com/TheRedstoneDEV-DE">@TheRedstoneDEV-DE</a> for the reports, ideas and fixes in this release.</p>
+        </article>
 
         <article class="rel frame" id="v143">
           <div class="rel__head">
@@ -585,10 +700,10 @@
         <div class="rail">
           <p class="kicker"><span class="kicker__idx">02</span> Download</p>
           <span class="rail__rule" aria-hidden="true"></span>
-          <span class="chip chip--key">1.4.3</span>
+          <span class="chip chip--key">1.5.0</span>
         </div>
-        <h2 id="h-get" class="h2-close">Version 1.4.3 is on the releases page.</h2>
-        <p class="lead-paper">Windows installer, Linux AppImage, and AUR packages for Arch, CachyOS and Manjaro. Source under GPL-2.0.</p>
+        <h2 id="h-get" class="h2-close">Version 1.5.0 is on the releases page.</h2>
+        <p class="lead-paper">Windows installer and standalone ZIP, Linux AppImage, AUR packages for Arch, CachyOS and Manjaro, the terminal version and a Docker image. Source under GPL-2.0.</p>
         <div class="close__actions">
           <a class="pbtn pbtn--solid" href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest">Get the latest release</a>
           <a class="pbtn pbtn--line" href="../documentation/">Read the documentation</a>
@@ -638,7 +753,7 @@
     </div>
   </div>
   <div class="wrap foot__bar">
-    <span>Version 1.4.3</span>
+    <span>Version 1.5.0</span>
     <span>GPL-2.0</span>
     <span>Rust and Tauri v2</span>
   </div>

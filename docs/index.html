@@ -20,7 +20,7 @@
     <a class="brand" href="#top" aria-label="Steam Manifest Downloader, top of page">
       <img src="./icon.svg" alt="" width="26" height="26" decoding="async">
       <span class="brand__mark">SMD</span>
-      <span class="brand__ver">1.4.3</span>
+      <span class="brand__ver">1.5.0</span>
     </a>
     <nav class="nav" aria-label="Site">
       <a href="./" aria-current="page">Home</a>
@@ -84,7 +84,7 @@
       <p class="lead hero__deck">Drag in a .lua or .st file, or search by App ID. SMD resolves the depot IDs, manifest GIDs and depot keys, then writes the depot contents to a folder you pick.</p>
 
       <div class="hero__cta">
-        <a id="dl-btn" class="btn btn--primary" href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest">Download 1.4.3</a>
+        <a id="dl-btn" class="btn btn--primary" href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest">Download 1.5.0</a>
         <a class="btn btn--ghost" href="#install">Install commands</a>
         <a class="btn btn--bare" href="https://github.com/MCbabel/Steam-Manifest-Downloader">Read the source</a>
       </div>
@@ -99,7 +99,7 @@
       <dl class="facts frame">
         <div class="fact">
           <dt>Current release</dt>
-          <dd>1.4.3</dd>
+          <dd>1.5.0</dd>
         </div>
         <div class="fact">
           <dt>Download engines</dt>
@@ -253,6 +253,7 @@
           <h3>Live depot metadata</h3>
           <p>Platform, architecture and language come from Steam PICS at the moment you look, so the depot list you select from is the one Steam is serving now.</p>
           <p>For each depot the app shows the depot ID, the manifest ID, the platform and architecture it targets, and the size.</p>
+          <p>Switch on <strong>Like Steam</strong> in the settings and SMD picks the depots itself: the ones that make up the base game for your system and language, without DLC. They all go into one game folder, the way Steam installs them. One button adds the DLC as well. Off by default, so you keep choosing every depot yourself.</p>
         </div>
         <div class="row__media">
           <figure class="panel frame panel--fig">
@@ -284,14 +285,14 @@
       <div class="row row--flip">
         <div class="row__text">
           <h3>After the files land</h3>
-          <p>Patching is optional and separate from downloading. You can patch with the gbe_fork emulator, which has a variant picker, 21 settings and per file patch selection. You can detect and remove SteamStub DRM with Steamless, and install a Steam API check bypass. For achievement pop-ups the emulator step points you to Achievement Watcher.</p>
-          <p>You can also add the game to your Steam library as a non-Steam entry, with banner, hero, logo and icon. SMD checks first whether Steam is running, because Steam would drop the entry when it exits, and offers to close and restart it for you. On Windows it creates desktop and Start Menu shortcuts as well.</p>
+          <p>Patching is optional and separate from downloading. You can patch with the gbe_fork emulator, which has a variant picker, 21 settings and per file patch selection. In Like Steam mode, the DLC you downloaded is marked as owned in the emulator settings automatically. You can detect and remove SteamStub DRM with Steamless, and install a Steam API check bypass. For achievement pop-ups the emulator step points you to Achievement Watcher.</p>
+          <p>You can also add the game to your Steam library as a non-Steam entry, with banner, hero, logo and icon. SMD checks first whether Steam is running, because Steam would drop the entry when it exits, and offers to close and restart it for you. If Steam is installed somewhere SMD does not look, you pick the Steam folder once and it is remembered. On Windows it creates desktop and Start Menu shortcuts as well.</p>
         </div>
         <div class="row__media">
           <div class="panel frame">
             <div class="panel__bar"><span>optional steps</span><span>post download</span></div>
             <ul class="readout readout--num">
-              <li><span>01</span><span>gbe_fork patch, variant picker, 21 settings, per file selection</span></li>
+              <li><span>01</span><span>gbe_fork patch, variant picker, 21 settings, per file selection, chosen DLC marked</span></li>
               <li><span>02</span><span>Steamless, detects and removes SteamStub DRM</span></li>
               <li><span>03</span><span>Steam API check bypass</span></li>
               <li><span>04</span><span>Steam library entry with banner, hero, logo, icon</span></li>
@@ -399,22 +400,22 @@
         <li class="step">
           <span class="step__idx" aria-hidden="true">02</span>
           <h3>Select depots</h3>
-          <p>SMD resolves depot IDs, manifest GIDs and depot keys, and reads platform, architecture and language from Steam PICS. You pick the depots you want.</p>
+          <p>SMD resolves depot IDs, manifest GIDs and depot keys, and reads platform, architecture and language from Steam PICS. You pick the depots you want, or let Like Steam mode pick the base game for you. Add to Queue lines up several games.</p>
         </li>
         <li class="step">
           <span class="step__idx" aria-hidden="true">03</span>
           <h3>Download</h3>
-          <p>Run the pure Rust CDN pipeline or the bundled .NET engine. Contents are written to the folder you pick. A cancelled run continues from where it stopped. A speed limit and a shutdown after the download are optional.</p>
+          <p>Run the pure Rust CDN pipeline or the bundled .NET engine. Contents are written to the folder you pick, after a check that they fit on the disk. A depot that fails is retried, and one bad depot no longer stops the rest. A cancelled run continues from where it stopped. A speed limit and a shutdown after the download are optional.</p>
         </li>
         <li class="step">
           <span class="step__idx" aria-hidden="true">04</span>
           <h3>Shortcuts and Steam library</h3>
-          <p>Add the game to your Steam library as a non-Steam entry, with banner, hero, logo and icon attached. On Windows, desktop and Start Menu shortcuts are created as well.</p>
+          <p>Add the game to your Steam library as a non-Steam entry, with banner, hero, logo and icon attached. SMD finds Steam on its own, or you choose the Steam folder. On Windows, desktop and Start Menu shortcuts are created as well.</p>
         </li>
         <li class="step">
           <span class="step__idx" aria-hidden="true">05</span>
           <h3>Emulator</h3>
-          <p>Optionally patch with gbe_fork using the variant picker, its 21 settings and per file patch selection. Remove SteamStub DRM with Steamless, or install the Steam API check bypass. Later, the same game can be updated in place from the history.</p>
+          <p>Optionally patch with gbe_fork using the variant picker, its 21 settings and per file patch selection. Remove SteamStub DRM with Steamless, or install the Steam API check bypass. A folder you patched before can be edited or reverted. Later, the same game can be updated, checked or started from the history.</p>
         </li>
       </ol>
     </div>
@@ -575,15 +576,15 @@
       <div class="rail">
         <p class="kicker"><span class="kicker__idx">04</span> The rest of the app</p>
         <span class="rail__rule" aria-hidden="true"></span>
-        <span class="chip">eight details</span>
+        <span class="chip">twelve details</span>
       </div>
       <h2 id="h-app" class="display-2">Inside the app</h2>
 
       <div class="cells">
         <div class="cell frame">
           <span class="cell__tag">history</span>
-          <h3>Run a past download again</h3>
-          <p>Downloads are kept in a history list. One click repeats any of them, resumes a cancelled one or opens its folder.</p>
+          <h3>A history that does the work</h3>
+          <p>Every download is kept with its cover art. Search, filter and sort it, see when a game has an update, check and repair its files, start the game, resume a cancelled run or open its folder.</p>
         </div>
         <div class="cell frame">
           <span class="cell__tag">update</span>
@@ -603,7 +604,7 @@
         <div class="cell frame">
           <span class="cell__tag">steam</span>
           <h3>Steam library without surprises</h3>
-          <p>Before a game is added, SMD checks whether Steam is running and can close and restart it, so the entry is not lost.</p>
+          <p>Before a game is added, SMD checks whether Steam is running and can close and restart it, so the entry is not lost. A Steam install in an unusual place is found once you point at its folder.</p>
         </div>
         <div class="cell frame">
           <span class="cell__tag">interface</span>
@@ -619,6 +620,26 @@
           <span class="cell__tag">license</span>
           <h3>GPL-2.0, source in the open</h3>
           <p>Released under GPL-2.0, with the full source in the repository.</p>
+        </div>
+        <div class="cell frame">
+          <span class="cell__tag">queue</span>
+          <h3>Several games in a row</h3>
+          <p>Add to Queue keeps downloads waiting, also across restarts. They run one after another, and the shutdown switch waits for the last one.</p>
+        </div>
+        <div class="cell frame">
+          <span class="cell__tag">like steam</span>
+          <h3>Depots picked for you</h3>
+          <p>An optional mode selects the base game for your system and language, puts it in one folder and adds DLC on request, marked for gbe_fork.</p>
+        </div>
+        <div class="cell frame">
+          <span class="cell__tag">network</span>
+          <h3>Proxy with a test button</h3>
+          <p>An HTTP, HTTPS or SOCKS5 proxy applies to every download. The test shows at once whether Steam answers, and errors name the real cause without leaking API keys.</p>
+        </div>
+        <div class="cell frame">
+          <span class="cell__tag">desktop</span>
+          <h3>Shortcuts and progress</h3>
+          <p>Ctrl+O, Ctrl+F, Ctrl+H and Ctrl+comma reach the main screens. Progress shows on the taskbar and in the window title, and a warning comes before a download that does not fit.</p>
         </div>
       </div>
     </div>
@@ -701,7 +722,7 @@
         <div class="rail">
           <p class="kicker"><span class="kicker__idx">05</span> Questions</p>
           <span class="rail__rule" aria-hidden="true"></span>
-          <span class="chip chip--key">twelve answers</span>
+          <span class="chip chip--key">fifteen answers</span>
         </div>
         <h2 id="h-q" class="h2-paper">Questions</h2>
         <p class="lead-paper">Short answers here, with the longer versions in the documentation.</p>
@@ -756,6 +777,24 @@
             </div>
           </details>
           <details class="qa">
+            <summary><span>Can it pick the depots for me?</span></summary>
+            <div class="qa__body">
+              <p>Yes, if you switch on <strong>Like Steam</strong> in the settings. SMD then selects the depots of the base game for your system and language, downloads them into one game folder like Steam does, and leaves DLC out until you press the button to add them. DLC you add is marked as owned for gbe_fork. In the terminal version the same is <code>smd download --like-steam</code>, with <code>--dlc</code> for the DLC.</p>
+            </div>
+          </details>
+          <details class="qa">
+            <summary><span>SMD does not find my Steam install. What now?</span></summary>
+            <div class="qa__body">
+              <p>Choose the Steam folder in the settings, or straight from the Steam library step when it says Steam was not found. SMD checks that the folder really is a Steam install with a signed in user and remembers it. On Windows it reads the install path from the registry, on Linux it looks in the usual places, including Flatpak and Snap.</p>
+            </div>
+          </details>
+          <details class="qa">
+            <summary><span>Every download fails with a connection error. Can a proxy help?</span></summary>
+            <div class="qa__body">
+              <p>If your network blocks Steam, enter an HTTP, HTTPS or SOCKS5 proxy in the settings and press Test to see whether Steam answers through it. The error message names the actual cause, such as a refused connection, a DNS problem or an antivirus intercepting HTTPS. When nothing gets through at all, SMD stops early instead of trying every depot.</p>
+            </div>
+          </details>
+          <details class="qa">
             <summary><span>Which AUR package should I pick?</span></summary>
             <div class="qa__body">
               <p>Use steam-manifest-downloader-bin for the released binary, or steam-manifest-downloader if you would rather build locally. The two conflict, so install one or the other.</p>
@@ -788,9 +827,9 @@
         <div class="rail">
           <p class="kicker"><span class="kicker__idx">06</span> Download</p>
           <span class="rail__rule" aria-hidden="true"></span>
-          <span class="chip chip--key">1.4.3</span>
+          <span class="chip chip--key">1.5.0</span>
         </div>
-        <h2 id="h-get" class="h2-close">Version 1.4.3 is on the releases page.</h2>
+        <h2 id="h-get" class="h2-close">Version 1.5.0 is on the releases page.</h2>
         <p class="lead-paper">Windows installer and standalone ZIP, Linux AppImage, AUR packages for Arch, CachyOS and Manjaro, the terminal version and a Docker image. Source under GPL-2.0.</p>
         <div class="close__actions">
           <a class="pbtn pbtn--solid" href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest">Get the latest release</a>
@@ -841,7 +880,7 @@
     </div>
   </div>
   <div class="wrap foot__bar">
-    <span>Version 1.4.3</span>
+    <span>Version 1.5.0</span>
     <span>GPL-2.0</span>
     <span>Rust and Tauri v2</span>
   </div>

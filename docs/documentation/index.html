@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Documentation, Steam Manifest Downloader</title>
-<meta name="description" content="Install, use, configure and build Steam Manifest Downloader 1.4.3. System requirements, the five step pipeline, updates, file formats, settings, depot sources, the terminal version and Docker, build instructions and troubleshooting.">
+<meta name="description" content="Install, use, configure and build Steam Manifest Downloader 1.5.0. System requirements, the five step pipeline, updates, file formats, settings, depot sources, the terminal version and Docker, build instructions and troubleshooting.">
 <meta name="theme-color" content="#06060A">
 <meta property="og:title" content="Documentation, Steam Manifest Downloader">
-<meta property="og:description" content="Install, use, configure and build Steam Manifest Downloader 1.4.3. Desktop app for Windows 10 and 11 and for Linux, terminal version and Docker image. Built with Rust and Tauri v2.">
+<meta property="og:description" content="Install, use, configure and build Steam Manifest Downloader 1.5.0. Desktop app for Windows 10 and 11 and for Linux, terminal version and Docker image. Built with Rust and Tauri v2.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://smd.mcbabel.de/documentation/">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Documentation, Steam Manifest Downloader">
-<meta name="twitter:description" content="Install, use, configure and build Steam Manifest Downloader 1.4.3.">
+<meta name="twitter:description" content="Install, use, configure and build Steam Manifest Downloader 1.5.0.">
 <link rel="icon" href="../icon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -28,7 +28,7 @@
     <a class="brand" href="../" aria-label="Steam Manifest Downloader, home">
       <img src="../icon.svg" alt="" width="26" height="26" decoding="async">
       <span class="brand__mark">SMD</span>
-      <span class="brand__ver">1.4.3</span>
+      <span class="brand__ver">1.5.0</span>
     </a>
     <nav class="nav" aria-label="Site">
       <a href="../">Home</a>
@@ -72,7 +72,7 @@
     </div>
 
     <div class="wrap">
-      <p class="kicker hero__kicker"><span class="kicker__idx">00</span> Reference, version 1.4.3</p>
+      <p class="kicker hero__kicker"><span class="kicker__idx">00</span> Reference, version 1.5.0</p>
 
       <h1 id="h-doc" class="display">
         <span class="ln ln-1">Documentation</span>
@@ -83,7 +83,7 @@
       <p class="lead hero__deck">Everything the app does, written out. Requirements and installation, the five step pipeline, updating a game, the file formats it reads, every setting, how depot sources are queried, the terminal version and Docker, how to build from source, and what to do when something breaks.</p>
 
       <div class="hero__cta">
-        <a class="btn btn--primary" href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest">Download 1.4.3</a>
+        <a class="btn btn--primary" href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest">Download 1.5.0</a>
         <a class="btn btn--ghost" href="#installation">Installation</a>
         <a class="btn btn--bare" href="#troubleshooting">Troubleshooting</a>
       </div>
@@ -119,6 +119,8 @@
             <li class="sub"><a href="#step-emulator">Step 5, emulator</a></li>
             <li class="sub"><a href="#step-cancel">Cancel a download</a></li>
             <li class="sub"><a href="#step-update">Update a downloaded game</a></li>
+            <li class="sub"><a href="#history">Download history</a></li>
+            <li class="sub"><a href="#desktop-keys">Keyboard shortcuts and taskbar</a></li>
           </ul>
         </div>
 
@@ -273,6 +275,8 @@
                   <li><a href="#step-emulator">Step 5: emulator</a></li>
                   <li><a href="#step-cancel">Cancel a download</a></li>
                   <li><a href="#step-update">Update a downloaded game</a></li>
+                  <li><a href="#history">Download history</a></li>
+                  <li><a href="#desktop-keys">Keyboard shortcuts and taskbar</a></li>
                 </ul>
               </li>
               <li class="docnav__sec">
@@ -366,7 +370,7 @@
                 <li>Optionally create desktop and start menu shortcuts (Windows), or add the game to your Steam library with grid art (Linux and Windows)</li>
                 <li>Optionally patch the game with the gbe_fork emulator so it runs without the Steam client, including DRM detection via Steamless and an API check bypass</li>
               </ol>
-              <p>A game you downloaded once can later be updated in place from the history, see <a href="#step-update">Update a downloaded game</a>. Besides the desktop app there is a terminal version with the same steps and a Docker image, see <a href="#terminal">Terminal version and Docker</a>.</p>
+              <p>A game you downloaded once can later be updated, checked and started from the history, see <a href="#history">Download history</a>. If you would rather not pick depots yourself, <a href="#like-steam">Like Steam mode</a> does it for you. Besides the desktop app there is a terminal version with the same steps and a Docker image, see <a href="#terminal">Terminal version and Docker</a>.</p>
 
               <h3 id="system-requirements">System requirements <a class="alink" href="#system-requirements" aria-label="Permalink to System requirements">#</a></h3>
               <ul class="rows">
@@ -506,6 +510,8 @@ sudo zypper install libwebkit2gtk-4_1-0 libayatana-appindicator3-1 librsvg-2-2</
                 <li><a href="#step-emulator">Step 5: emulator</a></li>
                 <li><a href="#step-cancel">Cancel a download</a></li>
                 <li><a href="#step-update">Update a downloaded game</a></li>
+                <li><a href="#history">Download history</a></li>
+                <li><a href="#desktop-keys">Keyboard shortcuts and taskbar</a></li>
               </ul>
             </nav>
 
@@ -538,6 +544,17 @@ sudo zypper install libwebkit2gtk-4_1-0 libayatana-appindicator3-1 librsvg-2-2</
                 <li><strong>Language tag</strong>, only shown for language specific depots, for example <code>German</code> or <code>French</code></li>
               </ul>
               <p>The metadata is cached per app ID for 7 days in your app data directory, so later visits are instant. If <code>api.steamcmd.net</code> is unreachable the tags simply do not appear, and the rest of the interface is unaffected.</p>
+              <h4 id="like-steam">Like Steam mode <a class="alink" href="#like-steam" aria-label="Permalink to Like Steam mode">#</a></h4>
+              <p>By default you choose every depot yourself and each depot gets its own subfolder. Switch on <strong>Settings → Depot selection → Like Steam</strong> and SMD selects the depots Steam would install on this system instead: the base game, the right platform, 64-bit where there is a choice, and your game language. They are written into one game folder, so the game is complete and starts right away. If you change the selection by hand, <strong>Pick like Steam</strong> in the depot list brings the recommended choice back.</p>
+              <ul>
+                <li><strong>Add DLC</strong> in the depot list adds the DLC depots, and <strong>Remove DLC</strong> takes them out again. DLC you download is marked as owned for gbe_fork in step 5</li>
+                <li><strong>Include DLC</strong> selects the DLC every time</li>
+                <li><strong>Platform</strong> is Auto, Windows, Linux or macOS. Auto uses the system SMD runs on, and when a game has no Linux build the Windows version is picked, which runs with Proton</li>
+                <li><strong>Game language</strong> follows the app language unless you pick another one</li>
+                <li><strong>Start the download right away</strong> starts it as soon as the depots are picked, unless you change the selection first</li>
+              </ul>
+              <h4 id="queue">Download queue <a class="alink" href="#queue" aria-label="Permalink to Download queue">#</a></h4>
+              <p><strong>Add to Queue</strong> next to Download keeps the game with its selection in a queue instead of starting it. The queue button in the header shows the waiting downloads, where you can reorder, remove or clear them and press <strong>Start Queue</strong>. They run one after another and are kept on disk, also across restarts. The shortcut, Steam and emulator steps of each finished game are offered afterwards, one game after another. <strong>Shut down the PC</strong> waits for the last download of the queue. Cancelling a download stops the queue, and the rest stays in it. The desktop app and the terminal version share the same queue, which the terminal version shows at the top of the history page.</p>
               <div class="note">
                 <p class="note__tag">How sources are asked</p>
                 <p>The search asks your configured depot sources in the order you set. The check for whether an App ID exists stops at the first source that answers, so the order you choose is the order that decides which source supplies the depots, keys and sizes.</p>
@@ -552,6 +569,8 @@ sudo zypper install libwebkit2gtk-4_1-0 libayatana-appindicator3-1 librsvg-2-2</
                 <li><strong>Depot keys generation.</strong> Creates a <code>steam.keys</code> file containing all known depot decryption keys</li>
                 <li><strong>Chunk download.</strong> Keeps up to 8 chunk fetches in flight against Steam's CDN (configurable under Settings, 1 to 64), decodes VZ1 (LZMA) or VSZTD (zstd) payloads and verifies each one against its CRC32 and SHA-1 before writing. Writes to the same file are serialized so concurrent chunks do not interleave. Failed chunks retry up to 8 times with exponential backoff, rotating CDN servers between attempts</li>
               </ol>
+              <p>Before the download starts, the size of the selected depots is compared with the free space at the download location. When it does not fit, SMD asks whether to start anyway. Updates are not checked, since most of the game is already there.</p>
+              <p>When a depot cannot be downloaded, because its key or manifest is missing or the connection drops, it is reported as failed and the download continues with the next one. Connection problems are retried as often as <strong>Max retries on error</strong> says, 3 by default. If the first depots all fail with a connection error and nothing got through, SMD stops early and says that Steam cannot be reached, instead of trying every depot. Error messages name the actual cause, such as a refused connection, a DNS problem or a certificate error, and never contain API keys.</p>
               <p>Chunks that already match on disk are verified and skipped, so a restarted download picks up where it left off instead of starting over. While it downloads, the native engine also writes a small checkpoint per depot, <code>.smd-depot-&lt;id&gt;.resume.json</code> in the game folder, that records up to which chunk everything is finished. It is deleted once the depot is complete.</p>
               <div class="note">
                 <p class="note__tag">Engines</p>
@@ -566,7 +585,7 @@ sudo zypper install libwebkit2gtk-4_1-0 libayatana-appindicator3-1 librsvg-2-2</
               </ul>
               <div class="note">
                 <p class="note__tag">Where files land</p>
-                <p>The downloaded files are saved to your configured download location, by default <code>Documents/SteamDownloads</code>. Each download creates a subdirectory named after the app ID and the game name, for example <code>220 - Half-Life 2</code>. Chunks are decrypted in memory and written straight into that folder, so nothing is staged in a temporary directory on another drive.</p>
+                <p>The downloaded files are saved to your configured download location, by default <code>Documents/SteamDownloads</code>. Each download creates a subdirectory named after the app ID and the game name, for example <code>220 - Half-Life 2</code>. Inside it every depot gets its own subfolder, or, in <a href="#like-steam">Like Steam mode</a>, all depots go into the game folder itself. Chunks are decrypted in memory and written straight into that folder, so nothing is staged in a temporary directory on another drive.</p>
               </div>
               <h4 id="speed-limit">Speed limit <a class="alink" href="#speed-limit" aria-label="Permalink to Speed limit">#</a></h4>
               <p>Under <strong>Settings, Speed limit</strong> you can cap the download speed, in MB/s or in Mbit/s. MB/s matches the speed shown during a download, and Mbit/s follows the convention of internet providers, so 100 Mbit/s is about 12 MB/s. A change applies at once, also to a download that is already running. The limit applies to the native engine.</p>
@@ -641,6 +660,10 @@ sudo zypper install libwebkit2gtk-4_1-0 libayatana-appindicator3-1 librsvg-2-2</
                 <li><strong>Overlay</strong>, enable the experimental overlay, hide popups, always show FPS and playtime, hotkey, font size</li>
               </ul>
               <p>Settings are written as INI files, <code>configs.user.ini</code>, <code>configs.main.ini</code> and <code>configs.overlay.ini</code>, into a <code>steam_settings/</code> folder next to the patched DLL, alongside <code>steam_interfaces.txt</code>, <code>steam_appid.txt</code> and <code>installed_app_ids.txt</code>.</p>
+              <p>When the download chose DLC in <a href="#like-steam">Like Steam mode</a>, SMD remembers them in <code>.smd-dlcs.json</code> in the game folder and writes them into <code>configs.app.ini</code> under <code>[app::dlcs]</code> with <code>unlock_all=0</code>, one <code>ID=Name</code> line each, so the game sees exactly the DLC you have.</p>
+
+              <h4 id="patch-existing">Patch an existing folder <a class="alink" href="#patch-existing" aria-label="Permalink to Patch an existing folder">#</a></h4>
+              <p>Step 1 has a tab <strong>Patch Existing Folder</strong> for games that are already on disk, so you can run step 5 on its own. Pick the folder and enter the App ID. When the folder is already patched, the step offers <strong>Save Settings</strong> to change the emulator settings in place and <strong>Revert Patch</strong> to restore the original files, and <strong>Apply</strong> becomes <strong>Re-apply Patch</strong> when everything selected is patched already.</p>
 
               <h4 id="achievement-notifications">Achievement notifications <a class="alink" href="#achievement-notifications" aria-label="Permalink to Achievement notifications">#</a></h4>
               <p>gbe_fork stores achievements locally, and its own overlay does not work in every game. For a notification when you unlock one, the emulator step points you to <a href="https://github.com/xan105/Achievement-Watcher">Achievement Watcher</a> by xan105 for Windows. The original is no longer developed, the <a href="https://github.com/darktakayanagi/Achievement-Watcher">fork by darktakayanagi</a> is still maintained. SMD only links to it and does not install it.</p>
@@ -679,6 +702,25 @@ sudo zypper install libwebkit2gtk-4_1-0 libayatana-appindicator3-1 librsvg-2-2</
                 <p>Skipping unchanged depots and deleting removed files is done by the native engine. With DepotDownloaderMod the download still goes into the existing folder, and DepotDownloaderMod handles the files itself.</p>
               </div>
               <p>In the terminal version, use <strong>Update</strong> or the <code>u</code> key in the history, or <code>smd download &lt;source&gt; --update &lt;game folder&gt;</code>.</p>
+
+              <h3 id="history">Download history <a class="alink" href="#history" aria-label="Permalink to Download history">#</a></h3>
+              <p>The history, the clock button in the header, lists every download with the game's portrait cover from Steam's store API, cached for a week. Above the list you can search by name or App ID, filter by status and sort by date, name or size. Each entry has these actions:</p>
+              <ul>
+                <li><strong>Play</strong> starts the game. The first time, SMD asks which program file starts it when there is more than one and remembers the choice per folder, right click picks another one. On Linux, native games start directly and Windows games start through their Steam shortcut so Steam can use Proton, or with Wine</li>
+                <li><strong>Update</strong> brings the game to the newest version, see <a href="#step-update">Update a downloaded game</a>. When the history opens, SMD asks Steam once which manifests are current, and games with a newer version get an <strong>Update available</strong> badge. This needs the install records of the native engine, so older downloads show it after their first update or check</li>
+                <li><strong>Check</strong> compares every file with the installed version and downloads only what is damaged or missing, without updating anything. The log says at the end whether everything was fine or how much was repaired</li>
+                <li><strong>Resume</strong>, <strong>download again</strong>, <strong>open folder</strong>, <strong>edit emulator settings</strong> and <strong>remove</strong>, optionally with the files</li>
+              </ul>
+              <p>In the terminal version the keys are <code>p</code> play, <code>u</code> update, <code>v</code> check, <code>r</code> resume, <code>d</code> download again, <code>o</code> open folder, <code>e</code> edit emulator and <code>x</code> remove. Headless, <code>smd download --update &lt;game folder&gt; --repair</code> runs the check.</p>
+
+              <h3 id="desktop-keys">Keyboard shortcuts and taskbar <a class="alink" href="#desktop-keys" aria-label="Permalink to Keyboard shortcuts and taskbar">#</a></h3>
+              <ul class="rows">
+                <li><span class="rows__k rows__k--literal">Ctrl+O</span><span class="rows__v">Open a .lua or .st file in step 1</span></li>
+                <li><span class="rows__k rows__k--literal">Ctrl+F</span><span class="rows__v">Focus the search: App ID in step 1, depots in step 2, the history when it is open</span></li>
+                <li><span class="rows__k rows__k--literal">Ctrl+H</span><span class="rows__v">Open or close the history</span></li>
+                <li><span class="rows__k rows__k--literal">Ctrl+,</span><span class="rows__v">Open the settings</span></li>
+              </ul>
+              <p>While a download runs, its progress shows on the taskbar button and in the window title.</p>
             </div>
           </div>
         </section>
@@ -795,6 +837,8 @@ setManifestid(1392863, "4398981003384795747", 13789896785)</code></pre>
                 <li><strong>Language</strong>, the interface language. English and German are bundled, and the picker also runs on first launch. It covers the whole program, including the download log and the error messages</li>
                 <li><strong>Auto-update</strong>, toggles whether SMD checks GitHub for new releases on startup and offers an in-app update prompt</li>
                 <li><strong>Speed limit</strong>, off by default. Switch it on and enter a value in MB/s or Mbit/s, see <a href="#speed-limit">Speed limit</a>. It applies to the native engine and takes effect at once, also for a running download</li>
+                <li><strong>Depot selection</strong>, the switch for <a href="#like-steam">Like Steam mode</a> with its options for DLC, platform, game language and starting right away. Off by default</li>
+                <li><strong>Steam folder</strong>, empty means SMD finds Steam itself. Set it when Steam is installed somewhere else, see <a href="#linux-add-to-steam-library">Step 4</a></li>
               </ul>
 
               <h3 id="settings-advanced">Advanced settings, collapsible <a class="alink" href="#settings-advanced" aria-label="Permalink to Advanced settings, collapsible">#</a></h3>
@@ -810,8 +854,13 @@ setManifestid(1392863, "4398981003384795747", 13789896785)</code></pre>
               <h4 id="depotdownloader-arguments-depotdownloadermod-path-only">DepotDownloader arguments, DepotDownloaderMod path only <a class="alink" href="#depotdownloader-arguments-depotdownloadermod-path-only" aria-label="Permalink to DepotDownloader arguments, DepotDownloaderMod path only">#</a></h4>
               <ul>
                 <li><strong>Extra arguments</strong>, appended verbatim to the DepotDownloaderMod CLI. The internal default is <code>-max-downloads 8 -verify-all</code>, and your input is added on top</li>
-                <li><strong>Max retries on error</strong>, how often a failed depot is retried before SMD gives up</li>
-                <li><strong>HTTP proxy</strong>, a proxy URL forwarded to DepotDownloaderMod for environments that require one</li>
+              </ul>
+
+              <h4 id="network">Retries and proxy <a class="alink" href="#network" aria-label="Permalink to Retries and proxy">#</a></h4>
+              <ul>
+                <li><strong>Max retries on error</strong>, extra attempts per depot, 3 by default and 0 to 10. The native engine retries when the connection fails, DepotDownloaderMod when it exits with an error</li>
+                <li><strong>Proxy</strong>, used for every download: Steam's CDN, the depot sources, ManifestHub, Hubcap, Ryuu, game images and updates, and handed to DepotDownloaderMod. The format is <code>http://host:port</code>, <code>https://host:port</code> or <code>socks5://host:port</code>, with <code>user:password@</code> in front of the host if needed. Empty means the system proxy is used. The anonymous Steam login for depot information connects directly</li>
+                <li><strong>Test</strong> next to the field connects to Steam through the proxy you entered and shows how long Steam took to answer, or why it failed, for example a wrong port, a proxy that wants a password or an antivirus that intercepts HTTPS. With an empty field it tests the direct connection</li>
               </ul>
 
               <h4 id="settings-manifest-sources">Manifest sources <a class="alink" href="#settings-manifest-sources" aria-label="Permalink to Manifest sources">#</a></h4>
@@ -935,7 +984,7 @@ setManifestid(1392863, "4398981003384795747", 13789896785)</code></pre>
                 <li><span class="rows__k rows__k--literal">PgUp, PgDn</span><span class="rows__v">Scroll long pages and the output log</span></li>
                 <li><span class="rows__k rows__k--literal">a n / d</span><span class="rows__v">Depot selection: all, none, filter, start download</span></li>
                 <li><span class="rows__k rows__k--literal">p c</span><span class="rows__v">While downloading: pause or resume, cancel</span></li>
-                <li><span class="rows__k rows__k--literal">r d u o e x</span><span class="rows__v">History: resume, download again, update, open folder, edit emulator, remove</span></li>
+                <li><span class="rows__k rows__k--literal">p r d u v o e x</span><span class="rows__v">History: play, resume, download again, update, check, open folder, edit emulator, remove</span></li>
                 <li><span class="rows__k rows__k--literal">Ctrl+Q, F10</span><span class="rows__v">Quit, with a question first while a download runs</span></li>
               </ul>
               <p>The download screen has a button <strong>Shut down after: on, off</strong> for the same shutdown with countdown as the desktop app. Dragging a <code>.lua</code> or <code>.st</code> file onto the terminal window loads it right away, since most terminals paste the path. The interface uses true color where the terminal supports it, including the Windows console, falls back to the 16 terminal colors otherwise and respects <code>NO_COLOR</code>.</p>
@@ -966,6 +1015,9 @@ smd history</code></pre>
                 <li><span class="rows__k rows__k--literal">--language</span><span class="rows__v">With <code>--like-steam</code>: game language as Steam names it, for example <code>german</code> or <code>english</code>. Defaults to the app language</span></li>
                 <li><span class="rows__k rows__k--literal">--manifest</span><span class="rows__v"><code>DEPOT=ID</code> pins a depot to a specific manifest, repeatable</span></li>
                 <li><span class="rows__k rows__k--literal">--update</span><span class="rows__v"><code>&lt;GAME_DIR&gt;</code> updates an existing download in place, see <a href="#step-update">Update a downloaded game</a></span></li>
+                <li><span class="rows__k rows__k--literal">--repair</span><span class="rows__v">With <code>--update</code>: checks every file and repairs what is damaged or missing, without updating</span></li>
+                <li><span class="rows__k rows__k--literal">--list</span><span class="rows__v">Shows the depots that would be downloaded and stops</span></li>
+                <li><span class="rows__k rows__k--literal">--ignore-space</span><span class="rows__v">Starts even when the download does not fit on the disk. Without it, <code>smd download</code> stops with an error in that case</span></li>
                 <li><span class="rows__k rows__k--literal">--speed-limit</span><span class="rows__v">Caps the speed, for example <code>10MB/s</code> or <code>100Mbit/s</code>, also <code>SMD_SPEED_LIMIT</code>. <code>0</code> means unlimited, and the setting is the default</span></li>
                 <li><span class="rows__k rows__k--literal">--shutdown</span><span class="rows__v">Shuts the computer down when the download has finished, after 60 seconds. Ctrl+C aborts, and nothing happens when the download is interrupted</span></li>
                 <li><span class="rows__k rows__k--literal">--json</span><span class="rows__v">Machine readable output, only JSON lines on stdout</span></li>
@@ -977,7 +1029,7 @@ smd history</code></pre>
               <h3 id="terminal-docker">Docker <a class="alink" href="#terminal-docker" aria-label="Permalink to Docker">#</a></h3>
               <p>Images are published to the GitHub Container Registry for every release and every dev build. They are built for Intel and AMD processors, <code>linux/amd64</code>, and run on Linux as well as on Windows and macOS with Docker Desktop. ARM devices such as a Raspberry Pi are not supported yet.</p>
               <ul class="rows">
-                <li><span class="rows__k">latest</span><span class="rows__v">Latest stable release, also tagged with its version, for example <code>1</code>, <code>1.4</code> and <code>1.4.3</code></span></li>
+                <li><span class="rows__k">latest</span><span class="rows__v">Latest stable release, also tagged with its version, for example <code>1</code>, <code>1.5</code> and <code>1.5.0</code></span></li>
                 <li><span class="rows__k">dev</span><span class="rows__v">Latest dev build from the <code>dev</code> branch, also <code>&lt;version&gt;-dev</code> and <code>dev-&lt;commit&gt;</code></span></li>
               </ul>
               <div class="snip">
@@ -1189,7 +1241,19 @@ dotnet publish -c Release -r linux-x64 --self-contained true \
               <details class="qa">
                 <summary><span>"Connection timeout" during download, or the PC lags while downloading</span></summary>
                 <div class="qa__body">
-                  <p>This usually happens when the number of parallel connections overwhelms your network or disk, or when Steam servers are under heavy load. Check whether a VPN or proxy is interfering. Lower <strong>Max concurrent chunks</strong> under Settings, Advanced settings from 8 to 4, or set a <a href="#speed-limit">speed limit</a>, which also takes effect for a running download.</p>
+                  <p>This usually happens when the number of parallel connections overwhelms your network or disk, or when Steam servers are under heavy load. Check whether a VPN or proxy is interfering, and use <strong>Test</strong> next to the <a href="#network">proxy field</a> to see whether Steam answers at all. Lower <strong>Max concurrent chunks</strong> under Settings, Advanced settings from 8 to 4, or set a <a href="#speed-limit">speed limit</a>, which also takes effect for a running download.</p>
+                </div>
+              </details>
+              <details class="qa">
+                <summary><span>"No connection to Steam or any manifest source"</span></summary>
+                <div class="qa__body">
+                  <p>Nothing got through to Steam, so SMD stopped early. The message names the cause: a refused connection, a DNS problem, a timeout or a certificate error. A certificate error usually means an antivirus or a company proxy intercepts HTTPS. If your network only lets traffic through a proxy, enter it under <a href="#network">Settings, Advanced settings, Proxy</a> and press <strong>Test</strong>. A VPN or another DNS server can also help when your provider blocks Steam's servers.</p>
+                </div>
+              </details>
+              <details class="qa">
+                <summary><span>"Steam not found" when adding a game to the library</span></summary>
+                <div class="qa__body">
+                  <p>Steam is installed somewhere SMD does not look. Click <strong>Choose Steam folder</strong> and pick the folder that contains <code>steam.exe</code> or <code>steam.sh</code>, or set it under <strong>Settings, Steam folder</strong>. If the folder is right but SMD says nobody is signed in, start Steam once and sign in.</p>
                 </div>
               </details>
               <details class="qa">
@@ -1305,9 +1369,9 @@ dotnet publish -c Release -r linux-x64 --self-contained true \
             <div class="rail">
               <p class="kicker"><span class="kicker__idx">10</span> Download</p>
               <span class="rail__rule" aria-hidden="true"></span>
-              <span class="chip chip--key">1.4.3</span>
+              <span class="chip chip--key">1.5.0</span>
             </div>
-            <h2 id="h-next" class="h2-close">Version 1.4.3 is on the releases page. <a class="alink" href="#next" aria-label="Permalink to Version 1.4.3 is on the releases page.">#</a></h2>
+            <h2 id="h-next" class="h2-close">Version 1.5.0 is on the releases page. <a class="alink" href="#next" aria-label="Permalink to Version 1.5.0 is on the releases page.">#</a></h2>
             <p class="lead-paper">Windows installer and standalone ZIP, Linux AppImage, AUR packages for Arch, CachyOS and Manjaro, the terminal version and a Docker image. Source under GPL-2.0.</p>
             <div class="close__actions">
               <a class="pbtn pbtn--solid" href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest">Get the latest release</a>
@@ -1360,7 +1424,7 @@ dotnet publish -c Release -r linux-x64 --self-contained true \
     </div>
   </div>
   <div class="wrap foot__bar">
-    <span>Version 1.4.3</span>
+    <span>Version 1.5.0</span>
     <span>GPL-2.0</span>
     <span>Rust and Tauri v2</span>
   </div>
