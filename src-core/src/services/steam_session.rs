@@ -56,6 +56,42 @@ impl SteamSession {
         Err(last_err.unwrap_or_else(|| "Steam session bootstrap failed".to_string()))
     }
 
+    pub async fn reset(&self) {
+        *self.inner.lock().await = None;
+    }
+}
+
+pub async fn call_with_retry<T, F, Fut>(
+    session: &SteamSession,
+    attempts: u32,
+    limit: Duration,
+    timeout_msg: &str,
+    f: F,
+) -> Result<T, String>
+where
+    F: Fn(Connection) -> Fut,
+    Fut: std::future::Future<Output = Result<T, String>>,
+{
+    let mut last_err = String::new();
+    for attempt in 0..attempts.max(1) {
+        if attempt > 0 {
+            tokio::time::sleep(Duration::from_millis(1000 * u64::from(attempt))).await;
+        }
+        let conn = match session.connection().await {
+            Ok(conn) => conn,
+            Err(e) => {
+                last_err = e;
+                continue;
+            }
+        };
+        match timeout(limit, f(conn)).await {
+            Ok(Ok(value)) => return Ok(value),
+            Ok(Err(e)) => last_err = e,
+            Err(_) => last_err = timeout_msg.to_string(),
+        }
+        session.reset().await;
+    }
+    Err(last_err)
 }
 
 impl Default for SteamSession {
@@ -75,8 +111,7 @@ pub async fn discover_cdn_servers(
     cell_id: u32,
     max_servers: u32,
 ) -> Result<Vec<CdnServer>, String> {
-    timeout(CDN_TIMEOUT, async move {
-        let conn = session.connection().await?;
+    call_with_retry(&session, 3, CDN_TIMEOUT, "Steam CDN server discovery timed out", |conn| async move {
         let req = CContentServerDirectory_GetServersForSteamPipe_Request {
             cell_id: Some(cell_id),
             max_servers: Some(max_servers),
@@ -86,15 +121,13 @@ pub async fn discover_cdn_servers(
             .service_method(req)
             .await
             .map_err(|e| format!("GetServersForSteamPipe failed: {}", e))?;
-        Ok::<_, String>(
-            resp.servers
-                .into_iter()
-                .filter_map(server_info_to_cdn)
-                .collect(),
-        )
+        Ok(resp
+            .servers
+            .into_iter()
+            .filter_map(server_info_to_cdn)
+            .collect())
     })
     .await
-    .map_err(|_| "Steam CDN server discovery timed out".to_string())?
 }
 
 fn server_info_to_cdn(mut s: CContentServerDirectory_ServerInfo) -> Option<CdnServer> {
@@ -115,8 +148,7 @@ pub async fn fetch_manifest_request_code(
     depot_id: u32,
     manifest_id: u64,
 ) -> Result<u64, String> {
-    timeout(CDN_TIMEOUT, async move {
-        let conn = session.connection().await?;
+    call_with_retry(&session, 2, CDN_TIMEOUT, "GetManifestRequestCode timed out", |conn| async move {
         let req = CContentServerDirectory_GetManifestRequestCode_Request {
             app_id: Some(app_id),
             depot_id: Some(depot_id),
@@ -127,10 +159,9 @@ pub async fn fetch_manifest_request_code(
             .service_method(req)
             .await
             .map_err(|e| format!("GetManifestRequestCode failed: {}", e))?;
-        Ok::<_, String>(resp.manifest_request_code.unwrap_or(0))
+        Ok(resp.manifest_request_code.unwrap_or(0))
     })
     .await
-    .map_err(|_| "GetManifestRequestCode timed out".to_string())?
 }
 
 pub async fn fetch_cdn_auth_token(
@@ -139,21 +170,21 @@ pub async fn fetch_cdn_auth_token(
     app_id: u32,
     depot_id: u32,
 ) -> Result<Option<String>, String> {
-    let host = host.to_string();
-    timeout(CDN_TIMEOUT, async move {
-        let conn = session.connection().await?;
-        let req = CContentServerDirectory_GetCDNAuthToken_Request {
-            app_id: Some(app_id),
-            depot_id: Some(depot_id),
-            host_name: Some(host),
-            ..Default::default()
-        };
-        let resp = conn
-            .service_method(req)
-            .await
-            .map_err(|e| format!("GetCDNAuthToken failed: {}", e))?;
-        Ok::<_, String>(resp.token)
+    call_with_retry(&session, 2, CDN_TIMEOUT, "GetCDNAuthToken timed out", |conn| {
+        let host = host.to_string();
+        async move {
+            let req = CContentServerDirectory_GetCDNAuthToken_Request {
+                app_id: Some(app_id),
+                depot_id: Some(depot_id),
+                host_name: Some(host),
+                ..Default::default()
+            };
+            let resp = conn
+                .service_method(req)
+                .await
+                .map_err(|e| format!("GetCDNAuthToken failed: {}", e))?;
+            Ok(resp.token)
+        }
     })
     .await
-    .map_err(|_| "GetCDNAuthToken timed out".to_string())?
 }

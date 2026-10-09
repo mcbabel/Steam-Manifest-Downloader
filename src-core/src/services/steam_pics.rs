@@ -8,10 +8,9 @@ use steam_vent_proto::steammessages_clientserver_appinfo::{
     cmsg_client_picsproduct_info_request, CMsgClientPICSProductInfoRequest,
     CMsgClientPICSProductInfoResponse,
 };
-use tokio::time::timeout;
 use vdf_reader::entry::{Entry, Table};
 
-use crate::services::steam_session::SteamSession;
+use crate::services::steam_session::{call_with_retry, SteamSession};
 
 const PICS_TIMEOUT: Duration = Duration::from_secs(20);
 const PICS_BATCH_TIMEOUT: Duration = Duration::from_secs(40);
@@ -56,8 +55,7 @@ pub async fn fetch_public_manifest_gid(
     app_id: u32,
     depot_id: u32,
 ) -> Result<String, String> {
-    timeout(PICS_TIMEOUT, async move {
-        let conn = session.connection().await?;
+    call_with_retry(&session, 2, PICS_TIMEOUT, "Steam PICS query timed out after 20s", |conn| async move {
         let vdf = pics_product_info_vdf(&conn, &[app_id]).await?;
         let app_vdf = vdf
             .get(&app_id)
@@ -78,7 +76,6 @@ pub async fn fetch_public_manifest_gid(
         Ok::<_, String>(gid.to_string())
     })
     .await
-    .map_err(|_| "Steam PICS query timed out after 20s".to_string())?
 }
 
 fn public_gids(app: &Table) -> HashMap<String, String> {
@@ -103,22 +100,19 @@ pub async fn fetch_public_manifests(
     session: Arc<SteamSession>,
     app_ids: &[u32],
 ) -> Result<HashMap<u32, HashMap<String, String>>, String> {
-    let ids = app_ids.to_vec();
-    timeout(PICS_BATCH_TIMEOUT, async move {
-        let conn = session.connection().await?;
-        let vdf = pics_product_info_vdf(&conn, &ids).await?;
+    let ids = app_ids;
+    call_with_retry(&session, 2, PICS_BATCH_TIMEOUT, "Steam PICS batch query timed out", |conn| async move {
+        let vdf = pics_product_info_vdf(&conn, ids).await?;
         Ok::<_, String>(vdf.iter().map(|(id, app)| (*id, public_gids(app))).collect())
     })
     .await
-    .map_err(|_| "Steam PICS batch query timed out".to_string())?
 }
 
 pub async fn fetch_depots_with_names(
     session: Arc<SteamSession>,
     parent_app_id: u32,
 ) -> Result<Vec<DepotMetadata>, String> {
-    timeout(PICS_BATCH_TIMEOUT, async move {
-        let conn = session.connection().await?;
+    call_with_retry(&session, 2, PICS_BATCH_TIMEOUT, "Steam PICS batch query timed out", |conn| async move {
         let parent_vdf = pics_product_info_vdf(&conn, &[parent_app_id]).await?;
         let parent = parent_vdf
             .get(&parent_app_id)
@@ -232,7 +226,6 @@ pub async fn fetch_depots_with_names(
         Ok::<_, String>(depots)
     })
     .await
-    .map_err(|_| "Steam PICS batch query timed out".to_string())?
 }
 
 pub fn parse_dlc_list(app: &Table) -> Vec<u32> {
@@ -259,9 +252,8 @@ pub async fn fetch_dlc_info(
     app_id: u32,
     extra_ids: &[u32],
 ) -> Result<DlcInfo, String> {
-    let extra = extra_ids.to_vec();
-    timeout(PICS_BATCH_TIMEOUT, async move {
-        let conn = session.connection().await?;
+    let extra = extra_ids;
+    call_with_retry(&session, 2, PICS_BATCH_TIMEOUT, "Steam PICS batch query timed out", |conn| async move {
         let parent = pics_product_info_vdf(&conn, &[app_id]).await?;
         let listed = parent.get(&app_id).map(parse_dlc_list).unwrap_or_default();
         let mut ids: Vec<u32> = listed.iter().chain(extra.iter()).copied().collect();
@@ -284,7 +276,6 @@ pub async fn fetch_dlc_info(
         Ok::<_, String>(DlcInfo { listed, names })
     })
     .await
-    .map_err(|_| "Steam PICS batch query timed out".to_string())?
 }
 
 fn classify_role(
