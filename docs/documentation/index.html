@@ -435,6 +435,7 @@ paru -S steam-manifest-downloader-bin
 <span class="cm"># Builds locally</span>
 paru -S steam-manifest-downloader</code></pre>
               </div>
+              <p>The terminal version has its own package, <code>steam-manifest-downloader-terminal-bin</code>. It installs <code>smd</code> and works next to either desktop package, see <a href="#terminal-start">Terminal version</a>.</p>
               <p>Updates come through your package manager, and the in-app updater points you there instead of fetching an AppImage.</p>
 
               <h4 id="linux-appimage">Linux, AppImage <a class="alink" href="#linux-appimage" aria-label="Permalink to Linux, AppImage">#</a></h4>
@@ -945,7 +946,7 @@ setManifestid(1392863, "4398981003384795747", 13789896785)</code></pre>
 
             <div class="prose">
               <h3 id="terminal-start">Download and start <a class="alink" href="#terminal-start" aria-label="Permalink to Download and start">#</a></h3>
-              <p>The <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases">releases page</a> has one file per system: <code>Steam-Manifest-Downloader-Terminal_&lt;version&gt;_linux-x64</code> and <code>Steam-Manifest-Downloader-Terminal_&lt;version&gt;_windows-x64.exe</code>.</p>
+              <p>The <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases">releases page</a> has one file per system: <code>Steam-Manifest-Downloader-Terminal_&lt;version&gt;_linux-x64</code> and <code>Steam-Manifest-Downloader-Terminal_&lt;version&gt;_windows-x64.exe</code>. On Arch, CachyOS and Manjaro, <code>paru -S steam-manifest-downloader-terminal-bin</code> installs it as <code>smd</code>, and updates come through the package manager.</p>
               <div class="snip">
                 <div class="snip__bar">
                   <p class="snip__lang">bash</p>

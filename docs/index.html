@@ -513,7 +513,7 @@
           <article class="route">
             <p class="route__tag">Arch, CachyOS, Manjaro</p>
             <h3>From the AUR</h3>
-            <p>Two packages are available. The first installs the released binary, the second builds locally. They conflict with each other, so only one can be installed.</p>
+            <p>Two packages for the desktop app: the first installs the released binary, the second builds locally. They conflict with each other, so only one can be installed. The terminal version has a package of its own.</p>
             <div class="cmd">
               <code>paru -S steam-manifest-downloader-bin</code>
               <button class="copy" type="button" data-copy="paru -S steam-manifest-downloader-bin" aria-label="Copy the paru command for the released binary package"><span class="copy__label">Copy</span></button>
@@ -524,6 +524,11 @@
               <button class="copy" type="button" data-copy="paru -S steam-manifest-downloader" aria-label="Copy the paru command that builds the package locally"><span class="copy__label">Copy</span></button>
             </div>
             <p class="cmd__note">Builds locally.</p>
+            <div class="cmd">
+              <code>paru -S steam-manifest-downloader-terminal-bin</code>
+              <button class="copy" type="button" data-copy="paru -S steam-manifest-downloader-terminal-bin" aria-label="Copy the paru command for the terminal version"><span class="copy__label">Copy</span></button>
+            </div>
+            <p class="cmd__note">Terminal version, installs <code>smd</code>.</p>
           </article>
 
           <article class="route">
@@ -553,7 +558,7 @@
           <article class="route">
             <p class="route__tag">Servers, scripts, Docker</p>
             <h3>Terminal version</h3>
-            <p>The terminal version is a single file per system on the <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest">releases page</a>, <code>Steam-Manifest-Downloader-Terminal_&lt;version&gt;_linux-x64</code> or <code>_windows-x64.exe</code>. Start it without arguments for the terminal interface, or use its commands. The same program is published as a Docker image:</p>
+            <p>The terminal version is a single file per system on the <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest">releases page</a>, <code>Steam-Manifest-Downloader-Terminal_&lt;version&gt;_linux-x64</code> or <code>_windows-x64.exe</code>. Start it without arguments for the terminal interface, or use its commands. On Arch it is in the AUR as <code>steam-manifest-downloader-terminal-bin</code>. The same program is published as a Docker image:</p>
             <div class="cmd">
               <code>docker run --rm -v smd-data:/data -v "$PWD/games:/games" ghcr.io/mcbabel/steam-manifest-downloader download 220</code>
               <button class="copy" type="button" data-copy='docker run --rm -v smd-data:/data -v "$PWD/games:/games" ghcr.io/mcbabel/steam-manifest-downloader download 220' aria-label="Copy the docker run command that downloads App ID 220"><span class="copy__label">Copy</span></button>
@@ -797,7 +802,7 @@
           <details class="qa">
             <summary><span>Which AUR package should I pick?</span></summary>
             <div class="qa__body">
-              <p>Use steam-manifest-downloader-bin for the released binary, or steam-manifest-downloader if you would rather build locally. The two conflict, so install one or the other.</p>
+              <p>For the desktop app, use steam-manifest-downloader-bin for the released binary, or steam-manifest-downloader if you would rather build locally. The two conflict, so install one or the other. For the terminal version there is steam-manifest-downloader-terminal-bin, which installs <code>smd</code> and works next to either of them.</p>
             </div>
           </details>
           <details class="qa">
