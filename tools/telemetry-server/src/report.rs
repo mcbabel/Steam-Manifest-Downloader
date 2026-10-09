@@ -45,6 +45,8 @@ impl Options {
 #[derive(Debug, Clone)]
 pub struct Ev {
     pub day: NaiveDate,
+    pub ts: i64,
+    pub replay: bool,
     pub install: String,
     pub session: String,
     pub version: String,
@@ -110,6 +112,8 @@ pub fn parse_record(record: &Value, since: NaiveDate, all_channels: bool) -> Vec
     };
     let base = Ev {
         day: received.date_naive(),
+        ts: received.timestamp(),
+        replay: payload["replay"].as_bool().unwrap_or(false),
         install: text(payload, "installation_id"),
         session: text(payload, "session_id"),
         version: text(payload, "app_version"),
@@ -126,8 +130,8 @@ pub fn parse_record(record: &Value, since: NaiveDate, all_channels: bool) -> Vec
     events
         .iter()
         .filter_map(|e| {
-            let ts = e["ts"].as_i64().unwrap_or(received.timestamp());
-            let day = DateTime::<Utc>::from_timestamp(ts.min(received.timestamp()), 0)
+            let ts = e["ts"].as_i64().unwrap_or(received.timestamp()).min(received.timestamp());
+            let day = DateTime::<Utc>::from_timestamp(ts, 0)
                 .map(|d| d.date_naive())
                 .unwrap_or(base.day);
             if day < since {
@@ -135,6 +139,7 @@ pub fn parse_record(record: &Value, since: NaiveDate, all_channels: bool) -> Vec
             }
             Some(Ev {
                 day,
+                ts,
                 kind: text(e, "kind"),
                 props: e.get("props").cloned().unwrap_or(Value::Null),
                 ..base.clone()
@@ -376,6 +381,238 @@ fn settings_share(events: &[Ev]) -> Vec<(String, usize, usize)> {
     counts.into_iter().map(|(k, n)| (k, n, total)).collect()
 }
 
+pub struct FrontendRow {
+    pub name: String,
+    pub installs: usize,
+    pub active_7d: usize,
+    pub active_30d: usize,
+    pub sessions: usize,
+    pub downloads: usize,
+}
+
+pub fn frontends(events: &[Ev], today: NaiveDate) -> Vec<FrontendRow> {
+    let mut rows = Vec::new();
+    let groups: [(&str, Box<dyn Fn(&Ev) -> bool>); 4] = [
+        ("GUI", Box::new(|e: &Ev| e.frontend == "gui")),
+        ("TUI", Box::new(|e: &Ev| e.frontend == "tui")),
+        ("CLI", Box::new(|e: &Ev| e.frontend == "cli")),
+        ("Docker (any frontend)", Box::new(|e: &Ev| e.package == "docker")),
+    ];
+    for (name, keep) in groups {
+        let mine: Vec<&Ev> = events.iter().filter(|e| keep(e)).collect();
+        let installs_since = |days: i64| {
+            mine.iter()
+                .filter(|e| e.day > today - Duration::days(days))
+                .map(|e| e.install.as_str())
+                .collect::<HashSet<_>>()
+                .len()
+        };
+        rows.push(FrontendRow {
+            name: name.to_string(),
+            installs: mine.iter().map(|e| e.install.as_str()).collect::<HashSet<_>>().len(),
+            active_7d: installs_since(7),
+            active_30d: installs_since(30),
+            sessions: mine.iter().map(|e| e.session.as_str()).collect::<HashSet<_>>().len(),
+            downloads: mine.iter().filter(|e| e.kind == "download_started").count(),
+        });
+    }
+    rows
+}
+
+#[derive(Default, Debug, Clone)]
+pub struct SessionStats {
+    pub frontend: String,
+    pub sessions: usize,
+    pub measured: usize,
+    pub avg_min: f64,
+    pub median_min: f64,
+    pub p90_min: f64,
+    pub avg_active_min: Option<f64>,
+    pub background_share: Option<f64>,
+    pub downloading_share: f64,
+    pub buckets: Vec<(&'static str, usize)>,
+}
+
+const SESSION_BUCKETS: &[(&str, f64)] = &[
+    ("<1m", 1.0),
+    ("1-5m", 5.0),
+    ("5-15m", 15.0),
+    ("15-60m", 60.0),
+    ("1-3h", 180.0),
+    ("3-8h", 480.0),
+    (">8h", f64::INFINITY),
+];
+
+pub fn sessions(events: &[Ev]) -> Vec<SessionStats> {
+    struct S {
+        frontend: String,
+        first: i64,
+        last: i64,
+        uptime: Option<f64>,
+        active: Option<f64>,
+        downloading: bool,
+    }
+    let mut map: HashMap<&str, S> = HashMap::new();
+    for e in events.iter().filter(|e| !e.replay) {
+        let s = map.entry(&e.session).or_insert_with(|| S {
+            frontend: e.frontend.clone(),
+            first: e.ts,
+            last: e.ts,
+            uptime: None,
+            active: None,
+            downloading: false,
+        });
+        s.first = s.first.min(e.ts);
+        s.last = s.last.max(e.ts);
+        if matches!(e.kind.as_str(), "heartbeat" | "session_end") {
+            if let Some(m) = e.props["uptime_min"].as_f64() {
+                s.uptime = Some(s.uptime.map_or(m, |u: f64| u.max(m)));
+            }
+            if let Some(m) = e.props["active_min"].as_f64() {
+                s.active = Some(s.active.map_or(m, |u: f64| u.max(m)));
+            }
+            if e.props["downloading"].as_bool() == Some(true) {
+                s.downloading = true;
+            }
+        }
+        if e.kind == "download_started" {
+            s.downloading = true;
+        }
+    }
+    let mut by_front: BTreeMap<String, Vec<&S>> = BTreeMap::new();
+    for s in map.values() {
+        by_front.entry("All".into()).or_default().push(s);
+        by_front.entry(s.frontend.to_uppercase()).or_default().push(s);
+    }
+    by_front
+        .into_iter()
+        .map(|(frontend, list)| {
+            let mut mins: Vec<f64> = list
+                .iter()
+                .map(|s| s.uptime.unwrap_or((((s.last - s.first).max(0) as f64) / 60.0).min(24.0 * 60.0)))
+                .collect();
+            mins.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+            let n = mins.len();
+            let pick = |q: f64| if n == 0 { 0.0 } else { mins[((n - 1) as f64 * q).round() as usize] };
+            let with_active: Vec<&&S> = list.iter().filter(|s| s.active.is_some() && s.uptime.is_some()).collect();
+            let open: f64 = with_active.iter().map(|s| s.uptime.unwrap_or(0.0)).sum();
+            let active: f64 = with_active.iter().map(|s| s.active.unwrap_or(0.0)).sum();
+            SessionStats {
+                frontend,
+                sessions: n,
+                measured: list.iter().filter(|s| s.uptime.is_some()).count(),
+                avg_min: if n == 0 { 0.0 } else { mins.iter().sum::<f64>() / n as f64 },
+                median_min: pick(0.5),
+                p90_min: pick(0.9),
+                avg_active_min: (!with_active.is_empty()).then(|| active / with_active.len() as f64),
+                background_share: (open > 0.0).then(|| (1.0 - active / open).max(0.0)),
+                downloading_share: if n == 0 { 0.0 } else { list.iter().filter(|s| s.downloading).count() as f64 / n as f64 },
+                buckets: SESSION_BUCKETS
+                    .iter()
+                    .enumerate()
+                    .map(|(i, (label, upper))| {
+                        let lower = if i == 0 { f64::NEG_INFINITY } else { SESSION_BUCKETS[i - 1].1 };
+                        (*label, mins.iter().filter(|m| **m >= lower && **m < *upper).count())
+                    })
+                    .collect(),
+            }
+        })
+        .collect()
+}
+
+const FEATURES: &[(&str, &str, &str)] = &[
+    ("Downloads", "download_started", "mode"),
+    ("Depot selection", "download_started", "selection"),
+    ("Download source", "download_started", "source"),
+    ("Download queue", "queue_action", "action"),
+    ("Pause and resume", "download_paused", "paused"),
+    ("Shut down after download", "shutdown_after", "action"),
+    ("Steps after shutdown", "followup", "action"),
+    ("History", "history_action", "action"),
+    ("Updates found in history", "updates_found", "count"),
+    ("Play from history", "game_launched", "method"),
+    ("Add to Steam library", "library_added", "from"),
+    ("Desktop shortcuts", "shortcut_created", ""),
+    ("Emulator patch", "patch_applied", "entry"),
+    ("Emulator revert", "patch_reverted", "entry"),
+    ("Emulator settings saved", "patch_settings_saved", ""),
+    ("Steamless", "steamless_used", "outcome"),
+    ("Steam API check bypass", "api_bypass", "action"),
+    ("Merge DLC depots", "dlc_merged", "ok"),
+    ("Manifest tools", "manifest_tool", "action"),
+    ("Search", "search_performed", "found"),
+    ("Lua upload", "lua_parsed", ""),
+    ("Proxy test", "proxy_tested", "ok"),
+    ("Settings opened", "settings_opened", ""),
+    ("Settings changed", "settings_saved", "keys"),
+    ("Theme", "theme_toggled", "to"),
+    ("Keyboard shortcuts", "shortcut_key", "key"),
+    ("Bug report", "bug_report_opened", "source"),
+    ("Diagnostic info copied", "diagnostics_copied", ""),
+    ("App update check", "update_checked", "available"),
+    ("App update installed", "update_installed", ""),
+    ("CLI command", "cli_command", "command"),
+];
+
+pub struct FeatureRow {
+    pub feature: &'static str,
+    pub detail: String,
+    pub count: usize,
+    pub installs: usize,
+    pub by_frontend: [usize; 3],
+}
+
+pub fn feature_usage(events: &[Ev]) -> Vec<FeatureRow> {
+    let mut out = Vec::new();
+    for (feature, kind, key) in FEATURES {
+        let mut groups: BTreeMap<String, (usize, HashSet<&str>, [HashSet<&str>; 3])> = BTreeMap::new();
+        for e in events.iter().filter(|e| e.kind == *kind) {
+            let details: Vec<String> = if key.is_empty() {
+                vec!["-".into()]
+            } else if let Some(list) = e.props[*key].as_array() {
+                list.iter().map(|v| v.as_str().map(String::from).unwrap_or_else(|| v.to_string())).collect()
+            } else {
+                vec![prop(e, key)]
+            };
+            for d in details {
+                let g = groups.entry(d).or_default();
+                g.0 += 1;
+                g.1.insert(&e.install);
+                let idx = match e.frontend.as_str() {
+                    "tui" => 1,
+                    "cli" => 2,
+                    _ => 0,
+                };
+                g.2[idx].insert(&e.install);
+            }
+        }
+        let mut rows: Vec<FeatureRow> = groups
+            .into_iter()
+            .map(|(detail, (count, installs, fronts))| FeatureRow {
+                feature,
+                detail,
+                count,
+                installs: installs.len(),
+                by_frontend: [fronts[0].len(), fronts[1].len(), fronts[2].len()],
+            })
+            .collect();
+        rows.sort_by(|a, b| b.count.cmp(&a.count));
+        if rows.is_empty() {
+            rows.push(FeatureRow { feature, detail: "-".into(), count: 0, installs: 0, by_frontend: [0; 3] });
+        }
+        out.extend(rows.into_iter().take(12));
+    }
+    out
+}
+
+fn minutes(m: f64) -> String {
+    if m >= 60.0 {
+        format!("{:.1} h", m / 60.0)
+    } else {
+        format!("{:.0} min", m)
+    }
+}
+
 fn esc(s: &str) -> String {
     s.replace('&', "&amp;")
         .replace('<', "&lt;")
@@ -471,6 +708,43 @@ pub fn render(events: &[Ev], today: NaiveDate, days: i64) -> String {
         .collect();
     table(&mut out, &["Month", "Installs"], &rows);
 
+    out.push_str("<h2>Frontends</h2><p class=\"muted\">Installs per frontend in the period, and how many were active in the last 7 and 30 days. The CLI only reports when statistics were switched on with <code>smd telemetry on</code> or <code>SMD_TELEMETRY=on</code>.</p>");
+    let rows: Vec<Vec<String>> = frontends(events, today)
+        .into_iter()
+        .map(|f| vec![esc(&f.name), f.installs.to_string(), f.active_7d.to_string(), f.active_30d.to_string(), f.sessions.to_string(), f.downloads.to_string()])
+        .collect();
+    table(&mut out, &["Frontend", "Installs", "Active 7d", "Active 30d", "Sessions", "Downloads"], &rows);
+
+    out.push_str("<h2>Time in the app</h2><p class=\"muted\">Session length comes from heartbeats and session ends where the app sends them, otherwise from the first and last event of the session, which undercounts. Background is the share of open time while the window was not in front. Sessions with a download count a download that ran during the session.</p>");
+    let stats = sessions(events);
+    let rows: Vec<Vec<String>> = stats
+        .iter()
+        .map(|s| {
+            vec![
+                esc(&s.frontend),
+                s.sessions.to_string(),
+                format!("{} ({})", s.measured, pct(s.measured, s.sessions)),
+                minutes(s.avg_min),
+                minutes(s.median_min),
+                minutes(s.p90_min),
+                s.avg_active_min.map_or("-".into(), minutes),
+                s.background_share.map_or("-".into(), |b| format!("{:.0}%", b * 100.0)),
+                format!("{:.0}%", s.downloading_share * 100.0),
+            ]
+        })
+        .collect();
+    table(&mut out, &["Frontend", "Sessions", "Measured", "Average", "Median", "90th pct", "Avg in front", "Background", "With download"], &rows);
+    if let Some(all) = stats.iter().find(|s| s.frontend == "All") {
+        let max = all.buckets.iter().map(|b| b.1).max().unwrap_or(0);
+        let rows: Vec<Vec<String>> = all
+            .buckets
+            .iter()
+            .map(|(label, n)| vec![esc(label), format!("{} {}", n, bar(*n, max)), pct(*n, all.sessions)])
+            .collect();
+        out.push_str("<h3>Session length, all frontends</h3>");
+        table(&mut out, &["Length", "Sessions", "Share"], &rows);
+    }
+
     out.push_str("<h2>Versions</h2><p class=\"muted\">Success counts complete downloads against complete, partial and failed ones. Lost means a download started and the session never reported an end; interrupted means the next start found the marker of a download that did not finish.</p>");
     let rows: Vec<Vec<String>> = vers
         .iter()
@@ -534,28 +808,25 @@ pub fn render(events: &[Ev], today: NaiveDate, days: i64) -> String {
     let starts = group(events, "download_started", |_| true, &["mode", "selection", "source", "engine"]);
     table(&mut out, &["Mode", "Selection", "Source", "Engine", "Count", "Installs", "Versions"], &group_rows(&starts, 25));
 
-    out.push_str("<h2>Other features</h2>");
-    let mut feature_rows: Vec<Vec<String>> = Vec::new();
-    for (kind, keys) in [
-        ("library_added", &["from", "ok"][..]),
-        ("game_launched", &["method", "partial"][..]),
-        ("proxy_tested", &["proxy", "ok", "key"][..]),
-        ("shortcut_created", &["desktop", "start_menu"][..]),
-        ("update_checked", &["available", "failed"][..]),
-        ("update_installed", &[][..]),
-        ("diagnostics_copied", &[][..]),
-        ("bug_report_opened", &["source", "diag", "log"][..]),
-    ] {
-        for g in group(events, kind, |_| true, keys).iter().take(8) {
-            feature_rows.push(vec![
-                format!("<code>{}</code>", esc(kind)),
-                esc(&keys.iter().zip(&g.key).map(|(k, v)| format!("{}={}", k, v)).collect::<Vec<_>>().join(" ")),
-                g.count.to_string(),
-                g.installs.to_string(),
-            ]);
-        }
-    }
-    table(&mut out, &["Event", "Details", "Count", "Installs"], &feature_rows);
+    out.push_str("<h2>Feature usage</h2><p class=\"muted\">Every feature that reports an event, with the installs that used it, split by frontend. A count of 0 means nobody used it in the period, or the feature is newer than the installs.</p>");
+    let usage = feature_usage(events);
+    let max = usage.iter().map(|r| r.installs).max().unwrap_or(0);
+    let rows: Vec<Vec<String>> = usage
+        .iter()
+        .map(|r| {
+            vec![
+                esc(r.feature),
+                format!("<code>{}</code>", esc(&r.detail)),
+                r.count.to_string(),
+                format!("{} {}", r.installs, bar(r.installs, max)),
+                pct(r.installs, act.installs),
+                r.by_frontend[0].to_string(),
+                r.by_frontend[1].to_string(),
+                r.by_frontend[2].to_string(),
+            ]
+        })
+        .collect();
+    table(&mut out, &["Feature", "Detail", "Uses", "Installs", "Share", "GUI", "TUI", "CLI"], &rows);
 
     out.push_str("<h2>Settings in use</h2><p class=\"muted\">From the newest app_start of each install that sends schema 3.</p>");
     let rows: Vec<Vec<String>> = settings_share(events)
@@ -712,6 +983,51 @@ mod tests {
         assert!(section.contains("<td>en</td>"));
         assert!(section.contains("<td>german</td>"));
         assert!(!section.contains("<td>unknown</td>"));
+    }
+
+    #[test]
+    fn sessions_use_heartbeats_and_fall_back_to_event_span() {
+        let start = ts("2026-03-02");
+        let mut tui = record("2026-03-02", "a", "1.5.1", serde_json::json!([
+            { "kind": "app_start", "ts": start },
+            { "kind": "heartbeat", "ts": start + 900, "props": { "uptime_min": 15, "active_min": 5, "downloading": true } },
+            { "kind": "session_end", "ts": start + 1800, "props": { "uptime_min": 30, "active_min": 10 } },
+        ]));
+        tui["payload"]["frontend"] = serde_json::json!("tui");
+        let old = record("2026-03-02", "b", "1.4.3", serde_json::json!([
+            { "kind": "app_start", "ts": start },
+            { "kind": "search_performed", "ts": start + 600 },
+        ]));
+        let mut events = parse_record(&tui, day("2026-01-01"), false);
+        events.extend(parse_record(&old, day("2026-01-01"), false));
+        let stats = sessions(&events);
+        let tui = stats.iter().find(|s| s.frontend == "TUI").unwrap();
+        assert_eq!(tui.avg_min, 30.0);
+        assert_eq!(tui.avg_active_min, Some(10.0));
+        assert!((tui.background_share.unwrap() - 2.0 / 3.0).abs() < 1e-9);
+        assert_eq!(tui.downloading_share, 1.0);
+        let gui = stats.iter().find(|s| s.frontend == "GUI").unwrap();
+        assert_eq!((gui.measured, gui.avg_min), (0, 10.0));
+        let all = stats.iter().find(|s| s.frontend == "All").unwrap();
+        assert_eq!(all.sessions, 2);
+    }
+
+    #[test]
+    fn feature_usage_splits_by_frontend_and_lists_unused_features() {
+        let mut cli = record("2026-03-02", "a", "1.5.1", serde_json::json!([
+            { "kind": "cli_command", "ts": ts("2026-03-02"), "props": { "command": "download" } },
+            { "kind": "settings_saved", "ts": ts("2026-03-02"), "props": { "keys": ["proxy", "max_retries"] } },
+        ]));
+        cli["payload"]["frontend"] = serde_json::json!("cli");
+        cli["payload"]["package"] = serde_json::json!("docker");
+        let events = parse_record(&cli, day("2026-01-01"), false);
+        let usage = feature_usage(&events);
+        let row = usage.iter().find(|r| r.feature == "CLI command").unwrap();
+        assert_eq!((row.detail.as_str(), row.count, row.by_frontend), ("download", 1, [0, 0, 1]));
+        assert!(usage.iter().any(|r| r.feature == "Settings changed" && r.detail == "proxy"));
+        assert!(usage.iter().any(|r| r.feature == "Steamless" && r.count == 0));
+        let fronts = frontends(&events, day("2026-03-05"));
+        assert_eq!(fronts.iter().find(|f| f.name.starts_with("Docker")).unwrap().installs, 1);
     }
 
     #[test]
