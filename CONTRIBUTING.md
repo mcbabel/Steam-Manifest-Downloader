@@ -142,8 +142,15 @@ uses Internet Archive only.
 
 ### Frontend (vanilla JS, no framework)
 
+- The app logic lives in `public/js/app/`, one plain script per area
+  (`select.js`, `progress.js`, `history.js`, `emulator.js`, `settings.js`
+  and so on). They share one global scope and load in the order listed at
+  the end of `public/index.html`: `core.js` first with `state`, `els` and the
+  shared helpers, `main.js` last with the start-up code. Only declare
+  functions and constants at the top level of a file; code that runs on
+  start-up belongs in `main.js` or the `init*` functions it calls.
 - Always HTML-escape interpolated values before assigning to `innerHTML`.
-  Use the `escapeHtml` helper in `public/js/app.js`.
+  Use the `escapeHtml` helper in `public/js/app/core.js`.
 - Prefer event delegation on containers over re-attaching listeners after
   each re-render.
 - No `console.log` debug noise in merged code.

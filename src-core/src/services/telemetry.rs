@@ -863,8 +863,8 @@ mod tests {
             "tokio-1.40.0/src/rt.rs:55"
         );
         assert_eq!(
-            sanitize_location("tauri://localhost/js/app.js:1234:5"),
-            "app.js:1234"
+            sanitize_location("tauri://localhost/js/app/emulator.js:1234:5"),
+            "emulator.js:1234"
         );
     }
 

@@ -200,7 +200,7 @@ goes wrong:
   `backend.noSources`. The text itself, which could contain a path or a game
   name, is not sent. Each message is counted once per session.
 - `crash` — the app crashed or hit a programming error. The code location
-  (like `src-core/src/ops/download.rs:812` or `app.js:1234`) and the first line
+  (like `src-core/src/ops/download.rs:812` or `emulator.js:1234`) and the first line
   of the error are sent. Before anything leaves your computer, paths, anything
   in quotes and all numbers are removed from that line. Crashes are saved on
   disk and sent with the next start, at most five at a time.
