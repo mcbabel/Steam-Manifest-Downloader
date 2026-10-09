@@ -856,11 +856,6 @@ pub fn generate_interfaces(dll_bytes: &[u8]) -> Result<String, String> {
     Ok(out)
 }
 
-fn generate_interfaces_from_file(target: &Path) -> Result<String, String> {
-    let bytes = fs::read(target).map_err(|e| format!("read {}: {}", target.display(), e))?;
-    generate_interfaces(&bytes)
-}
-
 pub fn apply_replacement(
     target: &Path,
     platform_cache: &Path,
@@ -935,15 +930,7 @@ fn apply_to_target(
         .map_err(|e| (fail::EMU_BINARY_MISSING, e))?;
     crate::dlog!("emu", "emulator binary resolved: {}", emu_dll.display());
 
-    let interfaces_source = interfaces_source_for(target);
-    crate::dlog!(
-        "emu",
-        "reading interfaces from {} (backup={})",
-        interfaces_source.display(),
-        interfaces_source != target
-    );
-    let interfaces = generate_interfaces_from_file(&interfaces_source)
-        .map_err(|e| (fail::INTERFACES_FAILED, format!("generate_interfaces failed: {}", e)))?;
+    let interfaces = resolve_interfaces(target)?;
 
     let backup = backup_path_for(target);
     if backup.exists() {
@@ -965,9 +952,11 @@ fn apply_to_target(
     fs::create_dir_all(&settings_dir)
         .map_err(|e| (fail::SETTINGS_WRITE_FAILED, format!("create steam_settings: {}", e)))?;
 
-    fs::write(settings_dir.join("steam_interfaces.txt"), interfaces).map_err(|e| {
-        (fail::SETTINGS_WRITE_FAILED, format!("write steam_interfaces.txt: {}", e))
-    })?;
+    if let Some(interfaces) = interfaces {
+        fs::write(settings_dir.join("steam_interfaces.txt"), interfaces).map_err(|e| {
+            (fail::SETTINGS_WRITE_FAILED, format!("write steam_interfaces.txt: {}", e))
+        })?;
+    }
     fs::write(settings_dir.join("steam_appid.txt"), app_id.trim()).map_err(|e| {
         (fail::SETTINGS_WRITE_FAILED, format!("write steam_appid.txt: {}", e))
     })?;
@@ -1047,13 +1036,56 @@ pub fn revert_replacement(target: &Path) -> Result<(), TargetError> {
     Ok(())
 }
 
-fn interfaces_source_for(target: &Path) -> PathBuf {
-    let backup = backup_path_for(target);
-    if backup.exists() {
-        backup
-    } else {
-        target.to_path_buf()
+fn interfaces_candidates(target: &Path) -> Vec<PathBuf> {
+    let mut list = vec![backup_path_for(target)];
+    if let (Some(parent), Some(stem), Some(name)) = (
+        target.parent(),
+        target.file_stem().and_then(|s| s.to_str()),
+        target.file_name().and_then(|s| s.to_str()),
+    ) {
+        let ext = target.extension().and_then(|s| s.to_str()).unwrap_or("");
+        let dot_ext = if ext.is_empty() { String::new() } else { format!(".{}", ext) };
+        list.push(parent.join(format!("{}_o{}", stem, dot_ext)));
+        for suffix in ["bak", "orig", "original", "backup"] {
+            list.push(parent.join(format!("{}.{}", name, suffix)));
+        }
     }
+    list.push(target.to_path_buf());
+    list
+}
+
+fn resolve_interfaces(target: &Path) -> Result<Option<String>, TargetError> {
+    let mut read_error: Option<String> = None;
+    for source in interfaces_candidates(target) {
+        if !source.is_file() {
+            continue;
+        }
+        match fs::read(&source) {
+            Ok(bytes) => {
+                if let Ok(found) = generate_interfaces(&bytes) {
+                    crate::dlog!("emu", "interfaces read from {}", source.display());
+                    return Ok(Some(found));
+                }
+            }
+            Err(e) if source == target => read_error = Some(format!("read {}: {}", source.display(), e)),
+            Err(_) => {}
+        }
+    }
+    if let Some(e) = read_error {
+        return Err((fail::INTERFACES_FAILED, format!("generate_interfaces failed: {}", e)));
+    }
+    let existing = target
+        .parent()
+        .map(|p| p.join("steam_settings").join("steam_interfaces.txt"))
+        .and_then(|p| fs::read_to_string(p).ok())
+        .filter(|s| !s.trim().is_empty());
+    crate::dlog!(
+        "emu",
+        "no Steam interfaces in {}, keeping existing list: {}",
+        target.display(),
+        existing.is_some()
+    );
+    Ok(existing)
 }
 
 fn backup_path_for(target: &Path) -> PathBuf {
@@ -1096,31 +1128,49 @@ mod bundled_tests {
 mod interfaces_source_tests {
     use super::*;
 
-    #[test]
-    fn a_first_patch_reads_the_library_itself() {
-        let dir = std::env::temp_dir().join("smd-iface-first");
+    fn fresh(name: &str) -> (PathBuf, PathBuf) {
+        let dir = std::env::temp_dir().join(format!("smd-iface-{}", name));
         let _ = fs::remove_dir_all(&dir);
         fs::create_dir_all(&dir).unwrap();
         let target = dir.join("steam_api64.dll");
-        fs::write(&target, b"original").unwrap();
+        (dir, target)
+    }
 
-        assert_eq!(interfaces_source_for(&target), target);
+    #[test]
+    fn a_first_patch_reads_the_library_itself() {
+        let (dir, target) = fresh("first");
+        fs::write(&target, b"..SteamUser021..").unwrap();
+
+        assert_eq!(resolve_interfaces(&target).unwrap().as_deref(), Some("SteamUser021\n"));
         let _ = fs::remove_dir_all(&dir);
     }
 
     #[test]
     fn a_repeat_patch_reads_the_backup_not_the_emulator() {
-        let dir = std::env::temp_dir().join("smd-iface-repeat");
-        let _ = fs::remove_dir_all(&dir);
-        fs::create_dir_all(&dir).unwrap();
-        let target = dir.join("steam_api64.dll");
-        fs::write(&target, b"gbe_fork").unwrap();
-        let backup = backup_path_for(&target);
-        fs::write(&backup, b"original").unwrap();
+        let (dir, target) = fresh("repeat");
+        fs::write(&target, b"..SteamUser023..").unwrap();
+        fs::write(backup_path_for(&target), b"..SteamUser019..").unwrap();
 
-        let src = interfaces_source_for(&target);
-        assert_eq!(src, backup);
-        assert_eq!(fs::read(&src).unwrap(), b"original");
+        assert_eq!(resolve_interfaces(&target).unwrap().as_deref(), Some("SteamUser019\n"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_library_patched_by_another_tool_uses_its_original_copy() {
+        let (dir, target) = fresh("other-tool");
+        fs::write(&target, b"cracked").unwrap();
+        fs::write(dir.join("steam_api64_o.dll"), b"..SteamUser020..").unwrap();
+
+        assert_eq!(resolve_interfaces(&target).unwrap().as_deref(), Some("SteamUser020\n"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn no_interfaces_anywhere_still_patches() {
+        let (dir, target) = fresh("none");
+        fs::write(&target, b"cracked").unwrap();
+
+        assert_eq!(resolve_interfaces(&target).unwrap(), None);
         let _ = fs::remove_dir_all(&dir);
     }
 }
