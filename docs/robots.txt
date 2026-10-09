@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://smd.mcbabel.de/sitemap.xml

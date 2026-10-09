@@ -3,14 +3,74 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Steam Manifest Downloader, resolve Steam depots and write them to disk</title>
-<meta name="description" content="SMD resolves depot IDs, manifest GIDs and depot keys from a .lua or .st file or an App ID, then writes the depot contents to a folder you pick. Desktop app for Windows 10 and 11 and for Linux, plus a terminal version and a Docker image. Built with Rust and Tauri v2.">
+<title>Steam Manifest Downloader (SMD): download Steam depots from .lua and .st files</title>
+<meta name="description" content="Free, open source Steam depot downloader for Windows and Linux. Load a .lua or .st manifest file or an App ID, pick depots, download them and patch the game with gbe_fork.">
 <meta name="theme-color" content="#06060A">
+<link rel="canonical" href="https://smd.mcbabel.de/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Steam Manifest Downloader">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="Steam Manifest Downloader">
+<meta property="og:description" content="Free, open source Steam depot downloader for Windows and Linux. Load a .lua or .st manifest file or an App ID, pick depots, download them and patch the game with gbe_fork.">
+<meta property="og:url" content="https://smd.mcbabel.de/">
+<meta property="og:image" content="https://smd.mcbabel.de/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Steam Manifest Downloader: download Steam depots from a .lua or .st manifest file or an App ID">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Steam Manifest Downloader">
+<meta name="twitter:description" content="Download Steam depots from a .lua or .st file or an App ID. Windows, Linux, terminal and Docker.">
+<meta name="twitter:image" content="https://smd.mcbabel.de/og.png">
 <link rel="icon" href="./icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=Fraunces:opsz,wght,SOFT,WONK@9..144,100..900,0..100,0..1&family=IBM+Plex+Mono:wght@400;500;600&family=Karla:wght@300..700&display=swap">
 <link rel="stylesheet" href="./style.css">
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "WebSite",
+   "@id": "https://smd.mcbabel.de/#website",
+   "url": "https://smd.mcbabel.de/",
+   "name": "Steam Manifest Downloader",
+   "alternateName": "SMD",
+   "inLanguage": "en"
+  },
+  {
+   "@type": "SoftwareApplication",
+   "@id": "https://smd.mcbabel.de/#app",
+   "name": "Steam Manifest Downloader",
+   "alternateName": "SMD",
+   "description": "Free, open source Steam depot downloader. Reads depot IDs, manifest IDs and depot keys from a .lua or .st file or an App ID, downloads the depots and can patch the game with the gbe_fork Steam emulator.",
+   "applicationCategory": "UtilitiesApplication",
+   "operatingSystem": "Windows 10, Windows 11, Linux",
+   "softwareVersion": "1.5.0",
+   "url": "https://smd.mcbabel.de/",
+   "image": "https://smd.mcbabel.de/og.png",
+   "downloadUrl": "https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest",
+   "installUrl": "https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest",
+   "license": "https://www.gnu.org/licenses/old-licenses/gpl-2.0.html",
+   "isAccessibleForFree": true,
+   "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "EUR"
+   },
+   "author": {
+    "@type": "Person",
+    "name": "MCbabel",
+    "url": "https://github.com/MCbabel"
+   },
+   "sameAs": [
+    "https://github.com/MCbabel/Steam-Manifest-Downloader"
+   ]
+  }
+ ]
+}
+</script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
