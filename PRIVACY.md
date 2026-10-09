@@ -17,12 +17,16 @@ default if you close the dialog. You can change your choice anytime in
 When telemetry is enabled, the app sends small events describing:
 
 - App version, build channel (`stable` / `dev` / `dev-local`), OS, architecture
+- Whether you use the desktop app or the terminal version (`gui` / `tui`),
+  how it was installed (`installer`, `portable`, `appimage`, `system`,
+  `flatpak`, `docker`, ...) and the language the app is shown in
 - A random install UUID generated once on first accept (no link to your
   identity — this is just so two events from the same session can be
   correlated)
 - A random session UUID regenerated every time the app starts
 - **Event counters** for a fixed list of actions:
-  - `app_start` — the app was launched
+  - `app_start` — the app was launched, with the settings snapshot described
+    below
   - `settings_opened` — you opened the Settings dialog
   - `theme_toggled` — you switched between dark / light theme
   - `search_performed` — you ran a search in Step 1, with whether anything was
@@ -43,7 +47,42 @@ When telemetry is enabled, the app sends small events describing:
   - `patch_settings_saved` — emulator settings were written to an already
     patched folder
   - `shortcut_created` — a Windows shortcut was created
-  - `update_checked` / `update_installed` — the auto-updater ran
+  - `update_checked` / `update_installed` — the auto-updater ran, and whether
+    the check failed
+  - `library_added` — a game was added to the Steam library, whether it worked
+    and whether Steam was restarted
+  - `game_launched` — a game was started from the history, and how (`steam`,
+    `wine`, `native` or `direct`)
+  - `proxy_tested` — the proxy test ran, with the proxy type (`none`, `http`,
+    `https`, `socks`) and whether it worked. Never the address
+  - `diagnostics_copied` — you copied the diagnostic info from the settings
+  - `crash`, `error_shown` and `download_interrupted` — described under
+    *Errors and crashes* below
+
+### Settings snapshot
+
+`app_start` carries which options are switched on, so the maintainer knows
+which settings matter. Only on/off values and fixed labels are sent, never a
+value you typed: the engine (`native` / `ddm`), whether Like Steam, auto start,
+DLC, the speed limit, auto update and keep-files-on-cancel are on, the proxy
+type, how many manifest sources are configured (as a range) and whether they
+differ from the defaults, whether a Hubcap or Ryuu key and a Steam folder are
+set (true or false, never the key or the path), and the retry and chunk counts.
+
+### How a download was started
+
+`download_started`, `download_completed` and `download_abandoned` also carry:
+
+| Field | Meaning |
+|---|---|
+| `mode` | `new`, `update`, `repair` or `resume` |
+| `selection` | how the depots were picked: `like_steam`, `manual`, `default`, `queued` or `resume` |
+| `source` | `upload`, `search`, `hubcap` or `ryuu` |
+| `queue` | whether it ran from the download queue |
+| `dlc` | whether DLC was included |
+| `keyless` | how many selected depots had no decryption key, as a range |
+| `custom_manifest` | whether a manifest ID was entered by hand |
+| `err_key` | for failures, the name of the error text that was shown, like `backend.noSources`. It names the message, it never contains it |
 
 ### Download failure diagnosis
 
@@ -96,6 +135,30 @@ label can never be derived from — or contain — a file path or a system messa
 This exists because a rename in an upstream emulator release silently broke every
 32-bit patch, and nothing surfaced it until a user reported it by hand.
 
+## Errors and crashes
+
+Most bugs are never reported, so the app tells the maintainer when something
+goes wrong:
+
+- `error_shown` — an error message was shown. Only the area (like `search` or
+  `steam_library`) and the name of the message are sent, for example
+  `backend.noSources`. The text itself, which could contain a path or a game
+  name, is not sent. Each message is counted once per session.
+- `crash` — the app crashed or hit a programming error. The code location
+  (like `src-core/src/ops/download.rs:812` or `app.js:1234`) and the first line
+  of the error are sent. Before anything leaves your computer, paths, anything
+  in quotes and all numbers are removed from that line. Crashes are saved on
+  disk and sent with the next start, at most five at a time.
+- `download_interrupted` — a download was still running when the app was
+  killed, crashed or the PC turned off. A small marker file is kept while a
+  download runs, and the next start reports the engine, the mode, the depot
+  count range and the step it was on.
+
+The settings show a short diagnostic ID (the first 8 characters of the random
+install UUID) when statistics are on. Pasting it into a bug report lets the
+maintainer find the errors your app reported. It is only shown to you and only
+useful if you choose to share it.
+
 ## What is NEVER collected
 
 - Steam App IDs, depot IDs, manifest IDs
@@ -103,6 +166,7 @@ This exists because a rename in an upstream emulator release silently broke ever
 - Game names, cover art, descriptions
 - File paths, directory contents, download targets
 - Your GitHub / Steam credentials, API keys, or any tokens
+- The text of error messages, or anything you typed into a field
 - Your IP address (stripped at the reverse proxy before anything reaches
   the server log)
 - Any identifier linked to your operating-system user account
