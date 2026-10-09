@@ -354,6 +354,7 @@ const ALLOWED_EVENT_KINDS: &[&str] = &[
     "game_launched",
     "proxy_tested",
     "diagnostics_copied",
+    "bug_report_opened",
 ];
 
 pub fn is_safe_kind(kind: &str) -> bool {
@@ -680,7 +681,21 @@ fn settings_snapshot(s: &settings_service::Settings) -> serde_json::Value {
         "max_retries": s.max_retries.min(20),
         "chunk_concurrency": s.native_chunk_concurrency.min(64),
         "keep_files_on_cancel": s.cancel_keep_files,
+        "game_language": game_language_label(&s.game_language),
+        "target_platform": if crate::services::depot_select::PLATFORMS.contains(&s.target_platform.as_str()) { s.target_platform.as_str() } else { "auto" },
     })
+}
+
+fn game_language_label(value: &str) -> &'static str {
+    let v = value.trim();
+    if v.is_empty() {
+        return "auto";
+    }
+    crate::services::depot_select::STEAM_LANGUAGES
+        .iter()
+        .find(|l| **l == v)
+        .copied()
+        .unwrap_or("other")
 }
 
 pub fn diagnostic_id(installation_id: &str) -> String {

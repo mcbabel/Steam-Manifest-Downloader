@@ -544,6 +544,7 @@ pub fn render(events: &[Ev], today: NaiveDate, days: i64) -> String {
         ("update_checked", &["available", "failed"][..]),
         ("update_installed", &[][..]),
         ("diagnostics_copied", &[][..]),
+        ("bug_report_opened", &["source", "diag", "log"][..]),
     ] {
         for g in group(events, kind, |_| true, keys).iter().take(8) {
             feature_rows.push(vec![
@@ -563,27 +564,46 @@ pub fn render(events: &[Ev], today: NaiveDate, days: i64) -> String {
         .collect();
     table(&mut out, &["Setting", "Installs", "Share"], &rows);
 
+    out.push_str("<h2>Languages</h2><p class=\"muted\">The language the app is shown in, from installs that send schema 3, and the game language picked for Like Steam downloads.</p><div class=\"grid\">");
+    let with_locale: Vec<Ev> = events.iter().filter(|e| e.locale != "unknown").cloned().collect();
+    let starts: Vec<Ev> = events
+        .iter()
+        .filter(|e| e.kind == "app_start" && e.props["settings"]["game_language"].is_string())
+        .cloned()
+        .collect();
+    for (title, list) in [
+        ("App language", share(&with_locale, |e| e.locale.clone())),
+        ("Game language", share(&starts, |e| e.props["settings"]["game_language"].as_str().unwrap_or("-").to_string())),
+    ] {
+        render_share(&mut out, title, &list);
+    }
+    out.push_str("</div>");
+
     out.push_str("<h2>Platforms</h2><div class=\"grid\">");
     for (title, list) in [
         ("Version", share(events, |e| e.version.clone())),
         ("OS", share(events, |e| e.os.clone())),
         ("Frontend", share(events, |e| e.frontend.clone())),
         ("Package", share(events, |e| e.package.clone())),
-        ("Language", share(events, |e| e.locale.clone())),
     ] {
-        let total: usize = list.iter().map(|x| x.1).sum();
-        let rows: Vec<Vec<String>> = list
-            .iter()
-            .take(12)
-            .map(|(k, n)| vec![esc(k), n.to_string(), pct(*n, total)])
-            .collect();
-        out.push_str("<div>");
-        let _ = write!(out, "<h3>{}</h3>", esc(title));
-        table(&mut out, &[title, "Installs", "Share"], &rows);
-        out.push_str("</div>");
+        render_share(&mut out, title, &list);
     }
     out.push_str("</div></main></body></html>");
     out
+}
+
+fn render_share(out: &mut String, title: &str, list: &[(String, usize)]) {
+    let total: usize = list.iter().map(|x| x.1).sum();
+    let max = list.first().map_or(0, |x| x.1);
+    let rows: Vec<Vec<String>> = list
+        .iter()
+        .take(12)
+        .map(|(k, n)| vec![esc(k), format!("{} {}", n, bar(*n, max)), pct(*n, total)])
+        .collect();
+    out.push_str("<div>");
+    let _ = write!(out, "<h3>{}</h3>", esc(title));
+    table(out, &[title, "Installs", "Share"], &rows);
+    out.push_str("</div>");
 }
 
 const CSS: &str = ":root{--bg:#f6f7f9;--fg:#1d2330;--muted:#667085;--card:#fff;--line:#e4e7ec;--accent:#3b82f6}@media (prefers-color-scheme:dark){:root{--bg:#0f1117;--fg:#e6e8ee;--muted:#98a2b3;--card:#171a22;--line:#262b36;--accent:#60a5fa}}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 system-ui,sans-serif}main{max-width:1100px;margin:0 auto;padding:24px 16px}h1{margin:0 0 4px}h2{margin:32px 0 8px}h3{margin:16px 0 6px;font-size:15px}.muted{color:var(--muted)}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:16px}.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}.card b{display:block;font-size:26px}.card span{color:var(--muted)}table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;display:block;overflow-x:auto}th,td{padding:6px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;white-space:nowrap}th{color:var(--muted);font-weight:600}code{font-size:12px}.bar{display:inline-block;width:80px;height:6px;background:var(--line);border-radius:3px;margin-left:6px;vertical-align:middle}.bar span{display:block;height:100%;background:var(--accent);border-radius:3px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}";
@@ -674,6 +694,24 @@ mod tests {
         let act = activity(&events, day("2026-04-01"));
         assert!((act.dau - 1.0).abs() < 1e-9);
         assert!((act.wau - 2.0).abs() < 0.3);
+    }
+
+    #[test]
+    fn languages_count_the_newest_locale_per_install() {
+        let mut a = record("2026-03-02", "a", "1.5.1", serde_json::json!([{ "kind": "app_start", "ts": ts("2026-03-02"), "props": { "settings": { "game_language": "german" } } }]));
+        a["payload"]["locale"] = serde_json::json!("de");
+        let mut b = record("2026-03-03", "b", "1.5.1", serde_json::json!([{ "kind": "app_start", "ts": ts("2026-03-03") }]));
+        b["payload"]["locale"] = serde_json::json!("en");
+        let old = record("2026-03-01", "c", "1.4.3", serde_json::json!([{ "kind": "app_start", "ts": ts("2026-03-01") }]));
+        let mut events = parse_record(&a, day("2026-01-01"), false);
+        events.extend(parse_record(&b, day("2026-01-01"), false));
+        events.extend(parse_record(&old, day("2026-01-01"), false));
+        let html = render(&events, day("2026-03-10"), 30);
+        let section = &html[html.find("<h2>Languages").unwrap()..html.find("<h2>Platforms").unwrap()];
+        assert!(section.contains("<td>de</td>"));
+        assert!(section.contains("<td>en</td>"));
+        assert!(section.contains("<td>german</td>"));
+        assert!(!section.contains("<td>unknown</td>"));
     }
 
     #[test]
