@@ -3889,27 +3889,119 @@ async function checkForUpdates() {
   }
 }
 
-/** Simple Markdown → HTML renderer for release notes */
-function renderMarkdown(md) {
-  let html = md.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  html = html.replace(/^### (.+)$/gm, '<h4>$1</h4>');
-  html = html.replace(/^## (.+)$/gm, '<h3>$1</h3>');
-  html = html.replace(/^# (.+)$/gm, '<h2>$1</h2>');
-  html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
-  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-  html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
-  html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
-  html = html.replace(/\n/g, '<br>');
-  // Clean up double <br> after block elements
-  html = html.replace(/<\/(h[234]|ul|li)><br>/g, '</$1>');
-  return html;
+const RELEASE_REPO = 'MCbabel/Steam-Manifest-Downloader';
+
+function releaseInline(text) {
+  const codes = [];
+  let out = text.replace(/`([^`]+)`/g, (_, c) => {
+    codes.push(c);
+    return `\u0000${codes.length - 1}\u0000`;
+  });
+  const links = [];
+  const keep = (html) => {
+    links.push(html);
+    return `\u0001${links.length - 1}\u0001`;
+  };
+  const safeUrl = (u) => (/^https?:\/\//i.test(u) ? u : null);
+  out = out.replace(/!\[[^\]]*\]\([^)]*\)/g, '');
+  out = out.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (m, label, url) => {
+    const u = safeUrl(url);
+    return u ? keep(`<a href="${escapeHtml(u)}" data-external>${escapeHtml(label)}</a>`) : label;
+  });
+  out = out.replace(/https?:\/\/[^\s<>()]+[^\s<>().,:;!?]/g, (u) => keep(`<a href="${escapeHtml(u)}" data-external>${escapeHtml(u.replace(/^https?:\/\//, ''))}</a>`));
+  out = out.replace(/\b([A-Za-z0-9-]+\/[A-Za-z0-9._-]+)#(\d+)\b/g, (m, repo, n) => keep(`<a class="update-modal__ref" href="https://github.com/${repo}/issues/${n}" data-external>${escapeHtml(m)}</a>`));
+  out = out.replace(/(^|[^\w&/])#(\d+)\b/g, (m, pre, n) => pre + keep(`<a class="update-modal__ref" href="https://github.com/${RELEASE_REPO}/issues/${n}" data-external>#${n}</a>`));
+  out = out.replace(/(^|[^\w/])@([A-Za-z0-9](?:[A-Za-z0-9-]{0,38}))\b/g, (m, pre, user) => pre + keep(`<a class="update-modal__ref" href="https://github.com/${user}" data-external>@${escapeHtml(user)}</a>`));
+  out = escapeHtml(out);
+  out = out.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+  out = out.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  out = out.replace(/(^|[^*\w])\*([^*\s][^*]*?)\*(?![*\w])/g, '$1<em>$2</em>');
+  out = out.replace(/(^|[^_\w])_([^_\s][^_]*?)_(?![_\w])/g, '$1<em>$2</em>');
+  out = out.replace(/\u0001(\d+)\u0001/g, (_, i) => links[Number(i)]);
+  out = out.replace(/\u0000(\d+)\u0000/g, (_, i) => `<code>${escapeHtml(codes[Number(i)])}</code>`);
+  return out.trim();
+}
+
+function releaseCells(line) {
+  return line.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim());
+}
+
+function renderReleaseNotes(md) {
+  const lines = String(md || '').replace(/\r\n?/g, '\n').split('\n');
+  const html = [];
+  let para = [];
+  let list = null;
+  let skipLevel = 0;
+  const flushPara = () => {
+    if (para.length) html.push(`<p>${releaseInline(para.join(' '))}</p>`);
+    para = [];
+  };
+  const flushList = () => {
+    if (list) html.push(`<${list.tag}>${list.items.map(i => `<li>${releaseInline(i)}</li>`).join('')}</${list.tag}>`);
+    list = null;
+  };
+  const flush = () => { flushPara(); flushList(); };
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+    const heading = trimmed.match(/^(#{1,6})\s+(.+)$/);
+    if (heading && skipLevel && heading[1].length <= skipLevel) skipLevel = 0;
+    if (skipLevel) continue;
+    if (heading && /\bdownloads?\s*$/i.test(heading[2].replace(/[^\w\s]/g, '').trim()) && heading[1].length >= 2) {
+      flush();
+      skipLevel = heading[1].length;
+      continue;
+    }
+    if (!trimmed) { flush(); continue; }
+    if (heading) {
+      flush();
+      const level = Math.min(Math.max(heading[1].length, 2), 4);
+      html.push(`<h${level}>${releaseInline(heading[2])}</h${level}>`);
+      continue;
+    }
+    if (/^(-{3,}|\*{3,}|_{3,})$/.test(trimmed)) {
+      flush();
+      if (html.length && !html[html.length - 1].startsWith('<hr')) html.push('<hr>');
+      continue;
+    }
+    if (trimmed.startsWith('|') && i + 1 < lines.length && /^\|?\s*:?-{2,}/.test(lines[i + 1].trim())) {
+      flush();
+      const head = releaseCells(trimmed);
+      i += 1;
+      const rows = [];
+      while (i + 1 < lines.length && lines[i + 1].trim().startsWith('|')) {
+        i += 1;
+        rows.push(releaseCells(lines[i]));
+      }
+      html.push(`<table><thead><tr>${head.map(c => `<th>${releaseInline(c)}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${releaseInline(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`);
+      continue;
+    }
+    const item = trimmed.match(/^([-*+]|\d+[.)])\s+(.+)$/);
+    if (item) {
+      flushPara();
+      const tag = /\d/.test(item[1]) ? 'ol' : 'ul';
+      if (!list || list.tag !== tag) { flushList(); list = { tag, items: [] }; }
+      list.items.push(item[2]);
+      continue;
+    }
+    if (list && /^\s+/.test(line)) {
+      list.items[list.items.length - 1] += ' ' + trimmed;
+      continue;
+    }
+    flushList();
+    if (!releaseInline(trimmed)) continue;
+    para.push(trimmed);
+  }
+  flush();
+  while (html.length && html[html.length - 1] === '<hr>') html.pop();
+  return html.join('\n');
 }
 
 function showUpdateModal(info) {
   pendingUpdateInfo = info;
   els.updateVersion.textContent = `v${info.version}`;
+  const current = document.getElementById('update-current');
+  if (current) current.textContent = info.currentVersion ? `v${String(info.currentVersion).replace(/^v/, '')}` : '';
   if (info.date) {
     try {
       const d = new Date(info.date);
@@ -3919,9 +4011,11 @@ function showUpdateModal(info) {
   } else {
     els.updateDateRow.style.display = 'none';
   }
-  els.updateNotes.innerHTML = info.body
-    ? renderMarkdown(info.body)
-    : `<em>${escapeHtml(window.i18n.t('modals.update.noReleaseNotes'))}</em>`;
+  const notes = info.body ? renderReleaseNotes(info.body) : '';
+  els.updateNotes.innerHTML = notes
+    || `<p class="update-modal__empty">${escapeHtml(window.i18n.t('modals.update.noReleaseNotes'))}</p>`;
+  const body = els.updateNotes.closest('.update-modal__body');
+  if (body) body.scrollTop = 0;
   els.updateProgressWrap.classList.add('hidden');
   els.updateActions.style.display = '';
   els.btnUpdateNow.disabled = false;
@@ -3936,8 +4030,26 @@ function showUpdateModal(info) {
   }
   els.btnUpdateNow.classList.toggle('hidden', externallyManaged);
   els.btnUpdateSkip.classList.toggle('hidden', externallyManaged);
+  const githubBtn = document.getElementById('btn-update-notes-link');
+  if (githubBtn) githubBtn.classList.toggle('hidden', !info.releaseUrl);
 
   els.updateModal.classList.remove('hidden');
+  if (body) body.scrollTop = 0;
+  const primary = externallyManaged ? els.btnUpdateLater : els.btnUpdateNow;
+  setTimeout(() => {
+    if (els.updateModal.classList.contains('hidden')) return;
+    if (primary) primary.focus({ preventScroll: true });
+    if (body) body.scrollTop = 0;
+  }, 50);
+}
+
+function openExternalUrl(url) {
+  if (!/^https?:\/\//i.test(url || '')) return;
+  try {
+    window.__TAURI__.shell.open(url);
+  } catch (e) {
+    console.error('open failed', e);
+  }
 }
 
 function updateCommandsFor(method) {
@@ -4034,6 +4146,7 @@ async function performUpdate() {
 function skipUpdateVersion() {
   const version = els.updateVersion.textContent.replace(/^v/, '');
   localStorage.setItem(SKIPPED_VERSION_KEY, version);
+  emitEvent('update_dismissed', { action: 'skip' });
   hideUpdateModal();
 }
 
@@ -4044,7 +4157,8 @@ window.testUpdateModal = function() {
     version: '2.0.0',
     currentVersion: '1.1.0',
     date: new Date().toISOString(),
-    body: '### What\'s New\n- ✨ Auto-Update feature\n- 🔧 Bug fixes\n- 🚀 Performance improvements\n\nThis is a **test** update dialog.'
+    body: '### What\'s New\n- ✨ Auto-Update feature\n- 🔧 Bug fixes\n- 🚀 Performance improvements\n\nThis is a **test** update dialog.',
+    releaseUrl: 'https://github.com/MCbabel/Steam-Manifest-Downloader/releases'
   });
 };
 
@@ -4625,8 +4739,24 @@ function initEvents() {
   if (els.btnTelemetryDecline) els.btnTelemetryDecline.addEventListener('click', declineTelemetry);
 
   els.btnUpdateNow.addEventListener('click', performUpdate);
-  els.btnUpdateLater.addEventListener('click', hideUpdateModal);
+  els.btnUpdateLater.addEventListener('click', () => {
+    emitEvent('update_dismissed', { action: 'later' });
+    hideUpdateModal();
+  });
   els.btnUpdateSkip.addEventListener('click', skipUpdateVersion);
+  const updateGithubBtn = document.getElementById('btn-update-notes-link');
+  if (updateGithubBtn) {
+    updateGithubBtn.addEventListener('click', () => {
+      if (pendingUpdateInfo && pendingUpdateInfo.releaseUrl) openExternalUrl(pendingUpdateInfo.releaseUrl);
+      emitEvent('update_dismissed', { action: 'github' });
+    });
+  }
+  els.updateNotes.addEventListener('click', (e) => {
+    const link = e.target.closest('a[data-external]');
+    if (!link) return;
+    e.preventDefault();
+    openExternalUrl(link.getAttribute('href'));
+  });
   els.updateModal.querySelector('.modal__backdrop').addEventListener('click', hideUpdateModal);
 
   els.btnThemeToggle.addEventListener('click', toggleTheme);

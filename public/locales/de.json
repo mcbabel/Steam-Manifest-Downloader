@@ -266,7 +266,8 @@
       "now": "Jetzt aktualisieren",
       "installerDownloading": "Update-Installer wird geladen…",
       "failed": "Update fehlgeschlagen: {message}",
-      "noReleaseNotes": "Keine Versionshinweise verfügbar."
+      "noReleaseNotes": "Keine Versionshinweise verfügbar.",
+      "onGithub": "Auf GitHub ansehen"
     },
     "history": {
       "title": "Download-Verlauf",

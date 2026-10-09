@@ -424,6 +424,7 @@ const ALLOWED_EVENT_KINDS: &[&str] = &[
     "shortcut_created",
     "update_checked",
     "update_installed",
+    "update_dismissed",
     "consent_accepted",
     "crash",
     "error_shown",

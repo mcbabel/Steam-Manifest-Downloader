@@ -1619,25 +1619,32 @@
   <div id="update-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="update-modal-title" aria-hidden="true">
     <div class="modal__backdrop"></div>
     <div class="modal__content update-modal-content">
-      <div class="modal__icon modal__icon--accent" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="23 4 23 10 17 10"/>
-          <polyline points="1 20 1 14 7 14"/>
-          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-        </svg>
-      </div>
-      <h3 class="modal__title" id="update-modal-title" data-i18n="modals.update.title">Update Available</h3>
-      <div class="update-modal__info">
-        <div class="update-modal__version">
-          <span class="update-modal__label" data-i18n="modals.update.newVersion">New version:</span>
-          <span id="update-version" class="update-modal__value"></span>
+      <header class="update-modal__header">
+        <div class="update-modal__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
         </div>
-        <div class="update-modal__date" id="update-date-row">
-          <span class="update-modal__label" data-i18n="modals.update.released">Released:</span>
-          <span id="update-date" class="update-modal__value"></span>
+        <div class="update-modal__heading">
+          <h3 class="update-modal__title" id="update-modal-title" data-i18n="modals.update.title">Update Available</h3>
+          <div class="update-modal__meta">
+            <span class="update-modal__versions">
+              <span id="update-current" class="update-modal__current"></span>
+              <span class="update-modal__arrow" aria-hidden="true">&rarr;</span>
+              <span id="update-version" class="update-modal__version"></span>
+            </span>
+            <span id="update-date-row" class="update-modal__date">
+              <span class="update-modal__dot" aria-hidden="true">&middot;</span>
+              <span id="update-date"></span>
+            </span>
+          </div>
         </div>
+      </header>
+      <div class="update-modal__body">
+        <div id="update-notes" class="update-modal__notes"></div>
       </div>
-      <div id="update-notes" class="update-modal__notes"></div>
       <div id="update-system-hint" class="update-modal__system-hint hidden">
         <p id="update-system-text" data-i18n="modals.update.systemText">This build is installed by your package manager. Update with:</p>
         <div id="update-system-cmd-list" class="update-system-cmd-list"></div>
@@ -1648,11 +1655,16 @@
         </div>
         <p id="update-progress-text" class="update-modal__progress-text" data-i18n="modals.update.downloading">Downloading update...</p>
       </div>
-      <div id="update-actions" class="modal__actions">
-        <button id="btn-update-skip" class="btn btn--outline btn--small" data-i18n="modals.update.skip">Skip This Version</button>
-        <button id="btn-update-later" class="btn btn--outline" data-modal-cancel data-i18n="modals.update.later">Later</button>
-        <button id="btn-update-now" class="btn btn--primary" data-i18n="modals.update.now">Update Now</button>
-      </div>
+      <footer id="update-actions" class="update-modal__actions">
+        <div class="update-modal__actions-left">
+          <button id="btn-update-skip" type="button" class="btn btn--small update-modal__skip" data-i18n="modals.update.skip">Skip This Version</button>
+          <button id="btn-update-notes-link" type="button" class="btn btn--small update-modal__skip hidden" data-i18n="modals.update.onGithub">Open on GitHub</button>
+        </div>
+        <div class="update-modal__actions-right">
+          <button id="btn-update-later" type="button" class="btn btn--outline" data-modal-cancel data-i18n="modals.update.later">Later</button>
+          <button id="btn-update-now" type="button" class="btn btn--primary" data-i18n="modals.update.now">Update Now</button>
+        </div>
+      </footer>
     </div>
   </div>
 

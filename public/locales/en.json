@@ -266,7 +266,8 @@
       "now": "Update Now",
       "installerDownloading": "Downloading update installer…",
       "failed": "Update failed: {message}",
-      "noReleaseNotes": "No release notes available."
+      "noReleaseNotes": "No release notes available.",
+      "onGithub": "Open on GitHub"
     },
     "history": {
       "title": "Download History",

@@ -56,6 +56,8 @@ When telemetry is enabled, the app sends small events describing:
   - `shortcut_created` — a Windows shortcut was created
   - `update_checked` / `update_installed` — the auto-updater ran, and whether
     the check failed
+  - `update_dismissed` — how the update dialog was answered (`later`, `skip`
+    or `github`)
   - `library_added` — a game was added to the Steam library, whether it worked
     and whether Steam was restarted
   - `game_launched` — a game was started from the history, and how (`steam`,
