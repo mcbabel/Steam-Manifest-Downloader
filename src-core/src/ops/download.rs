@@ -438,7 +438,7 @@ async fn run_download_pipeline(
             if depot_sources_list.is_empty() {
                 let mut event = ProgressEvent::new("error", job_id);
                 event.localized(
-                    "No manifest sources configured. Add one in Settings → Advanced Settings → Manifest Sources."
+                    "No manifest sources configured. Add one in Settings → Sources & network → Depot Sources."
                         .to_string(),
                     "events.noSources",
                     serde_json::json!({}),
@@ -508,7 +508,7 @@ async fn run_download_pipeline(
                 depot_sources::ProbeOutcome::NoSources => {
                     let mut event = ProgressEvent::new("error", job_id);
                     event.localized(
-                        "No usable manifest sources configured. Add one in Settings → Advanced Settings → Manifest Sources."
+                        "No usable manifest sources configured. Add one in Settings → Sources & network → Depot Sources."
                             .to_string(),
                         "events.noUsableSources",
                         serde_json::json!({}),

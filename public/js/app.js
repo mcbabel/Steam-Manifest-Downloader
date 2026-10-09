@@ -198,8 +198,9 @@ const els = {
   btnSettingsSave: $('#btn-settings-save'),
   btnSettingsCancel: $('#btn-settings-cancel'),
   autoUpdateToggle: $('#auto-update-toggle'),
-  btnToggleAdvanced: $('#btn-toggle-advanced'),
-  advancedSettingsContent: $('#advanced-settings-content'),
+  settingsSearch: $('#settings-search'),
+  settingsDirty: $('#settings-dirty'),
+  settingsNoResults: $('#settings-no-results'),
   ddExtraArgsInput: $('#dd-extra-args-input'),
   maxRetriesInput: $('#max-retries-input'),
   chunkConcurrencyInput: $('#chunk-concurrency-input'),
@@ -765,10 +766,14 @@ function validateSourceUrl(raw) {
 }
 
 async function refreshSourcesUI() {
-  const sources = await loadDepotSources();
-  const empty = sources.length === 0;
+  const saved = await loadDepotSources();
+  const empty = saved.length === 0;
   if (els.sourcesEmpty) els.sourcesEmpty.classList.toggle('hidden', !empty);
   if (els.searchInputBlock) els.searchInputBlock.classList.toggle('hidden', empty);
+  renderSettingsSources(state.pendingSources || saved);
+}
+
+function renderSettingsSources(sources) {
   if (els.sourcesList) {
     const removeLabel = escapeHtml(i18n.t('settings.removeSource'));
     els.sourcesList.innerHTML = sources
@@ -805,21 +810,34 @@ async function addDepotSource(rawUrl, errorEl) {
   return true;
 }
 
-async function removeDepotSource(index) {
-  const settings = await invoke('get_settings');
-  const sources = Array.isArray(settings.depot_sources) ? settings.depot_sources : [];
-  if (index < 0 || index >= sources.length) return;
-  const target = sources[index];
-  const pristine = Array.isArray(settings.pristine_default_sources) ? settings.pristine_default_sources : [];
+function addPendingSource(rawUrl, errorEl) {
+  if (errorEl) errorEl.classList.add('hidden');
+  const err = validateSourceUrl(rawUrl);
+  const url = (rawUrl || '').trim();
+  const sources = state.pendingSources || [];
+  const message = err || (sources.includes(url) ? window.i18n.t('search.sourceExists') : null);
+  if (message) {
+    if (errorEl) {
+      errorEl.textContent = message;
+      errorEl.classList.remove('hidden');
+    }
+    return false;
+  }
+  state.pendingSources = sources.concat(url);
+  renderSettingsSources(state.pendingSources);
+  return true;
+}
 
-  if (pristine.includes(target)) {
+async function removePendingSource(index) {
+  const sources = state.pendingSources || [];
+  if (index < 0 || index >= sources.length) return;
+  if ((state.pristineSources || []).includes(sources[index])) {
     const confirmed = await confirmRemoveDefaultSource();
     if (!confirmed) return;
   }
-
-  sources.splice(index, 1);
-  await saveDepotSources(sources);
-  await refreshSourcesUI();
+  state.pendingSources = sources.filter((_, i) => i !== index);
+  renderSettingsSources(state.pendingSources);
+  updateSettingsDirty();
 }
 
 function confirmRemoveDefaultSource() {
@@ -2876,11 +2894,22 @@ async function openSettings() {
     populateDepotSelectionSettings(settings);
     els.notificationSoundToggle.checked = settings.notification_sound !== false;
     els.telemetryToggle.checked = settings.telemetry_consent === 'accepted';
+    state.savedTelemetry = settings.telemetry_consent === 'accepted';
+    state.pendingSources = Array.isArray(settings.depot_sources) ? settings.depot_sources.slice() : [];
+    state.pristineSources = Array.isArray(settings.pristine_default_sources) ? settings.pristine_default_sources : [];
   } catch (e) {
     els.autoUpdateToggle.checked = true;
   }
   loadBuildInfo();
-  refreshSourcesUI();
+  renderSettingsSources(state.pendingSources || []);
+  if (els.sourcesAddInput) els.sourcesAddInput.value = '';
+  if (els.sourcesAddError) els.sourcesAddError.classList.add('hidden');
+  resetSettingsLanguage();
+  syncEngineDependentSettings();
+  let section = 'general';
+  try { section = localStorage.getItem(SETTINGS_SECTION_KEY) || 'general'; } catch (_) {}
+  showSettingsSection(section);
+  resetSettingsDirty();
   emitEvent('settings_opened');
   els.settingsModal.classList.remove('hidden');
 }
@@ -2956,16 +2985,6 @@ async function declineTelemetry() {
     console.error('Failed to decline telemetry:', e);
   }
   els.telemetryModal.classList.add('hidden');
-}
-
-async function onTelemetryToggleChanged() {
-  const accept = els.telemetryToggle.checked;
-  try {
-    await invoke('set_telemetry_consent', { accept });
-  } catch (e) {
-    console.error('Failed to update telemetry consent:', e);
-    els.telemetryToggle.checked = !accept;
-  }
 }
 
 function emitEvent(kind, props) {
@@ -3168,10 +3187,14 @@ async function copyBuildInfo() {
 
 function closeSettings() {
   els.settingsModal.classList.add('hidden');
+  state.pendingSources = null;
+  state.settingsBaseline = null;
+  resetSettingsLanguage();
 }
 
 async function saveSettings() {
   const autoUpdate = els.autoUpdateToggle.checked;
+  const changed = state.settingsBaseline != null && settingsSnapshot() !== state.settingsBaseline;
   try {
     const currentSettings = await invoke('get_settings');
     currentSettings.auto_update = autoUpdate;
@@ -3211,8 +3234,18 @@ async function saveSettings() {
       currentSettings.game_language = state.gameLanguage || '';
     }
     currentSettings.notification_sound = els.notificationSoundToggle.checked;
+    if (state.pendingSources) currentSettings.depot_sources = state.pendingSources.slice();
+    const languageChanged = state.settingsLanguage && state.settingsLanguage !== i18n.getCurrentLocale();
+    if (languageChanged) currentSettings.language = state.settingsLanguage;
 
     await invoke('save_settings', { settings: currentSettings });
+    const telemetryOn = els.telemetryToggle.checked;
+    if (telemetryOn !== state.savedTelemetry) {
+      await invoke('set_telemetry_consent', { accept: telemetryOn });
+      state.savedTelemetry = telemetryOn;
+    }
+    state.pendingSources = null;
+    refreshSourcesUI();
     state.notificationSoundEnabled = currentSettings.notification_sound;
     checkDotNet();
     checkSteamLibrarySupport();
@@ -3221,12 +3254,13 @@ async function saveSettings() {
       await invoke('restart_app');
       return;
     }
+    if (changed) showToast(window.i18n.t('settings.saved'), 'success');
   } catch (e) {
     console.error('Failed to save settings:', e);
     if (/proxy/i.test(String(e)) && els.proxyError) {
       els.proxyError.textContent = window.i18n.localizeError(String(e));
       els.proxyError.classList.remove('hidden');
-      if (els.advancedSettingsContent && els.advancedSettingsContent.classList.contains('hidden')) toggleAdvancedSettings();
+      showSettingsSection('sources');
       els.proxyInput.focus();
       return;
     }
@@ -3521,18 +3555,131 @@ function bindSpeedLimitControls() {
   });
 }
 
-function toggleAdvancedSettings() {
-  const content = els.advancedSettingsContent;
-  const arrow = els.btnToggleAdvanced.querySelector('.settings-advanced__arrow');
-  const isHidden = content.classList.contains('hidden');
+const SETTINGS_SECTION_KEY = 'settingsSection';
 
-  if (isHidden) {
-    content.classList.remove('hidden');
-    arrow.classList.add('expanded');
-  } else {
-    content.classList.add('hidden');
-    arrow.classList.remove('expanded');
+function showSettingsSection(section) {
+  const modal = els.settingsModal;
+  if (!modal) return;
+  if (els.settingsSearch && els.settingsSearch.value) {
+    els.settingsSearch.value = '';
+    filterSettings('');
   }
+  const tabs = modal.querySelectorAll('.settings__tab');
+  const target = Array.from(tabs).some(t => t.dataset.section === section) ? section : 'general';
+  tabs.forEach(t => {
+    const on = t.dataset.section === target;
+    t.classList.toggle('is-active', on);
+    t.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  modal.querySelectorAll('.settings__panel').forEach(p => p.classList.toggle('is-active', p.dataset.section === target));
+  const panels = modal.querySelector('.settings__panels');
+  if (panels) panels.scrollTop = 0;
+  try { localStorage.setItem(SETTINGS_SECTION_KEY, target); } catch (_) {}
+}
+
+function filterSettings(query) {
+  const modal = els.settingsModal;
+  if (!modal) return;
+  const q = query.trim().toLowerCase();
+  modal.classList.toggle('settings--searching', !!q);
+  let any = false;
+  modal.querySelectorAll('.settings__panel').forEach(panel => {
+    let panelHit = false;
+    panel.querySelectorAll('.settings-group').forEach(group => {
+      let groupHit = false;
+      group.querySelectorAll('.settings-row').forEach(row => {
+        const hit = !q || row.textContent.toLowerCase().includes(q);
+        row.classList.toggle('is-filtered', !hit);
+        if (hit) groupHit = true;
+      });
+      group.classList.toggle('is-filtered', !groupHit);
+      const title = group.previousElementSibling;
+      if (title && title.classList.contains('settings__group-title')) title.classList.toggle('is-filtered', !groupHit);
+      if (groupHit) panelHit = true;
+    });
+    panel.classList.toggle('is-match', !!q && panelHit);
+    if (panelHit) any = true;
+  });
+  if (els.settingsNoResults) els.settingsNoResults.classList.toggle('hidden', !q || any);
+}
+
+const SETTINGS_NOT_SAVED = new Set(['settings-search', 'sources-add-input']);
+
+function settingsSnapshot() {
+  const panels = els.settingsModal && els.settingsModal.querySelector('.settings__panels');
+  if (!panels) return '';
+  const parts = [];
+  const limitOn = !!(els.speedLimitToggle && els.speedLimitToggle.checked);
+  panels.querySelectorAll('input[id]').forEach(input => {
+    if (SETTINGS_NOT_SAVED.has(input.id)) return;
+    if (input === els.speedLimitInput && !limitOn) return;
+    parts.push(`${input.id}=${input.type === 'checkbox' ? input.checked : input.value.trim()}`);
+  });
+  const active = limitOn
+    ? '.segmented__option.is-active, .speed-limit__unit.is-active, .language-card.is-active'
+    : '.segmented__option.is-active, .language-card.is-active';
+  panels.querySelectorAll(active).forEach(el => {
+    parts.push(`${el.className}=${el.dataset.value ?? el.dataset.unit ?? el.dataset.lang ?? ''}`);
+  });
+  parts.push(`gameLanguage=${state.gameLanguage || ''}`);
+  parts.push(`sources=${(state.pendingSources || []).join(' ')}`);
+  return parts.join('|');
+}
+
+function resetSettingsDirty() {
+  state.settingsBaseline = settingsSnapshot();
+  if (els.settingsDirty) els.settingsDirty.classList.add('hidden');
+}
+
+function updateSettingsDirty() {
+  if (!els.settingsDirty || state.settingsBaseline == null) return;
+  els.settingsDirty.classList.toggle('hidden', settingsSnapshot() === state.settingsBaseline);
+}
+
+function syncEngineDependentSettings() {
+  const row = document.getElementById('dd-extra-args-row');
+  if (row && els.nativeDownloaderToggle) row.classList.toggle('is-disabled', els.nativeDownloaderToggle.checked);
+}
+
+function initSettingsLayout() {
+  const modal = els.settingsModal;
+  if (!modal) return;
+  modal.querySelectorAll('.settings__tab').forEach(tab => {
+    tab.addEventListener('click', () => showSettingsSection(tab.dataset.section));
+  });
+  const nav = modal.querySelector('.settings__nav');
+  if (nav) {
+    nav.addEventListener('keydown', (e) => {
+      if (!['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+      const tabs = Array.from(nav.querySelectorAll('.settings__tab'));
+      const i = tabs.indexOf(document.activeElement);
+      if (i < 0) return;
+      e.preventDefault();
+      const step = e.key === 'ArrowDown' || e.key === 'ArrowRight' ? 1 : -1;
+      const next = tabs[(i + step + tabs.length) % tabs.length];
+      next.focus();
+      showSettingsSection(next.dataset.section);
+    });
+  }
+  if (els.settingsSearch) {
+    els.settingsSearch.addEventListener('input', () => filterSettings(els.settingsSearch.value));
+    els.settingsSearch.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && els.settingsSearch.value) {
+        e.stopPropagation();
+        els.settingsSearch.value = '';
+        filterSettings('');
+      }
+    });
+  }
+  const panels = modal.querySelector('.settings__panels');
+  if (panels) {
+    const recheck = () => setTimeout(updateSettingsDirty, 0);
+    panels.addEventListener('input', recheck);
+    panels.addEventListener('change', recheck);
+    panels.addEventListener('click', recheck);
+    panels.addEventListener('keydown', recheck);
+  }
+  if (els.nativeDownloaderToggle) els.nativeDownloaderToggle.addEventListener('change', syncEngineDependentSettings);
 }
 
 const SKIPPED_VERSION_KEY = 'skippedUpdateVersion';
@@ -4138,8 +4285,8 @@ function initEvents() {
   }
   if (els.btnSourcesAdd) {
     els.btnSourcesAdd.addEventListener('click', async () => {
-      const ok = await addDepotSource(els.sourcesAddInput.value, els.sourcesAddError);
-      if (ok) els.sourcesAddInput.value = '';
+      if (addPendingSource(els.sourcesAddInput.value, els.sourcesAddError)) els.sourcesAddInput.value = '';
+      updateSettingsDirty();
     });
   }
   if (els.sourcesList) {
@@ -4147,7 +4294,7 @@ function initEvents() {
       const btn = e.target.closest('button[data-source-idx]');
       if (!btn) return;
       const idx = parseInt(btn.dataset.sourceIdx, 10);
-      if (Number.isInteger(idx)) await removeDepotSource(idx);
+      if (Number.isInteger(idx)) await removePendingSource(idx);
     });
   }
 
@@ -4278,9 +4425,7 @@ function initEvents() {
   bindProxyControls();
   bindSteamPathControls();
   bindDepotSelectionSettings();
-  if (els.btnToggleAdvanced) {
-    els.btnToggleAdvanced.addEventListener('click', toggleAdvancedSettings);
-  }
+  initSettingsLayout();
 
   if (els.btnCopyBuildInfo) {
     els.btnCopyBuildInfo.addEventListener('click', copyBuildInfo);
@@ -4288,7 +4433,6 @@ function initEvents() {
 
   if (els.btnTelemetryAccept) els.btnTelemetryAccept.addEventListener('click', acceptTelemetry);
   if (els.btnTelemetryDecline) els.btnTelemetryDecline.addEventListener('click', declineTelemetry);
-  if (els.telemetryToggle) els.telemetryToggle.addEventListener('change', onTelemetryToggleChanged);
 
   els.btnUpdateNow.addEventListener('click', performUpdate);
   els.btnUpdateLater.addEventListener('click', hideUpdateModal);
@@ -7027,40 +7171,36 @@ async function showLanguagePickerIfNeeded(initSettings, hasStored) {
   });
 }
 
-function bindSettingsLanguageCards() {
+function updateSettingsSaveLabel() {
+  if (!els.btnSettingsSave) return;
+  if (state.settingsLanguage && state.settingsLanguage !== i18n.getCurrentLocale()) {
+    els.btnSettingsSave.textContent = i18n.t('settings.languageRestartButton');
+    els.btnSettingsSave.dataset.languageRestart = '1';
+  } else {
+    els.btnSettingsSave.textContent = i18n.t('settings.save');
+    delete els.btnSettingsSave.dataset.languageRestart;
+  }
+}
+
+function renderSettingsLanguageCards() {
   const cards = document.getElementById('settings-language-cards');
   if (!cards) return;
+  renderLanguageCards(cards, state.settingsLanguage || i18n.getCurrentLocale(), (code) => {
+    state.settingsLanguage = code;
+    renderSettingsLanguageCards();
+    updateSettingsSaveLabel();
+    updateSettingsDirty();
+  });
+}
 
-  let pendingCode = i18n.getCurrentLocale();
-  const initial = i18n.getCurrentLocale();
+function resetSettingsLanguage() {
+  state.settingsLanguage = i18n.getCurrentLocale();
+  renderSettingsLanguageCards();
+  updateSettingsSaveLabel();
+}
 
-  const updateSaveLabel = () => {
-    if (!els.btnSettingsSave) return;
-    if (pendingCode !== initial) {
-      els.btnSettingsSave.textContent = i18n.t('settings.languageRestartButton');
-      els.btnSettingsSave.dataset.languageRestart = '1';
-    } else {
-      els.btnSettingsSave.textContent = i18n.t('settings.save');
-      delete els.btnSettingsSave.dataset.languageRestart;
-    }
-  };
-
-  const render = () => {
-    renderLanguageCards(cards, pendingCode, async (code) => {
-      pendingCode = code;
-      try {
-        const fresh = await invoke('get_settings');
-        fresh.language = code;
-        await invoke('save_settings', { settings: fresh });
-      } catch (e) {
-        console.error('Failed to save language:', e);
-      }
-      render();
-      updateSaveLabel();
-    });
-  };
-
-  render();
+function bindSettingsLanguageCards() {
+  resetSettingsLanguage();
 }
 
 document.addEventListener('DOMContentLoaded', async () => {

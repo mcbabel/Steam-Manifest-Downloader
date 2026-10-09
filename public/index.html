@@ -1131,261 +1131,345 @@
 
   <div id="settings-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title" aria-hidden="true">
     <div class="modal__backdrop"></div>
-    <div class="modal__content settings-modal-content">
-      <h3 class="modal__title" id="settings-modal-title">
-        <svg class="modal__title-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
-          <circle cx="12" cy="12" r="3"/>
-        </svg>
-        <span data-i18n="settings.title">Settings</span>
-      </h3>
-      <div class="settings-field">
-        <label class="settings-field__label" data-i18n="settings.language">Language</label>
-        <div id="settings-language-cards" class="language-cards"></div>
-        <p class="dd-path__hint" data-i18n="settings.languageHint">Switching the language requires restarting the app.</p>
-      </div>
+    <div class="modal__content settings-modal-content settings">
+      <header class="settings__header">
+        <h3 class="modal__title settings__title" id="settings-modal-title">
+          <svg class="modal__title-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+          <span data-i18n="settings.title">Settings</span>
+        </h3>
+        <label class="settings__search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="search" id="settings-search" autocomplete="off" data-i18n-attr="placeholder=settings.searchPlaceholder,aria-label=settings.searchPlaceholder">
+        </label>
+      </header>
 
-      <div class="settings-field">
-        <label class="settings-field__label" data-i18n="settings.autoUpdate">Auto-Update</label>
-        <div class="settings-field__toggle-wrap">
-          <label class="toggle-switch">
-            <input type="checkbox" id="auto-update-toggle" checked>
-            <span class="toggle-switch__slider"></span>
-          </label>
-          <span class="settings-field__toggle-text" data-i18n="settings.autoUpdateToggle">Automatically check for updates on startup</span>
-        </div>
-        <p class="dd-path__hint" data-i18n="settings.autoUpdateHint">When enabled, the app checks for new versions on GitHub and offers to install them.</p>
-      </div>
+      <div class="settings__body">
+        <nav class="settings__nav" role="tablist" data-i18n-attr="aria-label=settings.title">
+          <button type="button" class="settings__tab is-active" role="tab" data-section="general" aria-selected="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+            <span data-i18n="settings.sectionGeneral">General</span>
+          </button>
+          <button type="button" class="settings__tab" role="tab" data-section="downloads" aria-selected="false">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span data-i18n="settings.sectionDownloads">Downloads</span>
+          </button>
+          <button type="button" class="settings__tab" role="tab" data-section="depots" aria-selected="false">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            <span data-i18n="settings.sectionDepots">Depot selection</span>
+          </button>
+          <button type="button" class="settings__tab" role="tab" data-section="sources" aria-selected="false">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            <span data-i18n="settings.sectionSources">Sources &amp; network</span>
+          </button>
+          <button type="button" class="settings__tab" role="tab" data-section="steam" aria-selected="false">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="15" y1="13" x2="15.01" y2="13"/><line x1="18" y1="11" x2="18.01" y2="11"/><rect x="2" y="6" width="20" height="12" rx="2"/></svg>
+            <span data-i18n="settings.sectionSteam">Steam</span>
+          </button>
+          <button type="button" class="settings__tab" role="tab" data-section="privacy" aria-selected="false">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span data-i18n="settings.sectionPrivacy">Privacy &amp; diagnostics</span>
+          </button>
+        </nav>
 
-      <div class="settings-field">
-        <label class="settings-field__label" data-i18n="settings.speedLimit">Speed Limit</label>
-        <div class="settings-field__toggle-wrap">
-          <label class="toggle-switch">
-            <input type="checkbox" id="speed-limit-toggle">
-            <span class="toggle-switch__slider"></span>
-          </label>
-          <span class="settings-field__toggle-text" data-i18n="settings.speedLimitToggle">Limit the download speed</span>
-        </div>
-        <div id="speed-limit-controls" class="speed-limit hidden">
-          <div class="speed-limit__field">
-            <input type="number" id="speed-limit-input" class="speed-limit__input" min="0" step="any" inputmode="decimal" data-i18n-attr="aria-label=settings.speedLimitValue">
-            <div class="speed-limit__units" role="radiogroup" data-i18n-attr="aria-label=settings.speedLimitUnit">
-              <button type="button" class="speed-limit__unit is-active" data-unit="MB/s" role="radio" aria-checked="true">MB/s</button>
-              <button type="button" class="speed-limit__unit" data-unit="Mbit/s" role="radio" aria-checked="false">Mbit/s</button>
-            </div>
-          </div>
-        </div>
-        <p class="dd-path__hint" data-i18n="settings.speedLimitHint">Applies to the built-in downloader, also to a download that is already running. 100 Mbit/s is about 12 MB/s.</p>
-      </div>
+        <div class="settings__panels">
+          <p id="settings-no-results" class="settings__empty hidden" data-i18n="settings.noResults">No setting matches your search.</p>
 
-      <div class="settings-field">
-        <label class="settings-field__label" data-i18n="settings.depotSelection">Depot selection</label>
-        <div class="settings-field__toggle-wrap">
-          <label class="toggle-switch">
-            <input type="checkbox" id="auto-select-depots-toggle">
-            <span class="toggle-switch__slider"></span>
-          </label>
-          <span class="settings-field__toggle-text" data-i18n="settings.autoSelectDepots">Like Steam: pick the depots and put them into one game folder</span>
-        </div>
-        <p class="dd-path__hint" data-i18n="settings.autoSelectDepotsHint">Off: you pick the depots yourself and every depot gets its own subfolder, as before. On: the depots Steam would install on this system are selected and written into one game folder, so the game is complete and starts right away. DLC chosen in the depot list are later marked as owned for gbe_fork.</p>
-        <div id="auto-select-options" class="auto-select-options">
-          <div class="settings-field__toggle-wrap">
-            <label class="toggle-switch">
-              <input type="checkbox" id="auto-start-download-toggle">
-              <span class="toggle-switch__slider"></span>
-            </label>
-            <span class="settings-field__toggle-text" data-i18n="settings.autoStartDownload">Start the download right away</span>
-          </div>
-          <div class="settings-field__toggle-wrap">
-            <label class="toggle-switch">
-              <input type="checkbox" id="include-dlc-toggle" checked>
-              <span class="toggle-switch__slider"></span>
-            </label>
-            <span class="settings-field__toggle-text" data-i18n="settings.includeDlc">Include DLC</span>
-          </div>
-          <div class="auto-select-options__row">
-            <span class="auto-select-options__label" data-i18n="settings.targetPlatform">Platform</span>
-            <div id="target-platform-options" class="segmented" role="radiogroup" data-i18n-attr="aria-label=settings.targetPlatform">
-              <button type="button" class="segmented__option is-active" data-value="" role="radio" aria-checked="true" data-i18n="settings.auto">Auto</button>
-              <button type="button" class="segmented__option" data-value="windows" role="radio" aria-checked="false">Windows</button>
-              <button type="button" class="segmented__option" data-value="linux" role="radio" aria-checked="false">Linux</button>
-              <button type="button" class="segmented__option" data-value="macos" role="radio" aria-checked="false">macOS</button>
-            </div>
-          </div>
-          <div class="auto-select-options__row">
-            <span class="auto-select-options__label" data-i18n="settings.gameLanguage">Game language</span>
-            <div id="game-language" class="history-sort">
-              <button type="button" id="game-language-button" class="history-sort__button" aria-haspopup="listbox" aria-expanded="false" data-i18n-attr="aria-label=settings.gameLanguage">
-                <span id="game-language-label" class="history-sort__label"></span>
-                <svg class="history-sort__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
-              </button>
-              <ul id="game-language-menu" class="history-sort__menu history-sort__menu--scroll hidden" role="listbox" tabindex="-1" data-i18n-attr="aria-label=settings.gameLanguage"></ul>
-            </div>
-          </div>
-          <p class="dd-path__hint" data-i18n="settings.targetPlatformHint">Auto uses this system. When a game has no Linux build, the Windows version is picked (it runs with Proton).</p>
-        </div>
-      </div>
-
-      <div class="settings-field">
-        <label for="steam-path-input" class="settings-field__label" data-i18n="settings.steamPath">Steam folder</label>
-        <div class="dd-path__input-wrap dd-path__input-wrap--with-btn">
-          <input type="text" id="steam-path-input" class="dd-path__input" data-i18n-attr="placeholder=settings.steamPathPlaceholder" autocomplete="off">
-          <button type="button" id="btn-steam-path-browse" class="btn btn--small btn--outline" data-i18n="shortcut.browse">Browse</button>
-        </div>
-        <p id="steam-path-status" class="proxy-status hidden" role="status"></p>
-        <p class="dd-path__hint" data-i18n="settings.steamPathHint">Needed to add games to the Steam library and to start them through Steam. Leave it empty to find Steam automatically.</p>
-      </div>
-
-      <div class="settings-advanced">
-        <button type="button" id="btn-toggle-advanced" class="settings-advanced__toggle">
-          <span class="settings-advanced__arrow">▶</span>
-          <span data-i18n="settings.advanced">Advanced Settings</span>
-        </button>
-        <div id="advanced-settings-content" class="settings-advanced__content hidden">
-
-          <div class="settings-field">
-            <label for="dd-extra-args-input" class="settings-field__label" data-i18n="settings.ddExtraArgs">DepotDownloader Extra Arguments</label>
-            <input type="text" id="dd-extra-args-input" class="dd-path__input" placeholder="-max-downloads 8 -verify-all">
-            <p class="dd-path__hint" data-i18n="settings.ddExtraArgsHint">Additional command-line arguments passed to DepotDownloaderMod</p>
-          </div>
-
-          <div class="settings-field">
-            <label for="max-retries-input" class="settings-field__label" data-i18n="settings.maxRetries">Max Retries on Error</label>
-            <input type="number" id="max-retries-input" class="dd-path__input" min="0" max="10" value="3">
-            <p class="dd-path__hint" data-i18n="settings.maxRetriesHint">Number of retry attempts when a depot download fails</p>
-          </div>
-
-          <div class="settings-field">
-            <label for="chunk-concurrency-input" class="settings-field__label" data-i18n="settings.chunkConcurrency">Max concurrent chunks (native engine)</label>
-            <input type="number" id="chunk-concurrency-input" class="dd-path__input" min="1" max="64" value="8">
-            <p class="dd-path__hint" data-i18n="settings.chunkConcurrencyHint">How many chunks the native engine downloads and decrypts at once. Lower this if downloads make the system lag.</p>
-          </div>
-
-          <div class="settings-field">
-            <label for="proxy-input" class="settings-field__label" data-i18n="settings.proxy">Proxy</label>
-            <div class="dd-path__input-wrap dd-path__input-wrap--with-btn">
-              <input type="text" id="proxy-input" class="dd-path__input" data-i18n-attr="placeholder=settings.proxyPlaceholder">
-              <button type="button" id="btn-proxy-test" class="btn btn--small btn--outline" data-i18n="settings.proxyTest">Test</button>
-            </div>
-            <p id="proxy-status" class="proxy-status hidden" role="status"></p>
-            <p id="proxy-error" class="error-message hidden"></p>
-            <p class="dd-path__hint" data-i18n="settings.proxyHint">Optional proxy URL (e.g., http://proxy:8080 or socks5://proxy:1080)</p>
-          </div>
-
-          <div class="settings-field">
-            <label class="settings-field__label" data-i18n="settings.depotSources">Depot Sources</label>
-            <p class="dd-path__hint" data-i18n-html="settings.depotSourcesHint">URLs pointing at a folder that follows the <code>branches/&lt;appid&gt;/&lt;files&gt;</code> layout (depot keys, manifests, key.vdf). Sources are queried in the order shown when searching by App ID.</p>
-            <ul id="sources-list" class="sources-list"></ul>
-            <div class="sources-add-row">
-              <input type="text" id="sources-add-input" class="dd-path__input" data-i18n-attr="placeholder=settings.depotSourcePlaceholder">
-              <button type="button" id="btn-sources-add" class="btn btn--outline" data-i18n="settings.add">Add</button>
-            </div>
-            <p id="sources-add-error" class="error-message hidden"></p>
-          </div>
-
-          <div class="settings-field">
-            <label for="hubcap-apikey-input" class="settings-field__label" data-i18n="settings.hubcapApiKey">Hubcap API Key</label>
-            <input type="text" id="hubcap-apikey-input" class="dd-path__input" data-i18n-attr="placeholder=settings.hubcapApiKeyPlaceholder" autocomplete="off">
-            <p class="dd-path__hint" data-i18n-html="settings.hubcapApiKeyHint">When set, Hubcap appears as a selectable App ID manifest source when it has data for the app.</p>
-          </div>
-
-          <div class="settings-field">
-            <label for="ryuu-apikey-input" class="settings-field__label" data-i18n="settings.ryuuApiKey">Ryuu API Key</label>
-            <input type="text" id="ryuu-apikey-input" class="dd-path__input" data-i18n-attr="placeholder=settings.ryuuApiKeyPlaceholder" autocomplete="off">
-            <p class="dd-path__hint" data-i18n-html="settings.ryuuApiKeyHint">When set, Ryuu appears as a selectable App ID manifest source when it has data for the app.</p>
-          </div>
-
-          <div class="settings-field">
-            <label class="settings-field__label" data-i18n="settings.cancelKeepFiles">Cancel behaviour</label>
-            <div class="settings-field__toggle-wrap">
-              <label class="toggle-switch">
-                <input type="checkbox" id="cancel-keep-files-toggle">
-                <span class="toggle-switch__slider"></span>
+          <section class="settings__panel is-active" data-section="general" role="tabpanel">
+            <h4 class="settings__panel-title" data-i18n="settings.sectionGeneral">General</h4>
+            <div class="settings-group">
+              <div class="settings-row settings-row--stack">
+                <div class="settings-row__text">
+                  <span class="settings-row__label" data-i18n="settings.language">Language</span>
+                  <span class="settings-row__hint" data-i18n="settings.languageHint">Switching the language requires restarting the app.</span>
+                </div>
+                <div id="settings-language-cards" class="language-cards"></div>
+              </div>
+              <label class="settings-row" for="auto-update-toggle">
+                <span class="settings-row__text">
+                  <span class="settings-row__label" data-i18n="settings.autoUpdate">Auto-Update</span>
+                  <span class="settings-row__hint" data-i18n="settings.autoUpdateHint">Checks GitHub for a new version at startup and offers to install it.</span>
+                </span>
+                <span class="toggle-switch">
+                  <input type="checkbox" id="auto-update-toggle" checked>
+                  <span class="toggle-switch__slider"></span>
+                </span>
               </label>
-              <span class="settings-field__toggle-text" data-i18n="settings.cancelKeepFilesToggle">Keep downloaded files when cancelling</span>
-            </div>
-            <p class="dd-path__hint" data-i18n="settings.cancelKeepFilesHint">When enabled, cancelling a download keeps the partial files on disk. Restarting the same download will resume from where it stopped (already-downloaded chunks are skipped).</p>
-          </div>
-
-          <div class="settings-field">
-            <label class="settings-field__label" data-i18n="settings.nativeDownloader">Download engine</label>
-            <div class="settings-field__toggle-wrap">
-              <label class="toggle-switch">
-                <input type="checkbox" id="native-downloader-toggle" checked>
-                <span class="toggle-switch__slider"></span>
+              <label class="settings-row" for="notification-sound-toggle">
+                <span class="settings-row__text">
+                  <span class="settings-row__label" data-i18n="settings.notificationSound">Notification Sound</span>
+                  <span class="settings-row__hint" data-i18n="settings.notificationSoundHint">Plays a sound when all downloads are finished.</span>
+                </span>
+                <span class="toggle-switch">
+                  <input type="checkbox" id="notification-sound-toggle" checked>
+                  <span class="toggle-switch__slider"></span>
+                </span>
               </label>
-              <span class="settings-field__toggle-text" data-i18n="settings.nativeDownloaderToggle">Download directly from Steam (native, recommended)</span>
             </div>
-            <p class="dd-path__hint" data-i18n="settings.nativeDownloaderHint">Default. Anonymous Steam login fetches manifests + chunks from Steam's CDN directly. ManifestHub is used only as a fallback if Steam-direct fails. Turn this off to force the legacy DepotDownloaderMod path.</p>
-          </div>
+          </section>
 
-          <div class="settings-field">
-            <label class="settings-field__label" data-i18n="settings.notificationSound">Notification Sound</label>
-            <div class="settings-field__toggle-wrap">
-              <label class="toggle-switch">
-                <input type="checkbox" id="notification-sound-toggle" checked>
-                <span class="toggle-switch__slider"></span>
+          <section class="settings__panel" data-section="downloads" role="tabpanel">
+            <h4 class="settings__panel-title" data-i18n="settings.sectionDownloads">Downloads</h4>
+            <div class="settings-group">
+              <label class="settings-row" for="native-downloader-toggle">
+                <span class="settings-row__text">
+                  <span class="settings-row__label" data-i18n="settings.nativeDownloaderToggle">Download directly from Steam (native, recommended)</span>
+                  <span class="settings-row__hint" data-i18n="settings.nativeDownloaderHint">Loads manifests and files straight from Steam. Off uses the old DepotDownloaderMod engine.</span>
+                </span>
+                <span class="toggle-switch">
+                  <input type="checkbox" id="native-downloader-toggle" checked>
+                  <span class="toggle-switch__slider"></span>
+                </span>
               </label>
-              <span class="settings-field__toggle-text" data-i18n="settings.notificationSoundToggle">Play a sound when downloads complete</span>
-            </div>
-            <p class="dd-path__hint" data-i18n="settings.notificationSoundHint">Uses a system notification sound to alert you when all downloads finish.</p>
-          </div>
-
-          <div class="settings-field">
-            <label class="settings-field__label" data-i18n="settings.telemetry">Anonymous Usage Statistics</label>
-            <div class="settings-field__toggle-wrap">
-              <label class="toggle-switch">
-                <input type="checkbox" id="telemetry-toggle">
-                <span class="toggle-switch__slider"></span>
+              <div class="settings-row settings-row--wrap">
+                <label class="settings-row__text" for="speed-limit-toggle">
+                  <span class="settings-row__label" data-i18n="settings.speedLimit">Speed Limit</span>
+                  <span class="settings-row__hint" data-i18n="settings.speedLimitHint">Also applies to a running download. 100 Mbit/s is about 12 MB/s.</span>
+                </label>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="speed-limit-toggle" data-i18n-attr="aria-label=settings.speedLimitToggle">
+                  <span class="toggle-switch__slider"></span>
+                </label>
+                <div id="speed-limit-controls" class="speed-limit settings-row__extra hidden">
+                  <div class="speed-limit__field">
+                    <input type="number" id="speed-limit-input" class="speed-limit__input" min="0" step="any" inputmode="decimal" data-i18n-attr="aria-label=settings.speedLimitValue">
+                    <div class="speed-limit__units" role="radiogroup" data-i18n-attr="aria-label=settings.speedLimitUnit">
+                      <button type="button" class="speed-limit__unit is-active" data-unit="MB/s" role="radio" aria-checked="true">MB/s</button>
+                      <button type="button" class="speed-limit__unit" data-unit="Mbit/s" role="radio" aria-checked="false">Mbit/s</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <label class="settings-row" for="cancel-keep-files-toggle">
+                <span class="settings-row__text">
+                  <span class="settings-row__label" data-i18n="settings.cancelKeepFilesToggle">Keep downloaded files when cancelling</span>
+                  <span class="settings-row__hint" data-i18n="settings.cancelKeepFilesHint">A cancelled download can then be resumed where it stopped.</span>
+                </span>
+                <span class="toggle-switch">
+                  <input type="checkbox" id="cancel-keep-files-toggle">
+                  <span class="toggle-switch__slider"></span>
+                </span>
               </label>
-              <span class="settings-field__toggle-text" data-i18n="settings.telemetryToggle">Send anonymous usage events to help improve the app</span>
             </div>
-            <p class="dd-path__hint" data-i18n-html="settings.telemetryHint">End-to-end encrypted. No game IDs, file contents, or account info are ever sent. <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/blob/main/PRIVACY.md" target="_blank" rel="noopener">Privacy details</a>.</p>
-          </div>
-
-          <div class="settings-field">
-            <label class="settings-field__label" data-i18n="settings.debugInfo">Debug Info</label>
-            <div id="build-info" class="build-info">
-              <div class="build-info__row">
-                <span class="build-info__key" data-i18n="settings.debugInfoChannel">Channel</span>
-                <span class="build-info__val"><span id="build-info-channel" class="build-info__badge">—</span></span>
-              </div>
-              <div class="build-info__row">
-                <span class="build-info__key" data-i18n="settings.debugInfoVersion">Version</span>
-                <span class="build-info__val" id="build-info-version">—</span>
-              </div>
-              <div class="build-info__row">
-                <span class="build-info__key" data-i18n="settings.debugInfoCommit">Commit</span>
-                <span class="build-info__val" id="build-info-sha">—</span>
-              </div>
-              <div class="build-info__row">
-                <span class="build-info__key" data-i18n="settings.debugInfoBuildDate">Build date</span>
-                <span class="build-info__val" id="build-info-date">—</span>
-              </div>
-              <div class="build-info__row">
-                <span class="build-info__key" data-i18n="settings.debugInfoProfile">Profile</span>
-                <span class="build-info__val" id="build-info-profile">—</span>
-              </div>
-              <div class="build-info__row">
-                <span class="build-info__key" data-i18n="settings.debugInfoPlatform">Platform</span>
-                <span class="build-info__val" id="build-info-platform">—</span>
-              </div>
-              <div class="build-info__row">
-                <span class="build-info__key" data-i18n="settings.debugInfoDiagnosticId">Diagnostic ID</span>
-                <span class="build-info__val" id="build-info-diagnostic">—</span>
+            <h5 class="settings__group-title" data-i18n="settings.groupFineTuning">Fine tuning</h5>
+            <div class="settings-group">
+              <label class="settings-row" for="max-retries-input">
+                <span class="settings-row__text">
+                  <span class="settings-row__label" data-i18n="settings.maxRetries">Max Retries on Error</span>
+                  <span class="settings-row__hint" data-i18n="settings.maxRetriesHint">Extra attempts per depot when the connection drops.</span>
+                </span>
+                <input type="number" id="max-retries-input" class="dd-path__input settings-row__number" min="0" max="10" value="3">
+              </label>
+              <label class="settings-row" for="chunk-concurrency-input">
+                <span class="settings-row__text">
+                  <span class="settings-row__label" data-i18n="settings.chunkConcurrency">Max concurrent chunks (native engine)</span>
+                  <span class="settings-row__hint" data-i18n="settings.chunkConcurrencyHint">Lower it if downloads make the system lag.</span>
+                </span>
+                <input type="number" id="chunk-concurrency-input" class="dd-path__input settings-row__number" min="1" max="64" value="8">
+              </label>
+              <div class="settings-row settings-row--stack" id="dd-extra-args-row">
+                <label class="settings-row__text" for="dd-extra-args-input">
+                  <span class="settings-row__label" data-i18n="settings.ddExtraArgs">DepotDownloader Extra Arguments</span>
+                  <span class="settings-row__hint" data-i18n="settings.ddExtraArgsHint">Only used by the DepotDownloaderMod engine.</span>
+                </label>
+                <input type="text" id="dd-extra-args-input" class="dd-path__input" placeholder="-max-downloads 8 -verify-all">
               </div>
             </div>
-            <button type="button" id="btn-copy-build-info" class="btn btn--outline build-info__copy" data-i18n="settings.copyDebugInfo">Copy debug info</button>
-            <p class="dd-path__hint" data-i18n="settings.debugInfoHint">Paste this into bug reports so the maintainer knows which build you're running.</p>
-          </div>
+          </section>
 
+          <section class="settings__panel" data-section="depots" role="tabpanel">
+            <h4 class="settings__panel-title" data-i18n="settings.sectionDepots">Depot selection</h4>
+            <div class="settings-group">
+              <label class="settings-row" for="auto-select-depots-toggle">
+                <span class="settings-row__text">
+                  <span class="settings-row__label" data-i18n="settings.autoSelectDepots">Like Steam: pick the depots and put them into one game folder</span>
+                  <span class="settings-row__hint" data-i18n="settings.autoSelectDepotsHint">Selects what Steam would install here and writes it into one game folder. Off: you pick the depots and each gets its own folder.</span>
+                </span>
+                <span class="toggle-switch">
+                  <input type="checkbox" id="auto-select-depots-toggle">
+                  <span class="toggle-switch__slider"></span>
+                </span>
+              </label>
+            </div>
+            <div id="auto-select-options" class="auto-select-options">
+              <h5 class="settings__group-title" data-i18n="settings.groupLikeSteam">When picking like Steam</h5>
+              <div class="settings-group">
+                <label class="settings-row" for="auto-start-download-toggle">
+                  <span class="settings-row__text">
+                    <span class="settings-row__label" data-i18n="settings.autoStartDownload">Start the download right away</span>
+                    <span class="settings-row__hint" data-i18n="settings.autoStartDownloadHint">You only pick the game, the download starts 5 seconds later.</span>
+                  </span>
+                  <span class="toggle-switch">
+                    <input type="checkbox" id="auto-start-download-toggle">
+                    <span class="toggle-switch__slider"></span>
+                  </span>
+                </label>
+                <label class="settings-row" for="include-dlc-toggle">
+                  <span class="settings-row__text">
+                    <span class="settings-row__label" data-i18n="settings.includeDlc">Include DLC</span>
+                    <span class="settings-row__hint" data-i18n="settings.includeDlcHint">The emulator step marks the DLC as owned for gbe_fork.</span>
+                  </span>
+                  <span class="toggle-switch">
+                    <input type="checkbox" id="include-dlc-toggle" checked>
+                    <span class="toggle-switch__slider"></span>
+                  </span>
+                </label>
+                <div class="settings-row settings-row--wrap">
+                  <span class="settings-row__text">
+                    <span class="settings-row__label" data-i18n="settings.targetPlatform">Platform</span>
+                    <span class="settings-row__hint" data-i18n="settings.targetPlatformHint">Auto uses this system. Without a Linux build the Windows version is picked and runs with Proton.</span>
+                  </span>
+                  <div id="target-platform-options" class="segmented" role="radiogroup" data-i18n-attr="aria-label=settings.targetPlatform">
+                    <button type="button" class="segmented__option is-active" data-value="" role="radio" aria-checked="true" data-i18n="settings.auto">Auto</button>
+                    <button type="button" class="segmented__option" data-value="windows" role="radio" aria-checked="false">Windows</button>
+                    <button type="button" class="segmented__option" data-value="linux" role="radio" aria-checked="false">Linux</button>
+                    <button type="button" class="segmented__option" data-value="macos" role="radio" aria-checked="false">macOS</button>
+                  </div>
+                </div>
+                <div class="settings-row">
+                  <span class="settings-row__text">
+                    <span class="settings-row__label" data-i18n="settings.gameLanguage">Game language</span>
+                  </span>
+                  <div id="game-language" class="history-sort">
+                    <button type="button" id="game-language-button" class="history-sort__button" aria-haspopup="listbox" aria-expanded="false" data-i18n-attr="aria-label=settings.gameLanguage">
+                      <span id="game-language-label" class="history-sort__label"></span>
+                      <svg class="history-sort__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <ul id="game-language-menu" class="history-sort__menu history-sort__menu--scroll hidden" role="listbox" tabindex="-1" data-i18n-attr="aria-label=settings.gameLanguage"></ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="settings__panel" data-section="sources" role="tabpanel">
+            <h4 class="settings__panel-title" data-i18n="settings.sectionSources">Sources &amp; network</h4>
+            <div class="settings-group">
+              <div class="settings-row settings-row--stack">
+                <div class="settings-row__text">
+                  <span class="settings-row__label" data-i18n="settings.depotSources">Depot Sources</span>
+                  <span class="settings-row__hint" data-i18n-html="settings.depotSourcesHint">Folders in the <code>branches/&lt;appid&gt;/</code> layout with keys and manifests, asked in this order.</span>
+                </div>
+                <ul id="sources-list" class="sources-list"></ul>
+                <div class="sources-add-row">
+                  <input type="text" id="sources-add-input" class="dd-path__input" data-i18n-attr="placeholder=settings.depotSourcePlaceholder">
+                  <button type="button" id="btn-sources-add" class="btn btn--outline" data-i18n="settings.add">Add</button>
+                </div>
+                <p id="sources-add-error" class="error-message hidden"></p>
+              </div>
+              <div class="settings-row settings-row--stack">
+                <label class="settings-row__text" for="hubcap-apikey-input">
+                  <span class="settings-row__label" data-i18n="settings.hubcapApiKey">Hubcap API Key</span>
+                  <span class="settings-row__hint" data-i18n-html="settings.hubcapApiKeyHint">Adds Hubcap as a source when it has the game.</span>
+                </label>
+                <input type="text" id="hubcap-apikey-input" class="dd-path__input" data-i18n-attr="placeholder=settings.hubcapApiKeyPlaceholder" autocomplete="off">
+              </div>
+              <div class="settings-row settings-row--stack">
+                <label class="settings-row__text" for="ryuu-apikey-input">
+                  <span class="settings-row__label" data-i18n="settings.ryuuApiKey">Ryuu API Key</span>
+                  <span class="settings-row__hint" data-i18n-html="settings.ryuuApiKeyHint">Adds Ryuu as a source when it has the game.</span>
+                </label>
+                <input type="text" id="ryuu-apikey-input" class="dd-path__input" data-i18n-attr="placeholder=settings.ryuuApiKeyPlaceholder" autocomplete="off">
+              </div>
+            </div>
+            <h5 class="settings__group-title" data-i18n="settings.groupNetwork">Network</h5>
+            <div class="settings-group">
+              <div class="settings-row settings-row--stack">
+                <label class="settings-row__text" for="proxy-input">
+                  <span class="settings-row__label" data-i18n="settings.proxy">Proxy</span>
+                  <span class="settings-row__hint" data-i18n="settings.proxyHint">For every download and update. http://host:port or socks5://host:port, user:password@ if needed. Empty uses the system proxy.</span>
+                </label>
+                <div class="dd-path__input-wrap dd-path__input-wrap--with-btn">
+                  <input type="text" id="proxy-input" class="dd-path__input" data-i18n-attr="placeholder=settings.proxyPlaceholder">
+                  <button type="button" id="btn-proxy-test" class="btn btn--small btn--outline" data-i18n="settings.proxyTest">Test</button>
+                </div>
+                <p id="proxy-status" class="proxy-status hidden" role="status"></p>
+                <p id="proxy-error" class="error-message hidden"></p>
+              </div>
+            </div>
+          </section>
+
+          <section class="settings__panel" data-section="steam" role="tabpanel">
+            <h4 class="settings__panel-title" data-i18n="settings.sectionSteam">Steam</h4>
+            <div class="settings-group">
+              <div class="settings-row settings-row--stack">
+                <label class="settings-row__text" for="steam-path-input">
+                  <span class="settings-row__label" data-i18n="settings.steamPath">Steam folder</span>
+                  <span class="settings-row__hint" data-i18n="settings.steamPathHint">Needed to add games to Steam and start them through it. Leave it empty to find Steam on its own.</span>
+                </label>
+                <div class="dd-path__input-wrap dd-path__input-wrap--with-btn">
+                  <input type="text" id="steam-path-input" class="dd-path__input" data-i18n-attr="placeholder=settings.steamPathPlaceholder" autocomplete="off">
+                  <button type="button" id="btn-steam-path-browse" class="btn btn--small btn--outline" data-i18n="shortcut.browse">Browse</button>
+                </div>
+                <p id="steam-path-status" class="proxy-status hidden" role="status"></p>
+              </div>
+            </div>
+          </section>
+
+          <section class="settings__panel" data-section="privacy" role="tabpanel">
+            <h4 class="settings__panel-title" data-i18n="settings.sectionPrivacy">Privacy &amp; diagnostics</h4>
+            <div class="settings-group">
+              <label class="settings-row" for="telemetry-toggle">
+                <span class="settings-row__text">
+                  <span class="settings-row__label" data-i18n="settings.telemetry">Anonymous Usage Statistics</span>
+                  <span class="settings-row__hint" data-i18n-html="settings.telemetryHint">Encrypted, without game IDs, paths or account data. <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/blob/main/PRIVACY.md" target="_blank" rel="noopener">Privacy details</a>.</span>
+                </span>
+                <span class="toggle-switch">
+                  <input type="checkbox" id="telemetry-toggle">
+                  <span class="toggle-switch__slider"></span>
+                </span>
+              </label>
+            </div>
+            <h5 class="settings__group-title" data-i18n="settings.debugInfo">Debug Info</h5>
+            <div class="settings-group">
+              <div class="settings-row settings-row--stack">
+                <div id="build-info" class="build-info">
+                  <div class="build-info__row">
+                    <span class="build-info__key" data-i18n="settings.debugInfoChannel">Channel</span>
+                    <span class="build-info__val"><span id="build-info-channel" class="build-info__badge">—</span></span>
+                  </div>
+                  <div class="build-info__row">
+                    <span class="build-info__key" data-i18n="settings.debugInfoVersion">Version</span>
+                    <span class="build-info__val" id="build-info-version">—</span>
+                  </div>
+                  <div class="build-info__row">
+                    <span class="build-info__key" data-i18n="settings.debugInfoCommit">Commit</span>
+                    <span class="build-info__val" id="build-info-sha">—</span>
+                  </div>
+                  <div class="build-info__row">
+                    <span class="build-info__key" data-i18n="settings.debugInfoBuildDate">Build date</span>
+                    <span class="build-info__val" id="build-info-date">—</span>
+                  </div>
+                  <div class="build-info__row">
+                    <span class="build-info__key" data-i18n="settings.debugInfoProfile">Profile</span>
+                    <span class="build-info__val" id="build-info-profile">—</span>
+                  </div>
+                  <div class="build-info__row">
+                    <span class="build-info__key" data-i18n="settings.debugInfoPlatform">Platform</span>
+                    <span class="build-info__val" id="build-info-platform">—</span>
+                  </div>
+                  <div class="build-info__row">
+                    <span class="build-info__key" data-i18n="settings.debugInfoDiagnosticId">Diagnostic ID</span>
+                    <span class="build-info__val" id="build-info-diagnostic">—</span>
+                  </div>
+                </div>
+                <div class="settings-row__actions">
+                  <button type="button" id="btn-copy-build-info" class="btn btn--outline btn--small" data-i18n="settings.copyDebugInfo">Copy diagnostic info</button>
+                  <span class="settings-row__hint" data-i18n="settings.debugInfoHint">Paste it into bug reports.</span>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
       </div>
 
-      <div class="modal__actions">
+      <footer class="modal__actions settings__footer">
+        <span id="settings-dirty" class="settings__dirty hidden" data-i18n="settings.unsaved">Unsaved changes</span>
         <button id="btn-settings-cancel" class="btn btn--outline" data-modal-cancel data-i18n="settings.cancel">Cancel</button>
         <button id="btn-settings-save" class="btn btn--primary" data-i18n="settings.save">Save</button>
-      </div>
+      </footer>
     </div>
   </div>
 

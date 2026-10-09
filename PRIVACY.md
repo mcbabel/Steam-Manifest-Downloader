@@ -10,7 +10,7 @@ sent, and how you can opt in or out.
 On first launch the app shows a dialog asking whether you want to help.
 **Nothing is transmitted unless you click "Yes, help out."** Declining is the
 default if you close the dialog. You can change your choice anytime in
-**Settings → Advanced Settings → Anonymous Usage Statistics**.
+**Settings → Privacy & diagnostics → Anonymous Usage Statistics**.
 
 ## What is collected
 
@@ -191,7 +191,7 @@ match against unless you send the UUID yourself.
 
 ## Opting out later
 
-Turn the toggle off in **Settings → Advanced Settings**. After that no
+Turn the toggle off in **Settings → Privacy & diagnostics**. After that no
 events are sent and no installation UUID is used. Already-transmitted
 events can't be un-sent (they've left your machine), but they're
 anonymous and will age out of the server logs per the retention policy.

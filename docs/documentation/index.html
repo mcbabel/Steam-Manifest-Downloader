@@ -138,7 +138,7 @@
           <p class="kicker" id="toc-4"><span class="kicker__idx">04</span> Configuration</p>
           <ul class="toc__list" aria-labelledby="toc-4">
             <li><a href="#settings">Settings</a></li>
-            <li class="sub"><a href="#settings-advanced">Advanced settings</a></li>
+            <li class="sub"><a href="#settings-advanced">Settings in detail</a></li>
             <li class="sub"><a href="#download-options">Download page options</a></li>
             <li><a href="#manifest-sources">Manifest sources</a></li>
           </ul>
@@ -291,7 +291,7 @@
                 <a class="docnav__h2" href="#settings"><span class="docnav__n">04</span><span class="docnav__t">Settings and configuration</span></a>
                 <ul class="docnav__subs">
                   <li><a href="#settings-top">Top level settings</a></li>
-                  <li><a href="#settings-advanced">Advanced settings</a></li>
+                  <li><a href="#settings-advanced">Settings in detail</a></li>
                   <li><a href="#download-options">Download page options</a></li>
                   <li><a href="#settings-emulator">Emulator settings persistence</a></li>
                 </ul>
@@ -461,15 +461,15 @@ paru -S steam-manifest-downloader</code></pre>
               <p>The very first time you start SMD, two small prompts appear before the main interface:</p>
               <ol>
                 <li><strong>Language picker.</strong> Pick between English and German. Before you make the choice the interface is already localised from your OS or browser language, so a German system starts in German, and if neither matches, English is the fallback. The picker just lets you override that. It is saved immediately, and you can change it later under <strong>Settings, Language</strong>, where a restart prompt appears so the new translation applies cleanly.</li>
-                <li><strong>Anonymous telemetry consent.</strong> Opt in or decline. Telemetry counters are end to end encrypted with an embedded public key, and you can change your choice anytime under <strong>Settings, Advanced settings</strong>.</li>
+                <li><strong>Anonymous telemetry consent.</strong> Opt in or decline. Telemetry counters are end to end encrypted with an embedded public key, and you can change your choice anytime under <strong>Settings, Privacy &amp; diagnostics</strong>.</li>
               </ol>
-              <p>If you installed a build with the bundled archive.org sources, which is the default for the GitHub, installer and AUR source builds, two depot source URLs are seeded automatically so search works out of the box. The Flatpak build does not seed them, so there you need to add at least one source manually under <strong>Settings, Advanced settings, Manifest sources</strong>.</p>
+              <p>If you installed a build with the bundled archive.org sources, which is the default for the GitHub, installer and AUR source builds, two depot source URLs are seeded automatically so search works out of the box. The Flatpak build does not seed them, so there you need to add at least one source manually under <strong>Settings, Sources &amp; network, Depot sources</strong>.</p>
               <p>After the prompts the main interface is ready. Optional next steps:</p>
               <ul>
                 <li>Set a custom <strong>download location</strong> on the download page (step 3) before your first download</li>
                 <li>Configure a <strong>ManifestHub API key</strong> on the download page for additional manifest sources</li>
                 <li>Set a <strong>speed limit</strong> under <strong>Settings</strong> if the download should leave room for the rest of your connection</li>
-                <li>Open <strong>Settings, Advanced settings</strong> to tune the retry count, the number of parallel chunks or the proxy, or to add and remove depot sources</li>
+                <li>Open <strong>Settings</strong> to tune the retry count and the number of parallel chunks under <strong>Downloads</strong>, or to set a proxy and add or remove depot sources under <strong>Sources &amp; network</strong></li>
               </ul>
             </div>
           </div>
@@ -802,12 +802,12 @@ setManifestid(1392863, "4398981003384795747", 13789896785)</code></pre>
               <span class="chip chip--key">settings</span>
             </div>
             <h2 id="h-settings" class="h2-paper">Settings and configuration <a class="alink" href="#settings" aria-label="Permalink to Settings and configuration">#</a></h2>
-            <p class="lead-paper">Open the settings modal via the gear icon in the header. All values are persisted to the app's settings file between sessions.</p>
+            <p class="lead-paper">Open the settings with the gear icon in the header or <kbd>Ctrl</kbd>+<kbd>,</kbd>. The categories are on the left, and the search field at the top finds any option by name. A note next to the buttons shows when something is not saved yet. All values are kept in the app's settings file between sessions.</p>
             <nav class="qidx" aria-label="Inside Settings and configuration">
               <p class="qidx__lab">In this section</p>
               <ul class="qidx__list">
-                <li><a href="#settings-top">Top level settings</a></li>
-                <li><a href="#settings-advanced">Advanced settings</a></li>
+                <li><a href="#settings-top">Categories</a></li>
+                <li><a href="#settings-advanced">Settings in detail</a></li>
                 <li><a href="#download-options">Download page options</a></li>
                 <li><a href="#settings-emulator">Emulator settings persistence</a></li>
               </ul>
@@ -816,17 +816,18 @@ setManifestid(1392863, "4398981003384795747", 13789896785)</code></pre>
             <div class="prose">
               <p>Emulator specific settings live in step 5, see <a href="#step-emulator">Step 5: emulator</a>, and are remembered in <code>localStorage</code>.</p>
 
-              <h3 id="settings-top">Top level settings <a class="alink" href="#settings-top" aria-label="Permalink to Top level settings">#</a></h3>
+              <h3 id="settings-top">Categories <a class="alink" href="#settings-top" aria-label="Permalink to Categories">#</a></h3>
               <ul>
-                <li><strong>Language</strong>, the interface language. English and German are bundled, and the picker also runs on first launch. It covers the whole program, including the download log and the error messages</li>
-                <li><strong>Auto-update</strong>, toggles whether SMD checks GitHub for new releases on startup and offers an in-app update prompt</li>
-                <li><strong>Speed limit</strong>, off by default. Switch it on and enter a value in MB/s or Mbit/s, see <a href="#speed-limit">Speed limit</a>. It applies to the native engine and takes effect at once, also for a running download</li>
-                <li><strong>Depot selection</strong>, the switch for <a href="#like-steam">Like Steam mode</a> with its options for DLC, platform, game language and starting right away. Off by default</li>
-                <li><strong>Steam folder</strong>, empty means SMD finds Steam itself. Set it when Steam is installed somewhere else, see <a href="#linux-add-to-steam-library">Step 4</a></li>
+                <li><strong>General</strong>: the interface <strong>language</strong> (English and German, it covers the whole program including the download log and error messages), <strong>auto-update</strong> and the <a href="#notification-sound">notification sound</a></li>
+                <li><strong>Downloads</strong>: the <a href="#download-engine">download engine</a>, the <a href="#speed-limit">speed limit</a>, <a href="#cancel-behaviour">keeping files when cancelling</a>, and under Fine tuning the retries, the parallel chunks and the <a href="#depotdownloader-arguments-depotdownloadermod-path-only">DepotDownloaderMod arguments</a></li>
+                <li><strong>Depot selection</strong>: the switch for <a href="#like-steam">Like Steam mode</a> with its options for starting right away, DLC, platform and game language. Off by default</li>
+                <li><strong>Sources &amp; network</strong>: the <a href="#settings-manifest-sources">depot sources</a>, the <a href="#api-keys-optional">Hubcap and Ryuu keys</a> and the <a href="#network">proxy</a> with its Test button</li>
+                <li><strong>Steam</strong>: the Steam folder. Empty means SMD finds Steam itself. Set it when Steam is installed somewhere else, see <a href="#linux-add-to-steam-library">Step 4</a></li>
+                <li><strong>Privacy &amp; diagnostics</strong>: <a href="#anonymous-telemetry-opt-in">anonymous usage statistics</a>, the build details and <strong>Copy Diagnostic Info</strong> for bug reports</li>
               </ul>
 
-              <h3 id="settings-advanced">Advanced settings, collapsible <a class="alink" href="#settings-advanced" aria-label="Permalink to Advanced settings, collapsible">#</a></h3>
-              <p>Click Advanced settings to expand the section. It contains the following.</p>
+              <h3 id="settings-advanced">Settings in detail <a class="alink" href="#settings-advanced" aria-label="Permalink to Settings in detail">#</a></h3>
+              <p>What each option does, in the order of the categories.</p>
 
               <h4 id="download-engine">Download engine <a class="alink" href="#download-engine" aria-label="Permalink to Download engine">#</a></h4>
               <p><strong>Download directly from Steam (native, recommended)</strong> is on by default: an anonymous Steam login fetches manifests and chunks from Steam's CDN in process, with ManifestHub only as a fallback. Turn it off to force the legacy DepotDownloaderMod path, which needs the .NET runtime on Windows. The .NET warning only appears when that engine is selected.</p>
@@ -887,7 +888,7 @@ setManifestid(1392863, "4398981003384795747", 13789896785)</code></pre>
               <span class="chip chip--key">order decides</span>
             </div>
             <h2 id="h-sources" class="h2-paper">Manifest sources <a class="alink" href="#manifest-sources" aria-label="Permalink to Manifest sources">#</a></h2>
-            <p class="lead-paper">SMD lets you plug in any number of depot sources under <strong>Settings, Advanced settings, Manifest sources</strong>.</p>
+            <p class="lead-paper">SMD lets you plug in any number of depot sources under <strong>Settings, Sources &amp; network, Depot sources</strong>.</p>
             <nav class="qidx" aria-label="Inside Manifest sources">
               <p class="qidx__lab">In this section</p>
               <ul class="qidx__list">
@@ -1220,19 +1221,19 @@ dotnet publish -c Release -r linux-x64 --self-contained true \
               <details class="qa">
                 <summary><span>".NET not found" warning</span></summary>
                 <div class="qa__body">
-                  <p>The warning only appears when you switched to the DepotDownloaderMod engine, which needs the <strong>.NET 9.0 Desktop Runtime</strong>. Either switch back to the default native engine under <strong>Settings, Advanced settings, Download engine</strong>, which needs no runtime, or install it: <a href="https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.16-windows-x64-installer">.NET 9.0.16 Desktop Runtime, Windows x64</a>. After installing, restart SMD and the warning disappears.</p>
+                  <p>The warning only appears when you switched to the DepotDownloaderMod engine, which needs the <strong>.NET 9.0 Desktop Runtime</strong>. Either switch back to the default native engine under <strong>Settings, Downloads</strong>, which needs no runtime, or install it: <a href="https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.16-windows-x64-installer">.NET 9.0.16 Desktop Runtime, Windows x64</a>. After installing, restart SMD and the warning disappears.</p>
                 </div>
               </details>
               <details class="qa">
                 <summary><span>"Connection timeout" during download, or the PC lags while downloading</span></summary>
                 <div class="qa__body">
-                  <p>This usually happens when the number of parallel connections overwhelms your network or disk, or when Steam servers are under heavy load. Check whether a VPN or proxy is interfering, and use <strong>Test</strong> next to the <a href="#network">proxy field</a> to see whether Steam answers at all. Lower <strong>Max concurrent chunks</strong> under Settings, Advanced settings from 8 to 4, or set a <a href="#speed-limit">speed limit</a>, which also takes effect for a running download.</p>
+                  <p>This usually happens when the number of parallel connections overwhelms your network or disk, or when Steam servers are under heavy load. Check whether a VPN or proxy is interfering, and use <strong>Test</strong> next to the <a href="#network">proxy field</a> to see whether Steam answers at all. Lower <strong>Max concurrent chunks</strong> under Settings, Downloads from 8 to 4, or set a <a href="#speed-limit">speed limit</a>, which also takes effect for a running download.</p>
                 </div>
               </details>
               <details class="qa">
                 <summary><span>"No connection to Steam or any manifest source"</span></summary>
                 <div class="qa__body">
-                  <p>Nothing got through to Steam, so SMD stopped early. The message names the cause: a refused connection, a DNS problem, a timeout or a certificate error. A certificate error usually means an antivirus or a company proxy intercepts HTTPS. If your network only lets traffic through a proxy, enter it under <a href="#network">Settings, Advanced settings, Proxy</a> and press <strong>Test</strong>. A VPN or another DNS server can also help when your provider blocks Steam's servers.</p>
+                  <p>Nothing got through to Steam, so SMD stopped early. The message names the cause: a refused connection, a DNS problem, a timeout or a certificate error. A certificate error usually means an antivirus or a company proxy intercepts HTTPS. If your network only lets traffic through a proxy, enter it under <a href="#network">Settings, Sources &amp; network, Proxy</a> and press <strong>Test</strong>. A VPN or another DNS server can also help when your provider blocks Steam's servers.</p>
                 </div>
               </details>
               <details class="qa">
