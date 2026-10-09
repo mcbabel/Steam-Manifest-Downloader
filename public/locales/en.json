@@ -127,6 +127,7 @@
     "autoSelectTitle": "Picked like Steam would: {count} of {total} depots",
     "autoSelectSkipped": "skipped: {list}",
     "autoStartIn": "Starting in {seconds} s · Cancel",
+    "noKeyHint": "This depot has no decryption key in the file or source, so it cannot be downloaded.",
     "skipReason": {
       "other_platform": "other platform",
       "arch32": "32-bit",
@@ -134,7 +135,8 @@
       "low_violence": "low-violence version",
       "dlc": "DLC (not selected)",
       "optional_dlc": "optional DLC",
-      "redistributable": "shared redistributable"
+      "redistributable": "shared redistributable",
+      "no_key": "no key available"
     },
     "autoSelectDlc": "Add DLC",
     "autoSelectNoDlc": "Remove DLC"

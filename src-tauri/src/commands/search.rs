@@ -73,6 +73,7 @@ pub async fn recommend_depots(
     app: AppHandle,
     depots: Vec<DepotMetadata>,
     candidates: Vec<String>,
+    keyed: Option<Vec<String>>,
     ui_language: Option<String>,
     include_dlc: Option<bool>,
 ) -> Result<Selection, String> {
@@ -81,7 +82,10 @@ pub async fn recommend_depots(
     if let Some(dlc) = include_dlc {
         prefs.include_dlc = dlc;
     }
-    Ok(depot_select::recommend(&depots, &candidates, &prefs))
+    Ok(match keyed {
+        Some(keyed) => depot_select::recommend_keyed(&depots, &candidates, |id| keyed.iter().any(|k| k == id), &prefs),
+        None => depot_select::recommend(&depots, &candidates, &prefs),
+    })
 }
 
 #[command]

@@ -55,6 +55,7 @@ pub enum SkipReason {
     Dlc,
     OptionalDlc,
     Redistributable,
+    NoKey,
 }
 
 impl SkipReason {
@@ -67,6 +68,7 @@ impl SkipReason {
             SkipReason::Dlc => "dlc",
             SkipReason::OptionalDlc => "optional_dlc",
             SkipReason::Redistributable => "redistributable",
+            SkipReason::NoKey => "no_key",
         }
     }
 }
@@ -265,6 +267,27 @@ pub fn recommend(meta: &[DepotMetadata], candidates: &[String], prefs: &Prefs) -
     }
 }
 
+pub fn recommend_keyed(
+    meta: &[DepotMetadata],
+    candidates: &[String],
+    has_key: impl Fn(&str) -> bool,
+    prefs: &Prefs,
+) -> Selection {
+    let (keyed, keyless): (Vec<String>, Vec<String>) =
+        candidates.iter().cloned().partition(|id| has_key(id));
+    if keyed.is_empty() || keyless.is_empty() {
+        return recommend(meta, candidates, prefs);
+    }
+    let mut selection = recommend(meta, &keyed, prefs);
+    selection
+        .skipped
+        .extend(keyless.into_iter().map(|depot_id| Skipped {
+            depot_id,
+            reason: SkipReason::NoKey,
+        }));
+    selection
+}
+
 pub fn chosen_dlcs(
     meta: &[DepotMetadata],
     main_app_id: &str,
@@ -372,6 +395,34 @@ mod tests {
         assert_eq!(reason(&sel, "16"), Some(SkipReason::OtherLanguage));
         assert_eq!(sel.platform, "windows");
         assert_eq!(sel.language, "german");
+    }
+
+    #[test]
+    fn skips_depots_without_a_key() {
+        let meta = vec![
+            depot("1", DepotRole::SharedContent),
+            platform("2", "windows", Some("64")),
+            platform("3", "windows", Some("64")),
+        ];
+        let sel = recommend_keyed(
+            &meta,
+            &ids(&["1", "2", "3"]),
+            |id| id != "3",
+            &prefs("windows", "english"),
+        );
+        assert_eq!(sel.selected, ids(&["1", "2"]));
+        assert_eq!(reason(&sel, "3"), Some(SkipReason::NoKey));
+    }
+
+    #[test]
+    fn keeps_all_depots_when_none_has_a_key() {
+        let meta = vec![
+            depot("1", DepotRole::SharedContent),
+            platform("2", "windows", None),
+        ];
+        let sel = recommend_keyed(&meta, &ids(&["1", "2"]), |_| false, &prefs("windows", "english"));
+        assert_eq!(sel.selected, ids(&["1", "2"]));
+        assert!(sel.skipped.is_empty());
     }
 
     #[test]

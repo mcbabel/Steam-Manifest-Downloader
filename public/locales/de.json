@@ -127,6 +127,7 @@
     "autoSelectTitle": "Wie Steam gewählt: {count} von {total} Depots",
     "autoSelectSkipped": "übersprungen: {list}",
     "autoStartIn": "Start in {seconds} s · Abbrechen",
+    "noKeyHint": "Für dieses Depot gibt es in der Datei oder Quelle keinen Schlüssel, deshalb kann es nicht geladen werden.",
     "skipReason": {
       "other_platform": "andere Plattform",
       "arch32": "32-Bit",
@@ -134,7 +135,8 @@
       "low_violence": "entschärfte Version",
       "dlc": "DLC (nicht ausgewählt)",
       "optional_dlc": "optionaler DLC",
-      "redistributable": "gemeinsame Laufzeitkomponente"
+      "redistributable": "gemeinsame Laufzeitkomponente",
+      "no_key": "kein Schlüssel vorhanden"
     },
     "autoSelectDlc": "DLCs auch auswählen",
     "autoSelectNoDlc": "DLCs abwählen"

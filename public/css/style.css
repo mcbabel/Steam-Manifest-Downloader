@@ -4502,6 +4502,11 @@ button:disabled,
   font-size: 0.88rem;
 }
 
+.depot-tag--nokey {
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+
 .depot-tag--skipped {
   background: var(--bg-hover);
   color: var(--text-muted);

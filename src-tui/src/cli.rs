@@ -384,7 +384,15 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
                     crate::i18n::language(),
                 );
                 let candidates: Vec<String> = plan.depots.iter().map(|(id, ..)| id.clone()).collect();
-                let choice = smd_core::services::depot_select::recommend(&meta, &candidates, &prefs);
+                let choice = smd_core::services::depot_select::recommend_keyed(
+                    &meta,
+                    &candidates,
+                    |id| {
+                        plan.depots.iter().any(|(d, _, key, _)| d == id && key.is_some())
+                            || plan.key_vdf.as_ref().is_some_and(|k| k.contains_key(id))
+                    },
+                    &prefs,
+                );
                 if choice.known {
                     if !args.json {
                         println!("{}", auto_choice_line(&choice, candidates.len()));

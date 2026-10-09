@@ -113,7 +113,16 @@ impl App {
         if let Some(dlc) = self.wiz.depot_include_dlc {
             prefs.include_dlc = dlc;
         }
-        let choice = depot_select::recommend(&meta, &candidates, &prefs);
+        let key_vdf = self.wiz.search_key_vdf.as_ref().filter(|_| self.wiz.from_search);
+        let choice = depot_select::recommend_keyed(
+            &meta,
+            &candidates,
+            |id| {
+                parsed.depots.iter().any(|d| d.depot_id == id && d.depot_key.is_some())
+                    || key_vdf.is_some_and(|k| k.contains_key(id))
+            },
+            &prefs,
+        );
         self.wiz.selected = choice.selected.iter().cloned().collect();
         if !manual
             && choice.known

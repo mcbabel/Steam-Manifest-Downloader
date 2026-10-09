@@ -1221,6 +1221,7 @@ function showSelectionStep() {
   syncSteamButtons();
 
   state.depotManifests = {};
+  const markKeyless = data.depots.some(depotHasKey);
 
   data.depots.forEach((depot) => {
     const sizeFormatted = formatBytes(depot.sizeBytes);
@@ -1238,7 +1239,7 @@ function showSelectionStep() {
           <span class="depot-item__depot-id">Depot ${safeDepotId}<span class="depot-item__name" data-depot-name="${safeDepotId}"></span>${safeSize ? `<span class="depot-item__size">${safeSize}</span>` : ''}</span>
           <span class="depot-item__tags" data-depot-tags="${safeDepotId}"></span>
         </div>
-        <div class="depot-item__manifest-id">Manifest: ${safeManifestId}</div>
+        <div class="depot-item__manifest-id">Manifest: ${safeManifestId}${markKeyless && !depotHasKey(depot) ? ` <span class="depot-tag depot-tag--nokey" title="${escapeHtml(window.i18n.t('select.noKeyHint'))}">${escapeHtml(window.i18n.t('select.skipReason.no_key'))}</span>` : ''}</div>
         <div class="depot-item__manifest-row">
           <input type="text" data-depot-id="${safeDepotId}" class="custom-manifest-input"
             placeholder="${escapeHtml(window.i18n.t('select.customManifestPlaceholder'))}"
@@ -1386,6 +1387,7 @@ async function applyRecommendedDepots(depots) {
     selection = await invoke('recommend_depots', {
       depots,
       candidates: data.depots.map(d => String(d.depotId)),
+      keyed: data.depots.filter(depotHasKey).map(d => String(d.depotId)),
       uiLanguage: window.i18n.getCurrentLocale(),
       includeDlc: state.depotIncludeDlc,
     });
@@ -1410,6 +1412,12 @@ async function applyRecommendedDepots(depots) {
   }
   syncDlcButton();
   return selection;
+}
+
+function depotHasKey(depot) {
+  if (depot.depotKey) return true;
+  const keys = state.mode === 'search' ? state.searchKeyVdfKeys : null;
+  return !!(keys && keys[String(depot.depotId)]);
 }
 
 function candidateDlcDepots() {
