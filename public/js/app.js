@@ -3268,24 +3268,26 @@ function closeBugReport() {
   if (els.bugReportModal) els.bugReportModal.classList.add('hidden');
 }
 
-function issueBody(parts) {
-  const section = (title, text) => `## ${title}\n\n${text.trim() || '_No answer_'}\n`;
-  let body = [
-    section('Description', parts.what),
-    section('Steps to reproduce', parts.steps),
-    section('Expected behavior', parts.expected),
-  ].join('\n');
-  if (parts.diag) body += `\n## Environment\n\n${parts.diag.map(l => `- ${l}`).join('\n')}\n`;
-  if (parts.log && parts.log.length) {
-    body += `\n## Logs / terminal output\n\n<details>\n<summary>Last lines of the download log</summary>\n\n\`\`\`\n${parts.log.join('\n')}\n\`\`\`\n\n</details>\n`;
-  }
-  body += '\n_Sent from the app\'s bug report form._\n';
-  return body;
+function issueFields(title, parts) {
+  const info = state.buildInfo || {};
+  const os = { windows: 'Windows', linux: 'Linux', macos: 'macOS' }[info.targetOs] || '';
+  const fields = {
+    template: 'bug_report.yml',
+    title: `[Bug] ${title}`,
+    what: parts.what.trim(),
+    steps: parts.steps.trim(),
+    expected: parts.expected.trim(),
+    version: info.version || '',
+    os,
+    environment: parts.diag ? parts.diag.join('\n') : '',
+    logs: parts.log && parts.log.length ? parts.log.join('\n') : '',
+    extra: 'Sent from the app\'s bug report form.',
+  };
+  return Object.fromEntries(Object.entries(fields).filter(([, v]) => v));
 }
 
-function issueUrl(title, body) {
-  const params = new URLSearchParams({ template: 'bug_report.md', labels: 'bug', title: `[Bug] ${title}`, body });
-  return `${ISSUE_URL}?${params.toString()}`;
+function issueUrl(title, parts) {
+  return `${ISSUE_URL}?${new URLSearchParams(issueFields(title, parts)).toString()}`;
 }
 
 async function submitBugReport() {
@@ -3312,15 +3314,15 @@ async function submitBugReport() {
     log: withLog ? recentLogLines(60) : null,
   };
   const title = titleEl.value.trim();
-  let url = issueUrl(title, issueBody(parts));
+  let url = issueUrl(title, parts);
   while (url.length > ISSUE_URL_LIMIT && parts.log && parts.log.length > 5) {
     parts.log = parts.log.slice(Math.ceil(parts.log.length / 3));
-    url = issueUrl(title, issueBody(parts));
+    url = issueUrl(title, parts);
   }
   for (const key of ['what', 'steps', 'expected']) {
     while (url.length > ISSUE_URL_LIMIT && parts[key].length > 200) {
       parts[key] = parts[key].slice(0, Math.floor(parts[key].length * 0.75)) + ' …';
-      url = issueUrl(title, issueBody(parts));
+      url = issueUrl(title, parts);
     }
   }
   try {
