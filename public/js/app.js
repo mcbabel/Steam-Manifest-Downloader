@@ -343,7 +343,13 @@ const els = {
 
 function goToStep(step) {
   state.currentStep = step;
-  if (step === 5) syncEmuGameDataKey();
+  const appRoot = document.querySelector('.app');
+  if (appRoot) appRoot.classList.toggle('app--wide', step === 5);
+  if (step === 5) {
+    syncEmuGameDataKey();
+    selectEmuTab(state.emuEditMode ? 'emulator' : 'files');
+    updateEmuOverview();
+  }
   if (step !== 2) cancelAutoStart();
   renderUpdateNotice(step);
 
@@ -4682,6 +4688,7 @@ function initEvents() {
   if (els.btnEmuApply) {
     els.btnEmuApply.addEventListener('click', applyEmuReplacement);
     initEmuGameData();
+    initEmuNav();
   }
   if (els.btnEmuSaveSettings) {
     els.btnEmuSaveSettings.addEventListener('click', saveEmuSettings);
@@ -6228,6 +6235,105 @@ function updateEmuActionButtons() {
     els.btnEmuRevert.classList.toggle('hidden', patchedCount === 0);
     els.btnEmuRevert.disabled = busy;
   }
+  updateEmuOverview();
+}
+
+function selectEmuTab(section) {
+  const step = document.getElementById('step-emulator');
+  if (!step) return;
+  step.querySelectorAll('.emu-nav__tab').forEach(tab => {
+    const on = tab.dataset.section === section;
+    tab.classList.toggle('is-active', on);
+    tab.setAttribute('aria-selected', on ? 'true' : 'false');
+    tab.tabIndex = on ? 0 : -1;
+  });
+  step.querySelectorAll('.emu-panel').forEach(panel => {
+    panel.classList.toggle('is-active', panel.dataset.section === section);
+  });
+}
+
+function setEmuBadge(section, text, tone) {
+  const badge = document.querySelector(`#step-emulator .emu-nav__badge[data-badge="${section}"]`);
+  if (!badge) return;
+  badge.textContent = text || '';
+  badge.classList.toggle('hidden', !text);
+  badge.classList.toggle('emu-nav__badge--on', tone === 'on');
+  badge.classList.toggle('emu-nav__badge--warn', tone === 'warn');
+}
+
+function updateEmuOverview() {
+  const summary = document.getElementById('emu-summary');
+  if (!summary) return;
+  const t = (key, params) => window.i18n.t(key, params);
+  const total = (state.emulatorScan || []).length;
+  const selected = getSelectedEmuTargets().length;
+  const drmShown = !!(els.emuDrmSection && !els.emuDrmSection.classList.contains('hidden'));
+  const mergeShown = !!(els.emuDlcMergeSection && !els.emuDlcMergeSection.classList.contains('hidden'));
+  const gameData = document.getElementById('emu-gamedata-toggle');
+  const bypass = document.getElementById('emu-bypass-toggle');
+  const gameDataOn = !!(gameData && gameData.checked);
+  const bypassOn = !!(bypass && bypass.checked);
+  const variant = selectedEmuVariant();
+  const custom = Object.keys(gatherEmuSettings() || {}).length;
+
+  setEmuBadge('files', drmShown ? '!' : (total ? `${selected}/${total}` : ''), drmShown ? 'warn' : null);
+  setEmuBadge('gamedata', t(gameDataOn ? 'emulator.summary.on' : 'emulator.summary.off'), gameDataOn ? 'on' : null);
+  setEmuBadge('emulator', custom ? String(custom) : '', null);
+  setEmuBadge('extras', mergeShown ? '!' : (bypassOn ? t('emulator.summary.on') : ''), mergeShown ? 'warn' : (bypassOn ? 'on' : null));
+
+  const chips = [];
+  const chip = (text, tone) => chips.push(`<span class="emu-summary__chip${tone ? ` emu-summary__chip--${tone}` : ''}">${text}</span>`);
+  if (state.gameName) chip(`<strong>${escapeHtml(state.gameName)}</strong>`);
+  if (total) chip(escapeHtml(t('emulator.summary.files', { selected, total })));
+  chip(escapeHtml(t(variant === 'experimental' ? 'emulator.variantExperimental' : 'emulator.variantRegular')));
+  chip(escapeHtml(t('emulator.tabs.gameData')), gameDataOn ? 'on' : 'off');
+  if (bypassOn) chip(escapeHtml(t('emulator.bypassLabel')), 'on');
+  if (custom) chip(escapeHtml(t('emulator.summary.custom', { count: custom })));
+  if (drmShown) chip(escapeHtml(t('emulator.drmTitle')), 'warn');
+  if (mergeShown) chip(escapeHtml(t('emulator.dlcMergeLabel')), 'warn');
+  summary.innerHTML = chips.join('');
+}
+
+const reportedEmuSections = new Set();
+
+function reportEmuSection(section) {
+  if (!section || reportedEmuSections.has(section)) return;
+  reportedEmuSections.add(section);
+  emitEvent('emu_section_viewed', { section });
+}
+
+function initEmuNav() {
+  const step = document.getElementById('step-emulator');
+  if (!step) return;
+  const tabs = () => Array.from(step.querySelectorAll('.emu-nav__tab'));
+  tabs().forEach(tab => {
+    tab.addEventListener('click', () => {
+      selectEmuTab(tab.dataset.section);
+      reportEmuSection(tab.dataset.section);
+    });
+    tab.addEventListener('keydown', (e) => {
+      const list = tabs();
+      const idx = list.indexOf(tab);
+      const keys = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 };
+      let next = null;
+      if (e.key in keys) next = list[(idx + keys[e.key] + list.length) % list.length];
+      else if (e.key === 'Home') next = list[0];
+      else if (e.key === 'End') next = list[list.length - 1];
+      if (!next) return;
+      e.preventDefault();
+      selectEmuTab(next.dataset.section);
+      reportEmuSection(next.dataset.section);
+      next.focus();
+    });
+  });
+  step.addEventListener('change', () => updateEmuOverview());
+  step.addEventListener('input', (e) => {
+    if (e.target && e.target.matches('[data-emu-key]')) updateEmuOverview();
+  });
+  const observer = new MutationObserver(() => updateEmuOverview());
+  [els.emuDrmSection, els.emuDlcMergeSection].forEach(el => {
+    if (el) observer.observe(el, { attributes: true, attributeFilter: ['class'] });
+  });
 }
 
 function refreshEmuPatchedState(scanned) {

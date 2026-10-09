@@ -582,310 +582,351 @@
 
     <section id="step-emulator" class="step hidden">
       <div class="card">
-        <h2 class="emu-header" data-i18n="emulator.title">Apply Emulator Patch</h2>
-        <p class="emu-description" data-i18n="emulator.description">Replace the game's Steam API library with the gbe_fork emulator so the game can run without the Steam client.</p>
-
-        <div id="emu-release-status" class="emu-release-status" data-i18n="emulator.releaseLoading">Loading emulator release info...</div>
-
-        <div id="emu-drm-section" class="emu-drm-section hidden">
-          <div class="emu-drm-header">
-            <svg class="emu-drm-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-              <line x1="12" y1="9" x2="12" y2="13"/>
-              <line x1="12" y1="17" x2="12.01" y2="17"/>
-            </svg>
-            <div class="emu-drm-header__text">
-              <h3 class="emu-drm-title" data-i18n="emulator.drmTitle">Steam DRM detected</h3>
-              <p class="emu-drm-description" data-i18n="emulator.drmDescription">These executables are protected by Steam DRM (SteamStub). They won't run with the emulator until the DRM is removed.</p>
-            </div>
+        <div class="emu-top">
+          <div class="emu-top__text">
+            <h2 class="emu-header" data-i18n="emulator.title">Apply Emulator Patch</h2>
+            <p class="emu-description" data-i18n="emulator.description">Replace the game's Steam API library with the gbe_fork emulator so the game can run without the Steam client.</p>
           </div>
-          <div id="emu-drm-list" class="emu-drm-list"></div>
-          <div id="emu-drm-status-wrap" class="emu-drm-status-wrap hidden">
-            <button id="btn-emu-drm-copy" class="emu-drm-copy-btn" type="button" data-i18n-attr="title=emulator.drmCopyLog,aria-label=emulator.drmCopyLog">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-              </svg>
+          <div id="emu-release-status" class="emu-release-status" data-i18n="emulator.releaseLoading">Loading emulator release info...</div>
+        </div>
+        <div id="emu-summary" class="emu-summary" aria-live="polite"></div>
+
+        <div class="emu-body">
+          <nav class="emu-nav" role="tablist" data-i18n-attr="aria-label=emulator.title">
+            <button type="button" class="emu-nav__tab is-active" role="tab" id="emu-tab-files" data-section="files" aria-controls="emu-panel-files" aria-selected="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span class="emu-nav__label" data-i18n="emulator.tabs.files">Files</span>
+              <span class="emu-nav__badge hidden" data-badge="files"></span>
             </button>
-            <div id="emu-drm-status" class="emu-drm-status"></div>
-          </div>
-          <div class="emu-drm-actions">
-            <button id="btn-emu-drm-remove" class="btn btn--danger" data-i18n="emulator.drmRemove">Remove DRM (via Steamless)</button>
-            <span class="emu-drm-attribution" data-i18n="emulator.drmAttribution">Powered by Steamless by atom0s</span>
-          </div>
-        </div>
-
-        <div id="emu-dlc-merge-section" class="emu-section emu-dlc-merge-section hidden">
-          <div class="emu-bypass-row">
-            <div class="emu-bypass-row__text">
-              <span class="emu-bypass-row__label" data-i18n="emulator.dlcMergeLabel">DLC depots detected</span>
-              <p id="emu-dlc-merge-hint" class="emu-bypass-row__hint" data-i18n="emulator.dlcMergeHint">Multiple depot folders found. Many games expect DLC content next to the main game files. Merge the DLC depots into the main game folder?</p>
-              <p id="emu-dlc-merge-status" class="dd-path__hint hidden"></p>
-            </div>
-            <button id="btn-emu-merge-dlcs" type="button" class="btn btn--primary btn--small" data-i18n="emulator.dlcMergeButton">
-              Merge DLC depots
+            <button type="button" class="emu-nav__tab" role="tab" id="emu-tab-gamedata" data-section="gamedata" aria-controls="emu-panel-gamedata" aria-selected="false">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="6"/><path d="M15.48 12.89 17 22l-5-3-5 3 1.52-9.11"/></svg>
+              <span class="emu-nav__label" data-i18n="emulator.tabs.gameData">Game data</span>
+              <span class="emu-nav__badge hidden" data-badge="gamedata"></span>
             </button>
-          </div>
-        </div>
-
-        <div id="emu-bypass-section" class="emu-section emu-bypass-section">
-          <div class="emu-bypass-row">
-            <div class="emu-bypass-row__text">
-              <span class="emu-bypass-row__label" data-i18n="emulator.bypassLabel">Steam API Check Bypass</span>
-              <p class="emu-bypass-row__hint" data-i18n-html="emulator.bypassHint">Installs a <code>version.dll</code> next to the game that intercepts Steam-API integrity checks. Enable if the game refuses to launch with gbe_fork. Windows games only.</p>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="emu-bypass-toggle">
-              <span class="toggle-switch__slider"></span>
-            </label>
-          </div>
-        </div>
-
-        <div id="emu-gamedata-section" class="emu-section emu-gamedata-section">
-          <div class="emu-bypass-row">
-            <div class="emu-bypass-row__text">
-              <span class="emu-bypass-row__label" data-i18n="emulator.gameData.label">Game data for gbe_fork</span>
-              <p class="emu-bypass-row__hint" data-i18n-html="emulator.gameData.hint">Writes what gbe_fork needs into <code>steam_settings</code>: languages, depots, branches, achievements with icons, leaderboards, inventory items, the controller layout and cloud save folders. With a Steam Web API key also the stats and all achievements.</p>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="emu-gamedata-toggle" checked>
-              <span class="toggle-switch__slider"></span>
-            </label>
-          </div>
-          <div class="emu-gamedata__key">
-            <label for="emu-webapi-key" class="emu-gamedata__key-label" data-i18n="settings.steamWebApiKey">Steam Web API key</label>
-            <div class="dd-path__input-wrap dd-path__input-wrap--with-btn">
-              <input type="password" id="emu-webapi-key" class="dd-path__input" autocomplete="off" spellcheck="false" data-i18n-attr="placeholder=settings.steamWebApiKeyPlaceholder">
-              <button type="button" id="btn-emu-webapi-save" class="btn btn--small btn--outline" data-i18n="emulator.gameData.saveKey">Save key</button>
-            </div>
-            <p class="emu-bypass-row__hint" data-i18n-html="settings.steamWebApiKeyHint">Optional. Get a free key at <a href="https://steamcommunity.com/dev/apikey" target="_blank" rel="noopener" class="link">steamcommunity.com/dev/apikey</a>. It stays on this PC and is only sent to Steam.</p>
-          </div>
-          <div class="emu-gamedata__media">
-            <span class="emu-gamedata__key-label" id="emu-gamedata-media-label" data-i18n="emulator.gameData.media">Save media</span>
-            <div id="emu-gamedata-media" class="segmented" role="radiogroup" aria-labelledby="emu-gamedata-media-label">
-              <button type="button" class="segmented__option is-active" data-value="off" role="radio" aria-checked="true" data-i18n="emulator.gameData.mediaOff">Off</button>
-              <button type="button" class="segmented__option" data-value="images" role="radio" aria-checked="false" data-i18n="emulator.gameData.mediaImages">Images</button>
-              <button type="button" class="segmented__option" data-value="all" role="radio" aria-checked="false" data-i18n="emulator.gameData.mediaAll">Images and video</button>
-            </div>
-            <p class="emu-bypass-row__hint" data-i18n-html="emulator.gameData.mediaHint">Artwork, screenshots and inventory icons go into a <code>steam_media</code> folder in the game folder. The game does not need them.</p>
-          </div>
-          <div class="emu-gamedata__actions">
-            <button type="button" id="btn-emu-gamedata" class="btn btn--small btn--outline" data-i18n="emulator.gameData.generate">Write game data now</button>
-            <p id="emu-gamedata-status" class="dd-path__hint hidden" role="status"></p>
-          </div>
-        </div>
-
-        <div id="emu-variant-section" class="emu-section">
-          <label class="settings-section__label" data-i18n="emulator.variantLabel">Emulator variant</label>
-          <div class="emu-variant-group" role="radiogroup" aria-labelledby="emu-variant-label">
-            <label class="emu-variant">
-              <input type="radio" name="emu-variant" value="regular" checked>
-              <span class="emu-variant__body">
-                <span class="emu-variant__title" data-i18n="emulator.variantRegular">Regular</span>
-                <span class="emu-variant__hint" data-i18n="emulator.variantRegularHint">Stable build, recommended for most games.</span>
-              </span>
-            </label>
-            <label class="emu-variant">
-              <input type="radio" name="emu-variant" value="experimental">
-              <span class="emu-variant__body">
-                <span class="emu-variant__title" data-i18n="emulator.variantExperimental">Experimental</span>
-                <span class="emu-variant__hint" data-i18n="emulator.variantExperimentalHint">Latest features, may be unstable.</span>
-              </span>
-            </label>
-          </div>
-        </div>
-
-        <div class="emu-section">
-          <label class="settings-section__label" data-i18n="emulator.settingsLabel">Emulator settings <span class="optional-badge" data-i18n="emulator.settingsOptional">Optional</span></label>
-          <p id="emu-settings-hint" class="emu-settings-hint" data-i18n="emulator.settingsHint">Unset values keep the gbe_fork defaults. You can change these later from the History tab.</p>
-
-          <div class="emu-accordion">
-            <div class="emu-accordion__item">
-              <button type="button" class="emu-accordion__toggle" data-target="emu-section-account" aria-expanded="false">
-                <span class="emu-accordion__arrow">&#9654;</span>
-                <span class="emu-accordion__title" data-i18n="emulator.sections.account">Account</span>
-              </button>
-              <div id="emu-section-account" class="emu-accordion__content hidden">
-                <div class="emu-field">
-                  <label class="emu-field__label" for="emu-account-name" data-i18n="emulator.fields.accountName">Display name</label>
-                  <input id="emu-account-name" class="emu-field__input" type="text" data-emu-key="account_name" data-i18n-attr="placeholder=emulator.fields.accountNamePlaceholder" autocomplete="off">
-                  <p class="emu-field__hint" data-i18n="emulator.fields.accountNameHint">Name the game sees from the Steam API.</p>
+            <button type="button" class="emu-nav__tab" role="tab" id="emu-tab-emulator" data-section="emulator" aria-controls="emu-panel-emulator" aria-selected="false">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+              <span class="emu-nav__label" data-i18n="emulator.tabs.emulator">Emulator</span>
+              <span class="emu-nav__badge hidden" data-badge="emulator"></span>
+            </button>
+            <button type="button" class="emu-nav__tab" role="tab" id="emu-tab-extras" data-section="extras" aria-controls="emu-panel-extras" aria-selected="false">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+              <span class="emu-nav__label" data-i18n="emulator.tabs.extras">Extras</span>
+              <span class="emu-nav__badge hidden" data-badge="extras"></span>
+            </button>
+          </nav>
+          <div class="emu-panels">
+          <section id="emu-panel-files" class="emu-panel is-active" data-section="files" role="tabpanel" aria-labelledby="emu-tab-files">
+            <h3 class="emu-panel__title" data-i18n="emulator.detectedLabel">Detected Steam API files</h3>
+            <div id="emu-drm-section" class="emu-drm-section hidden">
+              <div class="emu-drm-header">
+                <svg class="emu-drm-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                <div class="emu-drm-header__text">
+                  <h3 class="emu-drm-title" data-i18n="emulator.drmTitle">Steam DRM detected</h3>
+                  <p class="emu-drm-description" data-i18n="emulator.drmDescription">These executables are protected by Steam DRM (SteamStub). They won't run with the emulator until the DRM is removed.</p>
                 </div>
-                <div class="emu-field">
-                  <label class="emu-field__label" for="emu-account-steamid" data-i18n="emulator.fields.accountSteamId">Steam ID</label>
-                  <input id="emu-account-steamid" class="emu-field__input" type="text" data-emu-key="account_steamid" placeholder="76561198000000000" autocomplete="off" pattern="[0-9]*" inputmode="numeric">
-                  <p class="emu-field__hint" data-i18n="emulator.fields.accountSteamIdHint">64-bit Steam ID. Leave empty for the gbe_fork default.</p>
-                </div>
-                <div class="emu-field">
-                  <label class="emu-field__label" for="emu-language" data-i18n="emulator.fields.language">Game language</label>
-                  <input id="emu-language" class="emu-field__input" type="text" data-emu-key="language" placeholder="english" autocomplete="off">
-                  <p class="emu-field__hint" data-i18n="emulator.fields.languageHint">Steam language code, e.g. english, german, french.</p>
-                </div>
-                <div class="emu-field">
-                  <label class="emu-field__label" for="emu-ip-country" data-i18n="emulator.fields.ipCountry">IP country</label>
-                  <input id="emu-ip-country" class="emu-field__input" type="text" data-emu-key="ip_country" placeholder="US" maxlength="2" autocomplete="off">
-                  <p class="emu-field__hint" data-i18n="emulator.fields.ipCountryHint">ISO 3166-1 alpha-2 code (e.g. US, DE, FR).</p>
-                </div>
+              </div>
+              <div id="emu-drm-list" class="emu-drm-list"></div>
+              <div id="emu-drm-status-wrap" class="emu-drm-status-wrap hidden">
+                <button id="btn-emu-drm-copy" class="emu-drm-copy-btn" type="button" data-i18n-attr="title=emulator.drmCopyLog,aria-label=emulator.drmCopyLog">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
+                </button>
+                <div id="emu-drm-status" class="emu-drm-status"></div>
+              </div>
+              <div class="emu-drm-actions">
+                <button id="btn-emu-drm-remove" class="btn btn--danger" data-i18n="emulator.drmRemove">Remove DRM (via Steamless)</button>
+                <span class="emu-drm-attribution" data-i18n="emulator.drmAttribution">Powered by Steamless by atom0s</span>
               </div>
             </div>
 
-            <div class="emu-accordion__item">
-              <button type="button" class="emu-accordion__toggle" data-target="emu-section-saves" aria-expanded="false">
-                <span class="emu-accordion__arrow">&#9654;</span>
-                <span class="emu-accordion__title" data-i18n="emulator.sections.saves">Saves</span>
-              </button>
-              <div id="emu-section-saves" class="emu-accordion__content hidden">
-                <div class="emu-field">
-                  <label class="emu-field__label" for="emu-local-save-path" data-i18n="emulator.fields.localSavePath">Local save path</label>
-                  <input id="emu-local-save-path" class="emu-field__input" type="text" data-emu-key="local_save_path" data-i18n-attr="placeholder=emulator.fields.localSavePathPlaceholder" autocomplete="off">
-                  <p class="emu-field__hint" data-i18n="emulator.fields.localSavePathHint">Override where the emulator stores save data. Empty = gbe_fork default.</p>
+            <div class="emu-section">
+              <div id="emu-file-list" class="emu-file-list" aria-live="polite"></div>
+              <p id="emu-file-empty" class="emu-file-empty hidden" data-i18n="emulator.noFiles">No Steam API libraries were found in the download folder.</p>
+              <p id="emu-already-patched" class="emu-already-patched hidden"></p>
+            </div>
+
+            <div id="emu-variant-section" class="emu-section">
+              <label class="settings-section__label" data-i18n="emulator.variantLabel">Emulator variant</label>
+              <div class="emu-variant-group" role="radiogroup" aria-labelledby="emu-variant-label">
+                <label class="emu-variant">
+                  <input type="radio" name="emu-variant" value="regular" checked>
+                  <span class="emu-variant__body">
+                    <span class="emu-variant__title" data-i18n="emulator.variantRegular">Regular</span>
+                    <span class="emu-variant__hint" data-i18n="emulator.variantRegularHint">Stable build, recommended for most games.</span>
+                  </span>
+                </label>
+                <label class="emu-variant">
+                  <input type="radio" name="emu-variant" value="experimental">
+                  <span class="emu-variant__body">
+                    <span class="emu-variant__title" data-i18n="emulator.variantExperimental">Experimental</span>
+                    <span class="emu-variant__hint" data-i18n="emulator.variantExperimentalHint">Latest features, may be unstable.</span>
+                  </span>
+                </label>
+              </div>
+            </div>
+          </section>
+
+          <section id="emu-panel-gamedata" class="emu-panel" data-section="gamedata" role="tabpanel" aria-labelledby="emu-tab-gamedata">
+            <h3 class="emu-panel__title" data-i18n="emulator.tabs.gameData">Game data</h3>
+            <div id="emu-gamedata-section" class="emu-section emu-gamedata-section">
+              <div class="emu-bypass-row">
+                <div class="emu-bypass-row__text">
+                  <span class="emu-bypass-row__label" data-i18n="emulator.gameData.label">Game data for gbe_fork</span>
+                  <p class="emu-bypass-row__hint" data-i18n-html="emulator.gameData.hint">Writes what gbe_fork needs into <code>steam_settings</code>: languages, depots, branches, achievements with icons, leaderboards, inventory items, the controller layout and cloud save folders. With a Steam Web API key also the stats and all achievements.</p>
                 </div>
-                <div class="emu-field">
-                  <label class="emu-field__label" for="emu-saves-folder-name" data-i18n="emulator.fields.savesFolderName">Saves folder name</label>
-                  <input id="emu-saves-folder-name" class="emu-field__input" type="text" data-emu-key="saves_folder_name" autocomplete="off">
-                  <p class="emu-field__hint" data-i18n="emulator.fields.savesFolderNameHint">Per-game subfolder name for save data.</p>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="emu-gamedata-toggle" checked>
+                  <span class="toggle-switch__slider"></span>
+                </label>
+              </div>
+              <div class="emu-gamedata__key">
+                <label for="emu-webapi-key" class="emu-gamedata__key-label" data-i18n="settings.steamWebApiKey">Steam Web API key</label>
+                <div class="dd-path__input-wrap dd-path__input-wrap--with-btn">
+                  <input type="password" id="emu-webapi-key" class="dd-path__input" autocomplete="off" spellcheck="false" data-i18n-attr="placeholder=settings.steamWebApiKeyPlaceholder">
+                  <button type="button" id="btn-emu-webapi-save" class="btn btn--small btn--outline" data-i18n="emulator.gameData.saveKey">Save key</button>
                 </div>
+                <p class="emu-bypass-row__hint" data-i18n-html="settings.steamWebApiKeyHint">Optional. Get a free key at <a href="https://steamcommunity.com/dev/apikey" target="_blank" rel="noopener" class="link">steamcommunity.com/dev/apikey</a>. It stays on this PC and is only sent to Steam.</p>
+              </div>
+              <div class="emu-gamedata__media">
+                <span class="emu-gamedata__key-label" id="emu-gamedata-media-label" data-i18n="emulator.gameData.media">Save media</span>
+                <div id="emu-gamedata-media" class="segmented" role="radiogroup" aria-labelledby="emu-gamedata-media-label">
+                  <button type="button" class="segmented__option is-active" data-value="off" role="radio" aria-checked="true" data-i18n="emulator.gameData.mediaOff">Off</button>
+                  <button type="button" class="segmented__option" data-value="images" role="radio" aria-checked="false" data-i18n="emulator.gameData.mediaImages">Images</button>
+                  <button type="button" class="segmented__option" data-value="all" role="radio" aria-checked="false" data-i18n="emulator.gameData.mediaAll">Images and video</button>
+                </div>
+                <p class="emu-bypass-row__hint" data-i18n-html="emulator.gameData.mediaHint">Artwork, screenshots and inventory icons go into a <code>steam_media</code> folder in the game folder. The game does not need them.</p>
+              </div>
+              <div class="emu-gamedata__actions">
+                <button type="button" id="btn-emu-gamedata" class="btn btn--small btn--outline" data-i18n="emulator.gameData.generate">Write game data now</button>
+                <p id="emu-gamedata-status" class="dd-path__hint hidden" role="status"></p>
               </div>
             </div>
 
-            <div class="emu-accordion__item">
-              <button type="button" class="emu-accordion__toggle" data-target="emu-section-network" aria-expanded="false">
-                <span class="emu-accordion__arrow">&#9654;</span>
-                <span class="emu-accordion__title" data-i18n="emulator.sections.network">Network &amp; Compatibility</span>
-              </button>
-              <div id="emu-section-network" class="emu-accordion__content hidden">
-                <div class="emu-field emu-field--toggle">
-                  <div class="emu-field__label-block">
-                    <span class="emu-field__label" data-i18n="emulator.fields.offline">Offline mode</span>
-                    <p class="emu-field__hint" data-i18n="emulator.fields.offlineHint">Force the emulator to act as if Steam is offline.</p>
+            <p class="dd-path__hint emu-achievement-hint" data-i18n-html="emulator.achievementWatcherHint">Tip: <a href="https://github.com/xan105/Achievement-Watcher" target="_blank" rel="noopener" class="link">Achievement Watcher</a> shows a notification when you unlock an achievement in an emulated game (Windows). The original is no longer developed; the <a href="https://github.com/darktakayanagi/Achievement-Watcher" target="_blank" rel="noopener" class="link">fork by Darktakayanagi</a> is still maintained.</p>
+          </section>
+
+          <section id="emu-panel-emulator" class="emu-panel" data-section="emulator" role="tabpanel" aria-labelledby="emu-tab-emulator">
+            <h3 class="emu-panel__title" data-i18n="emulator.tabs.emulatorTitle">Emulator settings</h3>
+            <div class="emu-section">
+              <p id="emu-settings-hint" class="emu-settings-hint" data-i18n="emulator.settingsHint">Unset values keep the gbe_fork defaults. You can change these later from the History tab.</p>
+
+              <div class="emu-accordion">
+                <div class="emu-accordion__item">
+                  <button type="button" class="emu-accordion__toggle" data-target="emu-section-account" aria-expanded="false">
+                    <span class="emu-accordion__arrow">&#9654;</span>
+                    <span class="emu-accordion__title" data-i18n="emulator.sections.account">Account</span>
+                  </button>
+                  <div id="emu-section-account" class="emu-accordion__content hidden">
+                    <div class="emu-field">
+                      <label class="emu-field__label" for="emu-account-name" data-i18n="emulator.fields.accountName">Display name</label>
+                      <input id="emu-account-name" class="emu-field__input" type="text" data-emu-key="account_name" data-i18n-attr="placeholder=emulator.fields.accountNamePlaceholder" autocomplete="off">
+                      <p class="emu-field__hint" data-i18n="emulator.fields.accountNameHint">Name the game sees from the Steam API.</p>
+                    </div>
+                    <div class="emu-field">
+                      <label class="emu-field__label" for="emu-account-steamid" data-i18n="emulator.fields.accountSteamId">Steam ID</label>
+                      <input id="emu-account-steamid" class="emu-field__input" type="text" data-emu-key="account_steamid" placeholder="76561198000000000" autocomplete="off" pattern="[0-9]*" inputmode="numeric">
+                      <p class="emu-field__hint" data-i18n="emulator.fields.accountSteamIdHint">64-bit Steam ID. Leave empty for the gbe_fork default.</p>
+                    </div>
+                    <div class="emu-field">
+                      <label class="emu-field__label" for="emu-language" data-i18n="emulator.fields.language">Game language</label>
+                      <input id="emu-language" class="emu-field__input" type="text" data-emu-key="language" placeholder="english" autocomplete="off">
+                      <p class="emu-field__hint" data-i18n="emulator.fields.languageHint">Steam language code, e.g. english, german, french.</p>
+                    </div>
+                    <div class="emu-field">
+                      <label class="emu-field__label" for="emu-ip-country" data-i18n="emulator.fields.ipCountry">IP country</label>
+                      <input id="emu-ip-country" class="emu-field__input" type="text" data-emu-key="ip_country" placeholder="US" maxlength="2" autocomplete="off">
+                      <p class="emu-field__hint" data-i18n="emulator.fields.ipCountryHint">ISO 3166-1 alpha-2 code (e.g. US, DE, FR).</p>
+                    </div>
                   </div>
-                  <label class="toggle-switch"><input type="checkbox" data-emu-key="offline"><span class="toggle-switch__slider"></span></label>
                 </div>
-                <div class="emu-field emu-field--toggle">
-                  <div class="emu-field__label-block">
-                    <span class="emu-field__label" data-i18n="emulator.fields.steamDeck">Steam Deck mode</span>
-                    <p class="emu-field__hint" data-i18n="emulator.fields.steamDeckHint">Pretend the game runs on a Steam Deck.</p>
+
+                <div class="emu-accordion__item">
+                  <button type="button" class="emu-accordion__toggle" data-target="emu-section-saves" aria-expanded="false">
+                    <span class="emu-accordion__arrow">&#9654;</span>
+                    <span class="emu-accordion__title" data-i18n="emulator.sections.saves">Saves</span>
+                  </button>
+                  <div id="emu-section-saves" class="emu-accordion__content hidden">
+                    <div class="emu-field">
+                      <label class="emu-field__label" for="emu-local-save-path" data-i18n="emulator.fields.localSavePath">Local save path</label>
+                      <input id="emu-local-save-path" class="emu-field__input" type="text" data-emu-key="local_save_path" data-i18n-attr="placeholder=emulator.fields.localSavePathPlaceholder" autocomplete="off">
+                      <p class="emu-field__hint" data-i18n="emulator.fields.localSavePathHint">Override where the emulator stores save data. Empty = gbe_fork default.</p>
+                    </div>
+                    <div class="emu-field">
+                      <label class="emu-field__label" for="emu-saves-folder-name" data-i18n="emulator.fields.savesFolderName">Saves folder name</label>
+                      <input id="emu-saves-folder-name" class="emu-field__input" type="text" data-emu-key="saves_folder_name" autocomplete="off">
+                      <p class="emu-field__hint" data-i18n="emulator.fields.savesFolderNameHint">Per-game subfolder name for save data.</p>
+                    </div>
                   </div>
-                  <label class="toggle-switch"><input type="checkbox" data-emu-key="steam_deck"><span class="toggle-switch__slider"></span></label>
                 </div>
-                <div class="emu-field emu-field--toggle">
-                  <div class="emu-field__label-block">
-                    <span class="emu-field__label" data-i18n="emulator.fields.disableNetworking">Disable networking</span>
-                    <p class="emu-field__hint" data-i18n="emulator.fields.disableNetworkingHint">Block all network features (matchmaking, friends, P2P).</p>
+
+                <div class="emu-accordion__item">
+                  <button type="button" class="emu-accordion__toggle" data-target="emu-section-network" aria-expanded="false">
+                    <span class="emu-accordion__arrow">&#9654;</span>
+                    <span class="emu-accordion__title" data-i18n="emulator.sections.network">Network &amp; Compatibility</span>
+                  </button>
+                  <div id="emu-section-network" class="emu-accordion__content hidden">
+                    <div class="emu-field emu-field--toggle">
+                      <div class="emu-field__label-block">
+                        <span class="emu-field__label" data-i18n="emulator.fields.offline">Offline mode</span>
+                        <p class="emu-field__hint" data-i18n="emulator.fields.offlineHint">Force the emulator to act as if Steam is offline.</p>
+                      </div>
+                      <label class="toggle-switch"><input type="checkbox" data-emu-key="offline"><span class="toggle-switch__slider"></span></label>
+                    </div>
+                    <div class="emu-field emu-field--toggle">
+                      <div class="emu-field__label-block">
+                        <span class="emu-field__label" data-i18n="emulator.fields.steamDeck">Steam Deck mode</span>
+                        <p class="emu-field__hint" data-i18n="emulator.fields.steamDeckHint">Pretend the game runs on a Steam Deck.</p>
+                      </div>
+                      <label class="toggle-switch"><input type="checkbox" data-emu-key="steam_deck"><span class="toggle-switch__slider"></span></label>
+                    </div>
+                    <div class="emu-field emu-field--toggle">
+                      <div class="emu-field__label-block">
+                        <span class="emu-field__label" data-i18n="emulator.fields.disableNetworking">Disable networking</span>
+                        <p class="emu-field__hint" data-i18n="emulator.fields.disableNetworkingHint">Block all network features (matchmaking, friends, P2P).</p>
+                      </div>
+                      <label class="toggle-switch"><input type="checkbox" data-emu-key="disable_networking"><span class="toggle-switch__slider"></span></label>
+                    </div>
+                    <div class="emu-field emu-field--toggle">
+                      <div class="emu-field__label-block">
+                        <span class="emu-field__label" data-i18n="emulator.fields.disableLanOnly">Disable LAN-only mode</span>
+                        <p class="emu-field__hint" data-i18n="emulator.fields.disableLanOnlyHint">Allow connections beyond the local network.</p>
+                      </div>
+                      <label class="toggle-switch"><input type="checkbox" data-emu-key="disable_lan_only"><span class="toggle-switch__slider"></span></label>
+                    </div>
                   </div>
-                  <label class="toggle-switch"><input type="checkbox" data-emu-key="disable_networking"><span class="toggle-switch__slider"></span></label>
                 </div>
-                <div class="emu-field emu-field--toggle">
-                  <div class="emu-field__label-block">
-                    <span class="emu-field__label" data-i18n="emulator.fields.disableLanOnly">Disable LAN-only mode</span>
-                    <p class="emu-field__hint" data-i18n="emulator.fields.disableLanOnlyHint">Allow connections beyond the local network.</p>
+
+                <div class="emu-accordion__item">
+                  <button type="button" class="emu-accordion__toggle" data-target="emu-section-stats" aria-expanded="false">
+                    <span class="emu-accordion__arrow">&#9654;</span>
+                    <span class="emu-accordion__title" data-i18n="emulator.sections.stats">Stats &amp; Achievements</span>
+                  </button>
+                  <div id="emu-section-stats" class="emu-accordion__content hidden">
+                    <div class="emu-field emu-field--toggle">
+                      <div class="emu-field__label-block">
+                        <span class="emu-field__label" data-i18n="emulator.fields.recordPlaytime">Record playtime</span>
+                        <p class="emu-field__hint" data-i18n="emulator.fields.recordPlaytimeHint">Have the emulator track in-game playtime.</p>
+                      </div>
+                      <label class="toggle-switch"><input type="checkbox" data-emu-key="record_playtime"><span class="toggle-switch__slider"></span></label>
+                    </div>
+                    <div class="emu-field emu-field--toggle">
+                      <div class="emu-field__label-block">
+                        <span class="emu-field__label" data-i18n="emulator.fields.achievementsBypass">Achievements bypass</span>
+                        <p class="emu-field__hint" data-i18n="emulator.fields.achievementsBypassHint">Auto-unlock achievements as the game requests them.</p>
+                      </div>
+                      <label class="toggle-switch"><input type="checkbox" data-emu-key="achievements_bypass"><span class="toggle-switch__slider"></span></label>
+                    </div>
+                    <div class="emu-field emu-field--toggle">
+                      <div class="emu-field__label-block">
+                        <span class="emu-field__label" data-i18n="emulator.fields.forceSteamhttpSuccess">Force SteamHTTP success</span>
+                        <p class="emu-field__hint" data-i18n="emulator.fields.forceSteamhttpSuccessHint">Make all Steam HTTP requests appear to succeed.</p>
+                      </div>
+                      <label class="toggle-switch"><input type="checkbox" data-emu-key="force_steamhttp_success"><span class="toggle-switch__slider"></span></label>
+                    </div>
+                    <div class="emu-field emu-field--toggle">
+                      <div class="emu-field__label-block">
+                        <span class="emu-field__label" data-i18n="emulator.fields.enableSteamPreownedIds">Enable Steam pre-owned IDs</span>
+                        <p class="emu-field__hint" data-i18n="emulator.fields.enableSteamPreownedIdsHint">Claim ownership of pre-existing entitlements.</p>
+                      </div>
+                      <label class="toggle-switch"><input type="checkbox" data-emu-key="enable_steam_preowned_ids"><span class="toggle-switch__slider"></span></label>
+                    </div>
+                    <div class="emu-field emu-field--toggle">
+                      <div class="emu-field__label-block">
+                        <span class="emu-field__label" data-i18n="emulator.fields.freeWeekend">Free weekend flag</span>
+                        <p class="emu-field__hint" data-i18n="emulator.fields.freeWeekendHint">Tell the game it is running during a free weekend.</p>
+                      </div>
+                      <label class="toggle-switch"><input type="checkbox" data-emu-key="free_weekend"><span class="toggle-switch__slider"></span></label>
+                    </div>
                   </div>
-                  <label class="toggle-switch"><input type="checkbox" data-emu-key="disable_lan_only"><span class="toggle-switch__slider"></span></label>
                 </div>
+
+                <div class="emu-accordion__item">
+                  <button type="button" class="emu-accordion__toggle" data-target="emu-section-overlay" aria-expanded="false">
+                    <span class="emu-accordion__arrow">&#9654;</span>
+                    <span class="emu-accordion__title" data-i18n="emulator.sections.overlay">Overlay</span>
+                  </button>
+                  <div id="emu-section-overlay" class="emu-accordion__content hidden">
+                    <div class="emu-field emu-field--toggle">
+                      <div class="emu-field__label-block">
+                        <span class="emu-field__label" data-i18n="emulator.fields.enableExperimentalOverlay">Enable experimental overlay</span>
+                        <p class="emu-field__hint" data-i18n="emulator.fields.enableExperimentalOverlayHint">In-game ImGui overlay with achievement popups.</p>
+                      </div>
+                      <label class="toggle-switch"><input type="checkbox" data-emu-key="enable_experimental_overlay"><span class="toggle-switch__slider"></span></label>
+                    </div>
+                    <div class="emu-field emu-field--toggle">
+                      <div class="emu-field__label-block">
+                        <span class="emu-field__label" data-i18n="emulator.fields.disableAchievementNotification">Hide achievement popups</span>
+                        <p class="emu-field__hint" data-i18n="emulator.fields.disableAchievementNotificationHint">Suppress on-screen achievement toasts.</p>
+                      </div>
+                      <label class="toggle-switch"><input type="checkbox" data-emu-key="disable_achievement_notification"><span class="toggle-switch__slider"></span></label>
+                    </div>
+                    <div class="emu-field emu-field--toggle">
+                      <div class="emu-field__label-block">
+                        <span class="emu-field__label" data-i18n="emulator.fields.overlayAlwaysShowFps">Always show FPS</span>
+                        <p class="emu-field__hint" data-i18n="emulator.fields.overlayAlwaysShowFpsHint">Pin the FPS counter to the overlay.</p>
+                      </div>
+                      <label class="toggle-switch"><input type="checkbox" data-emu-key="overlay_always_show_fps"><span class="toggle-switch__slider"></span></label>
+                    </div>
+                    <div class="emu-field emu-field--toggle">
+                      <div class="emu-field__label-block">
+                        <span class="emu-field__label" data-i18n="emulator.fields.overlayAlwaysShowPlaytime">Always show playtime</span>
+                        <p class="emu-field__hint" data-i18n="emulator.fields.overlayAlwaysShowPlaytimeHint">Pin the session timer to the overlay.</p>
+                      </div>
+                      <label class="toggle-switch"><input type="checkbox" data-emu-key="overlay_always_show_playtime"><span class="toggle-switch__slider"></span></label>
+                    </div>
+                    <div class="emu-field">
+                      <label class="emu-field__label" for="emu-key-combo" data-i18n="emulator.fields.keyCombo">Overlay hotkey</label>
+                      <input id="emu-key-combo" class="emu-field__input" type="text" data-emu-key="key_combo" placeholder="ShiftTab" autocomplete="off">
+                      <p class="emu-field__hint" data-i18n="emulator.fields.keyComboHint">Key combination to toggle the overlay (e.g. ShiftTab, CtrlShiftO).</p>
+                    </div>
+                    <div class="emu-field">
+                      <label class="emu-field__label" for="emu-font-size" data-i18n="emulator.fields.fontSize">Font size</label>
+                      <input id="emu-font-size" class="emu-field__input emu-field__input--narrow" type="number" data-emu-key="font_size" placeholder="16" min="8" max="48" step="0.5" autocomplete="off">
+                      <p class="emu-field__hint" data-i18n="emulator.fields.fontSizeHint">Overlay font size in points.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="emu-panel-extras" class="emu-panel" data-section="extras" role="tabpanel" aria-labelledby="emu-tab-extras">
+            <h3 class="emu-panel__title" data-i18n="emulator.tabs.extras">Extras</h3>
+            <div id="emu-bypass-section" class="emu-section emu-bypass-section">
+              <div class="emu-bypass-row">
+                <div class="emu-bypass-row__text">
+                  <span class="emu-bypass-row__label" data-i18n="emulator.bypassLabel">Steam API Check Bypass</span>
+                  <p class="emu-bypass-row__hint" data-i18n-html="emulator.bypassHint">Installs a <code>version.dll</code> next to the game that intercepts Steam-API integrity checks. Enable if the game refuses to launch with gbe_fork. Windows games only.</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="emu-bypass-toggle">
+                  <span class="toggle-switch__slider"></span>
+                </label>
               </div>
             </div>
 
-            <div class="emu-accordion__item">
-              <button type="button" class="emu-accordion__toggle" data-target="emu-section-stats" aria-expanded="false">
-                <span class="emu-accordion__arrow">&#9654;</span>
-                <span class="emu-accordion__title" data-i18n="emulator.sections.stats">Stats &amp; Achievements</span>
-              </button>
-              <div id="emu-section-stats" class="emu-accordion__content hidden">
-                <div class="emu-field emu-field--toggle">
-                  <div class="emu-field__label-block">
-                    <span class="emu-field__label" data-i18n="emulator.fields.recordPlaytime">Record playtime</span>
-                    <p class="emu-field__hint" data-i18n="emulator.fields.recordPlaytimeHint">Have the emulator track in-game playtime.</p>
-                  </div>
-                  <label class="toggle-switch"><input type="checkbox" data-emu-key="record_playtime"><span class="toggle-switch__slider"></span></label>
+            <div id="emu-dlc-merge-section" class="emu-section emu-dlc-merge-section hidden">
+              <div class="emu-bypass-row">
+                <div class="emu-bypass-row__text">
+                  <span class="emu-bypass-row__label" data-i18n="emulator.dlcMergeLabel">DLC depots detected</span>
+                  <p id="emu-dlc-merge-hint" class="emu-bypass-row__hint" data-i18n="emulator.dlcMergeHint">Multiple depot folders found. Many games expect DLC content next to the main game files. Merge the DLC depots into the main game folder?</p>
+                  <p id="emu-dlc-merge-status" class="dd-path__hint hidden"></p>
                 </div>
-                <div class="emu-field emu-field--toggle">
-                  <div class="emu-field__label-block">
-                    <span class="emu-field__label" data-i18n="emulator.fields.achievementsBypass">Achievements bypass</span>
-                    <p class="emu-field__hint" data-i18n="emulator.fields.achievementsBypassHint">Auto-unlock achievements as the game requests them.</p>
-                  </div>
-                  <label class="toggle-switch"><input type="checkbox" data-emu-key="achievements_bypass"><span class="toggle-switch__slider"></span></label>
-                </div>
-                <div class="emu-field emu-field--toggle">
-                  <div class="emu-field__label-block">
-                    <span class="emu-field__label" data-i18n="emulator.fields.forceSteamhttpSuccess">Force SteamHTTP success</span>
-                    <p class="emu-field__hint" data-i18n="emulator.fields.forceSteamhttpSuccessHint">Make all Steam HTTP requests appear to succeed.</p>
-                  </div>
-                  <label class="toggle-switch"><input type="checkbox" data-emu-key="force_steamhttp_success"><span class="toggle-switch__slider"></span></label>
-                </div>
-                <div class="emu-field emu-field--toggle">
-                  <div class="emu-field__label-block">
-                    <span class="emu-field__label" data-i18n="emulator.fields.enableSteamPreownedIds">Enable Steam pre-owned IDs</span>
-                    <p class="emu-field__hint" data-i18n="emulator.fields.enableSteamPreownedIdsHint">Claim ownership of pre-existing entitlements.</p>
-                  </div>
-                  <label class="toggle-switch"><input type="checkbox" data-emu-key="enable_steam_preowned_ids"><span class="toggle-switch__slider"></span></label>
-                </div>
-                <div class="emu-field emu-field--toggle">
-                  <div class="emu-field__label-block">
-                    <span class="emu-field__label" data-i18n="emulator.fields.freeWeekend">Free weekend flag</span>
-                    <p class="emu-field__hint" data-i18n="emulator.fields.freeWeekendHint">Tell the game it is running during a free weekend.</p>
-                  </div>
-                  <label class="toggle-switch"><input type="checkbox" data-emu-key="free_weekend"><span class="toggle-switch__slider"></span></label>
-                </div>
+                <button id="btn-emu-merge-dlcs" type="button" class="btn btn--primary btn--small" data-i18n="emulator.dlcMergeButton">
+                  Merge DLC depots
+                </button>
               </div>
             </div>
-
-            <div class="emu-accordion__item">
-              <button type="button" class="emu-accordion__toggle" data-target="emu-section-overlay" aria-expanded="false">
-                <span class="emu-accordion__arrow">&#9654;</span>
-                <span class="emu-accordion__title" data-i18n="emulator.sections.overlay">Overlay</span>
-              </button>
-              <div id="emu-section-overlay" class="emu-accordion__content hidden">
-                <div class="emu-field emu-field--toggle">
-                  <div class="emu-field__label-block">
-                    <span class="emu-field__label" data-i18n="emulator.fields.enableExperimentalOverlay">Enable experimental overlay</span>
-                    <p class="emu-field__hint" data-i18n="emulator.fields.enableExperimentalOverlayHint">In-game ImGui overlay with achievement popups.</p>
-                  </div>
-                  <label class="toggle-switch"><input type="checkbox" data-emu-key="enable_experimental_overlay"><span class="toggle-switch__slider"></span></label>
-                </div>
-                <div class="emu-field emu-field--toggle">
-                  <div class="emu-field__label-block">
-                    <span class="emu-field__label" data-i18n="emulator.fields.disableAchievementNotification">Hide achievement popups</span>
-                    <p class="emu-field__hint" data-i18n="emulator.fields.disableAchievementNotificationHint">Suppress on-screen achievement toasts.</p>
-                  </div>
-                  <label class="toggle-switch"><input type="checkbox" data-emu-key="disable_achievement_notification"><span class="toggle-switch__slider"></span></label>
-                </div>
-                <div class="emu-field emu-field--toggle">
-                  <div class="emu-field__label-block">
-                    <span class="emu-field__label" data-i18n="emulator.fields.overlayAlwaysShowFps">Always show FPS</span>
-                    <p class="emu-field__hint" data-i18n="emulator.fields.overlayAlwaysShowFpsHint">Pin the FPS counter to the overlay.</p>
-                  </div>
-                  <label class="toggle-switch"><input type="checkbox" data-emu-key="overlay_always_show_fps"><span class="toggle-switch__slider"></span></label>
-                </div>
-                <div class="emu-field emu-field--toggle">
-                  <div class="emu-field__label-block">
-                    <span class="emu-field__label" data-i18n="emulator.fields.overlayAlwaysShowPlaytime">Always show playtime</span>
-                    <p class="emu-field__hint" data-i18n="emulator.fields.overlayAlwaysShowPlaytimeHint">Pin the session timer to the overlay.</p>
-                  </div>
-                  <label class="toggle-switch"><input type="checkbox" data-emu-key="overlay_always_show_playtime"><span class="toggle-switch__slider"></span></label>
-                </div>
-                <div class="emu-field">
-                  <label class="emu-field__label" for="emu-key-combo" data-i18n="emulator.fields.keyCombo">Overlay hotkey</label>
-                  <input id="emu-key-combo" class="emu-field__input" type="text" data-emu-key="key_combo" placeholder="ShiftTab" autocomplete="off">
-                  <p class="emu-field__hint" data-i18n="emulator.fields.keyComboHint">Key combination to toggle the overlay (e.g. ShiftTab, CtrlShiftO).</p>
-                </div>
-                <div class="emu-field">
-                  <label class="emu-field__label" for="emu-font-size" data-i18n="emulator.fields.fontSize">Font size</label>
-                  <input id="emu-font-size" class="emu-field__input emu-field__input--narrow" type="number" data-emu-key="font_size" placeholder="16" min="8" max="48" step="0.5" autocomplete="off">
-                  <p class="emu-field__hint" data-i18n="emulator.fields.fontSizeHint">Overlay font size in points.</p>
-                </div>
-              </div>
-            </div>
+          </section>
           </div>
         </div>
 
-        <div class="emu-section">
-          <label class="settings-section__label" data-i18n="emulator.detectedLabel">Detected Steam API files</label>
-          <div id="emu-file-list" class="emu-file-list" aria-live="polite"></div>
-          <p id="emu-file-empty" class="emu-file-empty hidden" data-i18n="emulator.noFiles">No Steam API libraries were found in the download folder.</p>
-          <p id="emu-already-patched" class="emu-already-patched hidden"></p>
-        </div>
-
-        <p class="dd-path__hint emu-achievement-hint" data-i18n-html="emulator.achievementWatcherHint">Tip: <a href="https://github.com/xan105/Achievement-Watcher" target="_blank" rel="noopener" class="link">Achievement Watcher</a> shows a notification when you unlock an achievement in an emulated game (Windows). The original is no longer developed; the <a href="https://github.com/darktakayanagi/Achievement-Watcher" target="_blank" rel="noopener" class="link">fork by Darktakayanagi</a> is still maintained.</p>
         <div id="emu-apply-status" class="completion-message hidden"></div>
 
         <div class="card__footer">

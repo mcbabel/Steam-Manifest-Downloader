@@ -90,6 +90,8 @@ When telemetry is enabled, the app sends small events describing:
     shown, by name (for example `needsKey` or `inventoryFailed`)
   - `manifest_tool` — the newest manifest ID was fetched or a manifest file
     was picked for a depot. Never the ID or the file
+  - `emu_section_viewed` — a section of the emulator step was opened
+    (`files`, `gamedata`, `emulator` or `extras`), once per section per app start
   - `shortcut_key` — a keyboard shortcut was used (`open`, `search`,
     `history`, `settings`)
   - `settings_saved` — which settings were changed, by name only (for example

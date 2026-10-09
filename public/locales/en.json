@@ -536,6 +536,19 @@
       "controllerFailed": "The game has a Steam Input layout, but it could not be downloaded.",
       "controllerBuild": "The controller layout only works with the Windows experimental build or on Linux.",
       "mediaFailed": "No media could be downloaded."
+    },
+    "tabs": {
+      "files": "Files",
+      "gameData": "Game data",
+      "emulator": "Emulator",
+      "emulatorTitle": "Emulator settings",
+      "extras": "Extras"
+    },
+    "summary": {
+      "on": "On",
+      "off": "Off",
+      "files": "{selected} of {total} files",
+      "custom": "Custom settings: {count}"
     }
   },
   "steamLibrary": {

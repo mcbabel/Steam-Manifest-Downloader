@@ -449,6 +449,7 @@ const ALLOWED_EVENT_KINDS: &[&str] = &[
     "heartbeat",
     "session_end",
     "game_data_written",
+    "emu_section_viewed",
 ];
 
 pub fn env_consent() -> Option<bool> {

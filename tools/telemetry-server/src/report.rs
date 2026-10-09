@@ -549,6 +549,7 @@ const FEATURES: &[(&str, &str, &str)] = &[
     ("Game data: Achievement Watcher", "game_data_written", "watcher"),
     ("Game data: media", "game_data_written", "media"),
     ("Game data: problems", "game_data_written", "notes"),
+    ("Emulator step sections", "emu_section_viewed", "section"),
     ("Manifest tools", "manifest_tool", "action"),
     ("Search", "search_performed", "found"),
     ("Lua upload", "lua_parsed", ""),

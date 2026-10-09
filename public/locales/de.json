@@ -536,6 +536,19 @@
       "controllerFailed": "Das Spiel hat eine Steam-Input-Belegung, die aber nicht geladen werden konnte.",
       "controllerBuild": "Die Controller-Belegung funktioniert nur mit dem Experimental-Build unter Windows oder unter Linux.",
       "mediaFailed": "Es konnten keine Medien geladen werden."
+    },
+    "tabs": {
+      "files": "Dateien",
+      "gameData": "Spieldaten",
+      "emulator": "Emulator",
+      "emulatorTitle": "Emulator-Einstellungen",
+      "extras": "Extras"
+    },
+    "summary": {
+      "on": "An",
+      "off": "Aus",
+      "files": "{selected} von {total} Dateien",
+      "custom": "Eigene Einstellungen: {count}"
     }
   },
   "steamLibrary": {

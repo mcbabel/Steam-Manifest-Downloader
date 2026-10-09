@@ -1646,16 +1646,18 @@ button:disabled,
 .emu-file-item__check {
   appearance: none;
   -webkit-appearance: none;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   margin: 0;
   flex-shrink: 0;
-  border: 1.5px solid var(--border);
-  border-radius: 3px;
-  background: transparent;
+  border: 2px solid var(--border-active);
+  border-radius: 5px;
+  background-color: transparent;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 12px 12px;
   cursor: pointer;
-  position: relative;
-  transition: background 0.12s ease, border-color 0.12s ease;
+  transition: background-color 0.12s ease, border-color 0.12s ease;
 }
 
 .emu-file-item__check:hover {
@@ -1663,20 +1665,15 @@ button:disabled,
 }
 
 .emu-file-item__check:checked {
-  background: var(--accent);
-  border-color: var(--accent);
+  border-color: transparent;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E"), var(--gradient);
+  background-size: 12px 12px, cover;
+  background-origin: border-box;
 }
 
-.emu-file-item__check:checked::after {
-  content: "";
-  position: absolute;
-  left: 4px;
-  top: 0px;
-  width: 5px;
-  height: 9px;
-  border: solid #fff;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
+.emu-file-item__check:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .emu-file-item__path {
@@ -2068,7 +2065,10 @@ button:disabled,
 }
 
 .emu-dlc-merge-section {
-  border-color: rgba(210, 153, 34, 0.4);
+  padding: 0.85rem 1rem;
+  background: var(--warning-bg);
+  border: 1px solid rgba(210, 153, 34, 0.4);
+  border-radius: var(--radius-sm);
 }
 
 .emu-dlc-merge-list {
@@ -4983,4 +4983,259 @@ textarea.bug-report__input {
 
 .shortcut-option__action {
   margin-top: 0.5rem;
+}
+
+.app.app--wide {
+  max-width: 1040px;
+}
+
+.emu-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.emu-top__text {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.emu-top .emu-description {
+  margin-bottom: 0;
+}
+
+.emu-top .emu-release-status {
+  flex: 0 1 auto;
+  max-width: 360px;
+  margin-bottom: 0;
+  padding: 0.5rem 0.8rem;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.emu-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1.25rem 0 0;
+}
+
+.emu-summary:empty {
+  display: none;
+}
+
+.emu-summary__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.3;
+}
+
+.emu-summary__chip strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.emu-summary__chip--on::before,
+.emu-summary__chip--off::before,
+.emu-summary__chip--warn::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--success);
+}
+
+.emu-summary__chip--off::before {
+  background: var(--text-muted);
+}
+
+.emu-summary__chip--warn {
+  border-color: var(--warning);
+  color: var(--warning);
+}
+
+.emu-summary__chip--warn::before {
+  background: var(--warning);
+}
+
+.emu-body {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  margin-top: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+}
+
+.emu-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.75rem 0.6rem;
+  border-right: 1px solid var(--border);
+  background: var(--bg-input);
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+
+.emu-nav__tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.6rem 0.75rem;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+
+.emu-nav__tab svg {
+  flex-shrink: 0;
+}
+
+.emu-nav__label {
+  flex: 1;
+  min-width: 0;
+}
+
+.emu-nav__tab:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.emu-nav__tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.emu-nav__tab.is-active {
+  background: var(--accent-glow);
+  color: var(--accent);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.emu-nav__badge {
+  min-width: 1.4rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.emu-nav__badge--on {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.emu-nav__badge--warn {
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+
+.emu-panels {
+  min-width: 0;
+  padding: 1.25rem 1.5rem 1.5rem;
+}
+
+.emu-panel {
+  display: none;
+}
+
+.emu-panel.is-active {
+  display: block;
+  animation: fadeIn 0.25s ease;
+}
+
+.emu-panel__title {
+  margin: 0 0 1rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.emu-panel > .emu-section:first-of-type,
+.emu-panel > .emu-drm-section:first-of-type,
+.emu-panel > .emu-drm-section.hidden + .emu-section {
+  margin-top: 0;
+}
+
+.emu-panel > .emu-drm-section:not(.hidden) {
+  margin: 0 0 1.25rem;
+}
+
+.emu-panel .emu-achievement-hint {
+  margin: 1.25rem 0 0;
+}
+
+.emu-panel .emu-section + .emu-section {
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+#step-emulator .card__footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin: 1.25rem -2rem -2rem;
+  padding: 1rem 2rem;
+  background: var(--bg-card-solid);
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+
+@media (max-width: 760px) {
+  .emu-body {
+    grid-template-columns: 1fr;
+  }
+
+  .emu-nav {
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 0.5rem;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  }
+
+  .emu-nav__tab {
+    white-space: nowrap;
+  }
+
+  .emu-nav__tab.is-active {
+    box-shadow: inset 0 -2px 0 var(--accent);
+  }
+
+  .emu-panels {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 600px) {
+  #step-emulator .card__footer {
+    margin: 1rem -1.25rem -1.25rem;
+    padding: 0.85rem 1.25rem;
+  }
+}
+
+.emu-panel[data-section="extras"] .emu-section + .emu-section {
+  margin-top: 0.75rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(210, 153, 34, 0.4);
 }
