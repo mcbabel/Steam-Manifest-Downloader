@@ -31,19 +31,8 @@ Upload `.lua` / `.st` files or search by App ID across configurable sources (Git
 ## 📸 Screenshots
 
 <p align="center">
-  <img src="assets/screenshots/select.png" alt="Depot selection with the depots picked like Steam would" width="100%">
+  <img src="assets/screenshots/home.png" alt="Main page of Steam Manifest Downloader with the five steps and the upload area" width="100%">
 </p>
-
-<table>
-  <tr>
-    <td width="50%"><img src="assets/screenshots/download.png" alt="Download with progress, speed and remaining time"><br><sub><b>Download</b> straight from Steam's CDN, with speed and remaining time</sub></td>
-    <td width="50%"><img src="assets/screenshots/history.png" alt="Download history with covers and update badge"><br><sub><b>History</b> with covers, update check, repair and play</sub></td>
-  </tr>
-  <tr>
-    <td width="50%"><img src="assets/screenshots/emulator.png" alt="Emulator step with gbe_fork game data"><br><sub><b>Emulator step</b> with gbe_fork and game data like achievements</sub></td>
-    <td width="50%"><img src="assets/screenshots/terminal.png" alt="Terminal version showing the history"><br><sub><b>Terminal version</b> with the same steps, history and settings</sub></td>
-  </tr>
-</table>
 
 ---
 
