@@ -165,7 +165,7 @@ function handleStatusUpdate(msg) {
       break;
 
     case 'starting_downloader':
-      els.progressStatus.textContent = window.i18n.t('progress.runningDdmStart', { total: msg.total });
+      els.progressStatus.textContent = window.i18n.t(state.currentEngine === 'native' ? 'progress.runningNativeStart' : 'progress.runningDdmStart', { total: msg.total });
       break;
 
     case 'running_downloader':
@@ -187,7 +187,7 @@ function handleStatusUpdate(msg) {
         taskbar.depotIndex = msg.current;
         taskbar.depotTotal = msg.total;
         taskbarDepotProgress(0);
-        els.progressStatus.textContent = window.i18n.t('progress.runningDdm', { current: msg.current, total: msg.total, depotId: msg.depotId });
+        els.progressStatus.textContent = window.i18n.t(state.currentEngine === 'native' ? 'progress.runningNative' : 'progress.runningDdm', { current: msg.current, total: msg.total, depotId: msg.depotId });
         const baseProgress = state.parsedData ? state.selectedDepots.size : 0;
         updateOverallProgress(baseProgress + msg.current - 1, baseProgress + msg.total);
       }

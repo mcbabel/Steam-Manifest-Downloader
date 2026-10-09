@@ -167,6 +167,8 @@
     "generatingKeys": "Erzeuge Depot-Key-Datei…",
     "runningDdmStart": "DepotDownloader läuft (0/{total})…",
     "runningDdm": "DepotDownloader läuft {current}/{total} (Depot {depotId})…",
+    "runningNativeStart": "Starte Download (0/{total})…",
+    "runningNative": "Lade Depot {current}/{total} (Depot {depotId})…",
     "largeFile": "⏳ Große Datei wird geladen…",
     "waitingFor": "wartet seit {time}",
     "diskFree": "Freier Speicher: {gb} GB auf {drive}",
