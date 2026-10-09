@@ -28,6 +28,7 @@ const REPLAY_BATCH: usize = 25;
 const CRASH_FILE: &str = "telemetry_crash.json";
 const CRASH_CAP: usize = 5;
 const ACTIVE_DIR: &str = "telemetry_active";
+const HEARTBEAT_EVERY: Duration = Duration::from_secs(15 * 60);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Event {
@@ -66,6 +67,34 @@ struct Inner {
     channel: String,
     frontend: &'static str,
     locale: String,
+    started: std::time::Instant,
+    focused_since: Option<std::time::Instant>,
+    focused_total: Duration,
+    tracks_focus: bool,
+    last_heartbeat: std::time::Instant,
+    ended: bool,
+}
+
+impl Inner {
+    fn session_props(&self, app_data_dir: &Path) -> serde_json::Value {
+        let open = self.started.elapsed();
+        let active = self.focused_total
+            + self.focused_since.map(|t| t.elapsed()).unwrap_or_default();
+        let mut props = serde_json::json!({
+            "uptime_min": open.as_secs() / 60,
+            "downloading": downloads_running(app_data_dir),
+        });
+        if self.tracks_focus {
+            props["active_min"] = serde_json::json!(active.min(open).as_secs() / 60);
+        }
+        props
+    }
+}
+
+fn downloads_running(app_data_dir: &Path) -> bool {
+    std::fs::read_dir(app_data_dir.join(ACTIVE_DIR))
+        .map(|mut d| d.next().is_some())
+        .unwrap_or(false)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -89,6 +118,12 @@ impl Telemetry {
             channel,
             frontend,
             locale: String::new(),
+            started: std::time::Instant::now(),
+            focused_since: None,
+            focused_total: Duration::ZERO,
+            tracks_focus: false,
+            last_heartbeat: std::time::Instant::now(),
+            ended: false,
         };
         Self {
             inner: Arc::new(Mutex::new(inner)),
@@ -98,6 +133,49 @@ impl Telemetry {
                 .unwrap_or_else(|_| reqwest::Client::new()),
             app_data_dir,
         }
+    }
+
+    pub async fn set_focused(&self, focused: bool) {
+        let mut inner = self.inner.lock().await;
+        inner.tracks_focus = true;
+        match (focused, inner.focused_since) {
+            (true, None) => inner.focused_since = Some(std::time::Instant::now()),
+            (false, Some(since)) => {
+                inner.focused_total += since.elapsed();
+                inner.focused_since = None;
+            }
+            _ => {}
+        }
+    }
+
+    pub async fn end_session(&self, reason: &str) {
+        let props = {
+            let mut inner = self.inner.lock().await;
+            if inner.ended {
+                None
+            } else {
+                inner.ended = true;
+                let mut p = inner.session_props(&self.app_data_dir);
+                p["reason"] = serde_json::json!(safe_label(reason));
+                Some(p)
+            }
+        };
+        if let Some(p) = props {
+            self.emit(Event::new("session_end").with_props(p)).await;
+        }
+        self.flush().await;
+    }
+
+    async fn heartbeat_if_due(&self) {
+        let props = {
+            let mut inner = self.inner.lock().await;
+            if inner.ended || inner.last_heartbeat.elapsed() < HEARTBEAT_EVERY {
+                return;
+            }
+            inner.last_heartbeat = std::time::Instant::now();
+            inner.session_props(&self.app_data_dir)
+        };
+        self.emit(Event::new("heartbeat").with_props(props)).await;
     }
 
     pub async fn set_locale(&self, locale: &str) {
@@ -111,7 +189,7 @@ impl Telemetry {
 
     pub async fn emit(&self, mut event: Event) {
         let settings = settings_service::load_settings(&self.app_data_dir).await;
-        if settings.telemetry_consent != TelemetryConsent::Accepted {
+        if !consented(&settings) {
             return;
         }
         let mut extra: Vec<Event> = Vec::new();
@@ -151,6 +229,7 @@ impl Telemetry {
         interval.tick().await;
         loop {
             interval.tick().await;
+            self.heartbeat_if_due().await;
             self.flush().await;
         }
     }
@@ -169,9 +248,8 @@ impl Telemetry {
         self.retry_queue().await;
     }
 
-    async fn is_enabled(&self) -> bool {
-        let s = settings_service::load_settings(&self.app_data_dir).await;
-        s.telemetry_consent == TelemetryConsent::Accepted
+    pub async fn is_enabled(&self) -> bool {
+        consented(&settings_service::load_settings(&self.app_data_dir).await)
     }
 
     async fn build_payload(
@@ -355,7 +433,35 @@ const ALLOWED_EVENT_KINDS: &[&str] = &[
     "proxy_tested",
     "diagnostics_copied",
     "bug_report_opened",
+    "download_paused",
+    "shutdown_after",
+    "followup",
+    "queue_action",
+    "steamless_used",
+    "api_bypass",
+    "history_action",
+    "updates_found",
+    "manifest_tool",
+    "dlc_merged",
+    "shortcut_key",
+    "settings_saved",
+    "cli_command",
+    "heartbeat",
+    "session_end",
 ];
+
+pub fn env_consent() -> Option<bool> {
+    let value = std::env::var("SMD_TELEMETRY").ok()?;
+    match value.trim().to_ascii_lowercase().as_str() {
+        "1" | "on" | "true" | "yes" => Some(true),
+        "0" | "off" | "false" | "no" => Some(false),
+        _ => None,
+    }
+}
+
+fn consented(settings: &settings_service::Settings) -> bool {
+    env_consent().unwrap_or(settings.telemetry_consent == TelemetryConsent::Accepted)
+}
 
 pub fn is_safe_kind(kind: &str) -> bool {
     ALLOWED_EVENT_KINDS.contains(&kind)
@@ -391,6 +497,22 @@ pub fn sanitize_props(kind: &str, props: serde_json::Value) -> serde_json::Value
                     .unwrap_or_else(|| "unknown".to_string());
                 map.insert(field.to_string(), serde_json::Value::String(clean));
             }
+        }
+        "settings_saved" => {
+            let keys: Vec<serde_json::Value> = map
+                .get("keys")
+                .and_then(|v| v.as_array())
+                .map(|list| {
+                    list.iter()
+                        .filter_map(|k| k.as_str())
+                        .map(safe_label)
+                        .filter(|k| k != "unmatched")
+                        .take(32)
+                        .map(serde_json::Value::String)
+                        .collect()
+                })
+                .unwrap_or_default();
+            map.insert("keys".to_string(), serde_json::Value::Array(keys));
         }
         "proxy_tested" => {
             if let Some(serde_json::Value::String(key)) = map.get("key") {
@@ -495,6 +617,19 @@ pub fn sanitize_location(text: &str) -> String {
     match line {
         Some(l) => format!("{}:{}", short, l),
         None => short,
+    }
+}
+
+pub fn proxy_kind(proxy: &str) -> &'static str {
+    let p = proxy.trim().to_ascii_lowercase();
+    if p.is_empty() {
+        "none"
+    } else if p.starts_with("socks") {
+        "socks"
+    } else if p.starts_with("https") {
+        "https"
+    } else {
+        "http"
     }
 }
 
@@ -654,23 +789,13 @@ pub async fn ensure_installation_id(app_data_dir: &std::path::Path) -> String {
 }
 
 fn settings_snapshot(s: &settings_service::Settings) -> serde_json::Value {
-    let proxy = s.proxy.trim().to_ascii_lowercase();
-    let proxy_kind = if proxy.is_empty() {
-        "none"
-    } else if proxy.starts_with("socks") {
-        "socks"
-    } else if proxy.starts_with("https") {
-        "https"
-    } else {
-        "http"
-    };
     let limit = s.download_speed_limit.trim();
     serde_json::json!({
         "engine": if s.use_native_downloader { "native" } else { "ddm" },
         "like_steam": s.auto_select_depots,
         "auto_start": s.auto_start_download,
         "include_dlc": s.include_dlc,
-        "proxy": proxy_kind,
+        "proxy": proxy_kind(&s.proxy),
         "speed_limit": !limit.is_empty() && limit != "0",
         "sources": crate::services::diag::count_bucket(s.depot_sources.len()),
         "custom_sources": s.depot_sources != s.pristine_default_sources,
@@ -780,6 +905,31 @@ mod tests {
             let _done = ActiveDownload::start(&dir, "job2", serde_json::json!({}));
         }
         assert!(take_interrupted(&dir).is_empty());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[tokio::test]
+    async fn sessions_report_open_and_focused_minutes() {
+        let dir = std::env::temp_dir().join(format!("smd-tel-session-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let tel = Telemetry::new(dir.clone(), "1.0.0".into(), "dev-local".into(), "gui");
+        {
+            let mut inner = tel.inner.lock().await;
+            inner.started -= Duration::from_secs(30 * 60);
+        }
+        tel.set_focused(true).await;
+        {
+            let mut inner = tel.inner.lock().await;
+            inner.focused_since = inner.focused_since.map(|t| t - Duration::from_secs(10 * 60));
+        }
+        tel.set_focused(false).await;
+        let props = tel.inner.lock().await.session_props(&dir);
+        assert_eq!(props["uptime_min"], 30);
+        assert_eq!(props["active_min"], 10);
+        assert_eq!(props["downloading"], false);
+        let cli = Telemetry::new(dir.clone(), "1.0.0".into(), "dev-local".into(), "cli");
+        assert!(cli.inner.lock().await.session_props(&dir).get("active_min").is_none());
         let _ = std::fs::remove_dir_all(&dir);
     }
 

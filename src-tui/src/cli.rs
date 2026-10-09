@@ -123,6 +123,92 @@ macro_rules! errln {
     };
 }
 
+static TELEMETRY: std::sync::OnceLock<smd_core::services::telemetry::Telemetry> =
+    std::sync::OnceLock::new();
+
+pub async fn telemetry_start(dir: &std::path::Path, command: &str, props: Value) {
+    use smd_core::services::telemetry::{install_crash_hook, Event, Telemetry};
+    let _ = tokio::fs::create_dir_all(dir).await;
+    install_crash_hook(dir.to_path_buf());
+    let channel = option_env!("SMD_BUILD_CHANNEL").unwrap_or("dev-local").to_string();
+    let tel = Telemetry::new(dir.to_path_buf(), crate::app::VERSION.to_string(), channel, "cli");
+    if tel.is_enabled().await {
+        tokio::spawn(tel.clone().run_background_flush());
+        tel.emit(Event::new("app_start").with_props(serde_json::json!({ "locale": crate::i18n::language() })))
+            .await;
+        let mut props = props;
+        if let Some(map) = props.as_object_mut() {
+            map.insert("command".into(), serde_json::json!(command));
+        }
+        tel.emit(Event::new("cli_command").with_props(props)).await;
+    }
+    let _ = TELEMETRY.set(tel);
+}
+
+pub async fn cli_emit(kind: &str, props: Value) {
+    if let Some(tel) = TELEMETRY.get() {
+        tel.emit(smd_core::services::telemetry::Event::new(kind).with_props(props))
+            .await;
+    }
+}
+
+pub async fn telemetry_finish() {
+    if let Some(tel) = TELEMETRY.get() {
+        let _ = tokio::time::timeout(Duration::from_secs(5), tel.end_session("exit")).await;
+    }
+}
+
+fn merged(base: &serde_json::Map<String, Value>, extra: Value) -> Value {
+    let mut out = base.clone();
+    if let Value::Object(map) = extra {
+        for (k, v) in map {
+            out.insert(k, v);
+        }
+    }
+    Value::Object(out)
+}
+
+#[derive(clap::Args, Debug)]
+pub struct TelemetryArgs {
+    #[arg(value_parser = ["on", "off", "status"], default_value = "status")]
+    pub action: String,
+}
+
+pub async fn telemetry(dir: PathBuf, args: TelemetryArgs) -> i32 {
+    let _ = tokio::fs::create_dir_all(&dir).await;
+    match args.action.as_str() {
+        "on" | "off" => {
+            let accept = args.action == "on";
+            if let Err(e) = smd_core::ops::consent::set_telemetry_consent(&dir, accept).await {
+                errln!("{}", tf("tui.cli.error", &[("message", &e)]));
+                return 1;
+            }
+            println!("{}", t(if accept { "tui.cli.telemetryOn" } else { "tui.cli.telemetryOff" }));
+            0
+        }
+        _ => {
+            let settings = settings_service::load_settings(&dir).await;
+            let saved = settings.telemetry_consent == settings_service::TelemetryConsent::Accepted;
+            let env = smd_core::services::telemetry::env_consent();
+            let on = env.unwrap_or(saved);
+            println!("{}", t(if on { "tui.cli.telemetryStatusOn" } else { "tui.cli.telemetryStatusOff" }));
+            if let Some(v) = env {
+                println!("{}", tf("tui.cli.telemetryEnv", &[("value", &if v { "on" } else { "off" })]));
+            }
+            if on && !settings.installation_id.is_empty() {
+                println!(
+                    "{}",
+                    tf(
+                        "tui.cli.telemetryId",
+                        &[("id", &smd_core::services::telemetry::diagnostic_id(&settings.installation_id))]
+                    )
+                );
+            }
+            0
+        }
+    }
+}
+
 struct ChannelSink(UnboundedSender<Value>);
 
 impl EventSink for ChannelSink {
@@ -359,6 +445,13 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
         }
     }
     let like_steam = args.like_steam || (settings.auto_select_depots && !args.all_depots);
+    let selection = if !args.depots.is_empty() {
+        "manual"
+    } else if like_steam && args.update.is_none() {
+        "like_steam"
+    } else {
+        "default"
+    };
     if wanted.is_empty() && args.update.is_none() && like_steam {
         let meta = match plan.app_id.parse::<u32>() {
             Ok(n) => tokio::select! {
@@ -558,6 +651,23 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
         }
     }
     let depot_ids: Vec<String> = config.depots.iter().map(|d| d.depot_id.clone()).collect();
+    let job_tag: String = uuid::Uuid::new_v4().simple().to_string().chars().take(16).collect();
+    let mut ctx = serde_json::Map::new();
+    for (k, v) in [
+        ("job", serde_json::json!(job_tag)),
+        ("engine", serde_json::json!(if settings.use_native_downloader { "native" } else { "ddm" })),
+        ("source_count", serde_json::json!(settings.depot_sources.len())),
+        ("had_mh_key", serde_json::json!(config.manifest_hub_api_key.is_some())),
+        ("mode", serde_json::json!(if config.repair { "repair" } else if config.update_dir.is_some() { "update" } else { "new" })),
+        ("selection", serde_json::json!(selection)),
+        ("source", serde_json::json!(plan.source_type.clone().unwrap_or_else(|| if is_numeric(&args.source) { "search".into() } else { "upload".into() }))),
+        ("queue", serde_json::json!(false)),
+        ("dlc", serde_json::json!(config.include_dlc)),
+        ("custom_manifest", serde_json::json!(!args.manifests.is_empty())),
+    ] {
+        ctx.insert(k.to_string(), v);
+    }
+    cli_emit("download_started", merged(&ctx, serde_json::json!({ "depot_count": depot_ids.len(), "json": args.json, "shutdown": args.shutdown }))).await;
 
     let (tx, mut rx) = unbounded_channel();
     let sink: smd_core::services::events::Sink = Arc::new(ChannelSink(tx));
@@ -567,6 +677,10 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
         match smd_core::ops::download::start_download(sink.clone(), &core, &dir, config).await {
             Ok(v) => v,
             Err(e) => {
+                cli_emit("download_completed", merged(&ctx, serde_json::json!({
+                    "success": false, "outcome": "failed", "fail_stage": "unknown", "fail_class": "unknown",
+                    "err_key": crate::i18n::error_key(&e).unwrap_or_else(|| "unmatched".into()),
+                }))).await;
                 errln!("{}", tf("tui.cli.error", &[("message", &e)]));
                 return 1;
             }
@@ -602,6 +716,9 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
                 match ev["type"].as_str() {
                     Some("complete") => {
                         let outcome = ev["diag"]["outcome"].as_str().unwrap_or("complete");
+                        let mut props = merged(&ctx, ev["diag"].clone());
+                        props["success"] = serde_json::json!(outcome == "complete");
+                        cli_emit("download_completed", props).await;
                         let results = ev["results"].as_array().cloned().unwrap_or_default();
                         record_history(&dir, &plan, &work_dir, &started_at, &results, &depot_ids).await;
                         break match outcome {
@@ -610,8 +727,23 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
                             _ => 1,
                         };
                     }
-                    Some("error") if ev.get("depotId").is_none() => break 1,
-                    Some("cancelled") => break if interrupted { 130 } else { 1 },
+                    Some("error") if ev.get("depotId").is_none() => {
+                        let mut props = merged(&ctx, ev["diag"].clone());
+                        props["success"] = serde_json::json!(false);
+                        props["err_key"] = serde_json::json!(ev["key"].as_str().map(String::from)
+                            .or_else(|| crate::i18n::error_key(ev["message"].as_str().unwrap_or("")))
+                            .unwrap_or_else(|| "unmatched".into()));
+                        cli_emit("download_completed", props).await;
+                        break 1;
+                    }
+                    Some("cancelled") => {
+                        if interrupted {
+                            cli_emit("download_abandoned", merged(&ctx, serde_json::json!({ "outcome": "abandoned", "via": "signal" }))).await;
+                        } else {
+                            cli_emit("download_completed", merged(&ctx, serde_json::json!({ "success": false, "outcome": "cancelled" }))).await;
+                        }
+                        break if interrupted { 130 } else { 1 };
+                    }
                     _ => {}
                 }
             }
@@ -636,13 +768,17 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
 
 async fn shutdown_after_download() {
     errln!("{}", t("tui.cli.shutdownIn"));
+    cli_emit("shutdown_after", serde_json::json!({ "action": "countdown" })).await;
     tokio::select! {
         _ = tokio::time::sleep(Duration::from_secs(60)) => {}
         _ = stopped() => {
+            cli_emit("shutdown_after", serde_json::json!({ "action": "aborted" })).await;
             errln!("{}", t("tui.cli.shutdownAborted"));
             return;
         }
     }
+    cli_emit("shutdown_after", serde_json::json!({ "action": "powered_off", "followup": false })).await;
+    telemetry_finish().await;
     let result = tokio::task::spawn_blocking(smd_core::ops::system::power_off)
         .await
         .map_err(|e| e.to_string())
@@ -875,6 +1011,7 @@ pub async fn search(dir: PathBuf, args: SearchArgs) -> i32 {
         return match smd_core::ops::search::search_steam_games(&core.http_client, &args.query).await
         {
             Ok(hits) => {
+                cli_emit("search_performed", serde_json::json!({ "found": !hits.is_empty(), "by": "name", "repo_count": 0 })).await;
                 if args.json {
                     println!(
                         "{}",
@@ -896,8 +1033,12 @@ pub async fn search(dir: PathBuf, args: SearchArgs) -> i32 {
         };
     }
     let res = match smd_core::ops::search::search_repos(&core, &dir, &args.query).await {
-        Ok(r) => r,
+        Ok(r) => {
+            cli_emit("search_performed", serde_json::json!({ "found": !r.repos.is_empty(), "by": "app_id", "repo_count": r.repos.len() })).await;
+            r
+        }
         Err(e) => {
+            cli_emit("search_performed", serde_json::json!({ "found": false, "by": "app_id", "repo_count": 0, "probe_class": "error" })).await;
             errln!("{}", tf("tui.cli.error", &[("message", &e)]));
             return 1;
         }

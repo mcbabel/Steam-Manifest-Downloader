@@ -30,6 +30,16 @@ pub async fn set_telemetry_consent(app: AppHandle, accept: bool) -> Result<(), S
 }
 
 #[command]
+pub async fn set_telemetry_focus(app: AppHandle, focused: bool) -> Result<(), String> {
+    if let Some(state) = app.try_state::<AppState>() {
+        if let Some(telemetry) = state.telemetry.clone() {
+            telemetry.set_focused(focused).await;
+        }
+    }
+    Ok(())
+}
+
+#[command]
 pub async fn emit_telemetry_event(
     app: AppHandle,
     kind: String,

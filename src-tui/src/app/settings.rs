@@ -141,6 +141,9 @@ impl App {
                 self.set.dirty = true;
             }
             Action::SettingsTheme(mode) => {
+                if self.prefs.theme != *mode {
+                    self.emit("theme_toggled", Some(serde_json::json!({ "to": format!("{:?}", mode).to_lowercase() })));
+                }
                 self.prefs.theme = *mode;
                 theme::apply(*mode);
                 self.save_prefs();
@@ -193,6 +196,9 @@ impl App {
                     .collect::<Vec<_>>()
                     .join("\n");
                 term::copy_to_clipboard(&text);
+                if self.settings.telemetry_consent == TelemetryConsent::Accepted {
+                    self.emit("diagnostics_copied", None);
+                }
                 self.toast(Tone::Success, t("tui.settings.copied"));
             }
             Action::CheckUpdates => self.check_updates(true),
@@ -234,6 +240,11 @@ impl App {
                 self.spawn(async move {
                     let r = smd_core::services::net::test_proxy(&proxy).await;
                     apply(move |app| {
+                        let kind = smd_core::services::telemetry::proxy_kind(&proxy);
+                        app.emit("proxy_tested", Some(match &r {
+                            Ok(_) => serde_json::json!({ "proxy": kind, "ok": true }),
+                            Err(e) => serde_json::json!({ "proxy": kind, "ok": false, "key": i18n::error_key(e).unwrap_or_else(|| "unmatched".into()) }),
+                        }));
                         app.set.proxy_status = Some(match r {
                             Ok(res) => (
                                 Tone::Success,
@@ -286,6 +297,7 @@ impl App {
         let dir = self.data_dir.clone();
         self.spawn(async move {
             let mut s = settings_service::load_settings(&dir).await;
+            let before = serde_json::to_value(&s).unwrap_or_default();
             if !inputs[SETTING_DOWNLOAD_DIR].is_empty() {
                 s.download_location = inputs[SETTING_DOWNLOAD_DIR].clone();
             }
@@ -318,8 +330,16 @@ impl App {
             s.game_language = draft.game_language.clone();
             s.depot_sources = sources;
             let r = settings_service::save_settings(&dir, &s).await;
+            let after = serde_json::to_value(&s).unwrap_or_default();
+            let changed: Vec<String> = after
+                .as_object()
+                .map(|m| m.iter().filter(|(k, v)| before.get(k.as_str()) != Some(v)).map(|(k, _)| k.clone()).collect())
+                .unwrap_or_default();
             apply(move |app| match r {
                 Ok(()) => {
+                    if !changed.is_empty() {
+                        app.emit("settings_saved", Some(serde_json::json!({ "keys": changed })));
+                    }
                     if app.wiz.download_dir.trimmed() == old_default {
                         app.wiz.download_dir.set(s.download_location.clone());
                     }

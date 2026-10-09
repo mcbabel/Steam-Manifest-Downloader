@@ -58,6 +58,7 @@ impl App {
             apply(move |app| match r {
                 Ok(q) => {
                     let count = q.len();
+                    app.emit("queue_action", Some(serde_json::json!({ "action": "added", "size": smd_core::services::diag::count_bucket(count) })));
                     app.queue = q;
                     app.toast(
                         Tone::Success,
@@ -75,12 +76,14 @@ impl App {
         match a {
             Action::QueueStart => {
                 if !self.queue_running && !self.download_active() && !self.queue.is_empty() {
+                    self.emit("queue_action", Some(serde_json::json!({ "action": "started", "size": smd_core::services::diag::count_bucket(self.queue.len()) })));
                     self.queue_running = true;
                     self.queue_next_at = Some(Instant::now());
                 }
             }
             Action::QueueStop => self.stop_queue(),
             Action::QueueClear => {
+                self.emit("queue_action", Some(serde_json::json!({ "action": "cleared", "size": smd_core::services::diag::count_bucket(self.queue.len()) })));
                 let dir = self.data_dir.clone();
                 self.spawn(async move {
                     let _ = download_queue::clear(&dir).await;
@@ -93,6 +96,9 @@ impl App {
     }
 
     fn stop_queue(&mut self) {
+        if self.queue_running {
+            self.emit("queue_action", Some(serde_json::json!({ "action": "stopped", "size": smd_core::services::diag::count_bucket(self.queue.len()) })));
+        }
         self.queue_running = false;
         self.queue_next_at = None;
         self.toast(Tone::Info, t("queue.stopped"));
@@ -138,6 +144,21 @@ impl App {
         let ids: Vec<String> = config.depots.iter().map(|d| d.depot_id.clone()).collect();
         self.wiz.selected = ids.iter().cloned().collect();
         let native = self.settings.use_native_downloader;
+        self.emit(
+            "download_started",
+            Some(serde_json::json!({
+                "depot_count": ids.len(),
+                "engine": if native { "native" } else { "ddm" },
+                "source_count": self.settings.depot_sources.len(),
+                "had_mh_key": config.manifest_hub_api_key.is_some(),
+                "mode": if config.repair { "repair" } else if config.update_dir.is_some() { "update" } else { "new" },
+                "selection": "queued",
+                "source": config.source_type.clone().unwrap_or_else(|| "upload".into()),
+                "queue": true,
+                "dlc": config.include_dlc,
+                "custom_manifest": config.depots.iter().any(|d| d.custom_manifest_id.is_some()),
+            })),
+        );
         self.begin_download(config, ids, native);
     }
 

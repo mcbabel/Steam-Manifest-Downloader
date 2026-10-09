@@ -190,6 +190,11 @@ impl App {
                     }
                     Err(e) => msgs.push(e),
                 }
+                match &steam {
+                    Some(Ok(added)) => app.emit("library_added", Some(serde_json::json!({ "from": "shortcuts", "ok": true, "restarted": false, "grid": !added.grid_files.is_empty() }))),
+                    Some(Err(_)) => app.emit("library_added", Some(serde_json::json!({ "from": "shortcuts", "ok": false }))),
+                    None => {}
+                }
                 match steam {
                     Some(Ok(added)) => msgs.push(format!(
                         "{} ({})",
@@ -247,6 +252,11 @@ impl App {
             .await;
             apply(move |app| {
                 app.wiz.steam_busy = false;
+                match &r {
+                    Ok(added) => app.emit("library_added", Some(serde_json::json!({ "from": "step", "ok": true, "restarted": added.steam_restarted, "grid": !added.grid_files.is_empty() }))),
+                    Err(e) if e == STEAM_RUNNING_ERROR => {}
+                    Err(_) => app.emit("library_added", Some(serde_json::json!({ "from": "step", "ok": false }))),
+                }
                 match r {
                     Ok(added) => {
                         let mut msg = format!(

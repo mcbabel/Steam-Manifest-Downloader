@@ -99,6 +99,10 @@ impl App {
         self.spawn(async move {
             let r = smd_core::ops::history::check_updates(&dir, session).await;
             apply(move |app| {
+                if let Ok(list) = &r {
+                    let found = list.iter().filter(|c| c.update_available).count();
+                    app.emit("updates_found", Some(serde_json::json!({ "count": smd_core::services::diag::count_bucket(found) })));
+                }
                 if let Ok(list) = r {
                     app.hist.updates = list
                         .into_iter()
@@ -153,9 +157,18 @@ impl App {
                 self.close_modal();
                 self.history_resume(*pos, if verify_all { "verify" } else { "fast" });
             }
-            Action::HistoryRedownload(pos) => self.history_redownload(*pos),
-            Action::HistoryUpdate(pos) => self.history_update(*pos),
-            Action::HistoryRepair(pos) => self.history_repair(*pos),
+            Action::HistoryRedownload(pos) => {
+                self.emit("history_action", Some(serde_json::json!({ "action": "redownload" })));
+                self.history_redownload(*pos)
+            }
+            Action::HistoryUpdate(pos) => {
+                self.emit("history_action", Some(serde_json::json!({ "action": "update" })));
+                self.history_update(*pos)
+            }
+            Action::HistoryRepair(pos) => {
+                self.emit("history_action", Some(serde_json::json!({ "action": "repair" })));
+                self.history_repair(*pos)
+            }
             Action::HistoryPlay(pos) => self.history_play(*pos),
             Action::HistoryOpenFolder(pos) => {
                 let dir = if *pos == usize::MAX {
@@ -166,6 +179,7 @@ impl App {
                 if let Some(dir) = dir {
                     match smd_core::ops::system::open_folder(&dir) {
                         Ok(()) => {
+                            self.emit("history_action", Some(serde_json::json!({ "action": "open_folder" })));
                             self.toast(Tone::Info, tf("tui.history.opened", &[("path", &dir)]))
                         }
                         Err(_) if !std::path::Path::new(&dir).exists() => {
@@ -187,6 +201,7 @@ impl App {
             }
             Action::HistoryCopyPath(pos) => {
                 if let Some(e) = self.hist_entry(*pos) {
+                    self.emit("history_action", Some(serde_json::json!({ "action": "copy_path" })));
                     term::copy_to_clipboard(&e.download_dir);
                     self.toast(
                         Tone::Success,
@@ -194,7 +209,10 @@ impl App {
                     );
                 }
             }
-            Action::HistoryEditEmu(pos) => self.history_edit_emu(*pos),
+            Action::HistoryEditEmu(pos) => {
+                self.emit("history_action", Some(serde_json::json!({ "action": "edit_emu" })));
+                self.history_edit_emu(*pos)
+            }
             Action::AskHistoryRemove(pos) => {
                 let Some(e) = self.hist_entry(*pos) else {
                     return true;
@@ -228,6 +246,7 @@ impl App {
                 let Some((id, delete_files)) = self.hist.pending_remove.take() else {
                     return true;
                 };
+                self.emit("history_action", Some(serde_json::json!({ "action": "remove", "delete_files": delete_files })));
                 let dir = self.data_dir.clone();
                 self.spawn(async move {
                     let r = smd_core::ops::history::remove_entry(&dir, &id, delete_files).await;
@@ -271,6 +290,7 @@ impl App {
                     _ => false,
                 };
                 self.close_modal();
+                self.emit("history_action", Some(serde_json::json!({ "action": "clear", "delete_files": delete })));
                 let dir = self.data_dir.clone();
                 self.spawn(async move {
                     let r = smd_core::ops::history::clear(&dir, delete).await;
@@ -322,6 +342,9 @@ impl App {
                 "source_count": self.settings.depot_sources.len(),
                 "had_mh_key": config.manifest_hub_api_key.as_deref().is_some_and(|k| !k.is_empty()),
                 "resumed": true,
+                "mode": "resume",
+                "selection": "resume",
+                "resume_mode": if resume_mode == "fast" { "fast" } else { "full" },
             })),
         );
         self.begin_download(config, ids, true);
@@ -401,6 +424,15 @@ impl App {
             };
             apply(move |app| match result {
                 Ok((method, exe)) => {
+                    app.emit("game_launched", Some(serde_json::json!({
+                        "method": match method {
+                            smd_core::ops::launch::LaunchMethod::Steam => "steam",
+                            smd_core::ops::launch::LaunchMethod::Wine => "wine",
+                            smd_core::ops::launch::LaunchMethod::Direct => "direct",
+                        },
+                        "chosen": false,
+                        "partial": partial,
+                    })));
                     let key = match method {
                         smd_core::ops::launch::LaunchMethod::Steam => "history.playStartedSteam",
                         smd_core::ops::launch::LaunchMethod::Wine => "history.playStartedWine",

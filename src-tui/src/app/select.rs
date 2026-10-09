@@ -248,6 +248,18 @@ impl App {
                 smd_core::ops::search::fetch_latest_manifest_id(&core, &dir, &app_id, &depot_id)
                     .await;
             apply(move |app| {
+                if let Some(d) = app
+                    .wiz
+                    .parsed
+                    .as_mut()
+                    .and_then(|p| p.depots.iter_mut().find(|d| d.depot_id == depot_id))
+                {
+                    d.fetching = false;
+                }
+                app.emit("manifest_tool", Some(match &r {
+                    Ok(res) => serde_json::json!({ "action": "fetch_latest", "ok": true, "source": if res.source == "steam" { "steam" } else { "fallback" } }),
+                    Err(e) => serde_json::json!({ "action": "fetch_latest", "ok": false, "key": crate::i18n::error_key(e).unwrap_or_else(|| "unmatched".into()) }),
+                }));
                 let Some(d) = app
                     .wiz
                     .parsed
@@ -256,7 +268,6 @@ impl App {
                 else {
                     return;
                 };
-                d.fetching = false;
                 match r {
                     Ok(res) => {
                         let src = if res.source == "steam" {

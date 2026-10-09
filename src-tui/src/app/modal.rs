@@ -275,6 +275,7 @@ impl App {
             Action::UpdateOpen => {
                 if let Some(Modal::Update(u)) = &self.modal {
                     if let Some(url) = &u.url {
+                        self.emit("update_installed", Some(serde_json::json!({ "via": "release_page" })));
                         open_url(url);
                         term::copy_to_clipboard(url);
                         self.toast(Tone::Info, tf("tui.update.opened", &[("url", url)]));

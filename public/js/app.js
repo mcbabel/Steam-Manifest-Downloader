@@ -473,6 +473,7 @@ async function handleDepotManifestFile(depotId) {
       originalName: fileName,
       storedPath: filePath
     };
+    emitEvent('manifest_tool', { action: 'upload', ok: true });
 
     const statusEl = document.querySelector(`.depot-manifest-status[data-depot-id="${depotId}"]`);
     const btnEl = document.querySelector(`.depot-manifest-btn[data-depot-id="${depotId}"]`);
@@ -514,9 +515,11 @@ async function fetchLatestManifestForDepot(depotId, btnEl) {
       ? window.i18n.t('depots.fetchSourceSteam')
       : window.i18n.t('depots.fetchSourceFallback');
     if (input) input.value = manifestId;
+    emitEvent('manifest_tool', { action: 'fetch_latest', ok: true, source: result.source === 'steam' ? 'steam' : 'fallback' });
     if (statusEl) statusEl.innerHTML = `<span class="manifest-uploaded">${ICONS.check} ${escapeHtml(manifestId)}</span> <span class="manifest-source manifest-source--${escapeHtml(result.source)}">${escapeHtml(sourceLabel)}</span>`;
   } catch (e) {
     console.error('fetch_latest_manifest_id failed:', e);
+    emitEvent('manifest_tool', { action: 'fetch_latest', ok: false, key: window.i18n.errorKey(String(e)) || 'unmatched' });
     if (statusEl) statusEl.innerHTML = `<span class="status-error">${escapeHtml(window.i18n.t('depots.fetchLatestError', { message: window.i18n.localizeError(e) }))}</span>`;
   } finally {
     if (btnEl) {
@@ -1909,6 +1912,7 @@ async function addToQueue() {
   };
   try {
     updateQueueBadge(await invoke('queue_add', { item }));
+    emitEvent('queue_action', { action: 'added', size: countBucket((state.queue || []).length) });
   } catch (e) {
     alert(window.i18n.localizeError(e));
     return;
@@ -1978,11 +1982,13 @@ function closeQueue() {
 async function startQueue() {
   if (state.jobId || state.queueRunning) return;
   state.queueRunning = true;
+  emitEvent('queue_action', { action: 'started', size: countBucket((state.queue || []).length) });
   closeQueue();
   await runNextQueued();
 }
 
 function stopQueue() {
+  if (state.queueRunning) emitEvent('queue_action', { action: 'stopped', size: countBucket((state.queue || []).length) });
   state.queueRunning = false;
   clearTimeout(state.queueTimer);
   state.queueTimer = null;
@@ -3032,6 +3038,20 @@ window.addEventListener('unhandledrejection', (e) => {
   reportJsError(`unhandled: ${message}`, frame ? frame[1] : '', frame ? frame[2] : 0);
 });
 
+function syncTelemetryFocus(forced) {
+  const focused = typeof forced === 'boolean'
+    ? forced
+    : document.visibilityState === 'visible' && document.hasFocus();
+  if (focused === state.telemetryFocused) return;
+  state.telemetryFocused = focused;
+  invoke('set_telemetry_focus', { focused }).catch(() => {});
+}
+
+window.addEventListener('focus', () => syncTelemetryFocus(true));
+window.addEventListener('blur', () => syncTelemetryFocus(false));
+document.addEventListener('visibilitychange', () => syncTelemetryFocus());
+window.addEventListener('load', () => syncTelemetryFocus());
+
 function telemetryNonce() {
   const b = new Uint8Array(8);
   (crypto.getRandomValues ? crypto : window.crypto).getRandomValues(b);
@@ -3341,6 +3361,7 @@ async function saveSettings() {
   const changed = state.settingsBaseline != null && settingsSnapshot() !== state.settingsBaseline;
   try {
     const currentSettings = await invoke('get_settings');
+    const before = JSON.parse(JSON.stringify(currentSettings));
     currentSettings.auto_update = autoUpdate;
 
     const argsStr = els.ddExtraArgsInput.value.trim();
@@ -3383,11 +3404,15 @@ async function saveSettings() {
     if (languageChanged) currentSettings.language = state.settingsLanguage;
 
     await invoke('save_settings', { settings: currentSettings });
+    const changedKeys = Object.keys(currentSettings)
+      .filter(k => JSON.stringify(before[k]) !== JSON.stringify(currentSettings[k]));
     const telemetryOn = els.telemetryToggle.checked;
     if (telemetryOn !== state.savedTelemetry) {
+      changedKeys.push('telemetry_consent');
       await invoke('set_telemetry_consent', { accept: telemetryOn });
       state.savedTelemetry = telemetryOn;
     }
+    if (changedKeys.length && telemetryOn) emitEvent('settings_saved', { keys: changedKeys });
     state.pendingSources = null;
     refreshSourcesUI();
     state.notificationSoundEnabled = currentSettings.notification_sound;
@@ -4087,6 +4112,7 @@ async function togglePauseDownload() {
   try {
     await invoke('pause_download', { jobId: state.jobId, paused: willPause });
     state.paused = willPause;
+    emitEvent('download_paused', { paused: willPause, engine: state.currentEngine || 'native' });
     setTaskbarProgress(taskbar.percent);
     if (els.btnPause) {
       els.btnPause.textContent = willPause
@@ -4178,6 +4204,7 @@ function maybeScheduleShutdown() {
   renderShutdownCountdown();
   els.btnShutdownNow.disabled = false;
   els.shutdownModal.classList.remove('hidden');
+  emitEvent('shutdown_after', { action: 'countdown' });
   state.shutdownTimer = setInterval(() => {
     state.shutdownRemaining -= 1;
     if (state.shutdownRemaining <= 0) {
@@ -4193,6 +4220,7 @@ function renderShutdownCountdown() {
 }
 
 function abortScheduledShutdown() {
+  if (state.shutdownTimer) emitEvent('shutdown_after', { action: 'aborted' });
   clearInterval(state.shutdownTimer);
   state.shutdownTimer = null;
   if (els.shutdownModal) els.shutdownModal.classList.add('hidden');
@@ -4206,10 +4234,12 @@ async function shutdownNow() {
   els.shutdownModalBody.textContent = window.i18n.t('modals.shutdown.running');
   await commitPendingHistory();
   const followupSaved = await savePendingFollowup();
+  emitEvent('shutdown_after', { action: 'powered_off', followup: !!followupSaved });
   try {
     await invoke('power_off_system');
   } catch (e) {
     if (followupSaved) invoke('clear_pending_followup', { downloadDir: state.downloadDir }).catch(() => {});
+    emitEvent('shutdown_after', { action: 'failed' });
     els.shutdownModalBody.textContent = window.i18n.t('modals.shutdown.failed', { message: window.i18n.localizeError(e) });
     els.btnShutdownNow.disabled = false;
     if (els.shutdownAfterToggle) els.shutdownAfterToggle.checked = false;
@@ -4315,14 +4345,17 @@ async function showPendingFollowupIfAny() {
   const name = followup.game_name || `App ${followup.app_id}`;
   els.followupModalBody.textContent = window.i18n.t('modals.followup.body', { name });
   const close = () => els.followupModal.classList.add('hidden');
-  els.btnFollowupLater.onclick = close;
+  emitEvent('followup', { action: 'offered' });
+  els.btnFollowupLater.onclick = () => { emitEvent('followup', { action: 'later' }); close(); };
   els.followupModal.querySelector('.modal__backdrop').onclick = close;
   els.btnFollowupDiscard.onclick = () => {
     invoke('clear_pending_followup', { downloadDir: followup.download_dir }).catch(() => {});
+    emitEvent('followup', { action: 'discarded' });
     close();
   };
   els.btnFollowupResume.onclick = () => {
     invoke('clear_pending_followup', { downloadDir: followup.download_dir }).catch(() => {});
+    emitEvent('followup', { action: 'resumed' });
     close();
     resumePendingFollowup(followup);
   };
@@ -4523,6 +4556,7 @@ function initEvents() {
   els.btnQueueClear.addEventListener('click', async () => {
     try {
       await invoke('queue_clear');
+      emitEvent('queue_action', { action: 'cleared', size: countBucket((state.queue || []).length) });
     } catch (e) {
       console.error('queue_clear failed:', e);
     }
@@ -4789,6 +4823,7 @@ function initTauri() {
 
 async function openHistory() {
   hideHistoryBanner();
+  emitEvent('history_action', { action: 'opened' });
   if (state.historyView) state.historyView.query = '';
   els.historyModal.classList.remove('hidden');
   await loadHistory();
@@ -5103,6 +5138,7 @@ async function refreshUpdateChecks() {
   state.updateChecks = { ...(cache || { byEntry: {} }), pending: key };
   try {
     const list = await invoke('check_game_updates');
+    emitEvent('updates_found', { count: countBucket((list || []).filter(c => c.update_available).length) });
     const byEntry = {};
     (list || []).forEach((c) => { byEntry[c.entry_id] = c; });
     state.updateChecks = { key, at: Date.now(), byEntry, pending: null };
@@ -5316,6 +5352,7 @@ function renderHistoryEntries(entries) {
       const manifests = {};
       installed.forEach((d) => { manifests[String(d.depot_id)] = String(d.manifest_id); });
       const depotIds = installed.length ? Object.keys(manifests) : (entry.depot_ids || []);
+      emitEvent('history_action', { action: 'repair' });
       startHistoryRedownload(entry.app_id, depotIds, { dir: entry.download_dir, manifests });
     });
   });
@@ -5325,6 +5362,7 @@ function renderHistoryEntries(entries) {
       e.stopPropagation();
       const depotIds = (btn.dataset.depotIds || '').split(',').filter(Boolean);
       const isUpdate = btn.classList.contains('history-action-update');
+      emitEvent('history_action', { action: isUpdate ? 'update' : 'redownload' });
       startHistoryRedownload(btn.dataset.appId, depotIds, isUpdate ? { dir: btn.dataset.path || null } : null);
     });
   });
@@ -5334,6 +5372,7 @@ function renderHistoryEntries(entries) {
       e.stopPropagation();
       try {
         await invoke('open_folder', { path: btn.dataset.path });
+        emitEvent('history_action', { action: 'open_folder' });
       } catch (err) {
         console.error('Failed to open folder:', err);
         showFolderMissing();
@@ -5354,6 +5393,7 @@ function renderHistoryEntries(entries) {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const entry = entryById.get(btn.dataset.entryId);
+      if (entry) emitEvent('history_action', { action: 'edit_emu' });
       if (entry) openEmuEditFromHistory(entry);
     });
   });
@@ -5373,6 +5413,7 @@ function formatHistoryDate(dateStr) {
 async function clearHistory(deleteResumableFiles = false) {
   try {
     await invoke('clear_history', { deleteResumableFiles });
+    emitEvent('history_action', { action: 'clear', delete_files: !!deleteResumableFiles });
     await loadHistory();
   } catch (e) {
     console.error('Failed to clear history:', e);
@@ -5440,6 +5481,7 @@ async function confirmHistoryRemove() {
   if (!id) return;
   try {
     await invoke('remove_history_entry', { entryId: id, deleteFiles });
+    emitEvent('history_action', { action: 'remove', delete_files: !!deleteFiles });
     await loadHistory();
   } catch (err) {
     console.error('Failed to remove history entry:', err);
@@ -5860,6 +5902,7 @@ async function performDlcMerge() {
       mainDepotDir: plan.mainDepotDir,
       dlcDepotDirs: plan.dlcDepotDirs,
     });
+    emitEvent('dlc_merged', { ok: true, depots: countBucket(plan.dlcDepotDirs.length) });
     state.dlcMergePlan = null;
     if (els.emuDlcMergeStatus) {
       els.emuDlcMergeStatus.textContent = window.i18n.t('emulator.dlcMergeDone', {
@@ -5991,6 +6034,7 @@ async function removeDrm() {
     const results = await invoke('steamless_unpack', { targets: paths });
     const success = results.filter(r => r.success).length;
     const failed = results.length - success;
+    emitEvent('steamless_used', { outcome: failed === 0 ? 'complete' : success ? 'partial' : 'failed', targets: countBucket(results.length) });
     if (failed === 0) {
       setDrmStatus('success', window.i18n.t('emulator.drmRemoveSuccess', { count: success }));
       results.forEach((r, i) => {
@@ -6291,6 +6335,7 @@ async function syncEmuBypass(targets) {
     try {
       await invoke('steam_api_bypass_revert', { targets: (targets || []).map(t => t.path) });
       outcome = { ok: true, message: '' };
+      emitEvent('api_bypass', { action: 'revert', ok: true });
     } catch (e) {
       console.error('steam_api_bypass_revert failed:', e);
       outcome = { ok: false, message: window.i18n.t('emulator.bypassError', { message: window.i18n.localizeError(e) }) };
@@ -6307,6 +6352,7 @@ async function applySteamApiBypass(targets) {
     const results = await invoke('steam_api_bypass_apply', { targets: windowsTargets });
     const success = results.filter(r => r.success).length;
     const failed = results.length - success;
+    emitEvent('api_bypass', { action: 'apply', ok: failed === 0, targets: countBucket(results.length) });
     if (failed === 0) {
       return { ok: true, message: window.i18n.t('emulator.bypassSuccess', { count: success }) };
     }
@@ -7164,7 +7210,10 @@ function initShortcuts() {
         handled = focusSearchField();
       }
     }
-    if (handled) e.preventDefault();
+    if (handled) {
+      e.preventDefault();
+      emitEvent('shortcut_key', { key: { h: 'history', ',': 'settings', o: 'open', f: 'search' }[key] || 'other' });
+    }
   });
 }
 

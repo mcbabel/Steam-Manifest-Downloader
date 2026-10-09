@@ -707,6 +707,7 @@ impl App {
             return;
         }
         self.shutdown_deadline = Some(Instant::now() + SHUTDOWN_DELAY);
+        self.emit("shutdown_after", Some(serde_json::json!({ "action": "countdown" })));
         let mut modal = Modal::confirm(
             t("modals.shutdown.title"),
             tf("modals.shutdown.body", &[("seconds", &SHUTDOWN_DELAY.as_secs())]),
@@ -781,6 +782,7 @@ impl App {
             c.check = Some((t("modals.followup.dontAsk"), false));
         }
         self.followup = Some(followup);
+        self.emit("followup", Some(serde_json::json!({ "action": "offered" })));
         self.queue_modal(modal);
     }
 
@@ -825,6 +827,7 @@ impl App {
         self.shutdown_deadline = None;
         self.shutdown_modal_body(t("modals.shutdown.running"));
         let followup = self.pending_followup();
+        self.emit("shutdown_after", Some(serde_json::json!({ "action": "powered_off", "followup": followup.is_some() })));
         let data = self.data_dir.clone();
         let tel = self.telemetry.clone();
         self.spawn(async move {
@@ -833,7 +836,7 @@ impl App {
                 None => false,
             };
             if let Some(tel) = tel {
-                let _ = tokio::time::timeout(Duration::from_secs(3), tel.flush()).await;
+                let _ = tokio::time::timeout(Duration::from_secs(3), tel.end_session("shutdown")).await;
             }
             let r = tokio::task::spawn_blocking(smd_core::ops::system::power_off)
                 .await
@@ -844,6 +847,7 @@ impl App {
             }
             apply(move |app| {
                 if let Err(e) = r {
+                    app.emit("shutdown_after", Some(serde_json::json!({ "action": "failed" })));
                     app.shutdown_after = false;
                     if matches!(&app.modal, Some(Modal::Confirm(c)) if c.on_yes == Action::ShutdownNow) {
                         app.close_modal();
@@ -938,6 +942,9 @@ impl App {
             Action::Home => self.reset_wizard(),
             Action::ToggleShutdownAfter => self.shutdown_after = !self.shutdown_after,
             Action::ShutdownAbort => {
+                if self.shutdown_deadline.is_some() {
+                    self.emit("shutdown_after", Some(serde_json::json!({ "action": "aborted" })));
+                }
                 self.shutdown_deadline = None;
                 self.shutdown_after = false;
                 self.close_modal();
@@ -945,6 +952,7 @@ impl App {
             Action::ShutdownNow => self.shutdown_now(),
             Action::FollowupResume => {
                 self.close_modal();
+                self.emit("followup", Some(serde_json::json!({ "action": "resumed" })));
                 if let Some(f) = self.followup.take() {
                     self.clear_followup_file(&f.download_dir);
                     self.resume_followup(f);
@@ -953,6 +961,7 @@ impl App {
             Action::FollowupLater => {
                 let discard = self.followup_dont_ask();
                 self.close_modal();
+                self.emit("followup", Some(serde_json::json!({ "action": if discard { "discarded" } else { "later" } })));
                 if let Some(f) = self.followup.take().filter(|_| discard) {
                     self.clear_followup_file(&f.download_dir);
                 }
@@ -979,6 +988,7 @@ impl App {
             let r = smd_core::ops::download::pause_download(&sink, &core, job, pause).await;
             apply(move |app| {
                 if r.is_ok() {
+                    app.emit("download_paused", Some(serde_json::json!({ "paused": pause, "engine": "native" })));
                     if let Some(p) = app.wiz.progress.as_mut() {
                         p.paused = pause;
                         p.last_update = Instant::now();

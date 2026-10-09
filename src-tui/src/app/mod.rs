@@ -93,6 +93,7 @@ pub struct App {
     pub quit: bool,
     pub toast: Option<(Tone, String, Instant)>,
     pub reported_errors: std::collections::HashSet<String>,
+    pub dl_context: std::sync::Mutex<Option<serde_json::Map<String, serde_json::Value>>>,
 
     pub shortcut_supported: bool,
     pub steam_install: Option<SteamInstall>,
@@ -126,6 +127,7 @@ impl App {
             .to_string();
         smd_core::services::telemetry::install_crash_hook(data_dir.clone());
         let telemetry = Telemetry::new(data_dir.clone(), VERSION.to_string(), channel, "tui");
+        telemetry.set_focused(true).await;
         tokio::spawn(telemetry.clone().run_background_flush());
 
         let mut core = AppState::new();
@@ -157,6 +159,7 @@ impl App {
             quit: false,
             toast: None,
             reported_errors: std::collections::HashSet::new(),
+            dl_context: std::sync::Mutex::new(None),
             shortcut_supported: smd_core::ops::shortcuts::is_shortcut_supported(),
             steam_install: None,
             steam_error: None,
@@ -184,11 +187,51 @@ impl App {
 
     pub fn emit(&self, kind: &str, props: Option<serde_json::Value>) {
         if let Some(tel) = self.telemetry.clone() {
+            let props = self.with_download_context(kind, props);
             let mut event = TelemetryEvent::new(kind);
             if let Some(p) = props {
                 event = event.with_props(p);
             }
             tokio::spawn(async move { tel.emit(event).await });
+        }
+    }
+
+    fn with_download_context(&self, kind: &str, props: Option<serde_json::Value>) -> Option<serde_json::Value> {
+        const KEYS: &[&str] = &["mode", "selection", "source", "queue", "dlc", "custom_manifest", "resume_mode", "source_count", "had_mh_key", "engine"];
+        let Ok(mut ctx) = self.dl_context.lock() else {
+            return props;
+        };
+        match kind {
+            "download_started" => {
+                let mut map = match props {
+                    Some(serde_json::Value::Object(m)) => m,
+                    _ => serde_json::Map::new(),
+                };
+                let job: String = uuid::Uuid::new_v4().simple().to_string().chars().take(16).collect();
+                map.insert("job".into(), serde_json::json!(job));
+                let mut keep: serde_json::Map<String, serde_json::Value> = map
+                    .iter()
+                    .filter(|(k, _)| KEYS.contains(&k.as_str()))
+                    .map(|(k, v)| (k.clone(), v.clone()))
+                    .collect();
+                keep.insert("job".into(), serde_json::json!(job));
+                *ctx = Some(keep);
+                Some(serde_json::Value::Object(map))
+            }
+            "download_completed" | "download_abandoned" => {
+                let Some(saved) = ctx.take() else {
+                    return props;
+                };
+                let mut map = match props {
+                    Some(serde_json::Value::Object(m)) => m,
+                    _ => serde_json::Map::new(),
+                };
+                for (k, v) in saved {
+                    map.entry(k).or_insert(v);
+                }
+                Some(serde_json::Value::Object(map))
+            }
+            _ => props,
         }
     }
 
@@ -368,11 +411,15 @@ impl App {
         if let Some(job) = self.wiz.job_id.clone() {
             if self.download_active() {
                 if let Some(tel) = self.telemetry.clone() {
-                    tel.emit(TelemetryEvent::new("download_abandoned").with_props(serde_json::json!({
-                        "outcome": "abandoned",
-                        "engine": if self.settings.use_native_downloader { "native" } else { "ddm" },
-                    })))
-                    .await;
+                    let props = self.with_download_context(
+                        "download_abandoned",
+                        Some(serde_json::json!({
+                            "outcome": "abandoned",
+                            "engine": if self.settings.use_native_downloader { "native" } else { "ddm" },
+                        })),
+                    );
+                    tel.emit(TelemetryEvent::new("download_abandoned").with_props(props.unwrap_or_default()))
+                        .await;
                 }
                 let _ = smd_core::ops::download::cancel_download(
                     &self.sink,
@@ -387,7 +434,7 @@ impl App {
             }
         }
         if let Some(tel) = self.telemetry.clone() {
-            let _ = tokio::time::timeout(Duration::from_secs(3), tel.flush()).await;
+            let _ = tokio::time::timeout(Duration::from_secs(3), tel.end_session("quit")).await;
         }
     }
 
@@ -446,6 +493,12 @@ impl App {
             Event::Key(key) if key.kind != KeyEventKind::Release => self.on_key(key),
             Event::Mouse(m) => self.on_mouse(m),
             Event::Paste(text) => self.on_paste(text),
+            Event::FocusGained | Event::FocusLost => {
+                if let Some(tel) = self.telemetry.clone() {
+                    let focused = matches!(ev, Event::FocusGained);
+                    tokio::spawn(async move { tel.set_focused(focused).await });
+                }
+            }
             _ => {}
         }
     }
@@ -961,6 +1014,7 @@ impl App {
         self.focus = None;
         match page {
             Page::History => {
+                self.emit("history_action", Some(serde_json::json!({ "action": "opened" })));
                 self.load_history();
                 self.load_queue();
             }

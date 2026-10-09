@@ -256,7 +256,14 @@
       "argLanguage": "With --like-steam: game language as Steam names it (for example german, english, french). Default: the app language.",
       "autoSelectFailed": "Could not read the depot list from Steam, so every depot is downloaded: {message}",
       "argDlc": "With --like-steam: also download the DLC in the file and mark them as owned for gbe_fork.",
-      "argLikeSteam": "Work like Steam for this download: pick the depots Steam would install and put them into one game folder (default: the setting)."
+      "argLikeSteam": "Work like Steam for this download: pick the depots Steam would install and put them into one game folder (default: the setting).",
+      "cmdTelemetry": "Show or change anonymous usage statistics (on, off, status)",
+      "telemetryOn": "Anonymous usage statistics are on. Thank you!",
+      "telemetryOff": "Anonymous usage statistics are off.",
+      "telemetryStatusOn": "Anonymous usage statistics: on",
+      "telemetryStatusOff": "Anonymous usage statistics: off",
+      "telemetryEnv": "Set by SMD_TELEMETRY={value}",
+      "telemetryId": "Diagnostic ID: {id}"
     }
   }
 }

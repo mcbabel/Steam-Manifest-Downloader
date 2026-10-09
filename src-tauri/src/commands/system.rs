@@ -47,7 +47,7 @@ pub async fn power_off_system(app: tauri::AppHandle) -> Result<(), String> {
     use tauri::Manager;
     if let Some(state) = app.try_state::<smd_core::services::AppState>() {
         if let Some(telemetry) = state.telemetry.clone() {
-            let _ = tokio::time::timeout(std::time::Duration::from_secs(3), telemetry.flush()).await;
+            let _ = tokio::time::timeout(std::time::Duration::from_secs(3), telemetry.end_session("shutdown")).await;
         }
     }
     tauri::async_runtime::spawn_blocking(smd_core::ops::system::power_off)

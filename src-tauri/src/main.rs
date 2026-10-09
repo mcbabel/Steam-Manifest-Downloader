@@ -99,6 +99,7 @@ fn main() {
             commands::get_telemetry_status,
             commands::set_telemetry_consent,
             commands::emit_telemetry_event,
+            commands::set_telemetry_focus,
             // Emulator (gbe_fork)
             commands::emu_release_info,
             commands::emu_ensure_cached,
@@ -148,7 +149,7 @@ fn main() {
                 tauri::async_runtime::spawn(async move {
                     let _ = tokio::time::timeout(
                         std::time::Duration::from_secs(5),
-                        telemetry.flush(),
+                        telemetry.end_session("close"),
                     )
                     .await;
                     let _ = window.close();

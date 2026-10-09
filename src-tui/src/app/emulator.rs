@@ -878,6 +878,7 @@ impl App {
                 (true, String::new())
             };
             apply(move |app| {
+                app.emit("api_bypass", Some(serde_json::json!({ "action": if want { "apply" } else { "revert" }, "ok": ok })));
                 if ok {
                     if let Some(e) = app.emu.as_mut() {
                         e.bypass_initial = want;
@@ -1052,6 +1053,7 @@ impl App {
             )
             .await;
             apply(move |app| {
+                app.emit("dlc_merged", Some(serde_json::json!({ "ok": r.is_ok(), "depots": count_bucket(plan.dlc_depot_dirs.len()) })));
                 let Some(e) = app.emu.as_mut() else { return };
                 e.merge_busy = false;
                 match r {
@@ -1106,6 +1108,15 @@ impl App {
                 }
             }
             apply(move |app| {
+                let ok = results.iter().filter(|r| r.success).count();
+                let outcome = if fatal.is_some() || ok == 0 {
+                    "failed"
+                } else if ok == results.len() {
+                    "complete"
+                } else {
+                    "partial"
+                };
+                app.emit("steamless_used", Some(serde_json::json!({ "outcome": outcome, "targets": count_bucket(paths.len()) })));
                 let Some(e) = app.emu.as_mut() else { return };
                 e.drm_busy = false;
                 let mono_hint = |msg: &str| {

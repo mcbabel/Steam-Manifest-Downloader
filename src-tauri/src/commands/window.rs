@@ -44,7 +44,7 @@ pub async fn close_window(window: tauri::Window) -> Result<(), String> {
     }
     if let Some(state) = window.try_state::<AppState>() {
         if let Some(telemetry) = state.telemetry.clone() {
-            tokio::time::timeout(std::time::Duration::from_secs(3), telemetry.flush())
+            tokio::time::timeout(std::time::Duration::from_secs(3), telemetry.end_session("close"))
                 .await
                 .ok();
         }
@@ -56,7 +56,7 @@ pub async fn close_window(window: tauri::Window) -> Result<(), String> {
 pub async fn restart_app(app: tauri::AppHandle) {
     if let Some(state) = app.try_state::<AppState>() {
         if let Some(telemetry) = state.telemetry.clone() {
-            tokio::time::timeout(std::time::Duration::from_secs(3), telemetry.flush())
+            tokio::time::timeout(std::time::Duration::from_secs(3), telemetry.end_session("restart"))
                 .await
                 .ok();
         }

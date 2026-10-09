@@ -48,6 +48,8 @@ enum Command {
     Search(cli::SearchArgs),
     #[command(about = i18n::t("tui.cli.cmdHistory"))]
     History(cli::HistoryArgs),
+    #[command(about = i18n::t("tui.cli.cmdTelemetry"))]
+    Telemetry(cli::TelemetryArgs),
 }
 
 fn main() {
@@ -97,7 +99,25 @@ fn main() {
             }
             let code = runtime.block_on(async move {
                 cli::listen_for_shutdown();
-                match cmd {
+                if let Command::Telemetry(a) = cmd {
+                    return cli::telemetry(data_dir, a).await;
+                }
+                let (name, props) = match &cmd {
+                    Command::Download(a) => (
+                        "download",
+                        serde_json::json!({
+                            "json": a.json, "update": a.update.is_some(), "repair": a.repair,
+                            "like_steam": a.like_steam, "all_depots": a.all_depots, "dlc": a.dlc,
+                            "shutdown": a.shutdown, "list": a.list, "speed_limit": a.speed_limit.is_some(),
+                            "depots_given": !a.depots.is_empty(), "out": a.out.is_some(),
+                        }),
+                    ),
+                    Command::Search(a) => ("search", serde_json::json!({ "json": a.json, "manifests": a.manifests.is_some() })),
+                    Command::History(a) => ("history", serde_json::json!({ "json": a.json })),
+                    _ => ("other", serde_json::json!({})),
+                };
+                cli::telemetry_start(&data_dir, name, props).await;
+                let code = match cmd {
                     Command::Download(a) => cli::download(data_dir, a).await,
                     Command::Search(a) => tokio::select! {
                         code = cli::search(data_dir, a) => code,
@@ -107,8 +127,10 @@ fn main() {
                         code = cli::history(data_dir, a) => code,
                         _ = cli::stopped() => 130,
                     },
-                    Command::Tui => unreachable!(),
-                }
+                    Command::Tui | Command::Telemetry(_) => unreachable!(),
+                };
+                cli::telemetry_finish().await;
+                code
             });
             code
         }
