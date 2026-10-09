@@ -3386,6 +3386,46 @@ label.settings-row:hover {
   display: none;
 }
 
+.emu-gamedata__key {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.9rem;
+}
+
+.emu-gamedata__key-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.emu-gamedata__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+}
+
+.emu-gamedata__actions .dd-path__hint {
+  margin: 0;
+  white-space: pre-line;
+}
+
+.emu-gamedata__media {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin-top: 0.9rem;
+}
+
+.emu-gamedata-section.is-off .emu-gamedata__key,
+.emu-gamedata-section.is-off .emu-gamedata__media,
+.emu-gamedata-section.is-off .emu-gamedata__actions {
+  opacity: 0.5;
+}
+
 .bug-report {
   width: min(640px, 94vw);
   max-width: none;

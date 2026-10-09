@@ -597,6 +597,35 @@ pub fn write_emu_settings(target_path: &str, settings: &EmuSettings) -> Result<(
     emulator::write_emu_settings_for_target(Path::new(target_path), settings)
 }
 
+pub async fn generate_game_data(
+    state: &AppState,
+    app_data_dir: &Path,
+    targets: Vec<String>,
+    app_id: String,
+    language: Option<String>,
+) -> Result<crate::services::game_data::GameDataResult, String> {
+    let settings = crate::services::settings::load_settings(app_data_dir).await;
+    let language = language
+        .filter(|l| !l.trim().is_empty())
+        .or_else(|| Some(settings.game_language.clone()).filter(|l| !l.trim().is_empty()))
+        .unwrap_or_else(|| settings.language.clone());
+    let language = crate::services::depot_select::steam_language(&language);
+    let key = Some(settings.steam_web_api_key.trim().to_string()).filter(|k| !k.is_empty());
+    let opts = crate::services::game_data::Options {
+        language,
+        web_api_key: key.as_deref(),
+        media: crate::services::game_data::MediaLevel::parse(&settings.game_data_media),
+    };
+    crate::services::game_data::generate(
+        &state.http_client,
+        state.steam_session.clone(),
+        &targets,
+        &app_id,
+        opts,
+    )
+    .await
+}
+
 pub async fn revert_replacement(targets: Vec<String>) -> Result<Vec<ReplaceResult>, String> {
     let mut results = Vec::with_capacity(targets.len());
     for target in targets {

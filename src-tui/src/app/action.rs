@@ -187,6 +187,7 @@ pub enum Action {
     SettingsTab(usize),
     SettingsToggle(SettingToggle),
     SettingsPlatform(&'static str),
+    SettingsGameMedia(&'static str),
     SettingsGameLanguage(i32),
     SettingsLanguage(&'static str),
     SettingsTheme(ThemeMode),

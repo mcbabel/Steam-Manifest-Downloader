@@ -654,6 +654,7 @@ pub const SETTING_HUBCAP: usize = 6;
 pub const SETTING_RYUU: usize = 7;
 pub const SETTING_MH: usize = 8;
 pub const SETTING_STEAM: usize = 9;
+pub const SETTING_WEBAPI: usize = 10;
 
 impl SettingsPage {
     pub fn new(settings: &Settings, mh_key: &str) -> Self {
@@ -688,6 +689,7 @@ impl SettingsPage {
             TextInput::new(s.ryuu_api_key.clone()).masked(),
             TextInput::new(mh_key).masked(),
             TextInput::new(s.steam_path.clone()),
+            TextInput::new(s.steam_web_api_key.clone()).masked(),
         ];
         self.dirty = false;
     }

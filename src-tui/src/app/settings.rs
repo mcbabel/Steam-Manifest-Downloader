@@ -124,6 +124,10 @@ impl App {
                 self.set.draft.target_platform = p.to_string();
                 self.set.dirty = true;
             }
+            Action::SettingsGameMedia(m) => {
+                self.set.draft.game_data_media = m.to_string();
+                self.set.dirty = true;
+            }
             Action::SettingsGameLanguage(step) => {
                 let list = depot_select::STEAM_LANGUAGES;
                 let n = list.len() as i32 + 1;
@@ -320,6 +324,8 @@ impl App {
             s.steam_path = inputs[SETTING_STEAM].clone();
             s.hubcap_api_key = inputs[SETTING_HUBCAP].clone();
             s.ryuu_api_key = inputs[SETTING_RYUU].clone();
+            s.steam_web_api_key = inputs[SETTING_WEBAPI].clone();
+            s.game_data_media = draft.game_data_media.clone();
             s.auto_update = draft.auto_update;
             s.use_native_downloader = draft.use_native_downloader;
             s.cancel_keep_files = draft.cancel_keep_files;
@@ -808,7 +814,7 @@ impl App {
     }
 
     fn render_keys(&mut self, sv: &mut ScrollView, ctx: &mut Ctx, w: u16) {
-        let fields: [(usize, &str, &str, &str); 3] = [
+        let fields: [(usize, &str, &str, &str); 4] = [
             (
                 SETTING_MH,
                 "select.manifestHubLabel",
@@ -826,6 +832,12 @@ impl App {
                 "settings.ryuuApiKey",
                 "settings.ryuuApiKeyPlaceholder",
                 "settings.ryuuApiKeyHint",
+            ),
+            (
+                SETTING_WEBAPI,
+                "settings.steamWebApiKey",
+                "settings.steamWebApiKeyPlaceholder",
+                "settings.steamWebApiKeyHint",
             ),
         ];
         for (idx, label, ph, hint_key) in fields {
@@ -861,6 +873,33 @@ impl App {
             hint(&mut sv.buf, r, &ht);
             sv.gap(1);
         }
+        let r = sv.next(1);
+        let label = format!("{}: ", t("emulator.gameData.media"));
+        widgets::text(&mut sv.buf, r, &label, theme::text());
+        let mut x = r.x + widgets::width(&label);
+        let current = smd_core::services::game_data::MediaLevel::parse(&self.set.draft.game_data_media);
+        let options: [(&'static str, &str); 3] = [
+            ("off", "emulator.gameData.mediaOff"),
+            ("images", "emulator.gameData.mediaImages"),
+            ("all", "emulator.gameData.mediaAll"),
+        ];
+        for (i, (value, key)) in options.iter().enumerate() {
+            let room = r.right().saturating_sub(x);
+            x += widgets::radio(
+                &mut sv.buf,
+                ctx,
+                Rect::new(x, r.y, room, 1),
+                current.as_str() == *value,
+                &t(key),
+                Fid::idx("settings.gameMedia", i),
+                Action::SettingsGameMedia(value),
+            ) + 2;
+        }
+        let ht = t("emulator.gameData.mediaHint");
+        let h = widgets::wrap_height(&ht, w);
+        let r = sv.next(h);
+        hint(&mut sv.buf, r, &ht);
+        sv.gap(1);
         let note = t("tui.settings.mhStoredLocally");
         let h = widgets::wrap_height(&note, w);
         let r = sv.next(h);

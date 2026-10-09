@@ -343,6 +343,7 @@ const els = {
 
 function goToStep(step) {
   state.currentStep = step;
+  if (step === 5) syncEmuGameDataKey();
   if (step !== 2) cancelAutoStart();
   renderUpdateNotice(step);
 
@@ -2901,6 +2902,8 @@ async function openSettings() {
     setProxyStatus(null);
     if (els.hubcapApiKeyInput) els.hubcapApiKeyInput.value = settings.hubcap_api_key || '';
     if (els.ryuuApiKeyInput) els.ryuuApiKeyInput.value = settings.ryuu_api_key || '';
+    const webApiInput = document.getElementById('steam-webapi-key-input');
+    if (webApiInput) webApiInput.value = settings.steam_web_api_key || '';
     if (els.nativeDownloaderToggle) els.nativeDownloaderToggle.checked = !!settings.use_native_downloader;
     if (els.cancelKeepFilesToggle) els.cancelKeepFilesToggle.checked = !!settings.cancel_keep_files;
     populateDepotSelectionSettings(settings);
@@ -3382,6 +3385,8 @@ async function saveSettings() {
     if (els.ryuuApiKeyInput) {
       currentSettings.ryuu_api_key = els.ryuuApiKeyInput.value.trim();
     }
+    const webApiInput = document.getElementById('steam-webapi-key-input');
+    if (webApiInput) currentSettings.steam_web_api_key = webApiInput.value.trim();
     if (els.nativeDownloaderToggle) {
       currentSettings.use_native_downloader = els.nativeDownloaderToggle.checked;
     }
@@ -4676,6 +4681,7 @@ function initEvents() {
   }
   if (els.btnEmuApply) {
     els.btnEmuApply.addEventListener('click', applyEmuReplacement);
+    initEmuGameData();
   }
   if (els.btnEmuSaveSettings) {
     els.btnEmuSaveSettings.addEventListener('click', saveEmuSettings);
@@ -6368,6 +6374,165 @@ async function applySteamApiBypass(targets) {
   }
 }
 
+async function syncEmuGameDataKey() {
+  const input = document.getElementById('emu-webapi-key');
+  if (!input) return;
+  try {
+    const settings = await invoke('get_settings');
+    input.value = settings.steam_web_api_key || '';
+    setEmuGameMedia(settings.game_data_media || 'off');
+  } catch (_) {}
+}
+
+async function saveSteamWebApiKey(value) {
+  const settings = await invoke('get_settings');
+  const next = String(value || '').trim();
+  if (settings.steam_web_api_key === next) return;
+  settings.steam_web_api_key = next;
+  await invoke('save_settings', { settings });
+  emitEvent('settings_saved', { keys: ['steam_web_api_key'], from: 'emulator' });
+}
+
+function setEmuGameDataStatus(kind, text) {
+  const el = document.getElementById('emu-gamedata-status');
+  if (!el) return;
+  el.classList.toggle('hidden', !text);
+  el.classList.toggle('dd-path__hint--error', kind === 'error');
+  el.textContent = text || '';
+}
+
+function gameDataSummary(r, targets) {
+  const t = (key, params) => window.i18n.t(`emulator.gameData.${key}`, params);
+  const parts = [];
+  if (r.languages) parts.push(t('languages', { count: r.languages }));
+  if (r.depots) parts.push(t('depots', { count: r.depots }));
+  if (r.branches) parts.push(t('branches', { count: r.branches }));
+  if (r.achievements) {
+    parts.push(r.achievement_languages > 1
+      ? t('achievementLanguages', { count: r.achievements, languages: r.achievement_languages, icons: r.icons })
+      : t('achievements', { count: r.achievements, icons: r.icons }));
+  }
+  if (r.stats) parts.push(t('stats', { count: r.stats }));
+  if (r.leaderboards) parts.push(t('leaderboards', { count: r.leaderboards }));
+  if (r.items) parts.push(t('items', { count: r.items }));
+  if (r.controller_sets) parts.push(t('controller', { count: r.controller_sets }));
+  if (r.cloud_dirs) parts.push(t('cloud', { count: r.cloud_dirs }));
+  if (r.watcher_schemas) parts.push(t('watcher', { count: r.watcher_schemas }));
+  if (r.media_files) parts.push(t('mediaFiles', { count: r.media_files }));
+  const lines = [parts.length ? t('written', { list: parts.join(', ') }) : t('nothing')];
+  (r.notes || []).forEach(note => lines.push(window.i18n.t(`emulator.${note}`)));
+  const windowsDll = (targets || []).some(x => /\.dll$/i.test(x.path || ''));
+  if (r.controller_sets && windowsDll && selectedEmuVariant() !== 'experimental') lines.push(t('controllerBuild'));
+  return lines.join('\n');
+}
+
+async function writeEmuGameData(targets, appId, language) {
+  const paths = (targets || []).map(t => t.path).filter(Boolean);
+  if (!paths.length || !appId) return '';
+  setEmuGameDataStatus('busy', window.i18n.t('emulator.gameData.busy'));
+  try {
+    const r = await invoke('emu_generate_game_data', { targets: paths, appId: String(appId), language: language || null });
+    emitEvent('game_data_written', {
+      source: r.source,
+      achievements: countBucket(r.achievements),
+      achievement_languages: countBucket(r.achievement_languages),
+      stats: countBucket(r.stats),
+      languages: countBucket(r.languages),
+      depots: countBucket(r.depots),
+      branches: countBucket(r.branches),
+      leaderboards: countBucket(r.leaderboards),
+      items: countBucket(r.items),
+      controller: r.controller_sets > 0,
+      cloud_dirs: countBucket(r.cloud_dirs),
+      watcher: r.watcher_schemas > 0,
+      media: currentEmuGameMedia(),
+      icons: r.achievements ? r.icons >= r.achievements : null,
+      notes: (r.notes || []).length ? r.notes.map(n => n.replace('gameData.', '')) : ['none'],
+    });
+    const text = gameDataSummary(r, targets);
+    setEmuGameDataStatus(r.achievements || r.languages ? 'ok' : 'error', text);
+    return text;
+  } catch (e) {
+    const text = window.i18n.t('emulator.gameData.failed', { message: window.i18n.localizeError(String(e)) });
+    reportError('game_data', e);
+    setEmuGameDataStatus('error', text);
+    return text;
+  }
+}
+
+function currentEmuGameMedia() {
+  const active = document.querySelector('#emu-gamedata-media .segmented__option.is-active');
+  return (active && active.dataset.value) || 'off';
+}
+
+function setEmuGameMedia(value) {
+  document.querySelectorAll('#emu-gamedata-media .segmented__option').forEach(btn => {
+    const on = btn.dataset.value === (value || 'off');
+    btn.classList.toggle('is-active', on);
+    btn.setAttribute('aria-checked', on ? 'true' : 'false');
+  });
+}
+
+async function saveEmuGameMedia(value) {
+  const settings = await invoke('get_settings');
+  if ((settings.game_data_media || 'off') === value) return;
+  settings.game_data_media = value;
+  await invoke('save_settings', { settings });
+  emitEvent('settings_saved', { keys: ['game_data_media'], from: 'emulator' });
+}
+
+function initEmuGameData() {
+  const toggle = document.getElementById('emu-gamedata-toggle');
+  const section = document.getElementById('emu-gamedata-section');
+  if (!toggle || !section) return;
+  try {
+    const saved = localStorage.getItem('emuGameData');
+    if (saved === '0') toggle.checked = false;
+  } catch (_) {}
+  const sync = () => section.classList.toggle('is-off', !toggle.checked);
+  sync();
+  toggle.addEventListener('change', () => {
+    sync();
+    try { localStorage.setItem('emuGameData', toggle.checked ? '1' : '0'); } catch (_) {}
+  });
+  document.querySelectorAll('#emu-gamedata-media .segmented__option').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      setEmuGameMedia(btn.dataset.value);
+      try { await saveEmuGameMedia(btn.dataset.value); } catch (e) { showToast(window.i18n.localizeError(String(e)), 'error'); }
+    });
+  });
+  const save = document.getElementById('btn-emu-webapi-save');
+  const input = document.getElementById('emu-webapi-key');
+  if (save && input) {
+    save.addEventListener('click', async () => {
+      try {
+        await saveSteamWebApiKey(input.value);
+        showToast(window.i18n.t('emulator.gameData.keySaved'), 'success');
+      } catch (e) {
+        showToast(window.i18n.localizeError(String(e)), 'error');
+      }
+    });
+  }
+  const run = document.getElementById('btn-emu-gamedata');
+  if (run) {
+    run.addEventListener('click', async () => {
+      const targets = getSelectedEmuTargets();
+      const appId = currentAppIdForEmu();
+      if (!targets.length || !appId) {
+        setEmuGameDataStatus('error', window.i18n.t('emulator.applyNoSelection'));
+        return;
+      }
+      if (input && input.value.trim()) {
+        try { await saveSteamWebApiKey(input.value); } catch (_) {}
+      }
+      run.disabled = true;
+      const gathered = gatherEmuSettings();
+      await writeEmuGameData(targets, appId, gathered && gathered.language);
+      run.disabled = false;
+    });
+  }
+}
+
 function collectInstalledAppIds(mainAppId) {
   const list = (state.parsedData && Array.isArray(state.parsedData.allAppIds))
     ? state.parsedData.allAppIds.slice()
@@ -6428,7 +6593,15 @@ async function applyEmuReplacement() {
           ? window.i18n.t('emulator.dlcNone')
           : window.i18n.t('emulator.dlcActivated', { count: dlcResult.dlcCount }))
         : '';
-      setEmuApplyStatus('success', window.i18n.t('emulator.applySuccess', { count: success, total }) + dlcNote + extra);
+      const toggle = document.getElementById('emu-gamedata-toggle');
+      const keyInput = document.getElementById('emu-webapi-key');
+      if (keyInput && keyInput.value.trim()) {
+        try { await saveSteamWebApiKey(keyInput.value); } catch (_) {}
+      }
+      const gameNote = toggle && toggle.checked
+        ? '\n\n' + await writeEmuGameData(selectedTargets, appId, gathered && gathered.language)
+        : '';
+      setEmuApplyStatus('success', window.i18n.t('emulator.applySuccess', { count: success, total }) + dlcNote + extra + gameNote);
       saveLastEmuSettings(gathered);
       if (state.emuStandalone) {
         await refreshEmuScanInPlace();

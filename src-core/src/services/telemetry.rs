@@ -448,6 +448,7 @@ const ALLOWED_EVENT_KINDS: &[&str] = &[
     "cli_command",
     "heartbeat",
     "session_end",
+    "game_data_written",
 ];
 
 pub fn env_consent() -> Option<bool> {
@@ -801,6 +802,8 @@ fn settings_snapshot(s: &settings_service::Settings) -> serde_json::Value {
         "custom_sources": s.depot_sources != s.pristine_default_sources,
         "hubcap_key": !s.hubcap_api_key.trim().is_empty(),
         "ryuu_key": !s.ryuu_api_key.trim().is_empty(),
+        "steam_web_api_key": !s.steam_web_api_key.trim().is_empty(),
+        "game_data_media": if s.game_data_media.is_empty() { "off" } else { s.game_data_media.as_str() },
         "auto_update": s.auto_update,
         "steam_path_set": !s.steam_path.trim().is_empty(),
         "max_retries": s.max_retries.min(20),

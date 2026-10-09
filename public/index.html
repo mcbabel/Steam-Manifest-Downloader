@@ -641,6 +641,40 @@
           </div>
         </div>
 
+        <div id="emu-gamedata-section" class="emu-section emu-gamedata-section">
+          <div class="emu-bypass-row">
+            <div class="emu-bypass-row__text">
+              <span class="emu-bypass-row__label" data-i18n="emulator.gameData.label">Game data for gbe_fork</span>
+              <p class="emu-bypass-row__hint" data-i18n-html="emulator.gameData.hint">Writes what gbe_fork needs into <code>steam_settings</code>: languages, depots, branches, achievements with icons, leaderboards, inventory items, the controller layout and cloud save folders. With a Steam Web API key also the stats and all achievements.</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="emu-gamedata-toggle" checked>
+              <span class="toggle-switch__slider"></span>
+            </label>
+          </div>
+          <div class="emu-gamedata__key">
+            <label for="emu-webapi-key" class="emu-gamedata__key-label" data-i18n="settings.steamWebApiKey">Steam Web API key</label>
+            <div class="dd-path__input-wrap dd-path__input-wrap--with-btn">
+              <input type="password" id="emu-webapi-key" class="dd-path__input" autocomplete="off" spellcheck="false" data-i18n-attr="placeholder=settings.steamWebApiKeyPlaceholder">
+              <button type="button" id="btn-emu-webapi-save" class="btn btn--small btn--outline" data-i18n="emulator.gameData.saveKey">Save key</button>
+            </div>
+            <p class="emu-bypass-row__hint" data-i18n-html="settings.steamWebApiKeyHint">Optional. Get a free key at <a href="https://steamcommunity.com/dev/apikey" target="_blank" rel="noopener" class="link">steamcommunity.com/dev/apikey</a>. It stays on this PC and is only sent to Steam.</p>
+          </div>
+          <div class="emu-gamedata__media">
+            <span class="emu-gamedata__key-label" id="emu-gamedata-media-label" data-i18n="emulator.gameData.media">Save media</span>
+            <div id="emu-gamedata-media" class="segmented" role="radiogroup" aria-labelledby="emu-gamedata-media-label">
+              <button type="button" class="segmented__option is-active" data-value="off" role="radio" aria-checked="true" data-i18n="emulator.gameData.mediaOff">Off</button>
+              <button type="button" class="segmented__option" data-value="images" role="radio" aria-checked="false" data-i18n="emulator.gameData.mediaImages">Images</button>
+              <button type="button" class="segmented__option" data-value="all" role="radio" aria-checked="false" data-i18n="emulator.gameData.mediaAll">Images and video</button>
+            </div>
+            <p class="emu-bypass-row__hint" data-i18n-html="emulator.gameData.mediaHint">Artwork, screenshots and inventory icons go into a <code>steam_media</code> folder in the game folder. The game does not need them.</p>
+          </div>
+          <div class="emu-gamedata__actions">
+            <button type="button" id="btn-emu-gamedata" class="btn btn--small btn--outline" data-i18n="emulator.gameData.generate">Write game data now</button>
+            <p id="emu-gamedata-status" class="dd-path__hint hidden" role="status"></p>
+          </div>
+        </div>
+
         <div id="emu-variant-section" class="emu-section">
           <label class="settings-section__label" data-i18n="emulator.variantLabel">Emulator variant</label>
           <div class="emu-variant-group" role="radiogroup" aria-labelledby="emu-variant-label">
@@ -1454,6 +1488,13 @@
           <section class="settings__panel" data-section="steam" role="tabpanel">
             <h4 class="settings__panel-title" data-i18n="settings.sectionSteam">Steam</h4>
             <div class="settings-group">
+              <div class="settings-row settings-row--stack">
+                <label class="settings-row__text" for="steam-webapi-key-input">
+                  <span class="settings-row__label" data-i18n="settings.steamWebApiKey">Steam Web API key</span>
+                  <span class="settings-row__hint" data-i18n-html="settings.steamWebApiKeyHint">Optional. Get a free key at <a href="https://steamcommunity.com/dev/apikey" target="_blank" rel="noopener" class="link">steamcommunity.com/dev/apikey</a>. It stays on this PC and is only sent to Steam.</span>
+                </label>
+                <input type="password" id="steam-webapi-key-input" class="dd-path__input" autocomplete="off" spellcheck="false" data-i18n-attr="placeholder=settings.steamWebApiKeyPlaceholder">
+              </div>
               <div class="settings-row settings-row--stack">
                 <label class="settings-row__text" for="steam-path-input">
                   <span class="settings-row__label" data-i18n="settings.steamPath">Steam folder</span>

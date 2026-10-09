@@ -73,6 +73,17 @@ pub async fn emu_apply_replacement(
 }
 
 #[command]
+pub async fn emu_generate_game_data(
+    state: tauri::State<'_, AppState>,
+    app: AppHandle,
+    targets: Vec<String>,
+    app_id: String,
+    language: Option<String>,
+) -> Result<smd_core::services::game_data::GameDataResult, String> {
+    emu_ops::generate_game_data(&state, &app_data_dir(&app), targets, app_id, language).await
+}
+
+#[command]
 pub async fn emu_read_emu_settings(target_path: String) -> Result<EmuSettings, String> {
     emu_ops::read_emu_settings(&target_path)
 }

@@ -55,6 +55,10 @@ pub struct Settings {
     #[serde(default)]
     pub ryuu_api_key: String,
     #[serde(default)]
+    pub steam_web_api_key: String,
+    #[serde(default)]
+    pub game_data_media: String,
+    #[serde(default)]
     pub auto_select_depots: bool,
     #[serde(default)]
     pub auto_start_download: bool,
@@ -140,6 +144,8 @@ impl Default for Settings {
             use_native_downloader: default_use_native_downloader(),
             cancel_keep_files: default_cancel_keep_files(),
             ryuu_api_key: String::new(),
+            steam_web_api_key: String::new(),
+            game_data_media: String::new(),
             auto_select_depots: false,
             auto_start_download: false,
             include_dlc: false,

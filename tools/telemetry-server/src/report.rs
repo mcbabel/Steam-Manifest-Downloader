@@ -539,6 +539,16 @@ const FEATURES: &[(&str, &str, &str)] = &[
     ("Steamless", "steamless_used", "outcome"),
     ("Steam API check bypass", "api_bypass", "action"),
     ("Merge DLC depots", "dlc_merged", "ok"),
+    ("Game data for gbe_fork", "game_data_written", "source"),
+    ("Game data: achievement languages", "game_data_written", "achievement_languages"),
+    ("Game data: branches", "game_data_written", "branches"),
+    ("Game data: leaderboards", "game_data_written", "leaderboards"),
+    ("Game data: inventory items", "game_data_written", "items"),
+    ("Game data: controller layout", "game_data_written", "controller"),
+    ("Game data: cloud save folders", "game_data_written", "cloud_dirs"),
+    ("Game data: Achievement Watcher", "game_data_written", "watcher"),
+    ("Game data: media", "game_data_written", "media"),
+    ("Game data: problems", "game_data_written", "notes"),
     ("Manifest tools", "manifest_tool", "action"),
     ("Search", "search_performed", "found"),
     ("Lua upload", "lua_parsed", ""),
@@ -1017,6 +1027,7 @@ mod tests {
         let mut cli = record("2026-03-02", "a", "1.5.1", serde_json::json!([
             { "kind": "cli_command", "ts": ts("2026-03-02"), "props": { "command": "download" } },
             { "kind": "settings_saved", "ts": ts("2026-03-02"), "props": { "keys": ["proxy", "max_retries"] } },
+            { "kind": "game_data_written", "ts": ts("2026-03-02"), "props": { "source": "keyless", "controller": true, "media": "images", "notes": ["needsKey", "leaderboardsFailed"] } },
         ]));
         cli["payload"]["frontend"] = serde_json::json!("cli");
         cli["payload"]["package"] = serde_json::json!("docker");
@@ -1026,6 +1037,11 @@ mod tests {
         assert_eq!((row.detail.as_str(), row.count, row.by_frontend), ("download", 1, [0, 0, 1]));
         assert!(usage.iter().any(|r| r.feature == "Settings changed" && r.detail == "proxy"));
         assert!(usage.iter().any(|r| r.feature == "Steamless" && r.count == 0));
+        assert!(usage.iter().any(|r| r.feature == "Game data: controller layout" && r.detail == "true"));
+        assert!(usage.iter().any(|r| r.feature == "Game data: media" && r.detail == "images"));
+        let problems: Vec<&str> = usage.iter().filter(|r| r.feature == "Game data: problems").map(|r| r.detail.as_str()).collect();
+        assert_eq!(problems.len(), 2);
+        assert!(problems.contains(&"needsKey") && problems.contains(&"leaderboardsFailed"));
         let fronts = frontends(&events, day("2026-03-05"));
         assert_eq!(fronts.iter().find(|f| f.name.starts_with("Docker")).unwrap().installs, 1);
     }

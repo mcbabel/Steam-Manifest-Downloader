@@ -234,6 +234,52 @@ fn outcome(success: usize, total: usize) -> &'static str {
     }
 }
 
+fn game_data_summary(r: &smd_core::services::game_data::GameDataResult, controller_note: bool) -> String {
+    let mut parts = Vec::new();
+    let mut add = |n: usize, key: &str| {
+        if n > 0 {
+            parts.push(tf(&format!("emulator.gameData.{}", key), &[("count", &n)]));
+        }
+    };
+    add(r.languages, "languages");
+    add(r.depots, "depots");
+    add(r.branches, "branches");
+    if r.achievements > 0 {
+        parts.push(if r.achievement_languages > 1 {
+            tf(
+                "emulator.gameData.achievementLanguages",
+                &[("count", &r.achievements), ("languages", &r.achievement_languages), ("icons", &r.icons)],
+            )
+        } else {
+            tf("emulator.gameData.achievements", &[("count", &r.achievements), ("icons", &r.icons)])
+        });
+    }
+    let mut add = |n: usize, key: &str| {
+        if n > 0 {
+            parts.push(tf(&format!("emulator.gameData.{}", key), &[("count", &n)]));
+        }
+    };
+    add(r.stats, "stats");
+    add(r.leaderboards, "leaderboards");
+    add(r.items, "items");
+    add(r.controller_sets, "controller");
+    add(r.cloud_dirs, "cloud");
+    add(r.watcher_schemas, "watcher");
+    add(r.media_files, "mediaFiles");
+    let mut lines = vec![if parts.is_empty() {
+        t("emulator.gameData.nothing")
+    } else {
+        tf("emulator.gameData.written", &[("list", &parts.join(", "))])
+    }];
+    for note in &r.notes {
+        lines.push(t(&format!("emulator.{}", note)));
+    }
+    if controller_note && r.controller_sets > 0 {
+        lines.push(t("emulator.gameData.controllerBuild"));
+    }
+    lines.join("\n")
+}
+
 fn count_bucket(n: usize) -> &'static str {
     match n {
         0 => "0",
@@ -659,6 +705,7 @@ impl App {
                     })),
                 );
                 if failed == 0 {
+                    let game_language = gathered.as_ref().and_then(|g| g.language.clone());
                     self.prefs.last_emu_settings = Some(gathered.unwrap_or_default());
                     self.save_prefs();
                     let dlc_note = results.iter().find_map(|r| r.dlc_count).map(|n| {
@@ -669,6 +716,7 @@ impl App {
                         }
                     });
                     let targets_c = targets.clone();
+                    let game_paths: Vec<String> = targets.iter().map(|t| t.path.clone()).collect();
                     self.sync_bypass(targets_c, move |app, extra| {
                         let Some(e) = app.emu.as_mut() else { return };
                         e.busy = false;
@@ -685,12 +733,14 @@ impl App {
                             msg.push_str(&extra);
                         }
                         e.status = Some((Tone::Success, msg));
+                        let app_id = e.app_id.clone();
                         if e.standalone {
                             app.refresh_emu_scan();
                         } else {
                             e.apply_complete = true;
                             app.focus = Some(Fid::new("emu.apply"));
                         }
+                        app.emu_write_game_data(game_paths, app_id, game_language);
                     });
                 } else {
                     let details = results
@@ -812,6 +862,58 @@ impl App {
                 }
             }
         }
+    }
+
+    fn emu_write_game_data(&mut self, paths: Vec<String>, app_id: String, language: Option<String>) {
+        if paths.is_empty() || app_id.is_empty() {
+            return;
+        }
+        let controller_note = !self.emu.as_ref().is_some_and(|e| e.experimental)
+            && paths.iter().any(|p| p.to_ascii_lowercase().ends_with(".dll"));
+        let core = self.core.clone();
+        let data = self.data_dir.clone();
+        self.spawn(async move {
+            let r = smd_core::ops::emulator::generate_game_data(&core, &data, paths, app_id, language).await;
+            apply(move |app| {
+                let line = match &r {
+                    Ok(res) => {
+                        app.emit("game_data_written", Some(serde_json::json!({
+                            "source": res.source,
+                            "achievements": count_bucket(res.achievements),
+                            "achievement_languages": count_bucket(res.achievement_languages),
+                            "stats": count_bucket(res.stats),
+                            "languages": count_bucket(res.languages),
+                            "depots": count_bucket(res.depots),
+                            "branches": count_bucket(res.branches),
+                            "leaderboards": count_bucket(res.leaderboards),
+                            "items": count_bucket(res.items),
+                            "controller": res.controller_sets > 0,
+                            "cloud_dirs": count_bucket(res.cloud_dirs),
+                            "watcher": res.watcher_schemas > 0,
+                            "media": smd_core::services::game_data::MediaLevel::parse(&app.settings.game_data_media).as_str(),
+                            "icons": if res.achievements > 0 { Some(res.icons >= res.achievements) } else { None },
+                            "notes": if res.notes.is_empty() { vec!["none"] } else { res.notes.iter().map(|n| n.trim_start_matches("gameData.")).collect::<Vec<_>>() },
+                        })));
+                        game_data_summary(res, controller_note)
+                    }
+                    Err(err) => {
+                        let key = crate::i18n::error_key(err).unwrap_or_else(|| "unmatched".to_string());
+                        if app.reported_errors.len() < 40 && app.reported_errors.insert(format!("game_data:{}", key)) {
+                            app.emit("error_shown", Some(serde_json::json!({ "area": "game_data", "key": key })));
+                        }
+                        tf("emulator.gameData.failed", &[("message", err)])
+                    }
+                };
+                if let Some(e) = app.emu.as_mut() {
+                    if let Some((_, msg)) = e.status.as_mut() {
+                        msg.push_str("\n\n");
+                        msg.push_str(&line);
+                    } else {
+                        e.status = Some((if r.is_ok() { Tone::Success } else { Tone::Error }, line));
+                    }
+                }
+            })
+        });
     }
 
     fn sync_bypass(
