@@ -987,7 +987,8 @@ smd search 220 --manifests 0        <span class="cm"># sources and depots for an
 smd download 220 --list             <span class="cm"># show what would be downloaded</span>
 smd download 220 --depots 221,222 -o /data/games
 smd download game.lua --json        <span class="cm"># progress as JSON lines</span>
-smd history</code></pre>
+smd history
+smd telemetry on                    <span class="cm"># opt in to anonymous usage statistics, also off and status</span></code></pre>
               </div>
               <p>Options of <code>smd download</code>, with the matching environment variable where there is one:</p>
               <ul class="rows">
@@ -1034,6 +1035,7 @@ smd history</code></pre>
                 <li>The container runs as user <code>smd</code>, UID 1000. A host folder mounted as <code>/games</code> must be writable for that UID, for example with <code>sudo chown 1000:1000 games</code>, or run with <code>--user "$(id -u):$(id -g)"</code> and mount host folders for both <code>/data</code> and <code>/games</code></li>
                 <li><code>docker stop</code> and Ctrl+C cancel the download cleanly with exit code <code>130</code>, the same way as the cancel button</li>
                 <li>Pass a ManifestHub key with <code>-e SMD_MANIFESTHUB_KEY=...</code></li>
+                <li>Anonymous usage statistics are off in the container. Switch them on with <code>-e SMD_TELEMETRY=on</code>, or once with <code>smd telemetry on</code>, which is stored in <code>/data</code></li>
                 <li>The interactive interface works in a container too: add <code>-it</code> and leave out the command. Without <code>-it</code> the image prints the help</li>
                 <li>The image uses the native engine. DepotDownloaderMod needs glibc and does not run in it</li>
               </ul>

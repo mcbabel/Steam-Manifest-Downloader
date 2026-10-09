@@ -12,12 +12,19 @@ On first launch the app shows a dialog asking whether you want to help.
 default if you close the dialog. You can change your choice anytime in
 **Settings → Privacy & diagnostics → Anonymous Usage Statistics**.
 
+The command line version (`smd download`, `smd search`, `smd history`, also in
+Docker) never asks and sends nothing unless you switch it on: with the
+terminal interface, with `smd telemetry on`, or with the environment variable
+`SMD_TELEMETRY=on`. `SMD_TELEMETRY=off` switches it off for that run, in every
+version of the app. `smd telemetry status` shows the current state.
+
 ## What is collected
 
 When telemetry is enabled, the app sends small events describing:
 
 - App version, build channel (`stable` / `dev` / `dev-local`), OS, architecture
-- Whether you use the desktop app or the terminal version (`gui` / `tui`),
+- Whether you use the desktop app, the terminal interface or the command line
+  (`gui` / `tui` / `cli`),
   how it was installed (`installer`, `portable`, `appimage`, `system`,
   `flatpak`, `docker`, ...) and the language the app is shown in
 - A random install UUID generated once on first accept (no link to your
@@ -62,6 +69,27 @@ When telemetry is enabled, the app sends small events describing:
     GitHub if you submit it there yourself
   - `crash`, `error_shown` and `download_interrupted` — described under
     *Errors and crashes* below
+  - `download_paused` — a download was paused or resumed
+  - `shutdown_after` — the shut-down-after-download countdown started, was
+    stopped, or turned the PC off; `followup` — whether the steps skipped by
+    the shutdown were taken up on the next start
+  - `queue_action` — something was added to the download queue, or the queue
+    was started, stopped or cleared, with the queue length as a range
+  - `history_action` — the history was opened, or an entry was updated,
+    checked, downloaded again, opened in the file manager, edited, removed or
+    cleared; `updates_found` — how many history entries have an update, as a
+    range
+  - `steamless_used`, `api_bypass`, `dlc_merged` — the DRM removal, the Steam
+    API check bypass or the DLC depot merge ran, and whether it worked
+  - `manifest_tool` — the newest manifest ID was fetched or a manifest file
+    was picked for a depot. Never the ID or the file
+  - `shortcut_key` — a keyboard shortcut was used (`open`, `search`,
+    `history`, `settings`)
+  - `settings_saved` — which settings were changed, by name only (for example
+    `proxy` or `max_retries`), never the new value
+  - `cli_command` — which command line command ran (`download`, `search`,
+    `history`) and which of its options were used, as true or false
+  - `heartbeat` and `session_end` — see *Time in the app* below
 
 ### Settings snapshot
 
@@ -140,6 +168,13 @@ it belongs to are never transmitted — only these labels:
 label can never be derived from — or contain — a file path or a system message.
 This exists because a rename in an upstream emulator release silently broke every
 32-bit patch, and nothing surfaced it until a user reported it by hand.
+
+## Time in the app
+
+To see how long the app stays open, every 15 minutes while it runs and once
+when it closes, the app sends how many minutes it has been open, how many of
+them the window was in front (not for the command line), and whether a
+download was running. Nothing about what you looked at or typed is part of it.
 
 ## Errors and crashes
 

@@ -215,6 +215,7 @@ smd download 220 --list             # show what would be downloaded
 smd download 220 --depots 221,222 -o /data/games
 smd download game.lua --json        # progress as JSON lines
 smd history
+smd telemetry on                    # opt in to anonymous usage statistics (off, status)
 ```
 
 | Option / variable | Meaning |
@@ -268,6 +269,9 @@ docker run --rm \
 - `docker stop` and Ctrl+C cancel the download cleanly (exit code `130`), the
   same way as the cancel button in the UI.
 - Pass a ManifestHub key with `-e SMD_MANIFESTHUB_KEY=...`.
+- Anonymous usage statistics are off in the container. Help out with
+  `-e SMD_TELEMETRY=on`, or switch them on once with `smd telemetry on`, which
+  is stored in `/data`. See [PRIVACY.md](PRIVACY.md).
 - The interactive UI also works in a container: `docker run --rm -it -v smd-data:/data -v "$PWD/games:/games" ghcr.io/mcbabel/steam-manifest-downloader`. Without `-it` the image prints the help.
 - The image uses the default native engine. The DepotDownloaderMod engine
   needs glibc and does not run in it.
