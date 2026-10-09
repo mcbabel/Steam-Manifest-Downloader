@@ -152,6 +152,8 @@ pub enum Action {
     EmuSelectAllFiles,
     EmuVariant(bool),
     EmuToggleBypass,
+    EmuToggleGameData,
+    EmuWriteGameData,
     EmuSection(usize),
     EmuToggleField(usize),
     EmuApply,
@@ -209,5 +211,7 @@ pub enum Action {
     TelemetryAnswer(bool),
     LanguageChosen(&'static str),
     UpdateSkip,
+    UpdateLater,
+    ReportBug,
     UpdateOpen,
 }

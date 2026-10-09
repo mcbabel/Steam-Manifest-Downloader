@@ -179,12 +179,17 @@
       "saved": "Einstellungen gespeichert.",
       "copied": "Debug-Infos in die Zwischenablage kopiert.",
       "steamPathCheck": "Prüfen",
-      "steamPathWhere": "Lege den Steam-Ordner unter Einstellungen → Downloads fest."
+      "steamPathWhere": "Lege den Steam-Ordner unter Einstellungen → Downloads fest.",
+      "feedback": "Rückmeldung",
+      "reportBug": "Fehler melden",
+      "reportBugHint": "Öffnet ein GitHub-Issue im Browser, in dem Version und Debug-Infos schon eingetragen sind. Du brauchst ein GitHub-Konto.",
+      "reportBugOpened": "Fehlerbericht: {url} (Link kopiert)"
     },
     "update": {
       "openRelease": "Release-Seite öffnen",
       "opened": "Release-Seite: {url} (Link kopiert)",
-      "upToDate": "Du hast die neueste Version."
+      "upToDate": "Du hast die neueste Version.",
+      "current": "installiert: v{version}"
     },
     "errors": {
       "noExe": "keine Programmdatei ausgewählt",

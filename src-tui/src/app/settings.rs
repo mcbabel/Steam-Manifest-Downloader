@@ -71,6 +71,71 @@ pub fn build_info(settings: &settings_service::Settings) -> Vec<(String, String)
     ]
 }
 
+const ISSUE_URL: &str = "https://github.com/MCbabel/Steam-Manifest-Downloader/issues/new";
+
+fn query_escape(value: &str) -> String {
+    let mut out = String::with_capacity(value.len());
+    for b in value.bytes() {
+        match b {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => out.push(b as char),
+            b' ' => out.push('+'),
+            _ => out.push_str(&format!("%{:02X}", b)),
+        }
+    }
+    out
+}
+
+pub fn bug_report_url(settings: &settings_service::Settings) -> String {
+    let os = match std::env::consts::OS {
+        "windows" => "Windows",
+        "linux" => "Linux",
+        "macos" => "macOS",
+        other => other,
+    };
+    let engine = if settings.use_native_downloader {
+        "native"
+    } else {
+        "ddm"
+    };
+    let diagnostic = if settings.telemetry_consent == TelemetryConsent::Accepted {
+        smd_core::services::telemetry::diagnostic_id(&settings.installation_id)
+    } else {
+        "statistics off".to_string()
+    };
+    let environment = [
+        format!(
+            "App version: {} ({}, {})",
+            VERSION,
+            option_env!("SMD_BUILD_CHANNEL").unwrap_or("dev-local"),
+            option_env!("SMD_GIT_SHA").unwrap_or("unknown")
+        ),
+        format!(
+            "Platform: {}/{}, {} (terminal)",
+            std::env::consts::OS,
+            std::env::consts::ARCH,
+            smd_core::services::telemetry::package_kind()
+        ),
+        format!("Engine: {}", engine),
+        format!("Language: {}", i18n::language()),
+        format!("Diagnostic ID: {}", diagnostic),
+    ]
+    .join("\n");
+    let fields = [
+        ("template", "bug_report.yml".to_string()),
+        ("title", "[Bug] ".to_string()),
+        ("version", VERSION.to_string()),
+        ("os", os.to_string()),
+        ("environment", environment),
+        ("extra", "Sent from the terminal version.".to_string()),
+    ];
+    let query = fields
+        .iter()
+        .map(|(k, v)| format!("{}={}", k, query_escape(v)))
+        .collect::<Vec<_>>()
+        .join("&");
+    format!("{}?{}", ISSUE_URL, query)
+}
+
 impl App {
     pub(super) fn dispatch_settings(&mut self, a: &Action) -> bool {
         match a {
@@ -204,6 +269,13 @@ impl App {
                     self.emit("diagnostics_copied", None);
                 }
                 self.toast(Tone::Success, t("tui.settings.copied"));
+            }
+            Action::ReportBug => {
+                let url = bug_report_url(&self.settings);
+                super::modal::open_url(&url);
+                term::copy_to_clipboard(&url);
+                self.emit("bug_report_opened", Some(serde_json::json!({ "source": "tui", "diag": true, "log": false })));
+                self.toast(Tone::Info, tf("tui.settings.reportBugOpened", &[("url", &url)]));
             }
             Action::CheckUpdates => self.check_updates(true),
             Action::CheckSteamDir => {
@@ -940,6 +1012,27 @@ impl App {
         hint(&mut sv.buf, r, &ht);
         sv.gap(1);
         let r = sv.next(1);
+        widgets::heading(&mut sv.buf, r, &t("tui.settings.feedback"));
+        let r = sv.next(1);
+        widgets::button(
+            &mut sv.buf,
+            ctx,
+            r.x,
+            r.y,
+            r.width,
+            &ButtonSpec::new(
+                t("tui.settings.reportBug"),
+                Fid::new("settings.reportBug"),
+                Action::ReportBug,
+                Btn::Secondary,
+            ),
+        );
+        let ht = t("tui.settings.reportBugHint");
+        let h = widgets::wrap_height(&ht, w);
+        let r = sv.next(h);
+        hint(&mut sv.buf, r, &ht);
+        sv.gap(1);
+        let r = sv.next(1);
         widgets::heading(&mut sv.buf, r, &t("tui.settings.paths"));
         let paths = [
             (
@@ -1109,5 +1202,20 @@ impl App {
         );
         ctx.focusable(list_fid, rest, Kind::List(ListId::SettingsSources), None);
         ctx.scroll_region(rest, ScrollTarget::List(ListId::SettingsSources));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn bug_report_url_fills_the_issue_form() {
+        let url = bug_report_url(&settings_service::Settings::default());
+        assert!(url.starts_with("https://github.com/MCbabel/Steam-Manifest-Downloader/issues/new?template=bug_report.yml&title=%5BBug%5D+&version="));
+        assert!(url.contains("&environment="));
+        assert!(!url.contains(' '));
+        assert!(!url.contains('\n'));
+        assert_eq!(query_escape("a b/ü\n"), "a+b%2F%C3%BC%0A");
     }
 }

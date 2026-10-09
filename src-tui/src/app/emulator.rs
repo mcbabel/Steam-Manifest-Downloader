@@ -538,6 +538,26 @@ impl App {
                     e.section = *i;
                 }
             }
+            Action::EmuToggleGameData => {
+                self.prefs.emu_game_data_off = !self.prefs.emu_game_data_off;
+                self.save_prefs();
+            }
+            Action::EmuWriteGameData => {
+                let Some(e) = self.emu.as_mut() else { return true };
+                if e.busy {
+                    return true;
+                }
+                let targets = e.selected_targets();
+                if targets.is_empty() || e.app_id.is_empty() {
+                    e.status = Some((Tone::Error, t("emulator.applyNoSelection")));
+                    return true;
+                }
+                e.status = Some((Tone::Busy, t("emulator.gameData.busy")));
+                let language = e.gather().and_then(|g| g.language);
+                let app_id = e.app_id.clone();
+                let paths = targets.iter().map(|t| t.path.clone()).collect();
+                self.emu_write_game_data(paths, app_id, language);
+            }
             Action::EmuToggleField(i) => {
                 if let (Some(e), Some(f)) = (self.emu.as_mut(), BOOL_FIELDS.get(*i)) {
                     let v = e.bools.get(f.key).copied().unwrap_or(false);
@@ -740,7 +760,9 @@ impl App {
                             e.apply_complete = true;
                             app.focus = Some(Fid::new("emu.apply"));
                         }
-                        app.emu_write_game_data(game_paths, app_id, game_language);
+                        if !app.prefs.emu_game_data_off {
+                            app.emu_write_game_data(game_paths, app_id, game_language);
+                        }
                     });
                 } else {
                     let details = results
@@ -905,11 +927,15 @@ impl App {
                     }
                 };
                 if let Some(e) = app.emu.as_mut() {
-                    if let Some((_, msg)) = e.status.as_mut() {
-                        msg.push_str("\n\n");
-                        msg.push_str(&line);
-                    } else {
-                        e.status = Some((if r.is_ok() { Tone::Success } else { Tone::Error }, line));
+                    match e.status.as_mut() {
+                        Some((tone, msg)) if *tone != Tone::Busy => {
+                            msg.push_str("\n\n");
+                            msg.push_str(&line);
+                        }
+                        _ => {
+                            let found = r.as_ref().is_ok_and(|res| res.achievements > 0 || res.languages > 0);
+                            e.status = Some((if found { Tone::Success } else { Tone::Error }, line));
+                        }
                     }
                 }
             })
@@ -1698,6 +1724,41 @@ impl App {
             &mut sv.buf,
             Rect::new(r.x + 4, r.y, r.width.saturating_sub(4), r.height),
             &bh,
+        );
+        col.gap(1);
+        let game_data_on = !self.prefs.emu_game_data_off;
+        let r = col.next(1);
+        widgets::checkbox(
+            &mut sv.buf,
+            ctx,
+            r,
+            game_data_on,
+            &t("emulator.gameData.label"),
+            Fid::new("emu.gameData"),
+            Action::EmuToggleGameData,
+            true,
+        );
+        let gh = t("emulator.gameData.hint");
+        let h = widgets::wrap_height(&gh, lw.saturating_sub(4));
+        let r = col.next(h);
+        hint(
+            &mut sv.buf,
+            Rect::new(r.x + 4, r.y, r.width.saturating_sub(4), r.height),
+            &gh,
+        );
+        let r = col.next(1);
+        widgets::button(
+            &mut sv.buf,
+            ctx,
+            r.x + 4,
+            r.y,
+            r.width.saturating_sub(4),
+            &ButtonSpec::new(
+                t("emulator.gameData.generate"),
+                Fid::new("emu.gameDataNow"),
+                Action::EmuWriteGameData,
+                Btn::Secondary,
+            ),
         );
         let left_end = col.y;
 

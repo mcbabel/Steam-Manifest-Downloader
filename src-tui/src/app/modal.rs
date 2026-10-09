@@ -270,6 +270,11 @@ impl App {
                     self.prefs.skipped_update = Some(u.version.clone());
                     self.save_prefs();
                 }
+                self.emit("update_dismissed", Some(serde_json::json!({ "action": "skip" })));
+                self.close_modal();
+            }
+            Action::UpdateLater => {
+                self.emit("update_dismissed", Some(serde_json::json!({ "action": "later" })));
                 self.close_modal();
             }
             Action::UpdateOpen => {
@@ -689,7 +694,12 @@ fn render_update(buf: &mut Buffer, area: Rect, ctx: &mut Ctx, u: &UpdateInfo) {
         &t("modals.update.title"),
     );
     let mut y = inner.y + 1;
-    let mut line = format!("{} v{}", t("modals.update.newVersion"), u.version);
+    let mut line = format!(
+        "{} v{}   {}",
+        t("modals.update.newVersion"),
+        u.version,
+        tf("tui.update.current", &[("version", &super::VERSION)])
+    );
     if let Some(d) = &u.date {
         line.push_str(&format!("   {} {}", t("modals.update.released"), d));
     }
@@ -727,7 +737,7 @@ fn render_update(buf: &mut Buffer, area: Rect, ctx: &mut Ctx, u: &UpdateInfo) {
         ButtonSpec::new(
             t("modals.update.later"),
             f("modal.no"),
-            Action::CloseModal,
+            Action::UpdateLater,
             Btn::Secondary,
         ),
         ButtonSpec::new(
@@ -803,18 +813,110 @@ fn render_help(buf: &mut Buffer, area: Rect, ctx: &mut Ctx) {
     );
 }
 
+fn release_inline(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let chars: Vec<char> = text.chars().collect();
+    let mut i = 0;
+    while i < chars.len() {
+        let c = chars[i];
+        let image = c == '!' && chars.get(i + 1) == Some(&'[');
+        if c == '[' || image {
+            let start = if image { i + 2 } else { i + 1 };
+            let mut depth = 1;
+            let mut k = start;
+            while k < chars.len() && depth > 0 {
+                match chars[k] {
+                    '[' => depth += 1,
+                    ']' => depth -= 1,
+                    _ => {}
+                }
+                k += 1;
+            }
+            if depth == 0 && chars.get(k) == Some(&'(') {
+                if let Some(close) = chars[k..].iter().position(|&ch| ch == ')') {
+                    let label: String = chars[start..k - 1].iter().collect();
+                    if !image {
+                        out.push_str(&release_inline(&label));
+                    }
+                    i = k + close + 1;
+                    continue;
+                }
+            }
+        }
+        out.push(c);
+        i += 1;
+    }
+    out.replace(['*', '`'], "")
+}
+
 fn markdown_to_text(md: &str) -> String {
-    md.lines()
-        .map(|l| {
-            let l = l.trim_end();
-            let l = l.trim_start_matches('#').trim_start();
-            let l = if let Some(rest) = l.strip_prefix("- ").or_else(|| l.strip_prefix("* ")) {
-                format!("• {}", rest)
-            } else {
-                l.to_string()
-            };
-            l.replace("**", "").replace('`', "")
-        })
-        .collect::<Vec<_>>()
-        .join("\n")
+    let mut lines: Vec<String> = Vec::new();
+    let mut skip_level = 0usize;
+    for raw in md.lines() {
+        let trimmed = raw.trim();
+        let level = trimmed.chars().take_while(|&c| c == '#').count();
+        let is_heading = level > 0 && trimmed[level..].starts_with(' ');
+        if is_heading && skip_level > 0 && level <= skip_level {
+            skip_level = 0;
+        }
+        if skip_level > 0 {
+            continue;
+        }
+        if is_heading {
+            let title = trimmed[level..].trim();
+            let plain: String = title
+                .chars()
+                .filter(|c| c.is_alphanumeric() || c.is_whitespace())
+                .collect();
+            let plain = plain.trim().to_lowercase();
+            if level >= 2 && (plain.ends_with("downloads") || plain.ends_with("download")) {
+                skip_level = level;
+                continue;
+            }
+            lines.push(release_inline(title));
+            continue;
+        }
+        if trimmed.len() >= 3 && trimmed.chars().all(|c| c == '-' || c == '*' || c == '_') {
+            lines.push(String::new());
+            continue;
+        }
+        if trimmed.starts_with('|') {
+            continue;
+        }
+        let text = if let Some(rest) = trimmed.strip_prefix("- ").or_else(|| trimmed.strip_prefix("* ")) {
+            format!("• {}", release_inline(rest))
+        } else {
+            release_inline(trimmed)
+        };
+        if text.trim().is_empty() && !trimmed.is_empty() {
+            continue;
+        }
+        lines.push(text.trim_end().to_string());
+    }
+    let mut out: Vec<String> = Vec::new();
+    for l in lines {
+        if l.is_empty() && out.last().is_none_or(|p: &String| p.is_empty()) {
+            continue;
+        }
+        out.push(l);
+    }
+    while out.last().is_some_and(|l| l.is_empty()) {
+        out.pop();
+    }
+    out.join("\n")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn release_notes_drop_badges_links_and_downloads() {
+        let md = "## It's here 🎉\n\nSee [the docs](https://x.y/docs) and **this** *now*.\n\n---\n\n### 🖥️ New\n\n- `smd` in the terminal, by @a in #3\n\n---\n\n### 📦 Downloads\n\n[![Win](https://img/b.svg)](https://x/setup.exe) [![Linux](https://img/c.svg)](https://x/a)\n\n| File | What |\n|---|---|\n| a | b |\n\nOn Arch: paru\n";
+        let text = markdown_to_text(md);
+        assert_eq!(
+            text,
+            "It's here 🎉\n\nSee the docs and this now.\n\n🖥️ New\n\n• smd in the terminal, by @a in #3"
+        );
+    }
 }

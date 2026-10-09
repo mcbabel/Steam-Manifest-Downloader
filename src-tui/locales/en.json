@@ -179,12 +179,17 @@
       "saved": "Settings saved.",
       "copied": "Debug info copied to the clipboard.",
       "steamPathCheck": "Check",
-      "steamPathWhere": "Set the Steam folder under Settings → Downloads."
+      "steamPathWhere": "Set the Steam folder under Settings → Downloads.",
+      "feedback": "Feedback",
+      "reportBug": "Report a bug",
+      "reportBugHint": "Opens a GitHub issue in your browser with the version and the debug info filled in. You need a GitHub account.",
+      "reportBugOpened": "Bug report: {url} (link copied)"
     },
     "update": {
       "openRelease": "Open release page",
       "opened": "Release page: {url} (link copied)",
-      "upToDate": "You're on the latest version."
+      "upToDate": "You're on the latest version.",
+      "current": "installed: v{version}"
     },
     "errors": {
       "noExe": "no executable selected",

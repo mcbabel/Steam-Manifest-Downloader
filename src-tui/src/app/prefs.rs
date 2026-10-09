@@ -14,6 +14,7 @@ pub struct Prefs {
     pub skipped_update: Option<String>,
     pub mh_api_key: String,
     pub last_emu_settings: Option<EmuSettings>,
+    pub emu_game_data_off: bool,
 }
 
 impl Prefs {
