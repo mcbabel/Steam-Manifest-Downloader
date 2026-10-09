@@ -1,0 +1,80 @@
+name: Bug report
+description: Report something that is broken or behaves unexpectedly
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please check the [Troubleshooting and FAQ](https://smd.mcbabel.de/documentation/#troubleshooting) and the [open issues](https://github.com/MCbabel/Steam-Manifest-Downloader/issues) first.
+
+        Security problems do not belong here. Report them privately as described in [SECURITY.md](https://github.com/MCbabel/Steam-Manifest-Downloader/blob/main/SECURITY.md).
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: Describe the problem. If there was an error message, copy it in here.
+      placeholder: After the download finished the emulator step showed "..."
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: How can the problem be triggered again?
+      placeholder: |
+        1. Drop a .lua file for App ID ...
+        2. Select ...
+        3. Click ...
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What should have happened instead?
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      description: Shown in the settings under Debug Info, or with `smd --version`.
+      placeholder: "1.5.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: package
+    attributes:
+      label: How is it installed?
+      options:
+        - Windows installer
+        - Windows standalone ZIP
+        - Linux AppImage
+        - AUR package
+        - Terminal version (smd)
+        - Docker image
+        - Built from source
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: Windows 11 24H2, Ubuntu 24.04, Arch Linux ...
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Diagnostic info
+      description: In the settings under Debug Info, use the copy button next to it and paste the result here.
+      render: text
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log output
+      description: The last lines of the download log or the terminal output, if they show the problem.
+      render: text
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Screenshots, App ID of the game, workarounds you tried, related issues.
