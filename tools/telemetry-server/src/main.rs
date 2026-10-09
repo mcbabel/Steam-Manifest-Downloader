@@ -19,6 +19,8 @@ use tokio::{
 use tower_http::{limit::RequestBodyLimitLayer, trace::TraceLayer};
 use tracing::{info, warn};
 
+mod report;
+
 const MAX_PAYLOAD_BYTES: usize = 64 * 1024;
 
 struct AppState {
@@ -31,6 +33,10 @@ struct AppState {
 async fn main() -> Result<()> {
     if std::env::args().any(|a| a == "--gen-keypair" || a == "--gen-key") {
         return gen_keypair();
+    }
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    if args.first().map(String::as_str) == Some("report") {
+        return report::run(&args[1..]);
     }
 
     tracing_subscriber::fmt()

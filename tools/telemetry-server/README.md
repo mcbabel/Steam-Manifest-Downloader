@@ -37,6 +37,20 @@ client sends when the user opts in.
   StateDirectory=smd-telemetry
   ```
 
+## Report
+
+`smd-telemetry-server report` turns the stored events into one HTML file
+with active installs, success rate per version, the steps downloads fail
+at, crashes, shown errors, interrupted downloads and feature use.
+
+```sh
+smd-telemetry-server report --data ./data --out report.html --days 90
+```
+
+Only the `stable` channel is counted unless `--all-channels` is given.
+`--data` defaults to `TELEMETRY_DATA_DIR`. The report needs no key, it
+reads the decrypted `.jsonl` files.
+
 ## Storage format
 
 Each line is `{"received_at": "RFC3339", "payload": {...decrypted envelope...}}`.
