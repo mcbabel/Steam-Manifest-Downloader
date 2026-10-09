@@ -229,6 +229,9 @@ const els = {
   buildInfoDiagnostic: $('#build-info-diagnostic'),
   btnCopyBuildInfo: $('#btn-copy-build-info'),
   btnHistory: $('#btn-history'),
+  btnReportBug: $('#btn-report-bug'),
+  btnReportFailure: $('#btn-report-failure'),
+  bugReportModal: $('#bug-report-modal'),
   historyModal: $('#history-modal'),
   historyList: $('#history-list'),
   btnQueue: $('#btn-queue'),
@@ -1817,6 +1820,7 @@ async function runDownload(downloadConfig, depots, fromQueue = false) {
   }, state.dlContext));
 
   requestNotificationPermission();
+  if (els.btnReportFailure) els.btnReportFailure.classList.add('hidden');
 
   goToStep(3);
   initProgressUI(depots);
@@ -2724,6 +2728,8 @@ function showCompletion(success, message) {
   els.btnCancel.classList.add('hidden');
   if (els.btnPause) els.btnPause.classList.add('hidden');
   state.downloadFailed = !success;
+  state.lastFailureText = success ? null : message;
+  if (els.btnReportFailure) els.btnReportFailure.classList.toggle('hidden', success);
   if (els.btnNextStep) {
     els.btnNextStep.classList.remove('hidden');
     if (success) {
@@ -3183,6 +3189,144 @@ async function copyBuildInfo() {
   } catch (e) {
     console.error('Clipboard write failed:', e);
   }
+}
+
+const ISSUE_URL = 'https://github.com/MCbabel/Steam-Manifest-Downloader/issues/new';
+const ISSUE_URL_LIMIT = 7000;
+
+async function diagnosticLines() {
+  let info = state.buildInfo;
+  if (!info) {
+    try { info = await invoke('get_build_info'); state.buildInfo = info; } catch (_) { info = {}; }
+  }
+  return [
+    `App version: ${info.version || 'unknown'} (${info.channel || 'unknown'}, ${info.gitSha || 'unknown'})`,
+    `Platform: ${info.targetOs || '?'}/${info.targetArch || '?'}, ${info.package || 'unknown'}`,
+    `Engine: ${info.engine || 'unknown'}`,
+    `Language: ${window.i18n.getCurrentLocale()}`,
+    `Diagnostic ID: ${info.diagnosticId || 'statistics off'}`,
+  ];
+}
+
+function recentLogLines(max) {
+  const lines = Array.from(els.terminalOutput ? els.terminalOutput.children : []).map(n => n.textContent);
+  return lines.slice(-max);
+}
+
+async function openBugReport(prefill) {
+  const modal = els.bugReportModal;
+  if (!modal) return;
+  const fields = { title: '#bug-title', what: '#bug-what', steps: '#bug-steps', expected: '#bug-expected' };
+  for (const [key, sel] of Object.entries(fields)) {
+    const el = modal.querySelector(sel);
+    el.value = (prefill && prefill[key]) || '';
+    el.classList.remove('is-invalid');
+  }
+  const hasLog = recentLogLines(1).length > 0;
+  const logToggle = modal.querySelector('#bug-include-log');
+  logToggle.checked = !!(prefill && prefill.log && hasLog);
+  logToggle.disabled = !hasLog;
+  logToggle.closest('.settings-row').classList.toggle('is-disabled', !hasLog);
+  modal.querySelector('#bug-include-diag').checked = true;
+  modal.querySelector('#bug-report-error').classList.add('hidden');
+  modal.querySelector('#bug-diag-preview').textContent = (await diagnosticLines()).join(' · ');
+  state.bugReportSource = (prefill && prefill.source) || 'manual';
+  modal.classList.remove('hidden');
+  modal.querySelector('#bug-title').focus();
+}
+
+function closeBugReport() {
+  if (els.bugReportModal) els.bugReportModal.classList.add('hidden');
+}
+
+function issueBody(parts) {
+  const section = (title, text) => `## ${title}\n\n${text.trim() || '_No answer_'}\n`;
+  let body = [
+    section('Description', parts.what),
+    section('Steps to reproduce', parts.steps),
+    section('Expected behavior', parts.expected),
+  ].join('\n');
+  if (parts.diag) body += `\n## Environment\n\n${parts.diag.map(l => `- ${l}`).join('\n')}\n`;
+  if (parts.log && parts.log.length) {
+    body += `\n## Logs / terminal output\n\n<details>\n<summary>Last lines of the download log</summary>\n\n\`\`\`\n${parts.log.join('\n')}\n\`\`\`\n\n</details>\n`;
+  }
+  body += '\n_Sent from the app\'s bug report form._\n';
+  return body;
+}
+
+function issueUrl(title, body) {
+  const params = new URLSearchParams({ template: 'bug_report.md', labels: 'bug', title: `[Bug] ${title}`, body });
+  return `${ISSUE_URL}?${params.toString()}`;
+}
+
+async function submitBugReport() {
+  const modal = els.bugReportModal;
+  const get = (sel) => modal.querySelector(sel).value;
+  const titleEl = modal.querySelector('#bug-title');
+  const whatEl = modal.querySelector('#bug-what');
+  const errorEl = modal.querySelector('#bug-report-error');
+  titleEl.classList.toggle('is-invalid', !titleEl.value.trim());
+  whatEl.classList.toggle('is-invalid', !whatEl.value.trim());
+  if (!titleEl.value.trim() || !whatEl.value.trim()) {
+    errorEl.textContent = window.i18n.t('bugReport.required');
+    errorEl.classList.remove('hidden');
+    (titleEl.value.trim() ? whatEl : titleEl).focus();
+    return;
+  }
+  const withDiag = modal.querySelector('#bug-include-diag').checked;
+  const withLog = modal.querySelector('#bug-include-log').checked;
+  const parts = {
+    what: get('#bug-what'),
+    steps: get('#bug-steps'),
+    expected: get('#bug-expected'),
+    diag: withDiag ? await diagnosticLines() : null,
+    log: withLog ? recentLogLines(60) : null,
+  };
+  const title = titleEl.value.trim();
+  let url = issueUrl(title, issueBody(parts));
+  while (url.length > ISSUE_URL_LIMIT && parts.log && parts.log.length > 5) {
+    parts.log = parts.log.slice(Math.ceil(parts.log.length / 3));
+    url = issueUrl(title, issueBody(parts));
+  }
+  for (const key of ['what', 'steps', 'expected']) {
+    while (url.length > ISSUE_URL_LIMIT && parts[key].length > 200) {
+      parts[key] = parts[key].slice(0, Math.floor(parts[key].length * 0.75)) + ' …';
+      url = issueUrl(title, issueBody(parts));
+    }
+  }
+  try {
+    await window.__TAURI__.shell.open(url);
+    emitEvent('bug_report_opened', { source: state.bugReportSource || 'manual', diag: withDiag, log: withLog });
+    closeBugReport();
+    showToast(window.i18n.t('bugReport.opened'), 'success', 6000);
+  } catch (e) {
+    errorEl.textContent = window.i18n.localizeError(String(e));
+    errorEl.classList.remove('hidden');
+  }
+}
+
+function initBugReport() {
+  if (!els.bugReportModal) return;
+  if (els.btnReportBug) els.btnReportBug.addEventListener('click', () => openBugReport());
+  const fromSettings = document.getElementById('btn-settings-report-bug');
+  if (fromSettings) fromSettings.addEventListener('click', () => openBugReport({ source: 'settings' }));
+  if (els.btnReportFailure) {
+    els.btnReportFailure.addEventListener('click', () => openBugReport({
+      source: 'download_failed',
+      what: state.lastFailureText ? `${window.i18n.t('bugReport.failedPrefix')}\n\n${state.lastFailureText}` : '',
+      log: true,
+    }));
+  }
+  els.bugReportModal.querySelector('#btn-bug-cancel').addEventListener('click', closeBugReport);
+  els.bugReportModal.querySelector('#btn-bug-open').addEventListener('click', submitBugReport);
+  els.bugReportModal.querySelector('.modal__backdrop').addEventListener('click', closeBugReport);
+  els.bugReportModal.querySelectorAll('#bug-title, #bug-what').forEach(el => {
+    el.addEventListener('input', () => {
+      if (el.value.trim()) el.classList.remove('is-invalid');
+      const missing = els.bugReportModal.querySelectorAll('#bug-title.is-invalid, #bug-what.is-invalid').length;
+      if (!missing) els.bugReportModal.querySelector('#bug-report-error').classList.add('hidden');
+    });
+  });
 }
 
 function closeSettings() {
@@ -4426,6 +4570,7 @@ function initEvents() {
   bindSteamPathControls();
   bindDepotSelectionSettings();
   initSettingsLayout();
+  initBugReport();
 
   if (els.btnCopyBuildInfo) {
     els.btnCopyBuildInfo.addEventListener('click', copyBuildInfo);
@@ -5117,6 +5262,7 @@ function renderHistoryEntries(entries) {
         }, state.dlContext));
 
         state.repairRunning = false;
+        if (els.btnReportFailure) els.btnReportFailure.classList.add('hidden');
         state.parsedData = { mainAppId: entry.app_id, depots: [] };
         state.gameName = entry.game_name || null;
         state.headerImage = entry.header_image || null;

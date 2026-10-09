@@ -947,5 +947,24 @@
     "bulgarian": "Bulgarisch",
     "arabic": "Arabisch",
     "indonesian": "Indonesisch"
+  },
+  "bugReport": {
+    "title": "Fehler melden",
+    "reportThis": "Diesen Fehler melden",
+    "intro": "Beschreibe, was schiefgelaufen ist. GitHub öffnet sich mit deinem ausgefüllten Bericht, dort kannst du alles prüfen, bevor du ihn absendest. Du brauchst ein GitHub-Konto.",
+    "summary": "Kurze Zusammenfassung",
+    "summaryPlaceholder": "Zum Beispiel: Download bleibt bei 40 % stehen",
+    "what": "Was ist passiert?",
+    "whatPlaceholder": "Was hast du gemacht, und was ging schief?",
+    "steps": "Schritte zum Nachstellen",
+    "stepsPlaceholder": "1. Spiel suchen\n2. Depots auswählen\n3. …",
+    "expected": "Was hast du erwartet?",
+    "includeDiag": "Diagnose-Infos anhängen",
+    "includeLog": "Letzte Zeilen des Download-Logs anhängen",
+    "includeLogHint": "Kann Ordner- und Spielnamen enthalten. Auf GitHub siehst du alles, bevor du es absendest.",
+    "open": "Auf GitHub öffnen",
+    "required": "Bitte fülle die Zusammenfassung und „Was ist passiert?“ aus.",
+    "opened": "GitHub wurde im Browser geöffnet. Prüfe den Bericht dort und sende ihn ab.",
+    "failedPrefix": "Der Download ist mit dieser Meldung fehlgeschlagen:"
   }
 }

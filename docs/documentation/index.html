@@ -823,7 +823,7 @@ setManifestid(1392863, "4398981003384795747", 13789896785)</code></pre>
                 <li><strong>Depot selection</strong>: the switch for <a href="#like-steam">Like Steam mode</a> with its options for starting right away, DLC, platform and game language. Off by default</li>
                 <li><strong>Sources &amp; network</strong>: the <a href="#settings-manifest-sources">depot sources</a>, the <a href="#api-keys-optional">Hubcap and Ryuu keys</a> and the <a href="#network">proxy</a> with its Test button</li>
                 <li><strong>Steam</strong>: the Steam folder. Empty means SMD finds Steam itself. Set it when Steam is installed somewhere else, see <a href="#linux-add-to-steam-library">Step 4</a></li>
-                <li><strong>Privacy &amp; diagnostics</strong>: <a href="#anonymous-telemetry-opt-in">anonymous usage statistics</a>, the build details and <strong>Copy Diagnostic Info</strong> for bug reports</li>
+                <li><strong>Privacy &amp; diagnostics</strong>: <a href="#anonymous-telemetry-opt-in">anonymous usage statistics</a>, the build details, <strong>Copy Diagnostic Info</strong> and <strong>Report a bug</strong></li>
               </ul>
 
               <h3 id="settings-advanced">Settings in detail <a class="alink" href="#settings-advanced" aria-label="Permalink to Settings in detail">#</a></h3>
@@ -863,6 +863,7 @@ setManifestid(1392863, "4398981003384795747", 13789896785)</code></pre>
 
               <h4 id="anonymous-telemetry-opt-in">Anonymous telemetry, opt in <a class="alink" href="#anonymous-telemetry-opt-in" aria-label="Permalink to Anonymous telemetry, opt in">#</a></h4>
               <p>SMD can send anonymous usage counters, meaning which features get used, to the maintainer's server to help prioritise development. Events are end to end encrypted with an embedded public key, so only the maintainer's server can decrypt them. It is disabled by default, the choice is asked on first launch, and it can be changed here anytime. When it is on, crashes, the names of error messages you saw and downloads that stopped because the app closed are reported too, so bugs get fixed even when nobody opens an issue. Never sent: game IDs, depot IDs, file contents, error texts, paths, IP addresses, account info. The full list is in <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/blob/main/PRIVACY.md">PRIVACY.md</a>.</p>
+              <p><strong>Report a bug</strong>, the bug icon in the header or the button here, opens a short form for a summary, what happened, the steps and what you expected. Diagnostic info is attached by default and the last lines of the download log on request. GitHub then opens in your browser with a new issue filled in, so you can check and edit everything before you send it. After a failed download, <strong>Report this error</strong> next to the result fills in the error message for you.</p>
               <p><strong>Copy Diagnostic Info</strong> copies the version, platform, install type and engine for bug reports. With telemetry on it also contains a short diagnostic ID, which lets the maintainer find the errors your app reported.</p>
 
               <h3 id="download-options">Download page options <a class="alink" href="#download-options" aria-label="Permalink to Download page options">#</a></h3>

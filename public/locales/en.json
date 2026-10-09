@@ -947,5 +947,24 @@
     "bulgarian": "Bulgarian",
     "arabic": "Arabic",
     "indonesian": "Indonesian"
+  },
+  "bugReport": {
+    "title": "Report a bug",
+    "reportThis": "Report this error",
+    "intro": "Describe what went wrong. GitHub opens with your report filled in, so you can check everything there before you send it. You need a GitHub account.",
+    "summary": "Short summary",
+    "summaryPlaceholder": "For example: Download stops at 40 %",
+    "what": "What happened?",
+    "whatPlaceholder": "What did you do, and what went wrong?",
+    "steps": "Steps to reproduce",
+    "stepsPlaceholder": "1. Search for the game\n2. Pick the depots\n3. …",
+    "expected": "What did you expect?",
+    "includeDiag": "Attach diagnostic info",
+    "includeLog": "Attach the last lines of the download log",
+    "includeLogHint": "Can contain folder and game names. You see everything on GitHub before sending.",
+    "open": "Open on GitHub",
+    "required": "Please fill in the summary and what happened.",
+    "opened": "GitHub opened in your browser. Check the report there and send it.",
+    "failedPrefix": "The download failed with this message:"
   }
 }

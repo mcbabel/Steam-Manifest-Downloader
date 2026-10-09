@@ -56,6 +56,10 @@ When telemetry is enabled, the app sends small events describing:
   - `proxy_tested` — the proxy test ran, with the proxy type (`none`, `http`,
     `https`, `socks`) and whether it worked. Never the address
   - `diagnostics_copied` — you copied the diagnostic info from the settings
+  - `bug_report_opened` — you opened a bug report from the app, where you
+    started it and whether diagnostic info and log lines were attached. The
+    text of the report is never sent through telemetry; it only goes to
+    GitHub if you submit it there yourself
   - `crash`, `error_shown` and `download_interrupted` — described under
     *Errors and crashes* below
 
@@ -67,7 +71,9 @@ value you typed: the engine (`native` / `ddm`), whether Like Steam, auto start,
 DLC, the speed limit, auto update and keep-files-on-cancel are on, the proxy
 type, how many manifest sources are configured (as a range) and whether they
 differ from the defaults, whether a Hubcap or Ryuu key and a Steam folder are
-set (true or false, never the key or the path), and the retry and chunk counts.
+set (true or false, never the key or the path), the retry and chunk counts,
+and the game language and platform picked for Like Steam (`auto` or a fixed
+label like `german` or `linux`).
 
 ### How a download was started
 

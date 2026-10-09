@@ -3386,6 +3386,59 @@ label.settings-row:hover {
   display: none;
 }
 
+.bug-report {
+  width: min(640px, 94vw);
+  max-width: none;
+  max-height: 92vh;
+  overflow-y: auto;
+  padding: 1.5rem 1.75rem;
+  text-align: left;
+}
+
+.bug-report__intro {
+  margin: 0 0 1rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.bug-report__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  margin-bottom: 1.25rem;
+}
+
+.bug-report .settings-row {
+  padding: 0.7rem 1rem;
+}
+
+.bug-report__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.bug-report__input {
+  font-family: var(--font);
+  font-size: 0.9rem;
+}
+
+textarea.bug-report__input {
+  padding: 0.6rem 0.9rem;
+  min-height: 2.6rem;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.bug-report__input.is-invalid {
+  border-color: var(--error);
+}
+
+.bug-report .modal__actions {
+  justify-content: flex-end;
+}
+
 @media (max-width: 760px) {
   .settings-modal-content.settings {
     width: 96vw;

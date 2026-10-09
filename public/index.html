@@ -58,6 +58,9 @@
           </svg>
           <span id="queue-badge" class="header__badge hidden"></span>
         </button>
+        <button id="btn-report-bug" class="btn btn--outline header__bug-btn" data-i18n-attr="title=bugReport.title,aria-label=bugReport.title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 2 1.88 1.88"/><path d="M14.12 3.88 16 2"/><path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6"/><path d="M12 20v-9"/><path d="M6.53 9C4.6 8.8 3 7.1 3 5"/><path d="M6 13H2"/><path d="M3 21c0-2.1 1.7-3.9 3.8-4"/><path d="M20.97 5c0 2.1-1.6 3.8-3.5 4"/><path d="M22 13h-4"/><path d="M17.2 17c2.1.1 3.8 1.9 3.8 4"/></svg>
+        </button>
         <button id="btn-theme-toggle" class="btn btn--outline header__theme-btn" data-i18n-attr="title=header.themeToggle,aria-label=header.themeToggle">
           <svg id="theme-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
@@ -449,6 +452,7 @@
               Pause
             </button>
           </div>
+          <button id="btn-report-failure" class="btn btn--outline hidden" data-i18n="bugReport.reportThis">Report this error</button>
           <button id="btn-next-step" class="btn btn--primary hidden" data-i18n="progress.next">
             Next
           </button>
@@ -1129,6 +1133,62 @@
     </div>
   </div>
 
+  <div id="bug-report-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="bug-report-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content bug-report">
+      <h3 class="modal__title" id="bug-report-title">
+        <span class="modal__title-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 2 1.88 1.88"/><path d="M14.12 3.88 16 2"/><path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6"/><path d="M12 20v-9"/><path d="M6.53 9C4.6 8.8 3 7.1 3 5"/><path d="M6 13H2"/><path d="M3 21c0-2.1 1.7-3.9 3.8-4"/><path d="M20.97 5c0 2.1-1.6 3.8-3.5 4"/><path d="M22 13h-4"/><path d="M17.2 17c2.1.1 3.8 1.9 3.8 4"/></svg></span>
+        <span data-i18n="bugReport.title">Report a bug</span>
+      </h3>
+      <p class="bug-report__intro" data-i18n="bugReport.intro">Describe what went wrong. GitHub opens with your report filled in, so you can check everything there before you send it. You need a GitHub account.</p>
+      <div class="bug-report__fields">
+        <label class="bug-report__field">
+          <span class="settings-row__label" data-i18n="bugReport.summary">Short summary</span>
+          <input type="text" id="bug-title" class="dd-path__input bug-report__input" maxlength="120" data-i18n-attr="placeholder=bugReport.summaryPlaceholder">
+        </label>
+        <label class="bug-report__field">
+          <span class="settings-row__label" data-i18n="bugReport.what">What happened?</span>
+          <textarea id="bug-what" class="dd-path__input bug-report__input" rows="3" data-i18n-attr="placeholder=bugReport.whatPlaceholder"></textarea>
+        </label>
+        <label class="bug-report__field">
+          <span class="settings-row__label" data-i18n="bugReport.steps">Steps to reproduce</span>
+          <textarea id="bug-steps" class="dd-path__input bug-report__input" rows="2" data-i18n-attr="placeholder=bugReport.stepsPlaceholder"></textarea>
+        </label>
+        <label class="bug-report__field">
+          <span class="settings-row__label" data-i18n="bugReport.expected">What did you expect?</span>
+          <textarea id="bug-expected" class="dd-path__input bug-report__input" rows="2"></textarea>
+        </label>
+        <div class="settings-group">
+          <label class="settings-row" for="bug-include-diag">
+            <span class="settings-row__text">
+              <span class="settings-row__label" data-i18n="bugReport.includeDiag">Attach diagnostic info</span>
+              <span class="settings-row__hint" id="bug-diag-preview"></span>
+            </span>
+            <span class="toggle-switch">
+              <input type="checkbox" id="bug-include-diag" checked>
+              <span class="toggle-switch__slider"></span>
+            </span>
+          </label>
+          <label class="settings-row" for="bug-include-log">
+            <span class="settings-row__text">
+              <span class="settings-row__label" data-i18n="bugReport.includeLog">Attach the last lines of the download log</span>
+              <span class="settings-row__hint" data-i18n="bugReport.includeLogHint">Can contain folder and game names. You see everything on GitHub before sending.</span>
+            </span>
+            <span class="toggle-switch">
+              <input type="checkbox" id="bug-include-log">
+              <span class="toggle-switch__slider"></span>
+            </span>
+          </label>
+        </div>
+        <p id="bug-report-error" class="error-message hidden"></p>
+      </div>
+      <div class="modal__actions">
+        <button id="btn-bug-cancel" class="btn btn--outline" data-modal-cancel data-i18n="settings.cancel">Cancel</button>
+        <button id="btn-bug-open" class="btn btn--primary" data-i18n="bugReport.open">Open on GitHub</button>
+      </div>
+    </div>
+  </div>
+
   <div id="settings-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title" aria-hidden="true">
     <div class="modal__backdrop"></div>
     <div class="modal__content settings-modal-content settings">
@@ -1457,6 +1517,7 @@
                 </div>
                 <div class="settings-row__actions">
                   <button type="button" id="btn-copy-build-info" class="btn btn--outline btn--small" data-i18n="settings.copyDebugInfo">Copy diagnostic info</button>
+                  <button type="button" id="btn-settings-report-bug" class="btn btn--outline btn--small" data-i18n="bugReport.title">Report a bug</button>
                   <span class="settings-row__hint" data-i18n="settings.debugInfoHint">Paste it into bug reports.</span>
                 </div>
               </div>
