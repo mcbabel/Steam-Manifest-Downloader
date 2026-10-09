@@ -39,12 +39,24 @@
   </developer>
   <screenshots>
     <screenshot type="default">
-      <image>https://raw.githubusercontent.com/MCbabel/Steam-Manifest-Downloader/main/assets/screenshots/main-large.png</image>
-      <caption>Step 1 — drop a .lua / .st file or search by App ID</caption>
+      <image>https://raw.githubusercontent.com/MCbabel/Steam-Manifest-Downloader/main/assets/screenshots/select.png</image>
+      <caption>Pick the depots like Steam would, or choose them yourself</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/MCbabel/Steam-Manifest-Downloader/main/assets/screenshots/main.png</image>
-      <caption>Native window size (900 × 700)</caption>
+      <image>https://raw.githubusercontent.com/MCbabel/Steam-Manifest-Downloader/main/assets/screenshots/download.png</image>
+      <caption>Download straight from Steam's CDN with speed and remaining time</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/MCbabel/Steam-Manifest-Downloader/main/assets/screenshots/history.png</image>
+      <caption>History with covers, update check, repair and play</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/MCbabel/Steam-Manifest-Downloader/main/assets/screenshots/emulator.png</image>
+      <caption>Patch the game with gbe_fork and write its game data</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/MCbabel/Steam-Manifest-Downloader/main/assets/screenshots/home.png</image>
+      <caption>Drop a .lua / .st file, search by App ID or patch a folder</caption>
     </screenshot>
   </screenshots>
   <releases>

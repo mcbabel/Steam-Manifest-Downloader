@@ -871,6 +871,23 @@ code {
   gap: var(--s4);
   margin-top: var(--s5);
 }
+.shots {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s4);
+  margin-top: var(--s5);
+}
+.shot { margin: 0; padding: var(--s2); }
+.shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--d-rule);
+}
+.shot figcaption {
+  padding: var(--s3) var(--s2) var(--s2);
+  color: var(--d-ash);
+}
 .cell { padding: var(--s4) var(--s3); }
 .cell p { color: var(--d-ash); }
 .cell__tag {
@@ -1203,6 +1220,8 @@ code {
 
 @media (min-width: 760px) {
   .cells { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .shots { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .shot--wide { grid-column: 1 / -1; }
   .panel { padding: var(--s5) var(--s4) var(--s4); }
   .panel__bar { padding-inline: var(--s4); }
   .panel__bar--mid { margin-inline: calc(var(--s4) * -1); }
