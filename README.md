@@ -12,6 +12,8 @@
 ![Downloads](https://img.shields.io/github/downloads/MCbabel/Steam-Manifest-Downloader/total?color=brightgreen)
 [![Lines of Code](https://img.shields.io/endpoint?url=https%3A%2F%2Ftokei.kojix2.net%2Fbadge%2Fgithub%2FMCbabel%2FSteam-Manifest-Downloader%2Flines)](https://tokei.kojix2.net/github/MCbabel/Steam-Manifest-Downloader)
 
+**[🌐 Website](https://smd.mcbabel.de)** · **[📖 Documentation](https://smd.mcbabel.de/documentation/)** · **[⬇️ Download](https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest)** · **[📝 Changelog](https://smd.mcbabel.de/changelog/)** · **[❓ FAQ](https://smd.mcbabel.de/documentation/#troubleshooting)**
+
 Upload `.lua` / `.st` files or search by App ID across configurable sources (GitHub, archive.org, plain HTTPS folders, Hubcap, Ryuu). The app downloads the depots straight from Steam's CDN with its built-in Rust engine (DepotDownloaderMod stays available as an option), keeps games up to date from the history, optionally creates Steam library entries with full grid art, and can patch games with the gbe_fork emulator + Steamless DRM removal. Desktop app, terminal version and Docker image.
 
 </div>
@@ -449,6 +451,17 @@ Steam-Manifest-Downloader/
 ```
 
 </details>
+
+---
+
+## 🤝 Contributing
+
+Bug reports, ideas and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) for how to build and test, then pick something from the [open issues](https://github.com/MCbabel/Steam-Manifest-Downloader/issues).
+
+- 🐞 **Found a bug?** Open an [issue](https://github.com/MCbabel/Steam-Manifest-Downloader/issues/new/choose) with the app version, your system and the download log.
+- 🌍 **Speak another language?** The app is in English and German. The texts are plain JSON files in [`public/locales/`](public/locales) and [`src-tui/locales/`](src-tui/locales). Copy `en.json` in both folders, translate the values and open a pull request.
+- 🔒 **Security issue?** Report it privately as described in [SECURITY.md](SECURITY.md).
+- 📊 **Privacy:** what the optional anonymous statistics contain is listed in [PRIVACY.md](PRIVACY.md).
 
 ---
 
