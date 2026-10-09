@@ -132,7 +132,13 @@ paru -S steam-manifest-downloader
 
 Both packages `provide`/`conflict` each other, so you only ever have one installed. The `-bin` flavor is recommended unless you want a reproducible local build.
 
-Sources: [steam-manifest-downloader-bin](https://aur.archlinux.org/packages/steam-manifest-downloader-bin) · [steam-manifest-downloader](https://aur.archlinux.org/packages/steam-manifest-downloader). Updates flow through your package manager (`paru -Syu`), and the in-app updater detects this and points you back at it instead of fetching an AppImage.
+The terminal version has its own package. It installs `smd`, the static binary from the release, and works next to either desktop package:
+
+```bash
+paru -S steam-manifest-downloader-terminal-bin
+```
+
+Sources: [steam-manifest-downloader-bin](https://aur.archlinux.org/packages/steam-manifest-downloader-bin) · [steam-manifest-downloader](https://aur.archlinux.org/packages/steam-manifest-downloader) · [steam-manifest-downloader-terminal-bin](https://aur.archlinux.org/packages/steam-manifest-downloader-terminal-bin). Updates flow through your package manager (`paru -Syu`), and the in-app updater detects this and points you back at it instead of fetching an AppImage.
 
 #### Other distros — AppImage
 
@@ -159,7 +165,8 @@ no browser engine, no installer. Run it without arguments for the interactive UI
 or use the subcommands on a server, in Docker or in scripts.
 
 **Download:** `Steam-Manifest-Downloader-Terminal_<version>_linux-x64` or `Steam-Manifest-Downloader-Terminal_<version>_windows-x64.exe`
-from [**Releases**](../../releases).
+from [**Releases**](../../releases). On Arch, CachyOS and Manjaro, `paru -S steam-manifest-downloader-terminal-bin`
+installs it as `smd`.
 
 With the default download engine (the built-in native downloader) `smd` needs
 nothing else: no .NET runtime, and the Linux build is static, so it runs on any
