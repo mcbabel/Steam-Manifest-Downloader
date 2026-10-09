@@ -646,6 +646,23 @@ paru -S steam-manifest-downloader</code></pre>
               <p>Settings are written as INI files, <code>configs.user.ini</code>, <code>configs.main.ini</code> and <code>configs.overlay.ini</code>, into a <code>steam_settings/</code> folder next to the patched DLL, alongside <code>steam_interfaces.txt</code>, <code>steam_appid.txt</code> and <code>installed_app_ids.txt</code>.</p>
               <p>When the download chose DLC in <a href="#like-steam">Like Steam mode</a>, SMD remembers them in <code>.smd-dlcs.json</code> in the game folder and writes them into <code>configs.app.ini</code> under <code>[app::dlcs]</code> with <code>unlock_all=0</code>, one <code>ID=Name</code> line each, so the game sees exactly the DLC you have.</p>
 
+              <h4 id="game-data">Game data for gbe_fork <a class="alink" href="#game-data" aria-label="Permalink to Game data for gbe_fork">#</a></h4>
+              <p>With <strong>Game data for gbe_fork</strong> switched on, which is the default, applying the patch also writes the data gbe_fork reads about the game itself into <code>steam_settings/</code>, the same files <a href="https://github.com/otavepto/gen.emu.sharp">gen.emu.sharp</a> and <code>generate_emu_config</code> make, without a Steam login:</p>
+              <ul>
+                <li><code>supported_languages.txt</code>, the languages the game supports</li>
+                <li><code>depots.txt</code>, the depots SMD installed, or every depot of the game when the folder was not downloaded with SMD</li>
+                <li><code>branches.json</code>, the public and beta branches with their build IDs</li>
+                <li><code>achievements.json</code> with the icons in <code>img/</code>, the global unlock rate and the names and descriptions in every language the game supports</li>
+                <li><code>stats.json</code>, with a Steam Web API key</li>
+                <li><code>leaderboards.txt</code>, the leaderboards from the Steam Community with their sort order and display type</li>
+                <li><code>items.json</code> and <code>default_items.json</code>, the Steam Inventory item definitions, each item once in the starting inventory</li>
+                <li><code>controller/</code>, one file per action set converted from the game's official Steam Input layout for Xbox controllers. gbe_fork only reads it with the Windows experimental build or on Linux</li>
+                <li>the cloud save folders in <code>configs.app.ini</code>, for Windows and Linux, so gbe_fork creates them on start. Some games do not start without them</li>
+              </ul>
+              <p>When <a href="https://github.com/xan105/Achievement-Watcher">Achievement Watcher</a> is installed on Windows, SMD also writes its achievement schema for every language into <code>%APPDATA%\Achievement Watcher\steam_cache\schema</code>, so it shows names and icons without its own key.</p>
+              <p><strong>Save media</strong> picks whether SMD also downloads the store artwork, screenshots and inventory icons, and with <strong>Images and video</strong> one trailer, into a <code>steam_media</code> folder in the game folder. The game does not need them. It is off by default. In the terminal version the choice is under <strong>Settings, API keys</strong>.</p>
+              <p>The Steam Web API key is free: log in at <a href="https://steamcommunity.com/dev/apikey">steamcommunity.com/dev/apikey</a>, enter any domain name and copy the key. Paste it in the emulator step and press <strong>Save key</strong>, or under <strong>Settings, Steam</strong>. It is stored on your PC and only sent to Steam. Without a key SMD still reads the public achievement list, which does not work for every game and has no stats. <strong>Write game data now</strong> writes everything again for a folder that is already patched, for example after adding a key. Requested by <a href="https://github.com/Ansh2209">@Ansh2209</a> in <a href="https://github.com/mcbabel/Steam-Manifest-Downloader/issues/8">#8</a>.</p>
+
               <h4 id="patch-existing">Patch an existing folder <a class="alink" href="#patch-existing" aria-label="Permalink to Patch an existing folder">#</a></h4>
               <p>Step 1 has a tab <strong>Patch Existing Folder</strong> for games that are already on disk, so you can run step 5 on its own. Pick the folder and enter the App ID. When the folder is already patched, the step offers <strong>Save Settings</strong> to change the emulator settings in place and <strong>Revert Patch</strong> to restore the original files, and <strong>Apply</strong> becomes <strong>Re-apply Patch</strong> when everything selected is patched already.</p>
 

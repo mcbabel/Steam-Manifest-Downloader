@@ -81,12 +81,20 @@ When telemetry is enabled, the app sends small events describing:
     range
   - `steamless_used`, `api_bypass`, `dlc_merged` — the DRM removal, the Steam
     API check bypass or the DLC depot merge ran, and whether it worked
+  - `game_data_written` — the emulator step wrote game data for gbe_fork,
+    where the achievements came from (`web_api`, `keyless` or `none`), how
+    many languages, depots, branches, achievements, achievement languages,
+    stats, leaderboards, inventory items and cloud save folders it found, as
+    ranges, whether a controller layout and Achievement Watcher schemas were
+    written, the media choice (`off`, `images` or `all`) and which hints were
+    shown, by name (for example `needsKey` or `inventoryFailed`)
   - `manifest_tool` — the newest manifest ID was fetched or a manifest file
     was picked for a depot. Never the ID or the file
   - `shortcut_key` — a keyboard shortcut was used (`open`, `search`,
     `history`, `settings`)
   - `settings_saved` — which settings were changed, by name only (for example
-    `proxy` or `max_retries`), never the new value
+    `proxy` or `max_retries`), never the new value, and `emulator` when the
+    Steam Web API key or the media choice was saved in the emulator step
   - `cli_command` — which command line command ran (`download`, `search`,
     `history`) and which of its options were used, as true or false
   - `heartbeat` and `session_end` — see *Time in the app* below
@@ -99,7 +107,9 @@ value you typed: the engine (`native` / `ddm`), whether Like Steam, auto start,
 DLC, the speed limit, auto update and keep-files-on-cancel are on, the proxy
 type, how many manifest sources are configured (as a range) and whether they
 differ from the defaults, whether a Hubcap or Ryuu key and a Steam folder are
-set (true or false, never the key or the path), the retry and chunk counts,
+set (true or false, never the key or the path), whether a Steam Web API key
+is set (true or false), the media choice for game data (`off`, `images` or
+`all`), the retry and chunk counts,
 and the game language and platform picked for Like Steam (`auto` or a fixed
 label like `german` or `linux`).
 
@@ -199,6 +209,18 @@ The settings show a short diagnostic ID (the first 8 characters of the random
 install UUID) when statistics are on. Pasting it into a bug report lets the
 maintainer find the errors your app reported. It is only shown to you and only
 useful if you choose to share it.
+
+## Steam Web API key
+
+If you enter a Steam Web API key for achievements and stats, it is stored in
+your local settings file and only sent to Steam (`api.steampowered.com`) to
+read the achievement list and the inventory of the game you patch. It is never
+sent to the maintainer and never written into the game folder.
+
+Writing game data talks to Steam only: the Steam network for app info,
+inventory and the Steam Input layout, `api.steampowered.com`,
+`steamcommunity.com` for leaderboards and the Steam CDNs for icons. With media
+on, also `store.steampowered.com` and the Steam image and video CDNs.
 
 ## What is NEVER collected
 
