@@ -213,6 +213,14 @@ fn localize_depth(lang: &str, text: &str, depth: usize) -> String {
     text.to_string()
 }
 
+pub fn error_key(text: &str) -> Option<String> {
+    templates().iter().find_map(|tpl| {
+        let rest = text.strip_prefix(tpl.literals[0].as_str())?;
+        let mut caps = Vec::new();
+        capture(&tpl.literals[1..], rest, &mut caps).then(|| format!("backend.{}", tpl.key))
+    })
+}
+
 pub fn localize_error(text: &str) -> String {
     localize_depth(language(), text, 0)
 }

@@ -826,11 +826,15 @@ impl App {
         self.shutdown_modal_body(t("modals.shutdown.running"));
         let followup = self.pending_followup();
         let data = self.data_dir.clone();
+        let tel = self.telemetry.clone();
         self.spawn(async move {
             let saved = match &followup {
                 Some(f) => smd_core::services::followup::save(&data, f).await.is_ok(),
                 None => false,
             };
+            if let Some(tel) = tel {
+                let _ = tokio::time::timeout(Duration::from_secs(3), tel.flush()).await;
+            }
             let r = tokio::task::spawn_blocking(smd_core::ops::system::power_off)
                 .await
                 .map_err(|e| e.to_string())

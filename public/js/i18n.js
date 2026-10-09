@@ -86,6 +86,14 @@ function localizeError(text, depth = 0) {
   return s;
 }
 
+function errorKey(text) {
+  const s = String(text ?? '');
+  if (!s) return null;
+  if (!backendPatterns) backendPatterns = buildBackendPatterns();
+  const hit = backendPatterns.find(p => p.re.test(s));
+  return hit ? `backend.${hit.key}` : null;
+}
+
 function applyTranslations(root) {
   const scope = root || document;
 
@@ -120,4 +128,4 @@ function getCurrentLocale() {
   return currentCode;
 }
 
-window.i18n = { loadLocale, t, localizeError, applyTranslations, detectBrowserLocale, getAvailableLocales, getCurrentLocale, FALLBACK };
+window.i18n = { loadLocale, t, localizeError, errorKey, applyTranslations, detectBrowserLocale, getAvailableLocales, getCurrentLocale, FALLBACK };

@@ -10,7 +10,18 @@ pub fn get_debug_log_path() -> Option<String> {
 // SMD_BUILD_CHANNEL / SMD_GIT_SHA / SMD_BUILD_DATE are injected by CI
 // (dev-build.yml → "dev", release.yml → "stable"). Unset → "dev-local".
 #[command]
-pub fn get_build_info() -> serde_json::Value {
+pub async fn get_build_info(app: tauri::AppHandle) -> serde_json::Value {
+    use tauri::Manager;
+    let settings = match app.path().app_data_dir() {
+        Ok(dir) => Some(smd_core::services::settings::load_settings(&dir).await),
+        Err(_) => None,
+    };
+    let diagnostic_id = settings
+        .as_ref()
+        .filter(|s| s.telemetry_consent == smd_core::services::settings::TelemetryConsent::Accepted)
+        .map(|s| smd_core::services::telemetry::diagnostic_id(&s.installation_id))
+        .filter(|id| !id.is_empty());
+    let engine = settings.as_ref().map(|s| if s.use_native_downloader { "native" } else { "ddm" });
     let channel = option_env!("SMD_BUILD_CHANNEL").unwrap_or("dev-local");
     let git_sha = option_env!("SMD_GIT_SHA").unwrap_or("unknown");
     let build_date = option_env!("SMD_BUILD_DATE").unwrap_or("unknown");
@@ -25,11 +36,20 @@ pub fn get_build_info() -> serde_json::Value {
         "profile": profile,
         "targetOs": std::env::consts::OS,
         "targetArch": std::env::consts::ARCH,
+        "package": smd_core::services::telemetry::package_kind(),
+        "engine": engine,
+        "diagnosticId": diagnostic_id,
     })
 }
 
 #[command]
-pub async fn power_off_system() -> Result<(), String> {
+pub async fn power_off_system(app: tauri::AppHandle) -> Result<(), String> {
+    use tauri::Manager;
+    if let Some(state) = app.try_state::<smd_core::services::AppState>() {
+        if let Some(telemetry) = state.telemetry.clone() {
+            let _ = tokio::time::timeout(std::time::Duration::from_secs(3), telemetry.flush()).await;
+        }
+    }
     tauri::async_runtime::spawn_blocking(smd_core::ops::system::power_off)
         .await
         .map_err(|e| e.to_string())?

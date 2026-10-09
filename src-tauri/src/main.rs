@@ -17,10 +17,12 @@ fn main() {
             let app_version = app.config().version.clone().unwrap_or_default();
             let channel = option_env!("SMD_BUILD_CHANNEL").unwrap_or("dev-local").to_string();
 
+            services::telemetry::install_crash_hook(app_data.clone());
             let telemetry = services::telemetry::Telemetry::new(
                 app_data.clone(),
                 app_version,
                 channel,
+                "gui",
             );
             tauri::async_runtime::spawn(telemetry.clone().run_background_flush());
 

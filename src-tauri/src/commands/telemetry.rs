@@ -40,9 +40,9 @@ pub async fn emit_telemetry_event(
     }
     if let Some(state) = app.try_state::<AppState>() {
         if let Some(telemetry) = state.telemetry.clone() {
-            let mut event = Event::new(kind);
+            let mut event = Event::new(kind.clone());
             if let Some(p) = props {
-                event = event.with_props(p);
+                event = event.with_props(telemetry_service::sanitize_props(&kind, p));
             }
             telemetry.emit(event).await;
         }

@@ -255,7 +255,7 @@ impl App {
                     apply(move |app| {
                         if r.is_ok() && accept {
                             app.emit("consent_accepted", None);
-                            app.emit("app_start", None);
+                            app.emit("app_start", Some(serde_json::json!({ "locale": crate::i18n::language() })));
                         }
                         app.reload_settings();
                     })

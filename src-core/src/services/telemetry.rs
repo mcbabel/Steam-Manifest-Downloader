@@ -1,6 +1,6 @@
 use dryoc::dryocbox::{DryocBox, PublicKey};
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::fs;
@@ -19,12 +19,15 @@ const SERVER_PUBLIC_KEY: [u8; 32] = [
 ];
 
 const ENDPOINT_URL: &str = "https://analytics-smd.mcbabel.de/v1/events";
-const SCHEMA_VERSION: u32 = 2;
+const SCHEMA_VERSION: u32 = 3;
 const FLUSH_INTERVAL: Duration = Duration::from_secs(300);
 const BUFFER_FLUSH_AT: usize = 20;
 const QUEUE_FILE: &str = "telemetry_queue.json";
 const QUEUE_CAP: usize = 200;
 const REPLAY_BATCH: usize = 25;
+const CRASH_FILE: &str = "telemetry_crash.json";
+const CRASH_CAP: usize = 5;
+const ACTIVE_DIR: &str = "telemetry_active";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Event {
@@ -61,15 +64,31 @@ struct Inner {
     session_id: String,
     app_version: String,
     channel: String,
+    frontend: &'static str,
+    locale: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct QueuedBatch {
+    session_id: String,
+    app_version: String,
+    events: Vec<Event>,
 }
 
 impl Telemetry {
-    pub fn new(app_data_dir: PathBuf, app_version: String, channel: String) -> Self {
+    pub fn new(
+        app_data_dir: PathBuf,
+        app_version: String,
+        channel: String,
+        frontend: &'static str,
+    ) -> Self {
         let inner = Inner {
             buffer: Vec::new(),
             session_id: Uuid::new_v4().to_string(),
             app_version,
             channel,
+            frontend,
+            locale: String::new(),
         };
         Self {
             inner: Arc::new(Mutex::new(inner)),
@@ -81,12 +100,45 @@ impl Telemetry {
         }
     }
 
-    pub async fn emit(&self, event: Event) {
-        if !self.is_enabled().await {
+    pub async fn set_locale(&self, locale: &str) {
+        let clean: String = locale
+            .chars()
+            .filter(|c| c.is_ascii_alphanumeric() || *c == '-' || *c == '_')
+            .take(8)
+            .collect();
+        self.inner.lock().await.locale = clean.to_ascii_lowercase();
+    }
+
+    pub async fn emit(&self, mut event: Event) {
+        let settings = settings_service::load_settings(&self.app_data_dir).await;
+        if settings.telemetry_consent != TelemetryConsent::Accepted {
             return;
+        }
+        let mut extra: Vec<Event> = Vec::new();
+        if event.kind == "app_start" {
+            let mut props = match std::mem::take(&mut event.props) {
+                serde_json::Value::Object(map) => map,
+                _ => serde_json::Map::new(),
+            };
+            if let Some(locale) = props.remove("locale") {
+                self.set_locale(locale.as_str().unwrap_or("")).await;
+            }
+            props.insert("settings".to_string(), settings_snapshot(&settings));
+            event.props = serde_json::Value::Object(props);
+            extra.extend(
+                take_crashes(&self.app_data_dir)
+                    .into_iter()
+                    .map(|c| Event::new("crash").with_props(c)),
+            );
+            extra.extend(
+                take_interrupted(&self.app_data_dir)
+                    .into_iter()
+                    .map(|p| Event::new("download_interrupted").with_props(p)),
+            );
         }
         let mut inner = self.inner.lock().await;
         inner.buffer.push(event);
+        inner.buffer.extend(extra);
         if inner.buffer.len() >= BUFFER_FLUSH_AT {
             let drained: Vec<Event> = inner.buffer.drain(..).collect();
             drop(inner);
@@ -122,33 +174,48 @@ impl Telemetry {
         s.telemetry_consent == TelemetryConsent::Accepted
     }
 
-    async fn build_payload(&self, events: &[Event], replay: bool) -> serde_json::Value {
+    async fn build_payload(
+        &self,
+        events: &[Event],
+        replay: Option<(&str, &str)>,
+    ) -> serde_json::Value {
         let install_id = ensure_installation_id(&self.app_data_dir).await;
         let inner = self.inner.lock().await;
+        let (session_id, app_version) = replay.unwrap_or((&inner.session_id, &inner.app_version));
         let mut payload = serde_json::json!({
             "schema_version": SCHEMA_VERSION,
             "installation_id": install_id,
-            "session_id": inner.session_id,
-            "app_version": inner.app_version,
+            "session_id": session_id,
+            "app_version": app_version,
             "channel": inner.channel,
+            "frontend": inner.frontend,
+            "package": package_kind(),
+            "locale": inner.locale,
             "os": std::env::consts::OS,
             "arch": std::env::consts::ARCH,
             "events": events,
         });
-        if replay {
+        if replay.is_some() {
             payload["replay"] = serde_json::json!(true);
         }
         payload
     }
 
     async fn send_batch(&self, events: Vec<Event>) {
-        let payload = self.build_payload(&events, false).await;
+        let payload = self.build_payload(&events, None).await;
 
-        match self.send_payload(&payload).await {
-            Ok(()) => {}
-            Err(_) => {
-                let _ = self.queue_payload(&events).await;
-            }
+        if self.send_payload(&payload).await.is_err() {
+            let (session_id, app_version) = {
+                let inner = self.inner.lock().await;
+                (inner.session_id.clone(), inner.app_version.clone())
+            };
+            let _ = self
+                .queue_payload(QueuedBatch {
+                    session_id,
+                    app_version,
+                    events,
+                })
+                .await;
         }
     }
 
@@ -172,54 +239,93 @@ impl Telemetry {
         Ok(())
     }
 
-    async fn queue_path(&self) -> PathBuf {
+    fn queue_path(&self) -> PathBuf {
         self.app_data_dir.join(QUEUE_FILE)
     }
 
-    async fn queue_payload(&self, events: &[Event]) -> Result<(), ()> {
-        let path = self.queue_path().await;
-        let mut queued: Vec<Event> = match fs::read(&path).await {
-            Ok(bytes) => serde_json::from_slice(&bytes).unwrap_or_default(),
-            Err(_) => Vec::new(),
+    async fn read_queue(&self) -> Vec<QueuedBatch> {
+        let Ok(bytes) = fs::read(self.queue_path()).await else {
+            return Vec::new();
         };
-        queued.extend_from_slice(events);
-        if queued.len() > QUEUE_CAP {
-            let drop = queued.len() - QUEUE_CAP;
-            queued.drain(0..drop);
+        parse_queue(&bytes)
+    }
+
+    async fn write_queue(&self, batches: &[QueuedBatch]) -> Result<(), ()> {
+        let path = self.queue_path();
+        if batches.iter().all(|b| b.events.is_empty()) {
+            let _ = fs::remove_file(&path).await;
+            return Ok(());
         }
-        let serialized = serde_json::to_vec(&queued).map_err(|_| ())?;
+        let serialized = serde_json::to_vec(batches).map_err(|_| ())?;
         if let Some(parent) = path.parent() {
             let _ = fs::create_dir_all(parent).await;
         }
         fs::write(&path, serialized).await.map_err(|_| ())
     }
 
-    async fn retry_queue(&self) {
-        let path = self.queue_path().await;
-        let bytes = match fs::read(&path).await {
-            Ok(b) => b,
-            Err(_) => return,
-        };
-        let queued: Vec<Event> = match serde_json::from_slice::<Vec<Event>>(&bytes) {
-            Ok(q) if !q.is_empty() => q,
-            _ => return,
-        };
-
-        let mut remaining = queued;
-        while !remaining.is_empty() {
-            let take = remaining.len().min(REPLAY_BATCH);
-            let batch: Vec<Event> = remaining.drain(..take).collect();
-            let payload = self.build_payload(&batch, true).await;
-            if self.send_payload(&payload).await.is_err() {
-                let mut unsent = batch;
-                unsent.extend(remaining);
-                if let Ok(serialized) = serde_json::to_vec(&unsent) {
-                    let _ = fs::write(&path, serialized).await;
-                }
-                return;
-            }
+    async fn queue_payload(&self, batch: QueuedBatch) -> Result<(), ()> {
+        let mut queued = self.read_queue().await;
+        match queued
+            .iter_mut()
+            .find(|b| b.session_id == batch.session_id && b.app_version == batch.app_version)
+        {
+            Some(existing) => existing.events.extend(batch.events),
+            None => queued.push(batch),
         }
-        let _ = fs::remove_file(&path).await;
+        cap_queue(&mut queued, QUEUE_CAP);
+        self.write_queue(&queued).await
+    }
+
+    async fn retry_queue(&self) {
+        let mut queued = self.read_queue().await;
+        if queued.is_empty() {
+            return;
+        }
+        while let Some(batch) = queued.first_mut() {
+            while !batch.events.is_empty() {
+                let take = batch.events.len().min(REPLAY_BATCH);
+                let chunk: Vec<Event> = batch.events[..take].to_vec();
+                let payload = self
+                    .build_payload(&chunk, Some((&batch.session_id, &batch.app_version)))
+                    .await;
+                if self.send_payload(&payload).await.is_err() {
+                    let _ = self.write_queue(&queued).await;
+                    return;
+                }
+                batch.events.drain(..take);
+            }
+            queued.remove(0);
+        }
+        let _ = self.write_queue(&queued).await;
+    }
+}
+
+fn parse_queue(bytes: &[u8]) -> Vec<QueuedBatch> {
+    if let Ok(batches) = serde_json::from_slice::<Vec<QueuedBatch>>(bytes) {
+        return batches;
+    }
+    match serde_json::from_slice::<Vec<Event>>(bytes) {
+        Ok(events) if !events.is_empty() => vec![QueuedBatch {
+            session_id: String::new(),
+            app_version: String::new(),
+            events,
+        }],
+        _ => Vec::new(),
+    }
+}
+
+fn cap_queue(batches: &mut Vec<QueuedBatch>, cap: usize) {
+    let mut total: usize = batches.iter().map(|b| b.events.len()).sum();
+    while total > cap {
+        let Some(first) = batches.first_mut() else {
+            break;
+        };
+        let drop = first.events.len().min(total - cap);
+        first.events.drain(..drop);
+        total -= drop;
+        if first.events.is_empty() {
+            batches.remove(0);
+        }
     }
 }
 
@@ -241,10 +347,299 @@ const ALLOWED_EVENT_KINDS: &[&str] = &[
     "update_checked",
     "update_installed",
     "consent_accepted",
+    "crash",
+    "error_shown",
+    "download_interrupted",
+    "library_added",
+    "game_launched",
+    "proxy_tested",
+    "diagnostics_copied",
 ];
 
 pub fn is_safe_kind(kind: &str) -> bool {
     ALLOWED_EVENT_KINDS.contains(&kind)
+}
+
+pub fn sanitize_props(kind: &str, props: serde_json::Value) -> serde_json::Value {
+    let serde_json::Value::Object(mut map) = props else {
+        return props;
+    };
+    if let Some(serde_json::Value::String(key)) = map.get("err_key") {
+        let clean = safe_label(key);
+        map.insert("err_key".to_string(), serde_json::Value::String(clean));
+    }
+    match kind {
+        "crash" => {
+            for field in ["message", "location"] {
+                if let Some(serde_json::Value::String(text)) = map.get(field) {
+                    let clean = if field == "message" {
+                        sanitize_message(text)
+                    } else {
+                        sanitize_location(text)
+                    };
+                    map.insert(field.to_string(), serde_json::Value::String(clean));
+                }
+            }
+        }
+        "error_shown" => {
+            for field in ["key", "area"] {
+                let clean = map
+                    .get(field)
+                    .and_then(|v| v.as_str())
+                    .map(safe_label)
+                    .unwrap_or_else(|| "unknown".to_string());
+                map.insert(field.to_string(), serde_json::Value::String(clean));
+            }
+        }
+        "proxy_tested" => {
+            if let Some(serde_json::Value::String(key)) = map.get("key") {
+                let clean = safe_label(key);
+                map.insert("key".to_string(), serde_json::Value::String(clean));
+            }
+        }
+        _ => {}
+    }
+    serde_json::Value::Object(map)
+}
+
+fn safe_label(text: &str) -> String {
+    let ok = !text.is_empty()
+        && text.len() <= 64
+        && text
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | '-'));
+    if ok {
+        text.to_string()
+    } else {
+        "unmatched".to_string()
+    }
+}
+
+pub fn sanitize_message(text: &str) -> String {
+    let line = text.lines().next().unwrap_or("");
+    let mut out = String::new();
+    let mut in_quotes = false;
+    for c in line.chars() {
+        if c == '"' || c == '\'' || c == '`' {
+            if !in_quotes {
+                out.push(c);
+                out.push('_');
+            } else {
+                out.push(c);
+            }
+            in_quotes = !in_quotes;
+            continue;
+        }
+        if !in_quotes {
+            out.push(c);
+        }
+    }
+    let words: Vec<String> = out
+        .split_whitespace()
+        .map(|w| {
+            if w.contains('/') || w.contains('\\') || w.contains(":\\") || w.contains('@') {
+                "<path>".to_string()
+            } else if w.chars().any(|c| c.is_ascii_digit()) {
+                let mut s = String::new();
+                let mut last_digit = false;
+                for c in w.chars() {
+                    if c.is_ascii_digit() {
+                        if !last_digit {
+                            s.push('N');
+                        }
+                        last_digit = true;
+                    } else {
+                        s.push(c);
+                        last_digit = false;
+                    }
+                }
+                s
+            } else {
+                w.to_string()
+            }
+        })
+        .collect();
+    words.join(" ").chars().take(160).collect()
+}
+
+pub fn sanitize_location(text: &str) -> String {
+    let normalized = text.replace('\\', "/");
+    let mut path = normalized.as_str();
+    let mut numbers: Vec<&str> = Vec::new();
+    while numbers.len() < 2 {
+        match path.rsplit_once(':') {
+            Some((p, n)) if !n.is_empty() && n.chars().all(|c| c.is_ascii_digit()) => {
+                numbers.push(n);
+                path = p;
+            }
+            _ => break,
+        }
+    }
+    let line = numbers.last().map(|n| n.to_string());
+    let short = ["src-core/", "src-tauri/", "src-tui/", "public/js/"]
+        .iter()
+        .find_map(|root| path.find(root).map(|i| path[i..].to_string()))
+        .or_else(|| {
+            path.find("/registry/src/").and_then(|i| {
+                let rest = &path[i + "/registry/src/".len()..];
+                rest.split_once('/').map(|(_, crate_path)| crate_path.to_string())
+            })
+        })
+        .unwrap_or_else(|| path.rsplit('/').next().unwrap_or("").to_string());
+    let short: String = short
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric() || matches!(c, '/' | '_' | '.' | '-'))
+        .take(96)
+        .collect();
+    match line {
+        Some(l) => format!("{}:{}", short, l),
+        None => short,
+    }
+}
+
+pub fn package_kind() -> &'static str {
+    if std::env::var_os("SMD_OUTPUT_DIR").is_some() || Path::new("/.dockerenv").exists() {
+        return "docker";
+    }
+    if cfg!(target_os = "linux") && std::env::var_os("APPIMAGE").is_some() {
+        return "appimage";
+    }
+    let exe_dir = std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(Path::to_path_buf));
+    if cfg!(target_os = "windows") {
+        return match exe_dir {
+            Some(dir) if dir.join("third-party").is_dir() => "portable",
+            Some(dir) if dir.join("uninstall.exe").is_file() => "installer",
+            _ => "exe",
+        };
+    }
+    match crate::ops::updater::detect_install_method() {
+        "flatpak" => "flatpak",
+        "snap" => "snap",
+        "system" => "system",
+        _ => "binary",
+    }
+}
+
+pub fn install_crash_hook(app_data_dir: PathBuf) {
+    let previous = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        let message = info
+            .payload()
+            .downcast_ref::<&str>()
+            .map(|s| s.to_string())
+            .or_else(|| info.payload().downcast_ref::<String>().cloned())
+            .unwrap_or_default();
+        let location = info
+            .location()
+            .map(|l| format!("{}:{}", l.file(), l.line()))
+            .unwrap_or_default();
+        let thread = if std::thread::current().name() == Some("main") {
+            "main"
+        } else {
+            "worker"
+        };
+        record_crash(
+            &app_data_dir,
+            serde_json::json!({
+                "source": "panic",
+                "location": sanitize_location(&location),
+                "message": sanitize_message(&message),
+                "thread": thread,
+            }),
+        );
+        previous(info);
+    }));
+}
+
+fn record_crash(app_data_dir: &Path, record: serde_json::Value) {
+    let path = app_data_dir.join(CRASH_FILE);
+    let mut list: Vec<serde_json::Value> = std::fs::read(&path)
+        .ok()
+        .and_then(|b| serde_json::from_slice(&b).ok())
+        .unwrap_or_default();
+    if list.len() >= CRASH_CAP {
+        return;
+    }
+    list.push(record);
+    if let Ok(bytes) = serde_json::to_vec(&list) {
+        let _ = std::fs::write(&path, bytes);
+    }
+}
+
+fn take_crashes(app_data_dir: &Path) -> Vec<serde_json::Value> {
+    let path = app_data_dir.join(CRASH_FILE);
+    let list: Vec<serde_json::Value> = std::fs::read(&path)
+        .ok()
+        .and_then(|b| serde_json::from_slice(&b).ok())
+        .unwrap_or_default();
+    let _ = std::fs::remove_file(&path);
+    list
+}
+
+pub struct ActiveDownload {
+    path: PathBuf,
+    props: serde_json::Value,
+}
+
+impl ActiveDownload {
+    pub fn start(app_data_dir: &Path, job_id: &str, props: serde_json::Value) -> Self {
+        let dir = app_data_dir.join(ACTIVE_DIR);
+        let _ = std::fs::create_dir_all(&dir);
+        let name: String = job_id
+            .chars()
+            .filter(|c| c.is_ascii_alphanumeric() || *c == '-')
+            .take(64)
+            .collect();
+        let marker = Self {
+            path: dir.join(format!("{}.json", name)),
+            props,
+        };
+        marker.write();
+        marker
+    }
+
+    pub fn step(&mut self, step: &str) {
+        self.props["step"] = serde_json::json!(step);
+        self.write();
+    }
+
+    fn write(&self) {
+        if let Ok(bytes) = serde_json::to_vec(&self.props) {
+            let _ = std::fs::write(&self.path, bytes);
+        }
+    }
+}
+
+impl Drop for ActiveDownload {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_file(&self.path);
+    }
+}
+
+pub fn clear_active_downloads(app_data_dir: &Path) {
+    let _ = std::fs::remove_dir_all(app_data_dir.join(ACTIVE_DIR));
+}
+
+fn take_interrupted(app_data_dir: &Path) -> Vec<serde_json::Value> {
+    let dir = app_data_dir.join(ACTIVE_DIR);
+    let Ok(entries) = std::fs::read_dir(&dir) else {
+        return Vec::new();
+    };
+    let mut out = Vec::new();
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if let Some(props) = std::fs::read(&path)
+            .ok()
+            .and_then(|b| serde_json::from_slice::<serde_json::Value>(&b).ok())
+        {
+            out.push(props);
+        }
+        let _ = std::fs::remove_file(&path);
+    }
+    out.truncate(CRASH_CAP);
+    out
 }
 
 
@@ -255,4 +650,126 @@ pub async fn ensure_installation_id(app_data_dir: &std::path::Path) -> String {
         let _ = settings_service::save_settings(app_data_dir, &settings).await;
     }
     settings.installation_id
+}
+
+fn settings_snapshot(s: &settings_service::Settings) -> serde_json::Value {
+    let proxy = s.proxy.trim().to_ascii_lowercase();
+    let proxy_kind = if proxy.is_empty() {
+        "none"
+    } else if proxy.starts_with("socks") {
+        "socks"
+    } else if proxy.starts_with("https") {
+        "https"
+    } else {
+        "http"
+    };
+    let limit = s.download_speed_limit.trim();
+    serde_json::json!({
+        "engine": if s.use_native_downloader { "native" } else { "ddm" },
+        "like_steam": s.auto_select_depots,
+        "auto_start": s.auto_start_download,
+        "include_dlc": s.include_dlc,
+        "proxy": proxy_kind,
+        "speed_limit": !limit.is_empty() && limit != "0",
+        "sources": crate::services::diag::count_bucket(s.depot_sources.len()),
+        "custom_sources": s.depot_sources != s.pristine_default_sources,
+        "hubcap_key": !s.hubcap_api_key.trim().is_empty(),
+        "ryuu_key": !s.ryuu_api_key.trim().is_empty(),
+        "auto_update": s.auto_update,
+        "steam_path_set": !s.steam_path.trim().is_empty(),
+        "max_retries": s.max_retries.min(20),
+        "chunk_concurrency": s.native_chunk_concurrency.min(64),
+        "keep_files_on_cancel": s.cancel_keep_files,
+    })
+}
+
+pub fn diagnostic_id(installation_id: &str) -> String {
+    installation_id
+        .chars()
+        .filter(|c| c.is_ascii_hexdigit())
+        .take(8)
+        .collect::<String>()
+        .to_ascii_uppercase()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn crash_messages_lose_paths_quotes_and_numbers() {
+        let msg = sanitize_message(
+            "called `Result::unwrap()` on an `Err` value: Os { code: 2, message: \"No such file\" } at C:\\Users\\bob\\x.txt\nsecond line",
+        );
+        assert!(!msg.contains("bob"));
+        assert!(!msg.contains("No such file"));
+        assert!(!msg.contains("second"));
+        assert!(msg.contains("code: N,"));
+    }
+
+    #[test]
+    fn crash_locations_keep_only_the_project_path() {
+        assert_eq!(
+            sanitize_location("/home/bob/build/src-core/src/ops/download.rs:812"),
+            "src-core/src/ops/download.rs:812"
+        );
+        assert_eq!(
+            sanitize_location("C:\\Users\\bob\\.cargo\\registry\\src\\index.crates.io-6f17d22bba15001f\\tokio-1.40.0\\src\\rt.rs:55"),
+            "tokio-1.40.0/src/rt.rs:55"
+        );
+        assert_eq!(
+            sanitize_location("tauri://localhost/js/app.js:1234:5"),
+            "app.js:1234"
+        );
+    }
+
+    #[test]
+    fn error_keys_are_plain_labels() {
+        let props = sanitize_props(
+            "error_shown",
+            serde_json::json!({ "key": "backend.noSources", "area": "C:/Users/bob" }),
+        );
+        assert_eq!(props["key"], "backend.noSources");
+        assert_eq!(props["area"], "unmatched");
+    }
+
+    #[test]
+    fn old_queues_are_still_read_and_the_cap_drops_the_oldest() {
+        let legacy = serde_json::to_vec(&vec![Event::new("app_start"), Event::new("search_performed")]).unwrap();
+        let mut batches = parse_queue(&legacy);
+        assert_eq!(batches.len(), 1);
+        assert_eq!(batches[0].events.len(), 2);
+        batches.push(QueuedBatch {
+            session_id: "b".into(),
+            app_version: "1".into(),
+            events: vec![Event::new("download_started")],
+        });
+        cap_queue(&mut batches, 2);
+        assert_eq!(batches.iter().map(|b| b.events.len()).sum::<usize>(), 2);
+        assert_eq!(batches[0].events[0].kind, "search_performed");
+    }
+
+    #[test]
+    fn interrupted_downloads_are_reported_once() {
+        let dir = std::env::temp_dir().join(format!("smd-tel-active-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let mut marker = ActiveDownload::start(&dir, "job1", serde_json::json!({ "engine": "native" }));
+        marker.step("download");
+        std::mem::forget(marker);
+        let found = take_interrupted(&dir);
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0]["step"], "download");
+        assert!(take_interrupted(&dir).is_empty());
+        {
+            let _done = ActiveDownload::start(&dir, "job2", serde_json::json!({}));
+        }
+        assert!(take_interrupted(&dir).is_empty());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn diagnostic_id_is_short_and_upper_case() {
+        assert_eq!(diagnostic_id("3f2a9c1e-77aa-4b4b-9c3d-000000000000"), "3F2A9C1E");
+    }
 }

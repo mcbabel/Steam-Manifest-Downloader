@@ -39,6 +39,9 @@ pub fn set_download_progress(
 
 #[command]
 pub async fn close_window(window: tauri::Window) -> Result<(), String> {
+    if let Ok(dir) = window.app_handle().path().app_data_dir() {
+        smd_core::services::telemetry::clear_active_downloads(&dir);
+    }
     if let Some(state) = window.try_state::<AppState>() {
         if let Some(telemetry) = state.telemetry.clone() {
             tokio::time::timeout(std::time::Duration::from_secs(3), telemetry.flush())

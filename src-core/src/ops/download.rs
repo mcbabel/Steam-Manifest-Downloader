@@ -354,6 +354,25 @@ async fn run_download_pipeline(
         config.like_steam.unwrap_or(loaded_settings.auto_select_depots),
     );
     let engine_label: &'static str = if use_native { "native" } else { "ddm" };
+    let mode = if config.repair {
+        "repair"
+    } else if config.update_target().is_some() {
+        "update"
+    } else {
+        "new"
+    };
+    let mut active = crate::services::telemetry::ActiveDownload::start(
+        app_data_dir,
+        job_id,
+        serde_json::json!({
+            "engine": engine_label,
+            "depot_bucket": diag::count_bucket(config.depots.len()),
+            "mode": mode,
+            "resumed": config.resume_mode.is_some(),
+            "merged": merged,
+            "step": "manifests",
+        }),
+    );
     let is_hubcap = config.source_type.as_deref() == Some("hubcap");
     let is_ryuu = config.source_type.as_deref() == Some("ryuu");
     let is_cached_manifest_source = is_hubcap || is_ryuu;
@@ -816,6 +835,7 @@ async fn run_download_pipeline(
         return Ok(());
     }
 
+    active.step("keys");
     let mut event = ProgressEvent::new("status", job_id);
     event.step = Some("generating_keys".to_string());
     emit_progress(sink, &event);
@@ -919,6 +939,7 @@ async fn run_download_pipeline(
         run_depots.sort_by_key(|d| d.depot_id.parse::<u64>().unwrap_or(u64::MAX));
     }
 
+    active.step("download");
     let mut event = ProgressEvent::new("status", job_id);
     event.step = Some("starting_downloader".to_string());
     event.total = Some(run_depots.len());

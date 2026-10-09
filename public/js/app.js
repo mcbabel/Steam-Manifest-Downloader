@@ -225,6 +225,7 @@ const els = {
   buildInfoDate: $('#build-info-date'),
   buildInfoProfile: $('#build-info-profile'),
   buildInfoPlatform: $('#build-info-platform'),
+  buildInfoDiagnostic: $('#build-info-diagnostic'),
   btnCopyBuildInfo: $('#btn-copy-build-info'),
   btnHistory: $('#btn-history'),
   historyModal: $('#history-modal'),
@@ -568,6 +569,7 @@ async function handleFilePath(filePath) {
   } catch (error) {
     els.uploadLoading.classList.add('hidden');
     showUploadError(window.i18n.localizeError(error));
+    reportError('upload', error);
   }
 }
 
@@ -884,6 +886,7 @@ async function performSearch() {
 
     if (repos.length === 0) {
       showSearchError(window.i18n.t('search.noResults'));
+      reportError('search', null, 'search.noResults');
       return;
     }
 
@@ -894,6 +897,7 @@ async function performSearch() {
     els.btnSearch.disabled = false;
     emitSearchOutcome(0, 'error');
     showSearchError(window.i18n.localizeError(error));
+    reportError('search', error);
   }
 }
 
@@ -1063,6 +1067,7 @@ async function proceedFromSearch() {
 
     if (depots.length === 0) {
       showSearchError(window.i18n.t('errors.noManifests'));
+      reportError('manifests', null, 'errors.noManifests');
       els.searchNextRow.classList.remove('hidden');
       return;
     }
@@ -1076,6 +1081,7 @@ async function proceedFromSearch() {
   } catch (error) {
     els.manifestLoading.classList.add('hidden');
     showSearchError(window.i18n.localizeError(error));
+    reportError('manifests', error);
     els.searchNextRow.classList.remove('hidden');
   }
 }
@@ -1753,7 +1759,24 @@ async function startDownload() {
   await runDownload(buildDownloadConfig(data, depots, mhApiKey, repairManifests), depots);
 }
 
-async function runDownload(downloadConfig, depots) {
+function downloadContext(downloadConfig, depots, fromQueue) {
+  const keys = downloadConfig.keyVdfKeys || {};
+  let selection = 'default';
+  if (fromQueue) selection = 'queued';
+  else if (state.depotSelectionTouched) selection = 'manual';
+  else if (state.steamMode) selection = 'like_steam';
+  return {
+    mode: downloadConfig.repair ? 'repair' : downloadConfig.updateDir ? 'update' : 'new',
+    selection,
+    source: downloadConfig.sourceType || (state.mode === 'search' ? 'search' : 'upload'),
+    queue: !!fromQueue,
+    dlc: typeof downloadConfig.includeDlc === 'boolean' ? downloadConfig.includeDlc : null,
+    keyless: countBucket(depots.filter(d => !d.depotKey && !keys[String(d.depotId)]).length),
+    custom_manifest: depots.some(d => !!d.customManifestId),
+  };
+}
+
+async function runDownload(downloadConfig, depots, fromQueue = false) {
   let sourceCount = null;
   try {
     const s = await invoke('get_settings');
@@ -1766,13 +1789,14 @@ async function runDownload(downloadConfig, depots) {
   state.dlNonce = telemetryNonce();
   state.dlSourceCount = sourceCount;
   state.dlHadMhKey = !!downloadConfig.manifestHubApiKey;
-  emitEvent('download_started', {
+  state.dlContext = downloadContext(downloadConfig, depots, fromQueue);
+  emitEvent('download_started', Object.assign({
     job: state.dlNonce,
     depot_count: depots.length,
     engine: state.currentEngine,
     source_count: sourceCount,
     had_mh_key: state.dlHadMhKey,
-  });
+  }, state.dlContext));
 
   requestNotificationPermission();
 
@@ -1801,6 +1825,7 @@ async function runDownload(downloadConfig, depots) {
       depots_ok: 0,
       duration_bucket: durationBucket(Date.now() - (state.dlStartedAt || Date.now())),
       engine: state.currentEngine || 'native',
+      err_key: window.i18n.errorKey(String(error)) || 'unmatched',
     }, classifyStartFailure(error)));
     showCompletion(false, errorText);
     queueAfterDownload('failed');
@@ -1977,7 +2002,7 @@ async function runNextQueued() {
   state.updateAppId = next.config.updateDir ? String(next.app_id) : null;
   state.repairManifests = null;
   state.repairRunning = !!next.config.repair;
-  await runDownload(next.config, next.depots || []);
+  await runDownload(next.config, next.depots || [], true);
 }
 
 function queueAfterDownload(outcome) {
@@ -2592,7 +2617,9 @@ function handleError(msg) {
     clearInterval(state.speedTracker.staleTimer);
     state.speedTracker.staleTimer = null;
     if (els.downloadSpeedInfo) els.downloadSpeedInfo.classList.add('hidden');
-    emitEvent('download_completed', Object.assign({ success: false }, jobContext(), msg.diag || {}));
+    emitEvent('download_completed', Object.assign({ success: false }, jobContext(), msg.diag || {}, {
+      err_key: msg.key || window.i18n.errorKey(msg.message) || 'unmatched',
+    }));
     showCompletion(false, errorText);
     showBrowserNotification(window.i18n.t('notifications.failedTitle'), window.i18n.t('notifications.failedBody', { message: errorText }));
     playNotificationSound();
@@ -2880,7 +2907,10 @@ async function loadBuildInfo() {
     els.buildInfoSha.textContent = info.gitSha || window.i18n.t('common.unknown');
     els.buildInfoDate.textContent = info.buildDate || window.i18n.t('common.unknown');
     els.buildInfoProfile.textContent = info.profile || '—';
-    els.buildInfoPlatform.textContent = `${info.targetOs || '?'} / ${info.targetArch || '?'}`;
+    els.buildInfoPlatform.textContent = `${info.targetOs || '?'} / ${info.targetArch || '?'} · ${info.package || '?'}`;
+    if (els.buildInfoDiagnostic) {
+      els.buildInfoDiagnostic.textContent = info.diagnosticId || window.i18n.t('settings.diagnosticIdOff');
+    }
   } catch (e) {
     console.error('Failed to load build info:', e);
   }
@@ -2902,7 +2932,7 @@ async function initTelemetryConsent() {
         modal.classList.remove('hidden');
       });
     } else if (status.consent === 'accepted') {
-      invoke('emit_telemetry_event', { kind: 'app_start' }).catch(() => {});
+      invoke('emit_telemetry_event', { kind: 'app_start', props: { locale: window.i18n.getCurrentLocale() } }).catch(() => {});
     }
   } catch (e) {
     console.error('Failed to load telemetry status:', e);
@@ -2912,7 +2942,7 @@ async function initTelemetryConsent() {
 async function acceptTelemetry() {
   try {
     await invoke('set_telemetry_consent', { accept: true });
-    invoke('emit_telemetry_event', { kind: 'app_start' }).catch(() => {});
+    invoke('emit_telemetry_event', { kind: 'app_start', props: { locale: window.i18n.getCurrentLocale() } }).catch(() => {});
   } catch (e) {
     console.error('Failed to accept telemetry:', e);
   }
@@ -2942,6 +2972,41 @@ function emitEvent(kind, props) {
   invoke('emit_telemetry_event', { kind, props: props ?? null }).catch(() => {});
 }
 
+const reportedErrors = new Set();
+
+function reportError(area, raw, key) {
+  const k = key || window.i18n.errorKey(raw) || 'unmatched';
+  const id = `${area}:${k}`;
+  if (reportedErrors.has(id) || reportedErrors.size >= 40) return;
+  reportedErrors.add(id);
+  emitEvent('error_shown', { area, key: k });
+}
+
+let jsErrorCount = 0;
+
+function reportJsError(message, source, line) {
+  if (jsErrorCount >= 5) return;
+  jsErrorCount += 1;
+  const file = String(source || '').split(/[\\/]/).pop() || 'inline';
+  emitEvent('crash', {
+    source: 'js',
+    location: line ? `${file}:${line}` : file,
+    message: window.i18n.errorKey(String(message || '')) || String(message || '').slice(0, 300),
+    thread: 'main',
+  });
+}
+
+window.addEventListener('error', (e) => {
+  reportJsError(e.message || (e.error && e.error.message), e.filename, e.lineno);
+});
+
+window.addEventListener('unhandledrejection', (e) => {
+  const reason = e.reason;
+  const message = reason && reason.message ? reason.message : String(reason);
+  const frame = reason && reason.stack ? /([^\s()]+\.js):(\d+)/.exec(reason.stack) : null;
+  reportJsError(`unhandled: ${message}`, frame ? frame[1] : '', frame ? frame[2] : 0);
+});
+
 function telemetryNonce() {
   const b = new Uint8Array(8);
   (crypto.getRandomValues ? crypto : window.crypto).getRandomValues(b);
@@ -2960,11 +3025,11 @@ function classifyStartFailure(err) {
 }
 
 function jobContext() {
-  return {
+  return Object.assign({
     job: state.dlNonce || null,
     source_count: state.dlSourceCount ?? null,
     had_mh_key: !!state.dlHadMhKey,
-  };
+  }, state.dlContext || {});
 }
 
 function clearJobTelemetryState() {
@@ -2974,6 +3039,7 @@ function clearJobTelemetryState() {
   state.dlDepotCount = null;
   state.dlSourceCount = null;
   state.dlHadMhKey = false;
+  state.dlContext = null;
 }
 
 function durationBucket(ms) {
@@ -3082,7 +3148,12 @@ async function copyBuildInfo() {
     `Build date: ${info.buildDate}`,
     `Profile: ${info.profile}`,
     `Platform: ${info.targetOs}/${info.targetArch}`,
+    `Package: ${info.package || 'unknown'}`,
+    `Engine: ${info.engine || 'unknown'}`,
+    `Language: ${window.i18n.getCurrentLocale()}`,
+    `Diagnostic ID: ${info.diagnosticId || window.i18n.t('settings.diagnosticIdOff')}`,
   ].join('\n');
+  if (info.diagnosticId) emitEvent('diagnostics_copied');
 
   try {
     await navigator.clipboard.writeText(text);
@@ -3331,6 +3402,14 @@ function setProxyStatus(kind, text) {
   els.proxyStatus.textContent = text || '';
 }
 
+function proxyKind(proxy) {
+  const p = String(proxy || '').trim().toLowerCase();
+  if (!p) return 'none';
+  if (p.startsWith('socks')) return 'socks';
+  if (p.startsWith('https')) return 'https';
+  return 'http';
+}
+
 async function testProxy() {
   const proxy = els.proxyInput.value.trim();
   if (els.proxyError) els.proxyError.classList.add('hidden');
@@ -3340,7 +3419,9 @@ async function testProxy() {
     const result = await invoke('test_proxy', { proxy });
     const key = result && result.proxy ? 'settings.proxyOk' : 'settings.proxyOkDirect';
     setProxyStatus('ok', '✓ ' + window.i18n.t(key, { ms: result ? result.millis : 0 }));
+    emitEvent('proxy_tested', { proxy: proxyKind(proxy), ok: true });
   } catch (e) {
+    emitEvent('proxy_tested', { proxy: proxyKind(proxy), ok: false, key: window.i18n.errorKey(String(e)) || 'unmatched' });
     const key = proxy ? 'settings.proxyFailed' : 'settings.proxyFailedDirect';
     setProxyStatus('error', '✗ ' + window.i18n.t(key, { error: window.i18n.localizeError(String(e)) }));
   } finally {
@@ -3463,7 +3544,8 @@ async function checkForUpdates() {
 
     const result = await invoke('check_for_updates');
 
-    emitEvent('update_checked', { available: !!result.available });
+    emitEvent('update_checked', { available: !!result.available, failed: !!result.error });
+    if (result.error) reportError('update_check', result.error);
 
     if (result.error) {
       console.error('[AutoUpdate] Error:', result.error);
@@ -3612,6 +3694,7 @@ async function performUpdate() {
     // App will exit — this line may not be reached
   } catch (e) {
     console.error('[AutoUpdate] Install failed:', e);
+    reportError('update_install', e);
     els.updateProgressText.textContent = window.i18n.t('modals.update.failed', { message: window.i18n.localizeError(e) });
     els.updateProgressFill.classList.remove('progress-bar__fill--indeterminate');
     els.updateProgressFill.style.width = '0%';
@@ -4518,13 +4601,16 @@ async function playGame(entry, choose) {
       if (!exe) return;
     }
     const method = await invoke('launch_game', { dir, exe });
+    emitEvent('game_launched', { method: ['steam', 'wine', 'native'].includes(method) ? method : 'direct', chosen: !!choose, partial: entry.status === 'partial' });
     const key = method === 'steam' ? 'history.playStartedSteam' : method === 'wine' ? 'history.playStartedWine' : 'history.playStarted';
     showHistoryBanner(window.i18n.t(key, { name: entry.game_name || `App ${entry.app_id}` }), 5000, 'success');
   } catch (err) {
     const text = String(err);
     if (text.includes('WINDOWS_GAME_NEEDS_PROTON')) {
+      reportError('play', null, 'history.playNeedsProton');
       showHistoryBanner(window.i18n.t('history.playNeedsProton'), 12000);
     } else {
+      reportError('play', text);
       showHistoryBanner(window.i18n.t('history.playFailed', { message: window.i18n.localizeError(text) }));
     }
   }
@@ -4876,14 +4962,15 @@ function renderHistoryEntries(entries) {
         state.dlDepotCount = resumeDepots;
         state.dlSourceCount = Array.isArray(settings.depot_sources) ? settings.depot_sources.length : null;
         state.dlHadMhKey = !!(entry.resume_payload.manifestHubApiKey || '');
-        emitEvent('download_started', {
+        state.dlContext = { mode: 'resume', selection: 'resume', resume_mode: resumeMode === 'fast' ? 'fast' : 'full' };
+        emitEvent('download_started', Object.assign({
           job: state.dlNonce,
           depot_count: resumeDepots,
           engine: state.currentEngine,
           source_count: state.dlSourceCount,
           had_mh_key: state.dlHadMhKey,
           resumed: true,
-        });
+        }, state.dlContext));
 
         state.repairRunning = false;
         state.parsedData = { mainAppId: entry.app_id, depots: [] };
@@ -5319,6 +5406,7 @@ async function performSteamLibraryAdd(closeSteam = false) {
       successMsg += '\n' + window.i18n.t('steamLibrary.protonNote');
     }
     setSteamLibraryResult('success', successMsg);
+    emitEvent('library_added', { from: 'step', ok: true, restarted: !!result.steam_restarted, grid: gridCount > 0 });
     return true;
   } catch (e) {
     console.error('steam_library_add failed:', e);
@@ -5327,6 +5415,8 @@ async function performSteamLibraryAdd(closeSteam = false) {
       return false;
     }
     setSteamLibraryResult('error', window.i18n.t('steamLibrary.error', { message: window.i18n.localizeError(e) }));
+    emitEvent('library_added', { from: 'step', ok: false });
+    reportError('steam_library', e);
     return false;
   } finally {
     if (els.btnSteamAdd) els.btnSteamAdd.disabled = false;
@@ -6665,12 +6755,15 @@ async function addToSteamLibraryFromShortcutStep(exePath) {
     const gridCount = (result.grid_files || []).length;
     const msg = window.i18n.t('steamLibrary.success', { name: appName })
       + ' (' + window.i18n.t('steamLibrary.gridArtCount', { count: gridCount }) + ')';
+    emitEvent('library_added', { from: 'shortcuts', ok: true, restarted: false, grid: gridCount > 0 });
     if (els.shortcutStatus) {
       const existing = els.shortcutStatus.textContent || '';
       els.shortcutStatus.textContent = existing ? existing + '\n\n' + msg : msg;
     }
   } catch (e) {
     console.error('steam_library_add (windows toggle) failed:', e);
+    emitEvent('library_added', { from: 'shortcuts', ok: false });
+    reportError('steam_library', e);
     const errMsg = window.i18n.t('steamLibrary.error', { message: window.i18n.localizeError(e) });
     if (els.shortcutStatus) {
       const existing = els.shortcutStatus.textContent || '';

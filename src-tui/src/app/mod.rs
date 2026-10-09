@@ -92,6 +92,7 @@ pub struct App {
     pub tick: u64,
     pub quit: bool,
     pub toast: Option<(Tone, String, Instant)>,
+    pub reported_errors: std::collections::HashSet<String>,
 
     pub shortcut_supported: bool,
     pub steam_install: Option<SteamInstall>,
@@ -123,7 +124,8 @@ impl App {
         let channel = option_env!("SMD_BUILD_CHANNEL")
             .unwrap_or("dev-local")
             .to_string();
-        let telemetry = Telemetry::new(data_dir.clone(), VERSION.to_string(), channel);
+        smd_core::services::telemetry::install_crash_hook(data_dir.clone());
+        let telemetry = Telemetry::new(data_dir.clone(), VERSION.to_string(), channel, "tui");
         tokio::spawn(telemetry.clone().run_background_flush());
 
         let mut core = AppState::new();
@@ -154,6 +156,7 @@ impl App {
             tick: 0,
             quit: false,
             toast: None,
+            reported_errors: std::collections::HashSet::new(),
             shortcut_supported: smd_core::ops::shortcuts::is_shortcut_supported(),
             steam_install: None,
             steam_error: None,
@@ -192,6 +195,10 @@ impl App {
     pub fn toast(&mut self, tone: Tone, msg: impl Into<String>) {
         let msg = msg.into();
         let msg = if matches!(tone, Tone::Error) {
+            let key = crate::i18n::error_key(&msg).unwrap_or_else(|| "unmatched".to_string());
+            if self.reported_errors.len() < 40 && self.reported_errors.insert(key.clone()) {
+                self.emit("error_shown", Some(serde_json::json!({ "area": "tui", "key": key })));
+            }
             crate::i18n::localize_error(&msg)
         } else {
             msg
@@ -213,7 +220,7 @@ impl App {
             let status = smd_core::ops::consent::telemetry_status(&dir).await;
             apply(move |app| match status["consent"].as_str() {
                 Some("pending") => app.queue_modal(Modal::telemetry()),
-                Some("accepted") => app.emit("app_start", None),
+                Some("accepted") => app.emit("app_start", Some(serde_json::json!({ "locale": i18n::language() }))),
                 _ => {}
             })
         });
@@ -360,6 +367,13 @@ impl App {
     async fn shutdown(&mut self) {
         if let Some(job) = self.wiz.job_id.clone() {
             if self.download_active() {
+                if let Some(tel) = self.telemetry.clone() {
+                    tel.emit(TelemetryEvent::new("download_abandoned").with_props(serde_json::json!({
+                        "outcome": "abandoned",
+                        "engine": if self.settings.use_native_downloader { "native" } else { "ddm" },
+                    })))
+                    .await;
+                }
                 let _ = smd_core::ops::download::cancel_download(
                     &self.sink,
                     &self.core,

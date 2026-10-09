@@ -330,6 +330,12 @@ impl App {
                 "engine": if native { "native" } else { "ddm" },
                 "source_count": self.settings.depot_sources.len(),
                 "had_mh_key": config.manifest_hub_api_key.is_some(),
+                "mode": if config.repair { "repair" } else if config.update_dir.is_some() { "update" } else { "new" },
+                "selection": if self.wiz.depot_touched { "manual" } else if self.settings.auto_select_depots { "like_steam" } else { "default" },
+                "source": config.source_type.clone().unwrap_or_else(|| if self.wiz.from_search { "search".into() } else { "upload".into() }),
+                "queue": false,
+                "dlc": config.include_dlc,
+                "custom_manifest": config.depots.iter().any(|d| d.custom_manifest_id.is_some()),
             })),
         );
         self.begin_download(config, ids, native);
