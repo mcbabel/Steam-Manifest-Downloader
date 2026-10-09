@@ -1326,6 +1326,7 @@ mod prune_tests {
     }
 }
 
+#[cfg(test)]
 mod asset_pick_tests {
     use super::*;
 
