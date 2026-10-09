@@ -21,7 +21,7 @@ const TABS: [&str; 5] = [
     "tui.settings.tabAbout",
 ];
 
-pub fn build_info() -> Vec<(String, String)> {
+pub fn build_info(settings: &settings_service::Settings) -> Vec<(String, String)> {
     let channel = option_env!("SMD_BUILD_CHANNEL").unwrap_or("dev-local");
     let channel_label = match channel {
         "stable" => t("settings.channelStable"),
@@ -54,10 +54,19 @@ pub fn build_info() -> Vec<(String, String)> {
         (
             t("settings.debugInfoPlatform"),
             format!(
-                "{} / {} (TUI)",
+                "{} / {} (TUI) · {}",
                 std::env::consts::OS,
-                std::env::consts::ARCH
+                std::env::consts::ARCH,
+                smd_core::services::telemetry::package_kind()
             ),
+        ),
+        (
+            t("settings.debugInfoDiagnosticId"),
+            if settings.telemetry_consent == TelemetryConsent::Accepted {
+                smd_core::services::telemetry::diagnostic_id(&settings.installation_id)
+            } else {
+                t("settings.diagnosticIdOff")
+            },
         ),
     ]
 }
@@ -178,7 +187,7 @@ impl App {
                 self.set.status = None;
             }
             Action::CopyBuildInfo => {
-                let text = build_info()
+                let text = build_info(&self.settings)
                     .into_iter()
                     .map(|(k, v)| format!("{}: {}", k, v))
                     .collect::<Vec<_>>()
@@ -841,7 +850,7 @@ impl App {
     fn render_about(&mut self, sv: &mut ScrollView, ctx: &mut Ctx, w: u16) {
         let r = sv.next(1);
         widgets::heading(&mut sv.buf, r, &t("settings.debugInfo"));
-        for (k, v) in build_info() {
+        for (k, v) in build_info(&self.settings) {
             let r = sv.next(1);
             widgets::line(
                 &mut sv.buf,
