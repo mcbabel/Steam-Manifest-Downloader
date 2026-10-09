@@ -267,7 +267,12 @@
       "installerDownloading": "Update-Installer wird geladen…",
       "failed": "Update fehlgeschlagen: {message}",
       "noReleaseNotes": "Keine Versionshinweise verfügbar.",
-      "onGithub": "Auf GitHub ansehen"
+      "onGithub": "Auf GitHub ansehen",
+      "openPage": "Download-Seite öffnen",
+      "appImageDownloading": "Neues AppImage wird heruntergeladen…",
+      "progress": "{done} von {total} ({percent} %)",
+      "progressUnknown": "{done} heruntergeladen",
+      "restarting": "Download fertig. Neustart…"
     },
     "history": {
       "title": "Download-Verlauf",

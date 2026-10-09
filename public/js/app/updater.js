@@ -155,6 +155,9 @@ function showUpdateModal(info) {
   els.updateProgressWrap.classList.add('hidden');
   els.updateActions.style.display = '';
   els.btnUpdateNow.disabled = false;
+  els.btnUpdateLater.style.display = '';
+  els.btnUpdateSkip.style.display = '';
+  updatePrimaryLabel(info);
 
   const externallyManaged = info.installMethod && info.installMethod !== 'self';
   const systemHint = document.getElementById('update-system-hint');
@@ -244,29 +247,60 @@ function hideUpdateModal() {
 
 let pendingUpdateInfo = null;
 
+function updatePrimaryLabel(info) {
+  const key = !info || !info.installerUrl || info.updateKind === 'page' ? 'modals.update.openPage' : 'modals.update.now';
+  els.btnUpdateNow.dataset.i18n = key;
+  els.btnUpdateNow.textContent = window.i18n.t(key);
+}
+
+function setUpdateProgress(done, total) {
+  if (total) {
+    const pct = Math.min(100, Math.round((done / total) * 100));
+    els.updateProgressFill.classList.remove('progress-bar__fill--indeterminate');
+    els.updateProgressFill.style.width = `${pct}%`;
+    els.updateProgressText.textContent = window.i18n.t('modals.update.progress', { done: formatBytes(done), total: formatBytes(total), percent: pct });
+  } else {
+    els.updateProgressText.textContent = window.i18n.t('modals.update.progressUnknown', { done: formatBytes(done) });
+  }
+}
+
 async function performUpdate() {
-  if (!pendingUpdateInfo || !pendingUpdateInfo.installerUrl) {
-    // No direct installer — open release page in browser
-    if (pendingUpdateInfo && pendingUpdateInfo.releaseUrl) {
-      window.__TAURI__.shell.open(pendingUpdateInfo.releaseUrl);
-    }
+  const info = pendingUpdateInfo;
+  if (!info || !info.installerUrl || info.updateKind === 'page') {
+    if (info && info.releaseUrl) openExternalUrl(info.releaseUrl);
+    emitEvent('update_dismissed', { action: 'release_page' });
     hideUpdateModal();
     return;
   }
 
+  const isAppImage = info.updateKind === 'appimage';
   els.btnUpdateNow.disabled = true;
   els.btnUpdateLater.style.display = 'none';
   els.btnUpdateSkip.style.display = 'none';
   els.btnUpdateNow.textContent = window.i18n.t('modals.update.downloading');
   els.updateProgressWrap.classList.remove('hidden');
-  els.updateProgressText.textContent = window.i18n.t('modals.update.installerDownloading');
+  els.updateProgressText.textContent = window.i18n.t(isAppImage ? 'modals.update.appImageDownloading' : 'modals.update.installerDownloading');
   els.updateProgressFill.style.width = '100%';
   els.updateProgressFill.classList.add('progress-bar__fill--indeterminate');
 
-  emitEvent('update_installed');
+  let unlisten = null;
+  if (isAppImage) {
+    try {
+      unlisten = await listen('update-progress', (event) => {
+        const { done, total } = event.payload || {};
+        setUpdateProgress(done || 0, total || 0);
+        if (total && done >= total) els.updateProgressText.textContent = window.i18n.t('modals.update.restarting');
+      });
+    } catch {}
+  }
+
+  emitEvent('update_installed', { via: info.updateKind || 'installer' });
   try {
-    await invoke('install_update', { installerUrl: pendingUpdateInfo.installerUrl });
-    // App will exit — this line may not be reached
+    await invoke('install_update', {
+      installerUrl: info.installerUrl,
+      updateKind: info.updateKind || null,
+      assetDigest: info.assetDigest || null,
+    });
   } catch (e) {
     console.error('[AutoUpdate] Install failed:', e);
     reportError('update_install', e);
@@ -276,6 +310,8 @@ async function performUpdate() {
     els.btnUpdateNow.textContent = window.i18n.t('common.retry');
     els.btnUpdateNow.disabled = false;
     els.btnUpdateLater.style.display = '';
+  } finally {
+    if (unlisten) unlisten();
   }
 }
 

@@ -3374,6 +3374,7 @@ dependencies = [
  "serde_json",
  "sevenz-rust",
  "sha1 0.11.0",
+ "sha2 0.11.0",
  "steam-vent",
  "steam-vent-proto",
  "tar",

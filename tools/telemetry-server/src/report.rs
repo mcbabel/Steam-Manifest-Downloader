@@ -561,7 +561,7 @@ const FEATURES: &[(&str, &str, &str)] = &[
     ("Bug report", "bug_report_opened", "source"),
     ("Diagnostic info copied", "diagnostics_copied", ""),
     ("App update check", "update_checked", "available"),
-    ("App update installed", "update_installed", ""),
+    ("App update installed", "update_installed", "via"),
     ("Update dialog answer", "update_dismissed", "action"),
     ("CLI command", "cli_command", "command"),
 ];

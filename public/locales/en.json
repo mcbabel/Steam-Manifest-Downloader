@@ -267,7 +267,12 @@
       "installerDownloading": "Downloading update installer…",
       "failed": "Update failed: {message}",
       "noReleaseNotes": "No release notes available.",
-      "onGithub": "Open on GitHub"
+      "onGithub": "Open on GitHub",
+      "openPage": "Open Download Page",
+      "appImageDownloading": "Downloading the new AppImage…",
+      "progress": "{done} of {total} ({percent}%)",
+      "progressUnknown": "{done} downloaded",
+      "restarting": "Download finished. Restarting…"
     },
     "history": {
       "title": "Download History",

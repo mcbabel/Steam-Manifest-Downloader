@@ -1,4 +1,4 @@
-use tauri::{command, AppHandle};
+use tauri::{command, AppHandle, Emitter};
 use smd_core::services::settings as settings_service;
 
 use super::app_data_dir;
@@ -12,7 +12,26 @@ pub async fn check_for_updates(app: AppHandle) -> Result<serde_json::Value, Stri
 }
 
 #[command]
-pub async fn install_update(app: AppHandle, installer_url: String) -> Result<(), String> {
+pub async fn install_update(
+    app: AppHandle,
+    installer_url: String,
+    update_kind: Option<String>,
+    asset_digest: Option<String>,
+) -> Result<(), String> {
+    if update_kind.as_deref() == Some("appimage") {
+        let progress_app = app.clone();
+        let path = smd_core::ops::updater::install_appimage(&installer_url, asset_digest.as_deref(), move |done, total| {
+            let _ = progress_app.emit("update-progress", serde_json::json!({ "done": done, "total": total }));
+        })
+        .await?;
+        smd_core::ops::updater::relaunch_appimage(&path)?;
+        app.exit(0);
+        return Ok(());
+    }
+    if !cfg!(target_os = "windows") {
+        return Err("Updates for this build are installed from the release page".into());
+    }
+
     let client = smd_core::services::net::client();
 
     let temp_dir = std::env::temp_dir().join("SteamManifestDownloader");
@@ -45,14 +64,6 @@ pub async fn install_update(app: AppHandle, installer_url: String) -> Result<(),
             .creation_flags(0x08000000) // CREATE_NO_WINDOW
             .spawn()
             .map_err(|e| format!("Failed to launch installer: {}", e))?;
-    }
-
-    // No silent installer path on Linux — just open the release in the browser.
-    #[cfg(target_os = "linux")]
-    {
-        let _ = std::process::Command::new("xdg-open")
-            .arg(&installer_url)
-            .spawn();
     }
 
     // Exit so the NSIS installer can replace the running binary.
