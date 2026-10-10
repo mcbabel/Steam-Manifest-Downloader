@@ -32,7 +32,7 @@ is representing the project in public.
 
 Reports of violations can be sent privately to:
 
-**<mcbabel.sup@protonmail.com>**
+**<conduct@mcbabel.de>**
 
 All reports will be reviewed and investigated promptly and fairly. The
 project maintainer is responsible for clarifying and enforcing these
