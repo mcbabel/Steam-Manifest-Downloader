@@ -34,6 +34,10 @@ Upload `.lua` / `.st` files or search by App ID across configurable sources (Git
   <img src="assets/screenshots/home.png" alt="Main page of Steam Manifest Downloader with the five steps and the upload area" width="100%">
 </p>
 
+<p align="center">
+  <img src="assets/screenshots/terminal-home.png" alt="Main page of the terminal version with the steps and the upload field" width="100%">
+</p>
+
 ---
 
 ## ✨ Features
