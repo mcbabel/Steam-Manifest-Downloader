@@ -20,7 +20,7 @@ Use either of the following private channels:
 
 1. **Preferred:** GitHub Security Advisories — open a private report at
    <https://github.com/MCbabel/Steam-Manifest-Downloader/security/advisories/new>.
-2. **Email:** <mcbabel.sup@protonmail.com>.
+2. **Email:** <security@mcbabel.de>.
 
 Please include:
 

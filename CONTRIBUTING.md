@@ -202,4 +202,4 @@ problem.
 
 Participation in this project is governed by the
 [Code of Conduct](./CODE_OF_CONDUCT.md). Report unacceptable behavior to
-<mcbabel.sup@protonmail.com>.
+<conduct@mcbabel.de>.

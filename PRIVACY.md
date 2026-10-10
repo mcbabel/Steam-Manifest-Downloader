@@ -267,4 +267,4 @@ anonymous and will age out of the server logs per the retention policy.
 ## Questions
 
 Open an issue with the `question` template or email
-`mcbabel.sup@protonmail.com`.
+`privacy@mcbabel.de`.
