@@ -802,6 +802,7 @@ fn render_update(buf: &mut Buffer, area: Rect, ctx: &mut Ctx, u: &UpdateInfo) {
         let cmd = match u.method.as_str() {
             "flatpak" => "flatpak update de.mcbabel.SteamManifestDownloader",
             "snap" => "sudo snap refresh steam-manifest-downloader",
+            "scoop" => "scoop update steam-manifest-downloader",
             _ => "paru -Syu steam-manifest-downloader-bin",
         };
         buf.set_string(inner.x + 2, y + 1, cmd, theme::accent());

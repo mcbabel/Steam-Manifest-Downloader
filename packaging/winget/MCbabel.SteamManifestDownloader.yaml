@@ -1,0 +1,5 @@
+PackageIdentifier: MCbabel.SteamManifestDownloader
+PackageVersion: "@VERSION@"
+DefaultLocale: en-US
+ManifestType: version
+ManifestVersion: 1.9.0

@@ -1,10 +1,17 @@
 const GITHUB_REPO: &str = "MCbabel/Steam-Manifest-Downloader";
 const USER_AGENT: &str = "SteamManifestDownloader";
 
+pub fn is_scoop_path(path: &str) -> bool {
+    path.to_ascii_lowercase().replace('/', "\\").contains("\\scoop\\apps\\")
+}
+
 pub fn detect_install_method() -> &'static str {
     #[cfg(target_os = "windows")]
     {
-        "self"
+        match std::env::current_exe() {
+            Ok(path) if is_scoop_path(&path.to_string_lossy()) => "scoop",
+            _ => "self",
+        }
     }
     #[cfg(target_os = "linux")]
     {
@@ -315,6 +322,13 @@ pub fn is_newer_version(current: &str, remote: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn detects_scoop_installs() {
+        assert!(is_scoop_path(r"C:\Users\sam\scoop\apps\steam-manifest-downloader\current\Steam Manifest Downloader.exe"));
+        assert!(is_scoop_path("D:/Tools/Scoop/apps/steam-manifest-downloader/1.6.0/x.exe"));
+        assert!(!is_scoop_path(r"C:\Users\sam\AppData\Local\Steam Manifest Downloader\x.exe"));
+    }
 
     #[test]
     fn whats_new_only_after_an_update() {

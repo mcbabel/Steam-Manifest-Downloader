@@ -1,0 +1,22 @@
+{
+    "version": "@VERSION@",
+    "description": "Download Steam depots from .lua/.st files or by App ID, add games to Steam and patch them with gbe_fork.",
+    "homepage": "https://smd.mcbabel.de/",
+    "license": "GPL-2.0-or-later",
+    "url": "@ZIP_URL@",
+    "hash": "@ZIP_SHA256@",
+    "extract_dir": "Steam-Manifest-Downloader_@VERSION@_windows-standalone",
+    "shortcuts": [
+        [
+            "Steam Manifest Downloader.exe",
+            "Steam Manifest Downloader"
+        ]
+    ],
+    "checkver": {
+        "github": "https://github.com/MCbabel/Steam-Manifest-Downloader"
+    },
+    "autoupdate": {
+        "url": "https://github.com/MCbabel/Steam-Manifest-Downloader/releases/download/v$version/Steam-Manifest-Downloader_$version_windows-standalone.zip",
+        "extract_dir": "Steam-Manifest-Downloader_$version_windows-standalone"
+    }
+}

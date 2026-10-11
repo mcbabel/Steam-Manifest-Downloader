@@ -1,0 +1,24 @@
+PackageIdentifier: MCbabel.SteamManifestDownloader
+PackageVersion: "@VERSION@"
+PackageLocale: en-US
+Publisher: MCbabel
+PublisherUrl: https://github.com/MCbabel
+PublisherSupportUrl: https://github.com/MCbabel/Steam-Manifest-Downloader/issues
+PackageName: Steam Manifest Downloader
+PackageUrl: https://smd.mcbabel.de/
+License: GPL-2.0-or-later
+LicenseUrl: https://github.com/MCbabel/Steam-Manifest-Downloader/blob/main/LICENSE
+ShortDescription: Download Steam depots from .lua/.st files or by App ID, add games to Steam and patch them with gbe_fork.
+Description: |-
+  Steam Manifest Downloader downloads Steam game depots straight from Steam's CDN. Start from a .lua or .st file or search by App ID across your depot sources.
+  It keeps games up to date from its history, can add them to the Steam library and can patch them with the gbe_fork emulator and Steamless.
+Moniker: smd
+Tags:
+  - steam
+  - depot
+  - manifest
+  - downloader
+  - gbe-fork
+ReleaseNotesUrl: "@RELEASE_URL@"
+ManifestType: defaultLocale
+ManifestVersion: 1.9.0

@@ -207,6 +207,14 @@ jobs:
             echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Package manager manifests
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          SETUP=$(find artifacts/windows-nsis -name '*-setup.exe' -print -quit)
+          ZIP=$(find artifacts/windows-standalone -name '*.zip' -print -quit)
+          bash packaging/render-package-managers.sh "$TAG" "$SETUP" "$ZIP" artifacts/package-managers
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
@@ -222,6 +230,7 @@ jobs:
             artifacts/linux-builds/*
             artifacts/tui-linux/*
             artifacts/tui-windows/*
+            artifacts/package-managers/*
 
   docker:
     name: Docker image

@@ -197,6 +197,8 @@ function updateCommandsFor(method) {
       return [{ label: '', cmd: 'flatpak update de.mcbabel.SteamManifestDownloader' }];
     case 'snap':
       return [{ label: '', cmd: 'sudo snap refresh steam-manifest-downloader' }];
+    case 'scoop':
+      return [{ label: '', cmd: 'scoop update steam-manifest-downloader' }];
     case 'system':
     default:
       return [
