@@ -97,6 +97,47 @@ pub const NO_SOURCES: &str = "no_sources_configured";
 pub const NO_KEY: &str = "no_api_key";
 pub const UNKNOWN: &str = "unknown";
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Advice {
+    pub id: &'static str,
+    pub actions: &'static [&'static str],
+}
+
+impl Advice {
+    pub fn to_json(self) -> serde_json::Value {
+        serde_json::json!({ "id": self.id, "actions": self.actions })
+    }
+}
+
+const NETWORK_CLASSES: &[&str] = &[SERVER_ERROR, CONNECT, DNS, TIMEOUT, TLS, BODY];
+
+pub fn advice(stage: &str, class: &str) -> Advice {
+    let a = |id, actions| Advice { id, actions };
+    match (stage, class) {
+        (_, NO_KEY) => a("no_api_key", &["enter_mh_key"]),
+        (_, NO_SOURCES) => a("no_sources", &["sources", "upload"]),
+        ("source_probe", NOT_FOUND) => a("app_missing", &["sources", "upload"]),
+        ("depot_key", NOT_FOUND) => a("no_depot_key", &["sources", "report_bug"]),
+        ("manifest_code", NOT_FOUND) | ("manifest_fetch", NOT_FOUND) => {
+            a("manifest_missing", &["enter_mh_key", "sources"])
+        }
+        (_, RATE_LIMITED) => a("rate_limited", &["retry"]),
+        ("disk", _) => a("disk", &["back"]),
+        (_, c) if NETWORK_CLASSES.contains(&c) => a("network", &["retry", "proxy"]),
+        _ => a("unknown", &["report_bug"]),
+    }
+}
+
+pub fn advice_for_diag(diag: &serde_json::Value) -> Option<Advice> {
+    let outcome = diag.get("outcome").and_then(|v| v.as_str()).unwrap_or("");
+    if outcome == Outcome::Complete.as_str() || outcome == Outcome::Cancelled.as_str() {
+        return None;
+    }
+    let stage = diag.get("fail_stage").and_then(|v| v.as_str()).unwrap_or("unknown");
+    let class = diag.get("fail_class").and_then(|v| v.as_str()).unwrap_or(UNKNOWN);
+    Some(advice(stage, class))
+}
+
 pub fn classify_status(status: u16) -> &'static str {
     match status {
         401 | 403 => UNAUTHORIZED,
@@ -441,6 +482,25 @@ fn tally(items: &[&'static str]) -> serde_json::Value {
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn advice_points_to_the_next_step() {
+        assert_eq!(advice("manifest_fetch", NO_KEY).id, "no_api_key");
+        assert_eq!(advice("source_probe", NO_SOURCES).actions, &["sources", "upload"]);
+        assert_eq!(advice("source_probe", NOT_FOUND).id, "app_missing");
+        assert_eq!(advice("depot_key", NOT_FOUND).id, "no_depot_key");
+        assert_eq!(advice("manifest_code", NOT_FOUND).id, "manifest_missing");
+        assert_eq!(advice("cdn_token", SERVER_ERROR).id, "network");
+        assert_eq!(advice("login", CONNECT).actions, &["retry", "proxy"]);
+        assert_eq!(advice("chunk", RATE_LIMITED).id, "rate_limited");
+        assert_eq!(advice("disk", IO).id, "disk");
+        assert_eq!(advice("ddm", UNKNOWN).id, "unknown");
+        let diag = serde_json::json!({ "outcome": "failed", "fail_stage": "depot_key", "fail_class": "not_found" });
+        assert_eq!(advice_for_diag(&diag).map(|a| a.id), Some("no_depot_key"));
+        assert!(advice_for_diag(&serde_json::json!({ "outcome": "complete" })).is_none());
+        assert!(advice_for_diag(&serde_json::json!({ "outcome": "cancelled" })).is_none());
+    }
+
     use super::*;
 
     #[test]

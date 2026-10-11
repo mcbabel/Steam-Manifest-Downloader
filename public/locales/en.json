@@ -1047,5 +1047,52 @@
     "change": "Change",
     "docs": "Read the guide",
     "later": "Look around first"
+  },
+  "advice": {
+    "no_api_key": {
+      "title": "This download needs a ManifestHub key",
+      "text": "Steam no longer hands out this manifest directly. With a free ManifestHub key SMD can fetch it from there."
+    },
+    "no_sources": {
+      "title": "No depot source is set up",
+      "text": "Add a depot source in the settings, or start from a .lua or .st file."
+    },
+    "app_missing": {
+      "title": "This game is not in your depot sources",
+      "text": "Add a source that has it, or start from a .lua or .st file for the game."
+    },
+    "no_depot_key": {
+      "title": "No key for some depots",
+      "text": "Your source has no decryption key for these depots, so they cannot be downloaded. Another source may have it. If you think the key should be there, report it."
+    },
+    "manifest_missing": {
+      "title": "The manifest could not be found",
+      "text": "Steam does not serve this manifest any more. A ManifestHub key or a source that has the .manifest file can help."
+    },
+    "rate_limited": {
+      "title": "Too many requests right now",
+      "text": "A server asked SMD to slow down. Wait a minute, then try again."
+    },
+    "network": {
+      "title": "Steam or a source could not be reached",
+      "text": "This is usually a short outage or a network problem. Try again in a moment. Behind a proxy or firewall, check the proxy settings."
+    },
+    "disk": {
+      "title": "The files could not be written",
+      "text": "Check that the download folder exists, that you can write to it and that the disk has space. Pick another folder if needed."
+    },
+    "unknown": {
+      "title": "Something unexpected went wrong",
+      "text": "The log above has the details. Reporting it helps to fix it."
+    },
+    "actions": {
+      "enter_mh_key": "Enter ManifestHub key",
+      "sources": "Manage sources",
+      "upload": "Use a .lua file",
+      "retry": "Try again",
+      "proxy": "Proxy settings",
+      "back": "Choose another folder",
+      "report_bug": "Report this error"
+    }
   }
 }

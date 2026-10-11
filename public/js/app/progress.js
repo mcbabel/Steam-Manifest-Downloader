@@ -3,6 +3,7 @@ function initProgressUI(depots) {
   els.progressStatus.textContent = window.i18n.t('progress.initializing');
   els.terminalOutput.innerHTML = '';
   els.completionMessage.classList.add('hidden');
+  hideNextSteps(document.getElementById('failure-advice'));
   state.downloadFailed = false;
   if (els.btnNextStep) els.btnNextStep.classList.add('hidden');
   els.btnCancel.classList.remove('hidden');
@@ -541,6 +542,7 @@ function handleComplete(msg) {
   buildPendingHistoryEntry(msg);
   const summary = eventText(msg);
   showCompletion(allOk, summary);
+  if (!allOk) showFailureAdvice(msg.advice);
 
   if (msg.results) {
     const results = Array.isArray(msg.results) ? msg.results : [];
@@ -591,6 +593,7 @@ function handleError(msg) {
       err_key: msg.key || window.i18n.errorKey(msg.message) || 'unmatched',
     }));
     showCompletion(false, errorText);
+    showFailureAdvice(msg.advice);
     showBrowserNotification(window.i18n.t('notifications.failedTitle'), window.i18n.t('notifications.failedBody', { message: errorText }));
     playNotificationSound();
     cleanupProgressListener();
@@ -686,6 +689,54 @@ function showCompletion(success, message) {
       els.btnNextStep.textContent = window.i18n.t('progress.backToSelection');
     }
   }
+}
+
+const ADVICE_IDS = ['no_api_key', 'no_sources', 'app_missing', 'no_depot_key', 'manifest_missing', 'rate_limited', 'network', 'disk', 'unknown'];
+
+function adviceAction(action) {
+  switch (action) {
+    case 'enter_mh_key':
+      return () => { goBackToSelect(); showMhKeyRequiredHint(); };
+    case 'sources':
+      return () => openSettings('sources');
+    case 'proxy':
+      return () => openSettings('sources');
+    case 'upload':
+      return () => { resetApp(); switchTab('upload'); };
+    case 'retry':
+      return () => { goBackToSelect(); startDownload(); };
+    case 'back':
+      return () => { goBackToSelect(); if (els.downloadDirInput) els.downloadDirInput.focus(); };
+    default:
+      return null;
+  }
+}
+
+function showFailureAdvice(advice) {
+  const box = document.getElementById('failure-advice');
+  if (!box || !advice || !ADVICE_IDS.includes(advice.id)) return;
+  const actions = (advice.actions || [])
+    .map((action) => {
+      const run = adviceAction(action);
+      if (!run) return null;
+      return {
+        label: window.i18n.t(`advice.actions.${action}`),
+        onClick: () => {
+          emitEvent('advice_action', { advice: advice.id, action });
+          run();
+        },
+      };
+    })
+    .filter(Boolean);
+  renderNextSteps(box, {
+    title: window.i18n.t(`advice.${advice.id}.title`),
+    text: window.i18n.t(`advice.${advice.id}.text`),
+    tone: 'error',
+    actions,
+  });
+  box.classList.remove('hidden');
+  setTimeout(() => box.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 50);
+  emitEvent('advice_shown', { advice: advice.id });
 }
 
 function showMhKeyRequiredHint() {

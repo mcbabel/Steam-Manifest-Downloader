@@ -136,6 +136,7 @@ pub enum Action {
     AskCancel,
     CancelConfirmed,
     ProgressNext,
+    Advice(&'static str, &'static str),
     Home,
 
     PickExe(usize),

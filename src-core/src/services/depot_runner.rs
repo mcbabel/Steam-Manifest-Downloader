@@ -248,6 +248,11 @@ pub fn emit_progress(sink: &Sink, event: &ProgressEvent) {
     match serde_json::to_value(event) {
         Ok(mut payload) => {
             redact_payload(&mut payload, false);
+            if matches!(event.event_type.as_str(), "error" | "complete") {
+                if let Some(advice) = event.diag.as_ref().and_then(crate::services::diag::advice_for_diag) {
+                    payload["advice"] = advice.to_json();
+                }
+            }
             sink.emit(DOWNLOAD_PROGRESS, payload)
         }
         Err(e) => eprintln!("[DepotRunner] Failed to emit progress event: {}", e),

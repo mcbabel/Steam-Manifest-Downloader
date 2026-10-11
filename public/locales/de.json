@@ -1047,5 +1047,52 @@
     "change": "Ändern",
     "docs": "Anleitung lesen",
     "later": "Erst mal umsehen"
+  },
+  "advice": {
+    "no_api_key": {
+      "title": "Für diesen Download brauchst du einen ManifestHub-Key",
+      "text": "Steam gibt dieses Manifest nicht mehr direkt heraus. Mit einem kostenlosen ManifestHub-Key kann SMD es dort holen."
+    },
+    "no_sources": {
+      "title": "Keine Depot-Quelle eingerichtet",
+      "text": "Füge in den Einstellungen eine Depot-Quelle hinzu oder starte mit einer .lua- oder .st-Datei."
+    },
+    "app_missing": {
+      "title": "Dieses Spiel ist in deinen Depot-Quellen nicht dabei",
+      "text": "Füge eine Quelle hinzu, die es hat, oder starte mit einer .lua- oder .st-Datei für das Spiel."
+    },
+    "no_depot_key": {
+      "title": "Für einige Depots fehlt der Schlüssel",
+      "text": "Deine Quelle hat für diese Depots keinen Schlüssel, deshalb lassen sie sich nicht laden. Eine andere Quelle hat ihn vielleicht. Wenn der Schlüssel eigentlich da sein müsste, melde es."
+    },
+    "manifest_missing": {
+      "title": "Das Manifest wurde nicht gefunden",
+      "text": "Steam liefert dieses Manifest nicht mehr aus. Ein ManifestHub-Key oder eine Quelle mit der .manifest-Datei kann helfen."
+    },
+    "rate_limited": {
+      "title": "Gerade zu viele Anfragen",
+      "text": "Ein Server hat SMD gebeten, langsamer zu machen. Warte eine Minute und versuch es dann noch einmal."
+    },
+    "network": {
+      "title": "Steam oder eine Quelle war nicht erreichbar",
+      "text": "Meist ist das eine kurze Störung oder ein Netzwerkproblem. Versuch es gleich noch einmal. Hinter einem Proxy oder einer Firewall prüf die Proxy-Einstellungen."
+    },
+    "disk": {
+      "title": "Die Dateien konnten nicht geschrieben werden",
+      "text": "Prüf, ob der Download-Ordner existiert, ob du dort schreiben darfst und ob genug Platz frei ist. Wähl sonst einen anderen Ordner."
+    },
+    "unknown": {
+      "title": "Etwas Unerwartetes ist schiefgelaufen",
+      "text": "Im Log oben stehen die Details. Eine Fehlermeldung hilft, es zu beheben."
+    },
+    "actions": {
+      "enter_mh_key": "ManifestHub-Key eingeben",
+      "sources": "Quellen verwalten",
+      "upload": ".lua-Datei nehmen",
+      "retry": "Erneut versuchen",
+      "proxy": "Proxy-Einstellungen",
+      "back": "Anderen Ordner wählen",
+      "report_bug": "Fehler melden"
+    }
   }
 }

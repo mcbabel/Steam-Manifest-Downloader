@@ -610,6 +610,9 @@ impl App {
         }
         self.record_success_history(&results);
         self.finish_download(all_ok, message);
+        if !all_ok {
+            self.set_advice(msg);
+        }
         if outcome == "partial" {
             if let Some(f) = self.wiz.progress.as_mut().and_then(|p| p.finished.as_mut()) {
                 f.tone = Tone::Warning;
@@ -696,6 +699,7 @@ impl App {
             }
             self.emit("download_completed", Some(props));
             self.finish_download(false, message);
+            self.set_advice(msg);
             if !self.queue_after(super::queue::QueueOutcome::Failed) {
                 self.schedule_shutdown();
             }
@@ -890,10 +894,59 @@ impl App {
                 success,
                 message,
                 tone: if success { Tone::Success } else { Tone::Error },
+                advice: None,
             });
             p.cancelling = false;
         }
         self.focus = Some(Fid::new("progress.next"));
+    }
+
+    fn set_advice(&mut self, msg: &Value) {
+        let Some(advice) = msg.get("advice") else { return };
+        let Some(id) = advice.get("id").and_then(|v| v.as_str()).and_then(advice_id) else {
+            return;
+        };
+        let actions: Vec<&'static str> = advice
+            .get("actions")
+            .and_then(|v| v.as_array())
+            .map(|list| list.iter().filter_map(|a| a.as_str()).filter_map(advice_action).collect())
+            .unwrap_or_default();
+        if let Some(f) = self.wiz.progress.as_mut().and_then(|p| p.finished.as_mut()) {
+            f.advice = Some((id, actions));
+        }
+        self.emit("advice_shown", Some(serde_json::json!({ "advice": id })));
+    }
+
+    fn run_advice(&mut self, id: &'static str, action: &'static str) {
+        self.emit("advice_action", Some(serde_json::json!({ "advice": id, "action": action })));
+        match action {
+            "enter_mh_key" => {
+                self.wiz.step = Step::Select;
+                self.wiz.mh_hint = Some(t("advice.no_api_key.text"));
+                self.focus = Some(Fid::new("select.mh"));
+            }
+            "sources" => {
+                self.dispatch(Action::Nav(Page::Settings));
+                self.dispatch(Action::SettingsTab(2));
+            }
+            "proxy" => {
+                self.dispatch(Action::Nav(Page::Settings));
+                self.dispatch(Action::SettingsTab(1));
+            }
+            "upload" => {
+                self.reset_wizard();
+                self.dispatch(Action::SourceTab(super::action::SourceTab::Upload));
+            }
+            "retry" => {
+                self.wiz.step = Step::Select;
+                self.dispatch(Action::StartDownload);
+            }
+            "back" => {
+                self.wiz.step = Step::Select;
+                self.focus = Some(Fid::new("select.dir"));
+            }
+            _ => {}
+        }
     }
 
     fn check_emulator_support(&mut self) {
@@ -939,6 +992,7 @@ impl App {
                 self.cancel_download();
             }
             Action::ProgressNext => self.progress_next(),
+            Action::Advice(id, action) => self.run_advice(id, action),
             Action::Home => self.reset_wizard(),
             Action::ToggleShutdownAfter => self.shutdown_after = !self.shutdown_after,
             Action::ShutdownAbort => {
@@ -1231,6 +1285,31 @@ impl App {
 
         let footer = take_bottom(&mut rest, 1);
         let _ = take_bottom(&mut rest, 1);
+        if let Some((id, actions)) = p.finished.as_ref().and_then(|f| f.advice.clone()) {
+            let specs: Vec<ButtonSpec> = actions
+                .iter()
+                .enumerate()
+                .map(|(i, action)| {
+                    ButtonSpec::new(
+                        t(&format!("advice.actions.{}", action)),
+                        Fid::idx("progress.advice", i),
+                        Action::Advice(id, action),
+                        if i == 0 { Btn::Primary } else { Btn::Secondary },
+                    )
+                })
+                .collect();
+            if !specs.is_empty() {
+                let r = take_bottom(&mut rest, 1);
+                widgets::buttons(buf, ctx, Rect::new(r.x + 2, r.y, r.width.saturating_sub(2), 1), &specs, false);
+            }
+            let text = t(&format!("advice.{}.text", id));
+            let h = widgets::wrap_height(&text, rest.width.saturating_sub(2)).min(4);
+            let r = take_bottom(&mut rest, h);
+            widgets::paragraph(buf, Rect::new(r.x + 2, r.y, r.width.saturating_sub(2), r.height), &text, theme::dim());
+            let r = take_bottom(&mut rest, 1);
+            widgets::text(buf, Rect::new(r.x + 2, r.y, r.width.saturating_sub(2), 1), &t(&format!("advice.{}.title", id)), theme::text().add_modifier(Modifier::BOLD));
+            let _ = take_bottom(&mut rest, 1);
+        }
         if let Some(f) = &p.finished {
             let h = widgets::status_height(&f.message, rest.width).min(4);
             let r = take_bottom(&mut rest, h);
@@ -1431,6 +1510,26 @@ impl App {
         }
         widgets::buttons(buf, ctx, footer, &specs, true);
     }
+}
+
+fn advice_id(id: &str) -> Option<&'static str> {
+    const IDS: &[&str] = &[
+        "no_api_key",
+        "no_sources",
+        "app_missing",
+        "no_depot_key",
+        "manifest_missing",
+        "rate_limited",
+        "network",
+        "disk",
+        "unknown",
+    ];
+    IDS.iter().find(|i| **i == id).copied()
+}
+
+fn advice_action(action: &str) -> Option<&'static str> {
+    const ACTIONS: &[&str] = &["enter_mh_key", "sources", "proxy", "upload", "retry", "back"];
+    ACTIONS.iter().find(|a| **a == action).copied()
 }
 
 #[cfg(test)]
