@@ -4,6 +4,7 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::Modifier;
 
+use super::action::SourceTab;
 use super::action::{Action, BrowsePurpose, InputId, ListId, ScrollTarget};
 use super::{apply, App};
 use crate::i18n::{self, t, tf};
@@ -40,6 +41,7 @@ pub enum Modal {
     Language(&'static str),
     Update(UpdateInfo),
     Help,
+    Welcome,
 }
 
 impl Modal {
@@ -111,6 +113,7 @@ impl Modal {
             Modal::Confirm(c) => Some(c.on_no.clone().unwrap_or(Action::CloseModal)),
             Modal::Telemetry => Some(Action::TelemetryAnswer(false)),
             Modal::Language(code) => Some(Action::LanguageChosen(code)),
+            Modal::Welcome => Some(Action::WelcomeChoice("closed")),
             _ => Some(Action::CloseModal),
         }
     }
@@ -261,6 +264,19 @@ impl App {
                     })
                 });
             }
+            Action::WelcomeChoice(choice) => {
+                self.close_modal();
+                self.emit("welcome_choice", Some(serde_json::json!({ "choice": choice })));
+                let tab = match choice {
+                    "upload" => Some(SourceTab::Upload),
+                    "search" => Some(SourceTab::Search),
+                    "patch" => Some(SourceTab::PatchOnly),
+                    _ => None,
+                };
+                if let Some(tab) = tab {
+                    self.dispatch(Action::SourceTab(tab));
+                }
+            }
             Action::LanguageChosen(code) => {
                 self.close_modal();
                 self.set_language(code);
@@ -317,6 +333,7 @@ impl App {
             Modal::Language(code) => render_language(buf, area, ctx, code),
             Modal::Update(u) => render_update(buf, area, ctx, u),
             Modal::Help => render_help(buf, area, ctx),
+            Modal::Welcome => render_welcome(buf, area, ctx),
         }
     }
 }
@@ -677,6 +694,50 @@ fn render_language(buf: &mut Buffer, area: Rect, ctx: &mut Ctx, current: &mut &'
         }
         y += 1;
     }
+}
+
+fn render_welcome(buf: &mut Buffer, area: Rect, ctx: &mut Ctx) {
+    let width = 72u16;
+    let iw = width - 4;
+    let lead = t("welcome.lead");
+    let choices = [
+        ("upload", "welcome.uploadTitle", "welcome.uploadHint"),
+        ("search", "welcome.searchTitle", "welcome.searchHint"),
+        ("patch", "welcome.patchTitle", "welcome.patchHint"),
+    ];
+    let h = widgets::wrap_height(&lead, iw) + choices.len() as u16 * 3 + 6;
+    let inner = frame(buf, area, width, h, &t("welcome.title"));
+    let mut y = inner.y + 1;
+    y += widgets::paragraph(buf, Rect::new(inner.x, y, inner.width, 4), &lead, theme::dim()) + 1;
+    for (i, (choice, title, hint)) in choices.iter().enumerate() {
+        let fid = Fid::idx("modal.welcome", i);
+        widgets::button(
+            buf,
+            ctx,
+            inner.x,
+            y,
+            inner.width,
+            &ButtonSpec::new(t(title), fid, Action::WelcomeChoice(choice), if i == 0 { Btn::Primary } else { Btn::Secondary }),
+        );
+        if i == 0 {
+            ctx.prefer(fid);
+        }
+        widgets::text(
+            buf,
+            Rect::new(inner.x + 2, y + 1, inner.width.saturating_sub(2), 1),
+            &t(hint),
+            theme::dim(),
+        );
+        y += 3;
+    }
+    let row = Rect::new(inner.x, inner.y + inner.height - 1, inner.width, 1);
+    widgets::buttons(
+        buf,
+        ctx,
+        row,
+        &[ButtonSpec::new(t("welcome.later"), f("modal.welcome.later"), Action::WelcomeChoice("closed"), Btn::Secondary)],
+        true,
+    );
 }
 
 fn render_update(buf: &mut Buffer, area: Rect, ctx: &mut Ctx, u: &UpdateInfo) {

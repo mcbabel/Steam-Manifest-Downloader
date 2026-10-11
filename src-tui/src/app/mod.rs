@@ -259,12 +259,19 @@ impl App {
 
     fn startup(&mut self) {
         let dir = self.data_dir.clone();
+        let first_start = self.settings.language.is_empty();
         self.spawn(async move {
             let status = smd_core::ops::consent::telemetry_status(&dir).await;
-            apply(move |app| match status["consent"].as_str() {
-                Some("pending") => app.queue_modal(Modal::telemetry()),
-                Some("accepted") => app.emit("app_start", Some(serde_json::json!({ "locale": i18n::language() }))),
-                _ => {}
+            apply(move |app| {
+                match status["consent"].as_str() {
+                    Some("pending") => app.queue_modal(Modal::telemetry()),
+                    Some("accepted") => app.emit("app_start", Some(serde_json::json!({ "locale": i18n::language() }))),
+                    _ => {}
+                }
+                if first_start {
+                    app.emit("welcome_shown", None);
+                    app.queue_modal(Modal::Welcome);
+                }
             })
         });
         if self.settings.language.is_empty() {

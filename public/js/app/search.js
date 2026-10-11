@@ -10,6 +10,7 @@ async function performSearch() {
   }
 
   els.searchError.classList.add('hidden');
+  hideNextSteps(document.getElementById('search-next-steps'));
   els.searchResults.classList.add('hidden');
   els.searchNextRow.classList.add('hidden');
   els.searchGameBanner.classList.add('hidden');
@@ -41,7 +42,7 @@ async function performSearch() {
     emitSearchOutcome(repos.length, raw.sourceProbe);
 
     if (repos.length === 0) {
-      showSearchError(window.i18n.t('search.noResults'));
+      showSearchNoResults(appId);
       reportError('search', null, 'search.noResults');
       return;
     }
@@ -65,6 +66,28 @@ function emitSearchOutcome(repoCount, probe) {
     source_probe: parts[0] || null,
     probe_class: parts[1] || null,
   });
+}
+
+function showSearchNoResults(appId) {
+  const box = document.getElementById('search-next-steps');
+  if (!box) {
+    showSearchError(window.i18n.t('search.noResults'));
+    return;
+  }
+  const act = (action, fn) => () => {
+    emitEvent('advice_action', { advice: 'search_no_results', action });
+    fn();
+  };
+  renderNextSteps(box, {
+    title: window.i18n.t('search.noResultsTitle', { appId }),
+    text: window.i18n.t('search.noResultsText'),
+    actions: [
+      { label: window.i18n.t('search.manageSources'), onClick: act('sources', () => openSettings('sources')) },
+      { label: window.i18n.t('search.useUpload'), onClick: act('upload', () => switchTab('upload')) },
+    ],
+  });
+  box.classList.remove('hidden');
+  emitEvent('advice_shown', { advice: 'search_no_results' });
 }
 
 function showSearchError(message) {

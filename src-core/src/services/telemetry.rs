@@ -451,6 +451,12 @@ const ALLOWED_EVENT_KINDS: &[&str] = &[
     "session_end",
     "game_data_written",
     "emu_section_viewed",
+    "welcome_shown",
+    "welcome_choice",
+    "advice_shown",
+    "advice_action",
+    "whats_new_shown",
+    "feedback_prompt",
 ];
 
 pub fn env_consent() -> Option<bool> {

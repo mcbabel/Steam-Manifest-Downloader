@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   bindSettingsLanguageCards();
   await showLanguagePickerIfNeeded(initSettings, hasStored);
   await initTelemetryConsent();
+  await showWelcomeIfNeeded(hasStored);
   await showPendingFollowupIfAny();
   setTimeout(checkForUpdates, 1500);
 });

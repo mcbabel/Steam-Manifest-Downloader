@@ -209,6 +209,8 @@ pub enum Action {
     BrowserToggleHidden,
     BrowserChoose,
     TelemetryAnswer(bool),
+    WelcomeChoice(&'static str),
+    SearchHint(&'static str),
     LanguageChosen(&'static str),
     UpdateSkip,
     UpdateLater,

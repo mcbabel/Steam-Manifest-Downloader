@@ -189,6 +189,7 @@
               <button id="btn-sources-empty-add" class="btn btn--primary" data-i18n="search.addSource">Add Source</button>
             </div>
             <p id="sources-empty-error" class="error-message hidden"></p>
+            <p class="sources-empty__alt"><span data-i18n="search.noSourceAlt">No source at hand? A .lua or .st file works without one.</span> <button type="button" id="btn-sources-empty-upload" class="btn btn--small btn--outline" data-i18n="search.useUpload">Upload a file instead</button></p>
           </div>
 
           <div id="search-game-banner" class="game-info-banner hidden">
@@ -213,6 +214,7 @@
           </div>
 
           <div id="search-error" class="error-message hidden"></div>
+          <div id="search-next-steps" class="next-steps hidden" role="status"></div>
           <div id="search-loading" class="loading hidden">
             <div class="spinner"></div>
             <span data-i18n="search.loading">Searching repositories...</span>
@@ -1684,6 +1686,51 @@
     </div>
   </div>
 
+  <div id="welcome-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="welcome-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content welcome-content">
+      <div class="modal__icon modal__icon--accent" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+      </div>
+      <h3 class="modal__title" id="welcome-title" data-i18n="welcome.title">Welcome to Steam Manifest Downloader</h3>
+      <p class="modal__text welcome__lead" data-i18n="welcome.lead">How do you want to start? You can switch at any time with the tabs in step 1.</p>
+      <div class="welcome__choices">
+        <button type="button" class="welcome__choice" data-choice="upload">
+          <span class="welcome__choice-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span>
+          <span class="welcome__choice-text">
+            <span class="welcome__choice-title" data-i18n="welcome.uploadTitle">I have a .lua or .st file</span>
+            <span class="welcome__choice-hint" data-i18n="welcome.uploadHint">Drop it in and pick the depots.</span>
+          </span>
+        </button>
+        <button type="button" class="welcome__choice" data-choice="search">
+          <span class="welcome__choice-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+          <span class="welcome__choice-text">
+            <span class="welcome__choice-title" data-i18n="welcome.searchTitle">Search for a game</span>
+            <span class="welcome__choice-hint" data-i18n="welcome.searchHint">By name or App ID, in the depot sources you have set up.</span>
+          </span>
+        </button>
+        <button type="button" class="welcome__choice" data-choice="patch">
+          <span class="welcome__choice-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span>
+          <span class="welcome__choice-text">
+            <span class="welcome__choice-title" data-i18n="welcome.patchTitle">The game is already on disk</span>
+            <span class="welcome__choice-hint" data-i18n="welcome.patchHint">Only run the emulator step on a folder.</span>
+          </span>
+        </button>
+      </div>
+      <div class="welcome__location">
+        <span class="welcome__location-label" data-i18n="welcome.location">Downloads go to</span>
+        <code id="welcome-location-path" class="welcome__location-path"></code>
+        <button type="button" id="btn-welcome-location" class="btn btn--small btn--outline" data-i18n="welcome.change">Change</button>
+      </div>
+      <div class="welcome__footer">
+        <a href="https://smd.mcbabel.de/documentation/" target="_blank" rel="noopener" class="link" data-i18n="welcome.docs">Read the guide</a>
+        <button type="button" id="btn-welcome-close" class="btn btn--small" data-modal-cancel data-i18n="welcome.later">Look around first</button>
+      </div>
+    </div>
+  </div>
+
   <div id="history-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="history-modal-title" aria-hidden="true">
     <div class="modal__backdrop"></div>
     <div class="modal__content history-modal-content">
@@ -1804,6 +1851,7 @@
   <script src="js/app/settings.js"></script>
   <script src="js/app/updater.js"></script>
   <script src="js/app/bug-report.js"></script>
+  <script src="js/app/onboarding.js"></script>
   <script src="js/app/events.js"></script>
   <script src="js/app/main.js"></script>
 </body>

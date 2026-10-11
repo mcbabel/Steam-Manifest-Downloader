@@ -120,6 +120,44 @@ function topmostVisibleDialog() {
   return null;
 }
 
+function renderNextSteps(container, { title, text, tone, actions }) {
+  if (!container) return;
+  container.innerHTML = '';
+  container.className = `next-steps${tone === 'error' ? ' next-steps--error' : ''}`;
+  if (title) {
+    const h = document.createElement('div');
+    h.className = 'next-steps__title';
+    h.textContent = title;
+    container.appendChild(h);
+  }
+  if (text) {
+    const p = document.createElement('div');
+    p.className = 'next-steps__text';
+    p.textContent = text;
+    container.appendChild(p);
+  }
+  const list = (actions || []).filter(Boolean);
+  if (list.length) {
+    const row = document.createElement('div');
+    row.className = 'next-steps__actions';
+    list.forEach((a, i) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `btn btn--small ${i === 0 ? 'btn--primary' : 'btn--outline'}`;
+      btn.textContent = a.label;
+      btn.addEventListener('click', a.onClick);
+      row.appendChild(btn);
+    });
+    container.appendChild(row);
+  }
+}
+
+function hideNextSteps(container) {
+  if (!container) return;
+  container.classList.add('hidden');
+  container.innerHTML = '';
+}
+
 function setupModalA11y() {
   document.querySelectorAll('[role="dialog"]').forEach((modal) => {
     modal.setAttribute('aria-hidden', modal.classList.contains('hidden') ? 'true' : 'false');

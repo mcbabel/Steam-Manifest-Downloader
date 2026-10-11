@@ -1,4 +1,4 @@
-async function openSettings() {
+async function openSettings(target) {
   try {
     const settings = await invoke('get_settings');
     els.autoUpdateToggle.checked = settings.auto_update !== false;
@@ -40,6 +40,7 @@ async function openSettings() {
   syncEngineDependentSettings();
   let section = 'general';
   try { section = localStorage.getItem(SETTINGS_SECTION_KEY) || 'general'; } catch (_) {}
+  if (typeof target === 'string' && target) section = target;
   showSettingsSection(section);
   resetSettingsDirty();
   emitEvent('settings_opened');

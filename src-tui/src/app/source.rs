@@ -10,7 +10,7 @@ use super::action::{
     AcTarget, Action, BrowsePurpose, InputId, ListId, ScrollTarget, SourceTab, Step,
 };
 use super::state::{DepotRow, EmuState, Parsed};
-use super::{apply, hint, App};
+use super::{apply, hint, App, Page};
 use crate::i18n::{t, tf};
 use crate::theme;
 use crate::ui::input::TextInput;
@@ -36,6 +36,17 @@ pub fn is_valid_app_id(s: &str) -> bool {
 impl App {
     pub(super) fn dispatch_source(&mut self, a: &Action) -> bool {
         match a {
+            Action::SearchHint(action) => {
+                self.emit("advice_action", Some(serde_json::json!({ "advice": "search_no_results", "action": action })));
+                self.wiz.search_no_results = false;
+                match *action {
+                    "sources" => {
+                        self.dispatch(Action::Nav(Page::Settings));
+                        self.dispatch(Action::SettingsTab(2));
+                    }
+                    _ => self.dispatch(Action::SourceTab(SourceTab::Upload)),
+                }
+            }
             Action::SourceTab(tab) => {
                 self.wiz.tab = *tab;
                 self.wiz.ac = Default::default();
@@ -149,6 +160,7 @@ impl App {
         let app_id = app_id.to_string();
         self.wiz.ac = Default::default();
         self.wiz.search_error = None;
+        self.wiz.search_no_results = false;
         self.wiz.repos.clear();
         self.wiz.repo_chosen = None;
         self.wiz.repo_selected = 0;
@@ -183,7 +195,8 @@ impl App {
                         );
                         app.wiz.repos = res.repos;
                         if app.wiz.repos.is_empty() {
-                            app.wiz.search_error = Some(t("search.noResults"));
+                            app.wiz.search_no_results = true;
+                            app.emit("advice_shown", Some(serde_json::json!({ "advice": "search_no_results" })));
                             app.wiz.auto_redownload = false;
                             return;
                         }
@@ -250,6 +263,7 @@ impl App {
         };
         self.wiz.manifests_loading = true;
         self.wiz.search_error = None;
+        self.wiz.search_no_results = false;
         let core = self.core.clone();
         let dir = self.data_dir.clone();
         self.spawn(async move {
@@ -785,6 +799,29 @@ impl App {
         if let Some(e) = &self.wiz.search_error {
             let h = widgets::status_height(e, rest.width).min(3);
             widgets::status(buf, take_top(&mut rest, h), Tone::Error, e, 0);
+        }
+        if self.wiz.search_no_results {
+            let app_id = self.wiz.search_app_id.clone().unwrap_or_default();
+            let title = tf("search.noResultsTitle", &[("appId", &app_id)]);
+            let h = widgets::status_height(&title, rest.width).min(2);
+            widgets::status(buf, take_top(&mut rest, h), Tone::Warning, &title, 0);
+            let text = t("search.noResultsText");
+            let h = widgets::wrap_height(&text, rest.width.saturating_sub(2)).min(4);
+            let r = take_top(&mut rest, h);
+            widgets::paragraph(buf, Rect::new(r.x + 2, r.y, r.width.saturating_sub(2), r.height), &text, theme::dim());
+            let _ = take_top(&mut rest, 1);
+            let row = take_top(&mut rest, 1);
+            widgets::buttons(
+                buf,
+                ctx,
+                Rect::new(row.x + 2, row.y, row.width.saturating_sub(2), 1),
+                &[
+                    ButtonSpec::new(t("search.manageSources"), Fid::new("search.hintSources"), Action::SearchHint("sources"), Btn::Primary),
+                    ButtonSpec::new(t("search.useUpload"), Fid::new("search.hintUpload"), Action::SearchHint("upload"), Btn::Secondary),
+                ],
+                false,
+            );
+            let _ = take_top(&mut rest, 1);
         }
 
         if !self.wiz.repos.is_empty() {

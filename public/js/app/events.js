@@ -3,6 +3,13 @@ function initEvents() {
   els.tabSearch.addEventListener('click', () => { switchTab('search'); refreshSourcesUI(); });
   els.tabPatchOnly.addEventListener('click', () => switchTab('patchOnly'));
 
+  const sourcesEmptyUpload = document.getElementById('btn-sources-empty-upload');
+  if (sourcesEmptyUpload) {
+    sourcesEmptyUpload.addEventListener('click', () => {
+      emitEvent('advice_action', { advice: 'no_sources', action: 'upload' });
+      switchTab('upload');
+    });
+  }
   if (els.btnSourcesEmptyAdd) {
     els.btnSourcesEmptyAdd.addEventListener('click', async () => {
       const ok = await addDepotSource(els.sourcesEmptyInput.value, els.sourcesEmptyError);

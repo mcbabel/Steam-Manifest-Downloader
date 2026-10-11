@@ -76,9 +76,14 @@
     "repoBadgeRemote": "Konfigurierte Manifest-Quelle",
     "noResults": "Keine Manifests für diese App-ID in einer konfigurierten Depot-Quelle gefunden. Füge in den Einstellungen weitere Quellen hinzu oder aktiviere sie.",
     "sourceExists": "Quelle ist schon hinzugefügt",
-    "noGamesFound": "Keine Spiele gefunden",
+    "noGamesFound": "Keine Spiele gefunden. Probier die App-ID aus dem Steam-Store-Link des Spiels.",
     "sourceFallback": "Quelle",
-    "invalidAppId": "Bitte gib eine gültige App-ID ein"
+    "invalidAppId": "Bitte gib eine gültige App-ID ein",
+    "noResultsTitle": "App {appId} ist in deinen Depot-Quellen nicht dabei",
+    "noResultsText": "Keine deiner Quellen hat Dateien für dieses Spiel. Füge eine weitere Quelle hinzu, trag unter Quellen einen Hubcap- oder Ryuu-Key ein oder nimm eine .lua- oder .st-Datei.",
+    "manageSources": "Quellen verwalten",
+    "useUpload": "Stattdessen Datei hochladen",
+    "noSourceAlt": "Keine Quelle zur Hand? Mit einer .lua- oder .st-Datei geht es auch ohne."
   },
   "patchOnly": {
     "lead": "Spieldateien schon vorhanden? Wähle den Ordner aus und führe nur den Emulator-Schritt aus: DLL-Tausch, Steamless und gbe_fork-Konfiguration. Es wird nichts heruntergeladen.",
@@ -1027,5 +1032,20 @@
     "required": "Bitte fülle die Zusammenfassung und „Was ist passiert?“ aus.",
     "opened": "GitHub wurde im Browser geöffnet. Prüfe den Bericht dort und sende ihn ab.",
     "failedPrefix": "Der Download ist mit dieser Meldung fehlgeschlagen:"
+  },
+  "welcome": {
+    "title": "Willkommen bei Steam Manifest Downloader",
+    "lead": "Wie möchtest du anfangen? Über die Tabs in Schritt 1 kannst du jederzeit wechseln.",
+    "uploadTitle": "Ich habe eine .lua- oder .st-Datei",
+    "uploadHint": "Datei ablegen und Depots auswählen.",
+    "searchTitle": "Nach einem Spiel suchen",
+    "searchHint": "Per Name oder App-ID in deinen Depot-Quellen.",
+    "patchTitle": "Das Spiel ist schon auf der Platte",
+    "patchHint": "Nur den Emulator-Schritt auf einen Ordner anwenden.",
+    "location": "Downloads landen in",
+    "locationUnset": "dem Ordner, den du in Schritt 2 wählst",
+    "change": "Ändern",
+    "docs": "Anleitung lesen",
+    "later": "Erst mal umsehen"
   }
 }

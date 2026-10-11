@@ -95,6 +95,15 @@ When telemetry is enabled, the app sends small events describing:
     was picked for a depot. Never the ID or the file
   - `emu_section_viewed` — a section of the emulator step was opened
     (`files`, `gamedata`, `emulator` or `extras`), once per section per app start
+  - `welcome_shown` / `welcome_choice` — the welcome after the first start was
+    shown, and which way to start was picked (`upload`, `search`, `patch`,
+    `location` or `closed`)
+  - `advice_shown` / `advice_action` — a "what you can do" hint after a failed
+    search or download was shown, which one by name (for example
+    `search_no_results` or `no_api_key`), and which of its buttons was used
+  - `whats_new_shown` — the "What's new" notes were shown after an update
+  - `feedback_prompt` — how the one-time "star on GitHub" card was answered
+    (`star`, `issue` or `dismiss`)
   - `shortcut_key` — a keyboard shortcut was used (`open`, `search`,
     `history`, `settings`)
   - `settings_saved` — which settings were changed, by name only (for example

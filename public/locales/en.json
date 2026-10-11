@@ -76,9 +76,14 @@
     "repoBadgeRemote": "Configured manifest source",
     "noResults": "No manifests found for this App ID in any configured depot source. Add or enable more sources in Settings.",
     "sourceExists": "Source already added",
-    "noGamesFound": "No games found",
+    "noGamesFound": "No games found. Try the App ID from the game's Steam store link.",
     "sourceFallback": "Source",
-    "invalidAppId": "Please enter a valid App ID"
+    "invalidAppId": "Please enter a valid App ID",
+    "noResultsTitle": "App {appId} is not in your depot sources",
+    "noResultsText": "None of your sources has files for this game. Add another source, add a Hubcap or Ryuu key under Sources, or use a .lua or .st file for it.",
+    "manageSources": "Manage sources",
+    "useUpload": "Upload a file instead",
+    "noSourceAlt": "No source at hand? A .lua or .st file works without one."
   },
   "patchOnly": {
     "lead": "Already have the game files? Point this at the folder and run only the emulator step: DLL swap, Steamless and gbe_fork config. Nothing is downloaded.",
@@ -1027,5 +1032,20 @@
     "required": "Please fill in the summary and what happened.",
     "opened": "GitHub opened in your browser. Check the report there and send it.",
     "failedPrefix": "The download failed with this message:"
+  },
+  "welcome": {
+    "title": "Welcome to Steam Manifest Downloader",
+    "lead": "How do you want to start? You can switch at any time with the tabs in step 1.",
+    "uploadTitle": "I have a .lua or .st file",
+    "uploadHint": "Drop it in and pick the depots.",
+    "searchTitle": "Search for a game",
+    "searchHint": "By name or App ID, in the depot sources you have set up.",
+    "patchTitle": "The game is already on disk",
+    "patchHint": "Only run the emulator step on a folder.",
+    "location": "Downloads go to",
+    "locationUnset": "the folder you pick in step 2",
+    "change": "Change",
+    "docs": "Read the guide",
+    "later": "Look around first"
   }
 }
