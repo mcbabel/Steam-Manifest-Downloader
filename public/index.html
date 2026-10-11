@@ -1619,6 +1619,36 @@
     </div>
   </div>
 
+  <div id="whats-new-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="whats-new-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content update-modal-content">
+      <header class="update-modal__header">
+        <div class="update-modal__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3l1.9 5.8H20l-4.9 3.6 1.9 5.8L12 14.6l-4.9 3.6 1.9-5.8L4 8.8h6.1z"/>
+          </svg>
+        </div>
+        <div class="update-modal__heading">
+          <h3 class="update-modal__title" id="whats-new-title"></h3>
+          <div class="update-modal__meta">
+            <span id="whats-new-date" class="update-modal__date"></span>
+          </div>
+        </div>
+      </header>
+      <div class="update-modal__body">
+        <div id="whats-new-notes" class="update-modal__notes"></div>
+      </div>
+      <footer class="update-modal__actions">
+        <div class="update-modal__actions-left">
+          <button id="btn-whats-new-github" type="button" class="btn btn--small update-modal__skip" data-i18n="modals.update.onGithub">Open on GitHub</button>
+        </div>
+        <div class="update-modal__actions-right">
+          <button id="btn-whats-new-close" type="button" class="btn btn--primary" data-modal-cancel data-i18n="whatsNew.close">Got it</button>
+        </div>
+      </footer>
+    </div>
+  </div>
+
   <div id="update-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="update-modal-title" aria-hidden="true">
     <div class="modal__backdrop"></div>
     <div class="modal__content update-modal-content">

@@ -243,6 +243,61 @@ fn clean_env_value(value: &str, appdir: &str) -> Option<Option<String>> {
     Some((!kept.is_empty()).then(|| kept.join(":")))
 }
 
+pub fn should_show_whats_new(last_seen: &str, current: &str, first_start: bool) -> bool {
+    if first_start || last_seen == current {
+        return false;
+    }
+    last_seen.is_empty() || is_newer_version(last_seen, current)
+}
+
+pub async fn release_notes(version: &str) -> Result<serde_json::Value, String> {
+    let url = format!(
+        "https://api.github.com/repos/{}/releases/tags/v{}",
+        GITHUB_REPO,
+        version.trim_start_matches('v')
+    );
+    let response = crate::services::net::client()
+        .get(&url)
+        .header("User-Agent", USER_AGENT)
+        .header("Accept", "application/vnd.github.v3+json")
+        .send()
+        .await
+        .map_err(|e| format!("Failed to load release notes: {}", crate::services::net::describe(&e)))?;
+    if !response.status().is_success() {
+        return Err(format!("GitHub API returned {}", response.status()));
+    }
+    let release: serde_json::Value = response
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse release notes: {}", e))?;
+    Ok(serde_json::json!({
+        "version": version.trim_start_matches('v'),
+        "date": release["published_at"].as_str(),
+        "body": release["body"].as_str(),
+        "releaseUrl": release["html_url"].as_str(),
+    }))
+}
+
+pub async fn whats_new(
+    app_data_dir: &std::path::Path,
+    current_version: &str,
+    first_start: bool,
+) -> Option<serde_json::Value> {
+    let mut settings = crate::services::settings::load_settings(app_data_dir).await;
+    let last_seen = settings.last_seen_version.clone();
+    if last_seen == current_version {
+        return None;
+    }
+    settings.last_seen_version = current_version.to_string();
+    let _ = crate::services::settings::save_settings(app_data_dir, &settings).await;
+    if !should_show_whats_new(&last_seen, current_version, first_start) {
+        return None;
+    }
+    let notes = release_notes(current_version).await.ok()?;
+    notes["body"].as_str().filter(|b| !b.trim().is_empty())?;
+    Some(notes)
+}
+
 pub fn is_newer_version(current: &str, remote: &str) -> bool {
     let parse = |v: &str| -> (u64, u64, u64) {
         let parts: Vec<u64> = v.split('.').filter_map(|p| p.parse().ok()).collect();
@@ -260,6 +315,15 @@ pub fn is_newer_version(current: &str, remote: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn whats_new_only_after_an_update() {
+        assert!(!should_show_whats_new("", "1.6.0", true));
+        assert!(should_show_whats_new("", "1.6.0", false));
+        assert!(should_show_whats_new("1.5.0", "1.6.0", false));
+        assert!(!should_show_whats_new("1.6.0", "1.6.0", false));
+        assert!(!should_show_whats_new("1.7.0", "1.6.0", false));
+    }
 
     #[test]
     fn strips_appimage_paths_from_the_environment() {

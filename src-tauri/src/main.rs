@@ -80,6 +80,7 @@ fn main() {
             commands::restart_app,
             // Updater
             commands::check_for_updates,
+            commands::get_whats_new,
             commands::install_update,
             commands::get_auto_update_enabled,
             // History

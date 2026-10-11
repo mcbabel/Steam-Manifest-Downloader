@@ -1094,5 +1094,9 @@
       "back": "Choose another folder",
       "report_bug": "Report this error"
     }
+  },
+  "whatsNew": {
+    "title": "What's new in {version}",
+    "close": "Got it"
   }
 }

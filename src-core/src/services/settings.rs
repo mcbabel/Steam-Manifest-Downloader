@@ -70,6 +70,10 @@ pub struct Settings {
     pub target_platform: String,
     #[serde(default)]
     pub steam_path: String,
+    #[serde(default)]
+    pub last_seen_version: String,
+    #[serde(default)]
+    pub feedback_prompt_done: bool,
 }
 
 fn default_use_native_downloader() -> bool {
@@ -152,6 +156,8 @@ impl Default for Settings {
             game_language: String::new(),
             target_platform: String::new(),
             steam_path: String::new(),
+            last_seen_version: String::new(),
+            feedback_prompt_done: false,
         }
     }
 }

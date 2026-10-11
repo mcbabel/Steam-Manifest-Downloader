@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await showLanguagePickerIfNeeded(initSettings, hasStored);
   await initTelemetryConsent();
   await showWelcomeIfNeeded(hasStored);
+  await showWhatsNewIfNeeded(hasStored);
   await showPendingFollowupIfAny();
   setTimeout(checkForUpdates, 1500);
 });

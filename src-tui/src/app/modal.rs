@@ -42,6 +42,7 @@ pub enum Modal {
     Update(UpdateInfo),
     Help,
     Welcome,
+    WhatsNew(UpdateInfo),
 }
 
 impl Modal {
@@ -72,6 +73,13 @@ impl Modal {
 
     pub fn language(current: &'static str) -> Self {
         Modal::Language(current)
+    }
+
+    pub fn whats_new(info: &serde_json::Value) -> Self {
+        match Modal::update(info) {
+            Modal::Update(u) => Modal::WhatsNew(u),
+            other => other,
+        }
     }
 
     pub fn update(info: &serde_json::Value) -> Self {
@@ -289,6 +297,16 @@ impl App {
                 self.emit("update_dismissed", Some(serde_json::json!({ "action": "skip" })));
                 self.close_modal();
             }
+            Action::WhatsNewOpen => {
+                if let Some(Modal::WhatsNew(u)) = &self.modal {
+                    if let Some(url) = &u.url {
+                        open_url(url);
+                        term::copy_to_clipboard(url);
+                        self.toast(Tone::Info, tf("tui.update.opened", &[("url", url)]));
+                    }
+                }
+                self.close_modal();
+            }
             Action::UpdateLater => {
                 self.emit("update_dismissed", Some(serde_json::json!({ "action": "later" })));
                 self.close_modal();
@@ -334,6 +352,7 @@ impl App {
             Modal::Update(u) => render_update(buf, area, ctx, u),
             Modal::Help => render_help(buf, area, ctx),
             Modal::Welcome => render_welcome(buf, area, ctx),
+            Modal::WhatsNew(u) => render_whats_new(buf, area, ctx, u),
         }
     }
 }
@@ -808,6 +827,34 @@ fn render_update(buf: &mut Buffer, area: Rect, ctx: &mut Ctx, u: &UpdateInfo) {
             Btn::Primary,
         )
         .enabled(u.url.is_some()),
+    ];
+    widgets::buttons(buf, ctx, row, &specs, true);
+    ctx.prefer(f("modal.yes"));
+}
+
+fn render_whats_new(buf: &mut Buffer, area: Rect, ctx: &mut Ctx, u: &UpdateInfo) {
+    let width = 76u16;
+    let notes = markdown_to_text(&u.notes);
+    let max_notes = area.height.saturating_sub(10).max(3);
+    let notes_h = widgets::wrap_height(&notes, width - 4).min(max_notes);
+    let title = tf("whatsNew.title", &[("version", &format!("v{}", u.version))]);
+    let inner = frame(buf, area, width, notes_h + 6, &title);
+    let mut y = inner.y + 1;
+    if let Some(d) = &u.date {
+        buf.set_string(inner.x, y, d, theme::dim());
+        y += 2;
+    }
+    widgets::paragraph(buf, Rect::new(inner.x, y, inner.width, notes_h), &notes, theme::text());
+    let row = Rect::new(inner.x, inner.y + inner.height - 1, inner.width, 1);
+    let specs = [
+        ButtonSpec::new(
+            t("tui.update.openRelease"),
+            f("modal.whatsNew.open"),
+            Action::WhatsNewOpen,
+            Btn::Secondary,
+        )
+        .enabled(u.url.is_some()),
+        ButtonSpec::new(t("whatsNew.close"), f("modal.yes"), Action::CloseModal, Btn::Primary),
     ];
     widgets::buttons(buf, ctx, row, &specs, true);
     ctx.prefer(f("modal.yes"));

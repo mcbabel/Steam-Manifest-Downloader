@@ -289,6 +289,18 @@ impl App {
                 }
             })
         });
+        let dir = self.data_dir.clone();
+        self.spawn(async move {
+            let info = smd_core::ops::updater::whats_new(&dir, VERSION, first_start).await;
+            apply(move |app| {
+                app.settings.last_seen_version = VERSION.to_string();
+                app.set.draft.last_seen_version = VERSION.to_string();
+                if let Some(info) = info {
+                    app.emit("whats_new_shown", None);
+                    app.queue_modal(Modal::whats_new(&info));
+                }
+            })
+        });
         if self.settings.auto_update {
             self.check_updates(false);
         }

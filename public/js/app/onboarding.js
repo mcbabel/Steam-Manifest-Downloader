@@ -67,3 +67,50 @@ async function showWelcomeIfNeeded(hasStored) {
     modal.classList.remove('hidden');
   });
 }
+
+async function showWhatsNewIfNeeded(hasStored) {
+  let info = null;
+  try {
+    info = await invoke('get_whats_new', { firstStart: !hasStored });
+  } catch (e) {
+    console.warn('get_whats_new failed:', e);
+  }
+  if (!info || !info.body) return;
+  const notes = renderReleaseNotes(info.body);
+  if (!notes) return;
+  const modal = document.getElementById('whats-new-modal');
+  if (!modal) return;
+  document.getElementById('whats-new-title').textContent = window.i18n.t('whatsNew.title', { version: `v${info.version}` });
+  const date = document.getElementById('whats-new-date');
+  date.textContent = '';
+  if (info.date) {
+    const d = new Date(info.date);
+    if (!isNaN(d.getTime())) date.textContent = d.toLocaleDateString(window.i18n.getCurrentLocale(), { dateStyle: 'medium' });
+  }
+  const box = document.getElementById('whats-new-notes');
+  box.innerHTML = notes;
+  emitEvent('whats_new_shown');
+  await new Promise((resolve) => {
+    const close = () => {
+      modal.classList.add('hidden');
+      resolve();
+    };
+    document.getElementById('btn-whats-new-close').addEventListener('click', close, { once: true });
+    modal.querySelector('.modal__backdrop').addEventListener('click', close, { once: true });
+    const github = document.getElementById('btn-whats-new-github');
+    github.classList.toggle('hidden', !info.releaseUrl);
+    github.onclick = () => openExternalUrl(info.releaseUrl);
+    box.addEventListener('click', (e) => {
+      const link = e.target.closest('a[data-external]');
+      if (!link) return;
+      e.preventDefault();
+      openExternalUrl(link.getAttribute('href'));
+    });
+    modal.classList.remove('hidden');
+    const body = box.closest('.update-modal__body');
+    setTimeout(() => {
+      if (body) body.scrollTop = 0;
+      document.getElementById('btn-whats-new-close').focus({ preventScroll: true });
+    }, 50);
+  });
+}

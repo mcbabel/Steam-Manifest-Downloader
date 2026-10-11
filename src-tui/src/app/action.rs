@@ -215,6 +215,7 @@ pub enum Action {
     LanguageChosen(&'static str),
     UpdateSkip,
     UpdateLater,
+    WhatsNewOpen,
     ReportBug,
     UpdateOpen,
 }

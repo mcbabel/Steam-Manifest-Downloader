@@ -12,6 +12,13 @@ pub async fn check_for_updates(app: AppHandle) -> Result<serde_json::Value, Stri
 }
 
 #[command]
+pub async fn get_whats_new(app: AppHandle, first_start: bool) -> Option<serde_json::Value> {
+    let dir = app_data_dir(&app);
+    let version = app.config().version.clone().unwrap_or_default();
+    smd_core::ops::updater::whats_new(&dir, &version, first_start).await
+}
+
+#[command]
 pub async fn install_update(
     app: AppHandle,
     installer_url: String,
