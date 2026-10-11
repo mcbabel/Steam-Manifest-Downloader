@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initTauri();
   refreshSourcesUI();
   setupModalA11y();
+  initFeedbackPrompt();
 
   bindSettingsLanguageCards();
   await showLanguagePickerIfNeeded(initSettings, hasStored);

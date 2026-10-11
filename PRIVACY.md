@@ -103,7 +103,7 @@ When telemetry is enabled, the app sends small events describing:
     `search_no_results` or `no_api_key`), and which of its buttons was used
   - `whats_new_shown` — the "What's new" notes were shown after an update
   - `feedback_prompt` — how the one-time "star on GitHub" card was answered
-    (`star`, `issue` or `dismiss`)
+    (`star`, `issue` or `dismiss`; the terminal version reports `shown`)
   - `shortcut_key` — a keyboard shortcut was used (`open`, `search`,
     `history`, `settings`)
   - `settings_saved` — which settings were changed, by name only (for example

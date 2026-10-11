@@ -612,6 +612,8 @@ impl App {
         self.finish_download(all_ok, message);
         if !all_ok {
             self.set_advice(msg);
+        } else {
+            self.maybe_feedback_prompt();
         }
         if outcome == "partial" {
             if let Some(f) = self.wiz.progress.as_mut().and_then(|p| p.finished.as_mut()) {
@@ -895,10 +897,39 @@ impl App {
                 message,
                 tone: if success { Tone::Success } else { Tone::Error },
                 advice: None,
+                feedback: false,
             });
             p.cancelling = false;
         }
         self.focus = Some(Fid::new("progress.next"));
+    }
+
+    fn maybe_feedback_prompt(&mut self) {
+        if self.settings.feedback_prompt_done {
+            return;
+        }
+        let dir = self.data_dir.clone();
+        self.spawn(async move {
+            let mut settings = smd_core::services::settings::load_settings(&dir).await;
+            if settings.feedback_prompt_done {
+                return apply(|_| {});
+            }
+            let history = smd_core::services::history::load_history(&dir).await;
+            let complete = history.entries.iter().filter(|e| e.status == "complete").count();
+            if complete < FEEDBACK_MIN_DOWNLOADS {
+                return apply(|_| {});
+            }
+            settings.feedback_prompt_done = true;
+            let _ = smd_core::services::settings::save_settings(&dir, &settings).await;
+            apply(move |app| {
+                app.settings.feedback_prompt_done = true;
+                app.set.draft.feedback_prompt_done = true;
+                if let Some(f) = app.wiz.progress.as_mut().and_then(|p| p.finished.as_mut()) {
+                    f.feedback = true;
+                }
+                app.emit("feedback_prompt", Some(serde_json::json!({ "action": "shown" })));
+            })
+        });
     }
 
     fn set_advice(&mut self, msg: &Value) {
@@ -1310,6 +1341,12 @@ impl App {
             widgets::text(buf, Rect::new(r.x + 2, r.y, r.width.saturating_sub(2), 1), &t(&format!("advice.{}.title", id)), theme::text().add_modifier(Modifier::BOLD));
             let _ = take_bottom(&mut rest, 1);
         }
+        if p.finished.as_ref().is_some_and(|f| f.feedback) {
+            let line = tf("feedback.tui", &[("url", &REPO_URL)]);
+            let h = widgets::wrap_height(&line, rest.width.saturating_sub(2)).min(2);
+            let r = take_bottom(&mut rest, h);
+            widgets::paragraph(buf, Rect::new(r.x + 2, r.y, r.width.saturating_sub(2), r.height), &line, theme::accent());
+        }
         if let Some(f) = &p.finished {
             let h = widgets::status_height(&f.message, rest.width).min(4);
             let r = take_bottom(&mut rest, h);
@@ -1511,6 +1548,9 @@ impl App {
         widgets::buttons(buf, ctx, footer, &specs, true);
     }
 }
+
+const REPO_URL: &str = "https://github.com/MCbabel/Steam-Manifest-Downloader";
+const FEEDBACK_MIN_DOWNLOADS: usize = 3;
 
 fn advice_id(id: &str) -> Option<&'static str> {
     const IDS: &[&str] = &[

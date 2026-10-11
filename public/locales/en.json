@@ -1098,5 +1098,13 @@
   "whatsNew": {
     "title": "What's new in {version}",
     "close": "Got it"
+  },
+  "feedback": {
+    "title": "Glad SMD helps!",
+    "text": "A star on GitHub helps other people find the project. Ideas and bug reports are welcome too.",
+    "star": "Star on GitHub",
+    "issue": "Share an idea or bug",
+    "dismiss": "Do not show again",
+    "tui": "Glad SMD helps! A star on GitHub helps others find it: {url}"
   }
 }

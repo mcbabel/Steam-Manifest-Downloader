@@ -2356,6 +2356,68 @@ button:disabled,
   line-height: 1.2;
 }
 
+.feedback-card {
+  position: relative;
+  display: flex;
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+  padding: 0.9rem 2.4rem 0.9rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--accent-glow);
+  text-align: left;
+}
+
+.feedback-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: var(--bg-input);
+  color: var(--accent);
+}
+
+.feedback-card__title {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.feedback-card__hint {
+  margin-top: 0.15rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.feedback-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.65rem;
+}
+
+.feedback-card__close {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.5rem;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.feedback-card__close:hover {
+  color: var(--text-primary);
+  background: var(--bg-input);
+}
+
 .welcome-content {
   max-width: 520px;
 }

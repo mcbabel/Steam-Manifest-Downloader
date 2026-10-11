@@ -93,6 +93,7 @@ pub struct Finished {
     pub message: String,
     pub tone: Tone,
     pub advice: Option<(&'static str, Vec<&'static str>)>,
+    pub feedback: bool,
 }
 
 #[derive(Debug, Clone)]

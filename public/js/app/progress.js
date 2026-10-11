@@ -4,6 +4,8 @@ function initProgressUI(depots) {
   els.terminalOutput.innerHTML = '';
   els.completionMessage.classList.add('hidden');
   hideNextSteps(document.getElementById('failure-advice'));
+  const feedback = document.getElementById('feedback-prompt');
+  if (feedback) feedback.classList.add('hidden');
   state.downloadFailed = false;
   if (els.btnNextStep) els.btnNextStep.classList.add('hidden');
   els.btnCancel.classList.remove('hidden');
@@ -543,6 +545,7 @@ function handleComplete(msg) {
   const summary = eventText(msg);
   showCompletion(allOk, summary);
   if (!allOk) showFailureAdvice(msg.advice);
+  else maybeShowFeedbackPrompt();
 
   if (msg.results) {
     const results = Array.isArray(msg.results) ? msg.results : [];

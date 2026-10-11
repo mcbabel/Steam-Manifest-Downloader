@@ -114,3 +114,42 @@ async function showWhatsNewIfNeeded(hasStored) {
     }, 50);
   });
 }
+
+const REPO_URL = 'https://github.com/MCbabel/Steam-Manifest-Downloader';
+const FEEDBACK_MIN_DOWNLOADS = 3;
+
+async function maybeShowFeedbackPrompt() {
+  const card = document.getElementById('feedback-prompt');
+  if (!card || !card.classList.contains('hidden')) return;
+  try {
+    const settings = await invoke('get_settings');
+    if (settings.feedback_prompt_done) return;
+    const entries = (await invoke('get_history')) || [];
+    const complete = entries.filter(e => e.status === 'complete').length;
+    if (complete < FEEDBACK_MIN_DOWNLOADS) return;
+  } catch (_) {
+    return;
+  }
+  card.classList.remove('hidden');
+}
+
+async function answerFeedbackPrompt(action) {
+  const card = document.getElementById('feedback-prompt');
+  if (card) card.classList.add('hidden');
+  emitEvent('feedback_prompt', { action });
+  if (action === 'star') openExternalUrl(REPO_URL);
+  if (action === 'issue') openExternalUrl(`${REPO_URL}/issues/new/choose`);
+  try {
+    const settings = await invoke('get_settings');
+    settings.feedback_prompt_done = true;
+    await invoke('save_settings', { settings });
+  } catch (e) {
+    console.error('Failed to save feedback prompt state:', e);
+  }
+}
+
+function initFeedbackPrompt() {
+  document.querySelectorAll('#feedback-prompt [data-feedback]').forEach((btn) => {
+    btn.addEventListener('click', () => answerFeedbackPrompt(btn.dataset.feedback));
+  });
+}

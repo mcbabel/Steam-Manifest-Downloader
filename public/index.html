@@ -441,6 +441,20 @@
 
         <div id="completion-message" class="completion-message hidden"></div>
         <div id="failure-advice" class="next-steps hidden" role="status"></div>
+        <div id="feedback-prompt" class="feedback-card hidden" role="status">
+          <div class="feedback-card__icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>
+          </div>
+          <div class="feedback-card__text">
+            <div class="feedback-card__title" data-i18n="feedback.title">Glad SMD helps!</div>
+            <div class="feedback-card__hint" data-i18n="feedback.text">A star on GitHub helps other people find the project. Ideas and bug reports are welcome too.</div>
+            <div class="feedback-card__actions">
+              <button type="button" class="btn btn--small btn--primary" data-feedback="star" data-i18n="feedback.star">Star on GitHub</button>
+              <button type="button" class="btn btn--small btn--outline" data-feedback="issue" data-i18n="feedback.issue">Share an idea or bug</button>
+            </div>
+          </div>
+          <button type="button" class="feedback-card__close" data-feedback="dismiss" data-i18n-attr="title=feedback.dismiss,aria-label=feedback.dismiss">&times;</button>
+        </div>
 
         <div class="card__footer">
           <div class="card__footer-left">
