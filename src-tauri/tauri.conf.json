@@ -8,6 +8,7 @@
   },
   "app": {
     "withGlobalTauri": true,
+    "macOSPrivateApi": true,
     "windows": [
       {
         "title": "Steam Manifest Downloader",
@@ -30,7 +31,8 @@
     "targets": ["nsis", "appimage"],
     "category": "Utility",
     "icon": [
-      "../assets/icon.png"
+      "../assets/icon.png",
+      "icons/icon.icns"
     ],
 
     "windows": {
@@ -42,6 +44,10 @@
       "appimage": {
         "bundleMediaFramework": true
       }
+    },
+    "macOS": {
+      "minimumSystemVersion": "11.0",
+      "signingIdentity": "-"
     }
   }
 }

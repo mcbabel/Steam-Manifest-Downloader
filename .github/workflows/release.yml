@@ -185,8 +185,13 @@ jobs:
           name: linux-builds
           path: "Steam Manifest Downloader_*_amd64.AppImage"
 
+  build-macos:
+    uses: ./.github/workflows/build-macos.yml
+    with:
+      channel: stable
+
   release:
-    needs: [build-windows, build-windows-standalone, build-linux, build-tui-linux]
+    needs: [build-windows, build-windows-standalone, build-linux, build-tui-linux, build-macos]
     runs-on: ubuntu-latest
 
     steps:
@@ -230,6 +235,8 @@ jobs:
             artifacts/linux-builds/*
             artifacts/tui-linux/*
             artifacts/tui-windows/*
+            artifacts/macos-dmg/*
+            artifacts/tui-macos/*
             artifacts/package-managers/*
 
   docker:

@@ -12,6 +12,7 @@ on:
       - 'public/**'
       - 'assets/**'
       - '.github/workflows/dev-build.yml'
+      - '.github/workflows/build-macos.yml'
       - '.github/actions/**'
       - '.github/workflows/docker.yml'
       - 'packaging/windows-standalone/**'
@@ -28,6 +29,7 @@ on:
       - 'public/**'
       - 'assets/**'
       - '.github/workflows/dev-build.yml'
+      - '.github/workflows/build-macos.yml'
       - '.github/actions/**'
       - '.github/workflows/docker.yml'
       - 'packaging/windows-standalone/**'
@@ -211,8 +213,17 @@ jobs:
           name: tui-windows
           path: target/release/smd.exe
 
+  build-macos:
+    name: macOS
+    needs: [check, test]
+    if: needs.check.outputs.in-main == 'false'
+    uses: ./.github/workflows/build-macos.yml
+    with:
+      channel: dev
+      label-suffix: -dev-@SHA@
+
   release:
-    needs: [check, build-windows, build-windows-standalone, build-linux, build-tui-linux, build-tui-windows]
+    needs: [check, build-windows, build-windows-standalone, build-linux, build-tui-linux, build-tui-windows, build-macos]
     if: needs.check.outputs.in-main == 'false'
     runs-on: ubuntu-latest
     permissions:
@@ -273,6 +284,8 @@ jobs:
             artifacts/linux-appimage/*
             artifacts/tui-linux/*
             artifacts/tui-windows/*
+            artifacts/macos-dmg/*
+            artifacts/tui-macos/*
 
   docker:
     name: Docker image (dev)

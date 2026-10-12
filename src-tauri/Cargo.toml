@@ -10,7 +10,7 @@ default-sources = ["smd-core/default-sources"]
 
 [dependencies]
 smd-core = { path = "../src-core", default-features = false }
-tauri = { version = "2", features = ["tray-icon"] }
+tauri = { version = "2", features = ["tray-icon", "macos-private-api"] }
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-shell = "2"

@@ -180,3 +180,13 @@ jobs:
         with:
           name: tui-windows-pr${{ github.event.pull_request.number }}
           path: target/release/smd.exe
+
+  build-macos:
+    name: macOS
+    needs: test
+    uses: ./.github/workflows/build-macos.yml
+    with:
+      channel: pr-${{ github.event.pull_request.number }}
+      ref: ${{ github.event.pull_request.head.sha }}
+      label-suffix: -pr${{ github.event.pull_request.number }}-@SHA@
+      artifact-suffix: -pr${{ github.event.pull_request.number }}

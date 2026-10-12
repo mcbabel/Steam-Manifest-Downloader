@@ -1,0 +1,227 @@
+name: Build macOS
+
+on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: "Build channel"
+        required: false
+        default: dev-local
+        type: string
+  workflow_call:
+    inputs:
+      channel:
+        required: true
+        type: string
+      ref:
+        required: false
+        default: ''
+        type: string
+      label-suffix:
+        required: false
+        default: ''
+        type: string
+      artifact-suffix:
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: macOS app and terminal (universal)
+    runs-on: macos-15
+    outputs:
+      label: ${{ steps.label.outputs.label }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: macos
+          workspaces: |
+            src-tauri
+            .
+
+      - name: File label
+        id: label
+        env:
+          SUFFIX: ${{ inputs.label-suffix }}
+          SHA: ${{ inputs.ref || github.sha }}
+        run: |
+          VERSION=$(sed -nE 's/^ *"version": *"([^"]+)".*/\1/p' src-tauri/tauri.conf.json | head -1)
+          echo "label=${VERSION}${SUFFIX//@SHA@/${SHA:0:7}}" >> "$GITHUB_OUTPUT"
+
+      - name: Core and terminal app tests
+        run: cargo test --workspace --locked
+
+      - name: App tests
+        working-directory: src-tauri
+        run: cargo test --bin steam-manifest-downloader
+
+      - name: Install Tauri CLI
+        run: cargo install cargo-binstall --locked && cargo binstall tauri-cli --version "^2.0" -y
+
+      - name: Build app
+        env:
+          SMD_BUILD_CHANNEL: ${{ inputs.channel }}
+          SMD_GIT_SHA: ${{ inputs.ref || github.sha }}
+        run: |
+          export SMD_BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          cargo tauri build --target universal-apple-darwin --bundles app,dmg
+
+      - name: Build terminal app
+        env:
+          SMD_BUILD_CHANNEL: ${{ inputs.channel }}
+          SMD_GIT_SHA: ${{ inputs.ref || github.sha }}
+        run: |
+          export SMD_BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          cargo build --release --locked -p smd-tui --target aarch64-apple-darwin
+          cargo build --release --locked -p smd-tui --target x86_64-apple-darwin
+          mkdir -p tui-stage
+          lipo -create -output tui-stage/smd \
+            target/aarch64-apple-darwin/release/smd \
+            target/x86_64-apple-darwin/release/smd
+          codesign --force --sign - tui-stage/smd
+
+      - name: Check bundle
+        id: bundle
+        run: |
+          BUNDLE=src-tauri/target/universal-apple-darwin/release/bundle
+          APP="$BUNDLE/macos/Steam Manifest Downloader.app"
+          EXE=$(/usr/libexec/PlistBuddy -c "Print :CFBundleExecutable" "$APP/Contents/Info.plist")
+          for bin in "$APP/Contents/MacOS/$EXE" tui-stage/smd; do
+            ARCHS=$(lipo -archs "$bin")
+            echo "$bin: $ARCHS"
+            case "$ARCHS" in *x86_64*arm64*|*arm64*x86_64*) ;; *) echo "::error::$bin is not universal ($ARCHS)"; exit 1 ;; esac
+          done
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          codesign --verify --verbose=2 tui-stage/smd
+          /usr/libexec/PlistBuddy -c "Print :LSMinimumSystemVersion" "$APP/Contents/Info.plist"
+          echo "dmg=$(ls "$BUNDLE"/dmg/*.dmg | head -1)" >> "$GITHUB_OUTPUT"
+
+      - name: Name files
+        env:
+          LABEL: ${{ steps.label.outputs.label }}
+          DMG: ${{ steps.bundle.outputs.dmg }}
+        run: |
+          mkdir -p dist/dmg dist/tui
+          cp "$DMG" "dist/dmg/Steam-Manifest-Downloader_${LABEL}_macos-universal.dmg"
+          tar -czf "dist/tui/Steam-Manifest-Downloader-Terminal_${LABEL}_macos-universal.tar.gz" -C tui-stage smd
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: macos-dmg${{ inputs.artifact-suffix }}
+          path: dist/dmg/*.dmg
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: tui-macos${{ inputs.artifact-suffix }}
+          path: dist/tui/*.tar.gz
+
+  smoke:
+    name: Smoke test (${{ matrix.arch }})
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            arch: arm64
+          - os: macos-15-intel
+            arch: x86_64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: macos-dmg${{ inputs.artifact-suffix }}
+          path: dmg
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: tui-macos${{ inputs.artifact-suffix }}
+          path: tui
+
+      - name: Install app from the DMG
+        run: |
+          DMG=$(ls dmg/*.dmg | head -1)
+          hdiutil attach "$DMG" -nobrowse -readonly -mountpoint /Volumes/smd
+          cp -R "/Volumes/smd/Steam Manifest Downloader.app" "$RUNNER_TEMP/"
+          hdiutil detach /Volumes/smd
+          codesign --verify --deep --strict "$RUNNER_TEMP/Steam Manifest Downloader.app"
+
+      - name: Start app
+        run: |
+          APP="$RUNNER_TEMP/Steam Manifest Downloader.app"
+          EXE=$(/usr/libexec/PlistBuddy -c "Print :CFBundleExecutable" "$APP/Contents/Info.plist")
+          mkdir -p shots
+          "$APP/Contents/MacOS/$EXE" > shots/app-${{ matrix.arch }}.log 2>&1 &
+          PID=$!
+          sleep 25
+          screencapture -x "shots/app-${{ matrix.arch }}.png" || echo "::warning::screencapture failed"
+          if ! kill -0 "$PID" 2>/dev/null; then
+            echo "::error::The app exited during startup"
+            cat "shots/app-${{ matrix.arch }}.log"
+            exit 1
+          fi
+          echo "App is running as $(ps -o comm= -p "$PID") on $(uname -m)"
+          kill "$PID"
+          tail -n 40 "shots/app-${{ matrix.arch }}.log"
+
+      - name: Terminal app
+        run: |
+          tar -xzf tui/*.tar.gz -C "$RUNNER_TEMP"
+          SMD="$RUNNER_TEMP/smd"
+          file "$SMD"
+          "$SMD" --version
+          "$SMD" --help
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: macos-screenshots-${{ matrix.arch }}${{ inputs.artifact-suffix }}
+          path: shots/
+
+  download:
+    name: Real download (terminal, ${{ matrix.arch }})
+    needs: build
+    continue-on-error: true
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            arch: arm64
+          - os: macos-15-intel
+            arch: x86_64
+    runs-on: ${{ matrix.os }}
+    env:
+      APP_ID: '480'
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: tui-macos${{ inputs.artifact-suffix }}
+          path: tui
+
+      - name: Search, list and download
+        run: |
+          tar -xzf tui/*.tar.gz -C "$RUNNER_TEMP"
+          SMD="$RUNNER_TEMP/smd"
+          OUT="$RUNNER_TEMP/games"
+          "$SMD" search "$APP_ID" --manifests 0
+          "$SMD" download "$APP_ID" --list
+          "$SMD" download "$APP_ID" --like-steam -o "$OUT" --json | tail -n 25
+          COUNT=$(find "$OUT" -type f | wc -l | tr -d ' ')
+          echo "Downloaded files: $COUNT"
+          find "$OUT" -type f | head -n 20
+          du -sh "$OUT"
+          test "$COUNT" -gt 0
