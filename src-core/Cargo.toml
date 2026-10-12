@@ -18,7 +18,7 @@ reqwest = { version = "0.12", features = ["json", "rustls-tls", "rustls-tls-nati
 regex = "1"
 uuid = { version = "1", features = ["v4"] }
 flate2 = "1"
-zip = "8"
+zip = "9"
 chrono = { version = "0.4", features = ["serde"] }
 dryoc = "2.0"
 sevenz-rust = "0.6"
