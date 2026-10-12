@@ -7,7 +7,7 @@
 <meta name="description" content="Install, use, configure and build Steam Manifest Downloader 1.5.0. System requirements, the five step pipeline, updates, file formats, settings, depot sources, the terminal version and Docker, build instructions and troubleshooting.">
 <meta name="theme-color" content="#06060A">
 <meta property="og:title" content="Documentation, Steam Manifest Downloader">
-<meta property="og:description" content="Install, use, configure and build Steam Manifest Downloader 1.5.0. Desktop app for Windows 10 and 11 and for Linux, terminal version and Docker image. Built with Rust and Tauri v2.">
+<meta property="og:description" content="Install, use, configure and build Steam Manifest Downloader 1.5.0. Desktop app for Windows 10 and 11, Linux and macOS (beta), terminal version and Docker image. Built with Rust and Tauri v2.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://smd.mcbabel.de/documentation/">
 <meta name="twitter:card" content="summary">
@@ -89,7 +89,7 @@
       </div>
 
       <ul class="hero__meta">
-        <li>Windows 10, 11 and Linux</li>
+        <li>Windows 10, 11, Linux and macOS (beta)</li>
         <li>Rust and Tauri v2</li>
         <li>GPL-2.0</li>
         <li>Nine sections</li>
@@ -457,6 +457,32 @@ paru -S steam-manifest-downloader</code></pre>
                 <p>If FUSE is not available on your system, you can run the AppImage with the environment variable <code>APPIMAGE_EXTRACT_AND_RUN=1</code> set.</p>
               </div>
 
+              <h4 id="macos">macOS (beta) <a class="alink" href="#macos" aria-label="Permalink to macOS (beta)">#</a></h4>
+              <p>The macOS version is a universal app for Apple Silicon and Intel Macs with macOS 11 Big Sur or newer. It is new, so it is marked as beta.</p>
+              <ol>
+                <li>Download <code>Steam-Manifest-Downloader_&lt;version&gt;_macos-universal.dmg</code> from the <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases">releases page</a></li>
+                <li>Open the DMG and drag <strong>Steam Manifest Downloader</strong> into <strong>Applications</strong></li>
+                <li>Allow the first start. The app is not signed with a paid Apple developer certificate yet, so macOS blocks it once. Right click the app and choose <strong>Open</strong>, or on macOS 15 and newer open it once and then click <strong>Open Anyway</strong> under <strong>System Settings, Privacy &amp; Security</strong>. In the Terminal this does the same:</li>
+              </ol>
+              <div class="snip">
+                <div class="snip__bar">
+                  <p class="snip__lang">bash</p>
+                  <button class="copy" type="button" aria-label="Copy the command that allows the first start on macOS"><span class="copy__label">Copy</span></button>
+                </div>
+                <pre tabindex="0"><code>xattr -dr com.apple.quarantine "/Applications/Steam Manifest Downloader.app"</code></pre>
+              </div>
+              <p>Differences on macOS:</p>
+              <ul>
+                <li>Downloads always use the built-in downloader, DepotDownloaderMod is not available for macOS</li>
+                <li><strong>Play</strong> starts native Mac games directly. Windows games need <a href="https://www.codeweavers.com/crossover">CrossOver</a>, <a href="https://getwhisky.app">Whisky</a> or Wine, for example <code>brew install --cask wine-stable</code></li>
+                <li>The emulator step patches Windows games with gbe_fork for CrossOver or Whisky. DRM removal with Steamless needs <code>brew install mono</code></li>
+                <li>Steam is found in <code>~/Library/Application Support/Steam</code></li>
+              </ul>
+              <div class="note">
+                <p class="note__tag">Note</p>
+                <p>Every build is tested automatically on Apple Silicon and Intel Macs, but only a few people have used it so far. If something does not work, please <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/issues/new?template=bug_report.yml">open a bug report</a> and choose <strong>macOS app (beta)</strong>.</p>
+              </div>
+
               <h3 id="first-launch">First launch <a class="alink" href="#first-launch" aria-label="Permalink to First launch">#</a></h3>
               <p>The very first time you start SMD, two small prompts appear before the main interface:</p>
               <ol>
@@ -574,7 +600,7 @@ paru -S steam-manifest-downloader</code></pre>
               <h4 id="speed-limit">Speed limit <a class="alink" href="#speed-limit" aria-label="Permalink to Speed limit">#</a></h4>
               <p>Under <strong>Settings, Speed limit</strong> you can cap the download speed, in MB/s or in Mbit/s. MB/s matches the speed shown during a download, and Mbit/s follows the convention of internet providers, so 100 Mbit/s is about 12 MB/s. A change applies at once, also to a download that is already running. The limit applies to the native engine.</p>
               <h4 id="shutdown-after-download">Shut down after the download <a class="alink" href="#shutdown-after-download" aria-label="Permalink to Shut down after the download">#</a></h4>
-              <p>The download screen has a switch <strong>Shut down the PC when the download has finished</strong>. It is off by default and can be switched on while the download runs. When the download ends, including when it fails but not when you cancel it, a 60 second countdown appears with <strong>Cancel</strong> and <strong>Shut Down Now</strong>. The history entry is saved before the PC turns off, and if the download was complete, the next start asks whether you want to continue with the steps you skipped, shortcuts, Steam library and emulator. Windows shuts down with <code>shutdown /s</code>, Linux tries <code>systemctl poweroff</code>, <code>loginctl poweroff</code> and <code>shutdown -h now</code> in that order. If none of them works, the app says so instead of failing silently.</p>
+              <p>The download screen has a switch <strong>Shut down the PC when the download has finished</strong>. It is off by default and can be switched on while the download runs. When the download ends, including when it fails but not when you cancel it, a 60 second countdown appears with <strong>Cancel</strong> and <strong>Shut Down Now</strong>. The history entry is saved before the PC turns off, and if the download was complete, the next start asks whether you want to continue with the steps you skipped, shortcuts, Steam library and emulator. Windows shuts down with <code>shutdown /s</code>, Linux tries <code>systemctl poweroff</code>, <code>loginctl poweroff</code> and <code>shutdown -h now</code> in that order, and macOS asks System Events to shut down. If none of them works, the app says so instead of failing silently.</p>
               <p>When the download succeeds, <strong>Next</strong> leads to step 4, or to step 5 on Linux without Steam installed. The history entry is only persisted once you reach <strong>Back to Start</strong>, so closing the app mid flow leaves no trace.</p>
 
               <h3 id="step-shortcuts">Step 4: shortcuts and Steam library, optional <a class="alink" href="#step-shortcuts" aria-label="Permalink to Step 4: shortcuts and Steam library, optional">#</a></h3>
@@ -967,7 +993,7 @@ setManifestid(1392863, "4398981003384795747", 13789896785)</code></pre>
 
             <div class="prose">
               <h3 id="terminal-start">Download and start <a class="alink" href="#terminal-start" aria-label="Permalink to Download and start">#</a></h3>
-              <p>The <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases">releases page</a> has one file per system: <code>Steam-Manifest-Downloader-Terminal_&lt;version&gt;_linux-x64</code> and <code>Steam-Manifest-Downloader-Terminal_&lt;version&gt;_windows-x64.exe</code>. On Arch, CachyOS and Manjaro, <code>paru -S steam-manifest-downloader-terminal-bin</code> installs it as <code>smd</code>, and updates come through the package manager.</p>
+              <p>The <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases">releases page</a> has one file per system: <code>Steam-Manifest-Downloader-Terminal_&lt;version&gt;_linux-x64</code>, <code>Steam-Manifest-Downloader-Terminal_&lt;version&gt;_windows-x64.exe</code> and, as a beta, <code>Steam-Manifest-Downloader-Terminal_&lt;version&gt;_macos-universal.tar.gz</code>. On Arch, CachyOS and Manjaro, <code>paru -S steam-manifest-downloader-terminal-bin</code> installs it as <code>smd</code>, and updates come through the package manager.</p>
               <div class="snip">
                 <div class="snip__bar">
                   <p class="snip__lang">bash</p>
@@ -975,6 +1001,15 @@ setManifestid(1392863, "4398981003384795747", 13789896785)</code></pre>
                 </div>
                 <pre tabindex="0"><code>chmod +x Steam-Manifest-Downloader-Terminal_*_linux-x64
 ./Steam-Manifest-Downloader-Terminal_*_linux-x64</code></pre>
+              </div>
+              <p>On macOS, unpack the archive and allow the binary once:</p>
+              <div class="snip">
+                <div class="snip__bar">
+                  <p class="snip__lang">bash</p>
+                  <button class="copy" type="button" aria-label="Copy the commands that unpack and start the terminal version on macOS"><span class="copy__label">Copy</span></button>
+                </div>
+                <pre tabindex="0"><code>tar -xzf Steam-Manifest-Downloader-Terminal_*_macos-universal.tar.gz
+xattr -d com.apple.quarantine smd 2>/dev/null; ./smd</code></pre>
               </div>
               <p>With the default native engine it needs nothing else: no .NET runtime, and the Linux build is static, so it runs on any distribution including Alpine. Only the optional DepotDownloaderMod engine has the same requirements as the desktop app. By default the terminal version uses the same settings, history and caches as the desktop app.</p>
 
@@ -1379,7 +1414,7 @@ dotnet publish -c Release -r linux-x64 --self-contained true \
               <span class="chip chip--key">1.5.0</span>
             </div>
             <h2 id="h-next" class="h2-close">Version 1.5.0 is on the releases page. <a class="alink" href="#next" aria-label="Permalink to Version 1.5.0 is on the releases page.">#</a></h2>
-            <p class="lead-paper">Windows installer and standalone ZIP, Linux AppImage, AUR packages for Arch, CachyOS and Manjaro, the terminal version and a Docker image. Source under GPL-2.0.</p>
+            <p class="lead-paper">Windows installer and standalone ZIP, Linux AppImage, AUR packages for Arch, CachyOS and Manjaro, a macOS DMG in beta, the terminal version and a Docker image. Source under GPL-2.0.</p>
             <div class="close__actions">
               <a class="pbtn pbtn--solid" href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases/latest">Get the latest release</a>
               <a class="pbtn pbtn--line" href="../changelog/">Read the changelog</a>

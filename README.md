@@ -6,7 +6,7 @@
 
 ![Version](https://img.shields.io/badge/version-1.5.0-blue)
 ![License](https://img.shields.io/badge/license-GPL--2.0-blue)
-![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-0078D6?logo=windows)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS%20(beta)-0078D6?logo=windows)
 ![Built with](https://img.shields.io/badge/built_with-Rust-dea584?logo=rust)
 ![Tauri](https://img.shields.io/badge/Tauri_v2-FFC131?logo=tauri&logoColor=white)
 ![Downloads](https://img.shields.io/github/downloads/MCbabel/Steam-Manifest-Downloader/total?color=brightgreen)
@@ -88,7 +88,7 @@ the access.
 
 ## 🚀 Quick Start
 
-1. 📥 **Install** — grab the latest build from [Releases](../../releases) (installer or standalone ZIP for Windows, AppImage for Linux, AUR for Arch, `smd` for the terminal, or the Docker image)
+1. 📥 **Install** — grab the latest build from [Releases](../../releases) (installer or standalone ZIP for Windows, AppImage for Linux, AUR for Arch, DMG for macOS (beta), `smd` for the terminal, or the Docker image)
 2. 🌍 **First launch** — pick your language, accept or decline anonymous telemetry, done
 
 Then walk through the 5-step pipeline:
@@ -107,9 +107,10 @@ Then walk through the 5-step pipeline:
 
 | | Requirement | Details |
 |---|---|---|
-| 💻 | **Operating System** | Windows 10 / 11 (64-bit) or a modern Linux distro (glibc ≥ 2.35) |
+| 💻 | **Operating System** | Windows 10 / 11 (64-bit), a modern Linux distro (glibc ≥ 2.35) or macOS 11 Big Sur and newer (beta, Apple Silicon and Intel) |
 | ⚙️ | **Runtime (Windows)** | Nothing extra for the default built-in downloader. The optional DepotDownloaderMod engine needs the [.NET 9.0 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.16-windows-x64-installer) |
 | 📦 | **Runtime (Linux)** | Nothing extra for the AppImage, it brings WebKitGTK and everything else it needs. The AUR packages pull in `webkit2gtk-4.1` through pacman |
+| 🍎 | **Runtime (macOS)** | Nothing extra. The app uses the WebKit that comes with macOS |
 | 🌐 | **Network** | Internet connection |
 
 ---
@@ -168,6 +169,29 @@ chmod +x Steam.Manifest.Downloader_*_amd64.AppImage
 > [!NOTE]
 > On **NixOS**, start it with `appimage-run ./Steam.Manifest.Downloader_*_amd64.AppImage`. Without FUSE, set `APPIMAGE_EXTRACT_AND_RUN=1` before launching it.
 
+### 🍎 macOS (beta)
+
+Download `Steam-Manifest-Downloader_<version>_macos-universal.dmg` from [**Releases**](../../releases). It runs natively on Apple Silicon and Intel Macs with macOS 11 Big Sur or newer. Open the DMG and drag the app into **Applications**.
+
+The app is not signed with a paid Apple developer certificate yet, so macOS blocks the first start. Allow it once:
+
+- **Right-click** the app in Applications → **Open** → **Open**, or
+- on macOS 15 Sequoia and newer: try to open it once, then go to **System Settings → Privacy & Security** and click **Open Anyway**, or
+- in the Terminal:
+
+```bash
+xattr -dr com.apple.quarantine "/Applications/Steam Manifest Downloader.app"
+```
+
+What is different on macOS:
+
+- Downloads always use the built-in downloader. DepotDownloaderMod is not available for macOS.
+- **Play** starts native Mac games directly. Windows games need [CrossOver](https://www.codeweavers.com/crossover), [Whisky](https://getwhisky.app) or Wine (`brew install --cask wine-stable`).
+- The emulator step patches Windows games with gbe_fork for use in CrossOver or Whisky. DRM removal via Steamless needs `brew install mono`.
+
+> [!IMPORTANT]
+> The macOS version is new and is tested automatically on real Apple Silicon and Intel Macs in CI, but not yet by many people. If something does not work, please [open a bug report](../../issues/new?template=bug_report.yml) and pick **macOS app (beta)**. Thank you!
+
 ---
 
 ## 🖥️ Terminal Version (TUI & CLI)
@@ -176,7 +200,8 @@ chmod +x Steam.Manifest.Downloader_*_amd64.AppImage
 no browser engine, no installer. Run it without arguments for the interactive UI,
 or use the subcommands on a server, in Docker or in scripts.
 
-**Download:** `Steam-Manifest-Downloader-Terminal_<version>_linux-x64` or `Steam-Manifest-Downloader-Terminal_<version>_windows-x64.exe`
+**Download:** `Steam-Manifest-Downloader-Terminal_<version>_linux-x64`, `Steam-Manifest-Downloader-Terminal_<version>_windows-x64.exe`
+or `Steam-Manifest-Downloader-Terminal_<version>_macos-universal.tar.gz` (beta)
 from [**Releases**](../../releases). On Arch, CachyOS and Manjaro, `paru -S steam-manifest-downloader-terminal-bin`
 installs it as `smd`.
 
@@ -190,6 +215,13 @@ Windows, and a glibc-based distro on Linux (not Alpine).
 ```bash
 chmod +x Steam-Manifest-Downloader-Terminal_*_linux-x64
 ./Steam-Manifest-Downloader-Terminal_*_linux-x64
+```
+
+On macOS, unpack it and allow the binary once:
+
+```bash
+tar -xzf Steam-Manifest-Downloader-Terminal_*_macos-universal.tar.gz
+xattr -d com.apple.quarantine smd 2>/dev/null; ./smd
 ```
 
 ### Interactive UI
@@ -373,6 +405,15 @@ Output: `src-tauri/target/release/bundle/appimage/Steam Manifest Downloader_<ver
 
 > [!NOTE]
 > `NO_STRIP=true` prevents stripping symbols from the embedded .NET binary. `APPIMAGE_EXTRACT_AND_RUN=1` is needed on some distros for the AppImage bundler.
+
+#### macOS
+
+```bash
+rustup target add aarch64-apple-darwin x86_64-apple-darwin
+cargo tauri build --target universal-apple-darwin --bundles app,dmg
+```
+
+Output: `src-tauri/target/universal-apple-darwin/release/bundle/dmg/`. Step 1 is not needed on macOS, the app uses only the built-in downloader.
 
 ---
 

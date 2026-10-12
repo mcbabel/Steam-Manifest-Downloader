@@ -980,6 +980,20 @@ code {
   align-self: start;
 }
 
+.beta {
+  display: inline-block;
+  margin-left: 0.4em;
+  padding: 0.15em 0.5em;
+  font-family: var(--mono);
+  font-size: var(--f-micro);
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  vertical-align: middle;
+  color: var(--w-accent);
+  border: 1px solid currentColor;
+}
+
 .cmd {
   display: flex;
   align-items: stretch;
