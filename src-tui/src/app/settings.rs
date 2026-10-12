@@ -150,6 +150,7 @@ impl App {
                     SettingToggle::AutoUpdate => d.auto_update = !d.auto_update,
                     SettingToggle::NativeDownloader => {
                         d.use_native_downloader = !d.use_native_downloader
+                            || !smd_core::services::embedded_tools::AVAILABLE
                     }
                     SettingToggle::CancelKeepFiles => d.cancel_keep_files = !d.cancel_keep_files,
                     SettingToggle::AutoSelectDepots => {
@@ -681,7 +682,11 @@ impl App {
             w,
             d.use_native_downloader,
             &t("settings.nativeDownloaderToggle"),
-            &t("settings.nativeDownloaderHint"),
+            &t(if smd_core::services::embedded_tools::AVAILABLE {
+                "settings.nativeDownloaderHint"
+            } else {
+                "settings.nativeDownloaderOnly"
+            }),
             Fid::new("settings.native"),
             Action::SettingsToggle(SettingToggle::NativeDownloader),
         );

@@ -196,10 +196,13 @@ fn settings_path(app_data_dir: &Path) -> PathBuf {
 
 pub async fn load_settings(app_data_dir: &Path) -> Settings {
     let path = settings_path(app_data_dir);
-    let settings: Settings = match fs::read_to_string(&path).await {
+    let mut settings: Settings = match fs::read_to_string(&path).await {
         Ok(content) => serde_json::from_str(&content).unwrap_or_default(),
         Err(_) => Settings::default(),
     };
+    if !crate::services::embedded_tools::AVAILABLE {
+        settings.use_native_downloader = true;
+    }
     if let Err(e) = crate::services::net::apply_proxy(&settings.proxy) {
         eprintln!("[Settings] {}", e);
     }
@@ -223,6 +226,9 @@ pub async fn save_settings(app_data_dir: &Path, settings: &Settings) -> Result<(
     }
 
     let mut to_persist = settings.clone();
+    if !crate::services::embedded_tools::AVAILABLE {
+        to_persist.use_native_downloader = true;
+    }
     to_persist
         .pristine_default_sources
         .retain(|u| to_persist.depot_sources.contains(u));

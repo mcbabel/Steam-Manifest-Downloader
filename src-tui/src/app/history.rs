@@ -458,10 +458,17 @@ impl App {
                         std::time::Instant::now(),
                     ))
                 }
-                Err(Some(e)) if e == smd_core::ops::launch::NEEDS_PROTON => {
+                Err(Some(e))
+                    if e == smd_core::ops::launch::NEEDS_PROTON
+                        || e == smd_core::ops::launch::NEEDS_WINE_MAC =>
+                {
                     app.hist.banner = Some((
                         Tone::Warning,
-                        t("history.playNeedsProton"),
+                        t(if e == smd_core::ops::launch::NEEDS_WINE_MAC {
+                            "history.playNeedsWineMac"
+                        } else {
+                            "history.playNeedsProton"
+                        }),
                         std::time::Instant::now(),
                     ))
                 }

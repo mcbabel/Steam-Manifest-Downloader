@@ -56,8 +56,9 @@ function relativeToDir(path, dir) {
 function exePlatformBadge(exe, all) {
   const platforms = new Set((all || []).map((e) => e.platform).filter(Boolean));
   if (platforms.size < 2 || !exe.platform) return '';
-  const label = window.i18n.t(exe.platform === 'linux' ? 'depotTags.linux' : 'depotTags.windows');
-  return ` <span class="depot-tag depot-tag--${exe.platform === 'linux' ? 'linux' : 'windows'}">${escapeHtml(label)}</span>`;
+  const kind = exe.platform === 'linux' ? 'linux' : exe.platform === 'macos' ? 'macos' : 'windows';
+  const label = window.i18n.t(`depotTags.${kind}`);
+  return ` <span class="depot-tag depot-tag--${kind === 'macos' ? 'mac' : kind}">${escapeHtml(label)}</span>`;
 }
 
 function chooseLaunchExe(candidates, dir) {
@@ -107,9 +108,10 @@ async function playGame(entry, choose) {
     showHistoryBanner(window.i18n.t(key, { name: entry.game_name || `App ${entry.app_id}` }), 5000, 'success');
   } catch (err) {
     const text = String(err);
-    if (text.includes('WINDOWS_GAME_NEEDS_PROTON')) {
-      reportError('play', null, 'history.playNeedsProton');
-      showHistoryBanner(window.i18n.t('history.playNeedsProton'), 12000);
+    if (text.includes('WINDOWS_GAME_NEEDS_PROTON') || text.includes('WINDOWS_GAME_NEEDS_WINE_MAC')) {
+      const key = text.includes('WINDOWS_GAME_NEEDS_WINE_MAC') ? 'history.playNeedsWineMac' : 'history.playNeedsProton';
+      reportError('play', null, key);
+      showHistoryBanner(window.i18n.t(key), 12000);
     } else {
       reportError('play', text);
       showHistoryBanner(window.i18n.t('history.playFailed', { message: window.i18n.localizeError(text) }));

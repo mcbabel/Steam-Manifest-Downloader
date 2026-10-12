@@ -8,6 +8,7 @@ use serde::Serialize;
 use crate::services::steam_library;
 
 pub const NEEDS_PROTON: &str = "WINDOWS_GAME_NEEDS_PROTON";
+pub const NEEDS_WINE_MAC: &str = "WINDOWS_GAME_NEEDS_WINE_MAC";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -50,10 +51,15 @@ fn is_windows_binary(path: &Path) -> bool {
 }
 
 #[cfg(not(target_os = "windows"))]
-fn on_path(program: &str) -> bool {
-    std::env::var_os("PATH")
-        .map(|paths| std::env::split_paths(&paths).any(|dir| dir.join(program).is_file()))
-        .unwrap_or(false)
+fn find_program(program: &str) -> Option<PathBuf> {
+    let mut dirs: Vec<PathBuf> = std::env::var_os("PATH")
+        .map(|paths| std::env::split_paths(&paths).collect())
+        .unwrap_or_default();
+    if cfg!(target_os = "macos") {
+        dirs.push(PathBuf::from("/opt/homebrew/bin"));
+        dirs.push(PathBuf::from("/usr/local/bin"));
+    }
+    dirs.into_iter().map(|dir| dir.join(program)).find(|p| p.is_file())
 }
 
 fn spawn(mut cmd: Command, cwd: &Path) -> Result<(), String> {
@@ -97,13 +103,17 @@ pub fn launch(exe: &str) -> Result<LaunchMethod, String> {
             steam_library::run_shortcut(appid)?;
             return Ok(LaunchMethod::Steam);
         }
-        if on_path("wine") {
-            let mut cmd = Command::new("wine");
+        if let Some(wine) = find_program("wine").or_else(|| find_program("wine64")) {
+            let mut cmd = Command::new(wine);
             cmd.arg(&path);
             spawn(cmd, &cwd)?;
             return Ok(LaunchMethod::Wine);
         }
-        Err(NEEDS_PROTON.to_string())
+        if cfg!(target_os = "macos") {
+            Err(NEEDS_WINE_MAC.to_string())
+        } else {
+            Err(NEEDS_PROTON.to_string())
+        }
     }
 }
 

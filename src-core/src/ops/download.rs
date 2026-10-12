@@ -2198,7 +2198,7 @@ fn get_disk_space_info(path: &Path) -> Option<(f64, String)> {
     Some((free_gb, drive))
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(unix)]
 fn get_disk_space_info(path: &Path) -> Option<(f64, String)> {
     use std::ffi::CString;
 

@@ -38,6 +38,7 @@ pub async fn get_build_info(app: tauri::AppHandle) -> serde_json::Value {
         "targetArch": std::env::consts::ARCH,
         "package": smd_core::services::telemetry::package_kind(),
         "engine": engine,
+        "ddmAvailable": smd_core::services::embedded_tools::AVAILABLE,
         "diagnosticId": diagnostic_id,
     })
 }
@@ -111,7 +112,7 @@ pub async fn get_disk_space(path: String) -> Result<serde_json::Value, String> {
         }
     }
 
-    #[cfg(target_os = "linux")]
+    #[cfg(unix)]
     {
         use std::ffi::CString;
 

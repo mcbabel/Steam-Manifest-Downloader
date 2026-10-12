@@ -9,7 +9,7 @@ pub struct DotnetStatus {
 }
 
 pub fn check_dotnet() -> DotnetStatus {
-    #[cfg(target_os = "linux")]
+    #[cfg(not(target_os = "windows"))]
     {
         DotnetStatus {
             installed: true,
@@ -124,7 +124,23 @@ pub fn power_off() -> Result<(), String> {
         Err(last_error)
     }
 
-    #[cfg(not(any(target_os = "windows", target_os = "linux")))]
+    #[cfg(target_os = "macos")]
+    {
+        let out = std::process::Command::new("osascript")
+            .args(["-e", "tell application \"System Events\" to shut down"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::piped())
+            .output()
+            .map_err(|e| format!("Failed to run osascript: {}", e))?;
+        if out.status.success() {
+            Ok(())
+        } else {
+            Err(format!("osascript: {}", String::from_utf8_lossy(&out.stderr).trim()))
+        }
+    }
+
+    #[cfg(not(any(target_os = "windows", target_os = "linux", target_os = "macos")))]
     {
         Err("Shutting down is not supported on this system".to_string())
     }

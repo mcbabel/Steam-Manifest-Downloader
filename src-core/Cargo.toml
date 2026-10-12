@@ -43,7 +43,7 @@ base64 = "0.23"
 zstd = "0.14"
 dirs = "7"
 
-[target.'cfg(target_os = "linux")'.dependencies]
+[target.'cfg(unix)'.dependencies]
 libc = "0.2"
 
 [target.'cfg(target_os = "windows")'.dependencies]

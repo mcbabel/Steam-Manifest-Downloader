@@ -303,9 +303,19 @@ fn windows_steam_candidates() -> Vec<PathBuf> {
 
 fn steam_candidates() -> Vec<PathBuf> {
     let mut out: Vec<PathBuf> = custom_dir().into_iter().collect();
+    out.extend(mac_steam_candidates());
     out.extend(linux_steam_candidates());
     out.extend(windows_steam_candidates());
     out
+}
+
+fn mac_steam_candidates() -> Vec<PathBuf> {
+    if !cfg!(target_os = "macos") {
+        return Vec::new();
+    }
+    home_dir()
+        .map(|home| vec![home.join("Library").join("Application Support").join("Steam")])
+        .unwrap_or_default()
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -674,7 +684,18 @@ pub fn is_steam_running() -> bool {
             })
             .unwrap_or(false)
     }
-    #[cfg(not(any(target_os = "windows", target_os = "linux")))]
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("pgrep")
+            .args(["-x", "steam_osx"])
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .status()
+            .map(|s| s.success())
+            .unwrap_or(false)
+    }
+    #[cfg(not(any(target_os = "windows", target_os = "linux", target_os = "macos")))]
     {
         false
     }
@@ -688,7 +709,25 @@ fn steam_command(steam_dir: &Path) -> std::process::Command {
         cmd.creation_flags(0x08000000);
         cmd
     }
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(target_os = "macos")]
+    {
+        let _ = steam_dir;
+        let binary = home_dir()
+            .map(|h| h.join("Applications"))
+            .into_iter()
+            .chain(std::iter::once(PathBuf::from("/Applications")))
+            .map(|apps| apps.join("Steam.app").join("Contents").join("MacOS").join("steam_osx"))
+            .find(|p| p.exists());
+        match binary {
+            Some(path) => std::process::Command::new(path),
+            None => {
+                let mut cmd = std::process::Command::new("open");
+                cmd.args(["-a", "Steam", "--args"]);
+                cmd
+            }
+        }
+    }
+    #[cfg(not(any(target_os = "windows", target_os = "macos")))]
     {
         let script = steam_dir.join("steam.sh");
         if script.exists() {

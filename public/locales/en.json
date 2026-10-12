@@ -639,6 +639,7 @@
     "playStarted": "{name} is starting…",
     "playStartedSteam": "{name} is starting through Steam…",
     "playStartedWine": "{name} is starting with Wine…",
+    "playNeedsWineMac": "This is a Windows game. On macOS it runs with CrossOver, Whisky or Wine: open the .exe there, or install Wine (for example with Homebrew). Then Play starts it from here.",
     "playNeedsProton": "This is a Windows game. On Linux it runs through Steam with Proton: add it to the Steam library (step 4) and enable Proton in Steam under Properties → Compatibility, or install Wine. Then Play starts it from here.",
     "playFailed": "The game could not be started: {message}",
     "playNoExePartial": "No program file was found in the game folder. This download is only partly finished, the depot with the game's program file is probably one of the missing ones. Resume or download it again first."
@@ -697,6 +698,7 @@
     "cancelKeepFilesHint": "A cancelled download can then be resumed where it stopped.",
     "nativeDownloader": "Download engine",
     "nativeDownloaderToggle": "Download directly from Steam (native, recommended)",
+    "nativeDownloaderOnly": "On this system only the native downloader is available. DepotDownloaderMod is not shipped for it.",
     "nativeDownloaderHint": "Loads manifests and files straight from Steam. Off uses the old DepotDownloaderMod engine.",
     "notificationSound": "Notification Sound",
     "notificationSoundToggle": "Play a sound when downloads complete",

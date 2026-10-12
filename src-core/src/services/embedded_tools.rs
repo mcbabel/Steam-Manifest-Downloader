@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+#[cfg(any(target_os = "windows", target_os = "linux"))]
 use tokio::fs;
 
 #[cfg(target_os = "windows")]
@@ -26,6 +27,14 @@ mod platform {
     pub const EXE_NAME: &str = "DepotDownloaderMod";
 }
 
+pub const AVAILABLE: bool = cfg!(any(target_os = "windows", target_os = "linux"));
+
+#[cfg(not(any(target_os = "windows", target_os = "linux")))]
+pub async fn ensure_extracted() -> Result<PathBuf, String> {
+    Err("DepotDownloaderMod is not available on this system. The native downloader is used instead.".to_string())
+}
+
+#[cfg(any(target_os = "windows", target_os = "linux"))]
 pub async fn ensure_extracted() -> Result<PathBuf, String> {
     let base_dir = std::env::temp_dir().join("SteamManifestDownloader").join("DepotDownloaderMod");
     let marker_file = base_dir.join(".extracted");

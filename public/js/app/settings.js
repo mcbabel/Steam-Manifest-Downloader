@@ -22,6 +22,7 @@ async function openSettings(target) {
     const webApiInput = document.getElementById('steam-webapi-key-input');
     if (webApiInput) webApiInput.value = settings.steam_web_api_key || '';
     if (els.nativeDownloaderToggle) els.nativeDownloaderToggle.checked = !!settings.use_native_downloader;
+    applyEngineLock();
     if (els.cancelKeepFilesToggle) els.cancelKeepFilesToggle.checked = !!settings.cancel_keep_files;
     populateDepotSelectionSettings(settings);
     els.notificationSoundToggle.checked = settings.notification_sound !== false;
@@ -73,6 +74,7 @@ async function loadBuildInfo() {
     if (els.buildInfoDiagnostic) {
       els.buildInfoDiagnostic.textContent = info.diagnosticId || window.i18n.t('settings.diagnosticIdOff');
     }
+    applyEngineLock();
   } catch (e) {
     console.error('Failed to load build info:', e);
   }
@@ -534,6 +536,19 @@ function resetSettingsDirty() {
 function updateSettingsDirty() {
   if (!els.settingsDirty || state.settingsBaseline == null) return;
   els.settingsDirty.classList.toggle('hidden', settingsSnapshot() === state.settingsBaseline);
+}
+
+function applyEngineLock() {
+  const toggle = els.nativeDownloaderToggle;
+  if (!toggle || !state.buildInfo || state.buildInfo.ddmAvailable !== false) return;
+  toggle.checked = true;
+  toggle.disabled = true;
+  const hint = document.getElementById('native-downloader-hint');
+  if (hint) {
+    hint.setAttribute('data-i18n', 'settings.nativeDownloaderOnly');
+    hint.textContent = window.i18n.t('settings.nativeDownloaderOnly');
+  }
+  syncEngineDependentSettings();
 }
 
 function syncEngineDependentSettings() {

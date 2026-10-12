@@ -639,6 +639,7 @@
     "playStarted": "{name} wird gestartet…",
     "playStartedSteam": "{name} wird über Steam gestartet…",
     "playStartedWine": "{name} wird mit Wine gestartet…",
+    "playNeedsWineMac": "Das ist ein Windows-Spiel. Auf macOS läuft es mit CrossOver, Whisky oder Wine: öffne die .exe dort oder installiere Wine (zum Beispiel mit Homebrew). Danach startet „Spielen“ es von hier aus.",
     "playNeedsProton": "Das ist ein Windows-Spiel. Unter Linux läuft es über Steam mit Proton: Füge es zur Steam-Bibliothek hinzu (Schritt 4) und schalte in Steam unter Eigenschaften → Kompatibilität Proton ein, oder installiere Wine. Danach startet „Spielen“ es von hier aus.",
     "playFailed": "Das Spiel konnte nicht gestartet werden: {message}",
     "playNoExePartial": "Im Spielordner wurde keine Programmdatei gefunden. Der Download ist nur teilweise fertig, das Depot mit der Programmdatei fehlt wahrscheinlich noch. Lade es zuerst fertig oder erneut herunter."
@@ -697,6 +698,7 @@
     "cancelKeepFilesHint": "Ein abgebrochener Download kann dann dort weitermachen, wo er aufgehört hat.",
     "nativeDownloader": "Download-Engine",
     "nativeDownloaderToggle": "Direkt von Steam laden (nativ, empfohlen)",
+    "nativeDownloaderOnly": "Auf diesem System gibt es nur den nativen Downloader. DepotDownloaderMod wird dafür nicht mitgeliefert.",
     "nativeDownloaderHint": "Lädt Manifeste und Dateien direkt von Steam. Aus nutzt die alte DepotDownloaderMod-Engine.",
     "notificationSound": "Benachrichtigungston",
     "notificationSoundToggle": "Ton abspielen, wenn Downloads fertig sind",

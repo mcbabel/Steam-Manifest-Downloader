@@ -310,8 +310,11 @@ impl App {
             Step::SteamLibrary => self.wiz.steam_exe.trimmed(),
             _ => self.wiz.shortcut_exe.trimmed(),
         };
-        let mixed = self.wiz.exes.iter().any(|e| e.platform == "linux")
-            && self.wiz.exes.iter().any(|e| e.platform == "windows");
+        let mixed = self
+            .wiz
+            .exes
+            .iter()
+            .any(|e| e.platform != self.wiz.exes[0].platform);
         for (i, exe) in self.wiz.exes.iter().take(12).enumerate() {
             let r = sv.next(1);
             let chosen = exe.path == current;
@@ -338,10 +341,10 @@ impl App {
                 Span::styled(exe.name.clone(), theme::text()),
             ];
             if mixed {
-                let (label, color) = if exe.platform == "linux" {
-                    (t("depotTags.linux"), theme::get().warning)
-                } else {
-                    (t("depotTags.windows"), theme::get().accent)
+                let (label, color) = match exe.platform {
+                    "linux" => (t("depotTags.linux"), theme::get().warning),
+                    "macos" => (t("depotTags.macos"), theme::get().success),
+                    _ => (t("depotTags.windows"), theme::get().accent),
                 };
                 spans.push(Span::raw(" "));
                 spans.push(widgets::badge(&label, color));

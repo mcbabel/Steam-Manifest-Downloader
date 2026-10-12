@@ -313,7 +313,7 @@ pub struct DepotRunConfig {
 
 #[cfg(target_os = "windows")]
 const DDM_DISPLAY_NAME: &str = "DepotDownloaderMod.exe";
-#[cfg(target_os = "linux")]
+#[cfg(not(target_os = "windows"))]
 const DDM_DISPLAY_NAME: &str = "DepotDownloaderMod";
 
 pub async fn run_depot_downloader(
@@ -379,7 +379,7 @@ pub async fn run_depot_downloader(
     cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
 
     // Own process group so SIGKILL reaches every descendant on cancel.
-    #[cfg(target_os = "linux")]
+    #[cfg(unix)]
     {
         cmd.process_group(0);
     }
@@ -604,7 +604,7 @@ pub async fn kill_job(state: &AppState, job_id: &str) -> bool {
     }
 
     // Negative pid → whole group SIGKILL (spawn used process_group(0)).
-    #[cfg(target_os = "linux")]
+    #[cfg(unix)]
     {
         if let Some(child_pid) = pid {
             unsafe {
@@ -634,7 +634,7 @@ pub async fn kill_job(state: &AppState, job_id: &str) -> bool {
 pub async fn get_exe_path_async() -> Result<std::path::PathBuf, String> {
     #[cfg(target_os = "windows")]
     const EXE_NAME: &str = "DepotDownloaderMod.exe";
-    #[cfg(target_os = "linux")]
+    #[cfg(not(target_os = "windows"))]
     const EXE_NAME: &str = "DepotDownloaderMod";
 
     // Embedded extraction works for both installer and portable builds.

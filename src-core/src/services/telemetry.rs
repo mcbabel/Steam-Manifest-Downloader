@@ -659,6 +659,12 @@ pub fn package_kind() -> &'static str {
             _ => "exe",
         };
     }
+    if cfg!(target_os = "macos") {
+        return match exe_dir {
+            Some(dir) if dir.ends_with("Contents/MacOS") => "app",
+            _ => "binary",
+        };
+    }
     match crate::ops::updater::detect_install_method() {
         "flatpak" => "flatpak",
         "snap" => "snap",

@@ -84,7 +84,11 @@ pub async fn detect_executables(download_dir: &str) -> Result<Vec<DetectedExecut
             name,
             size,
             recommended: i == 0,
-            platform: if kind == Kind::Windows { "windows" } else { "linux" },
+            platform: match kind {
+                Kind::Windows => "windows",
+                Kind::Linux => "linux",
+                Kind::Mac => "macos",
+            },
         })
         .collect();
 
@@ -95,11 +99,14 @@ pub async fn detect_executables(download_dir: &str) -> Result<Vec<DetectedExecut
 enum Kind {
     Windows,
     Linux,
+    Mac,
 }
 
 fn kind_score(kind: Kind) -> i64 {
     let native = if cfg!(target_os = "windows") {
         Kind::Windows
+    } else if cfg!(target_os = "macos") {
+        Kind::Mac
     } else {
         Kind::Linux
     };
@@ -161,7 +168,30 @@ async fn executable_kind(path: &std::path::Path, name: &str) -> Option<Kind> {
         let e_type = u16::from_le_bytes([header[16], header[17]]);
         return (e_type == 2 || e_type == 3).then_some(Kind::Linux);
     }
+    let in_framework = path
+        .components()
+        .any(|c| c.as_os_str().to_string_lossy().ends_with(".framework"));
+    if !in_framework && is_mach_o_executable(&header) {
+        return Some(Kind::Mac);
+    }
     None
+}
+
+fn is_mach_o_executable(header: &[u8]) -> bool {
+    if header.len() < 16 {
+        return false;
+    }
+    let magic = [header[0], header[1], header[2], header[3]];
+    match magic {
+        [0xcf, 0xfa, 0xed, 0xfe] | [0xce, 0xfa, 0xed, 0xfe] => {
+            u32::from_le_bytes([header[12], header[13], header[14], header[15]]) == 2
+        }
+        [0xca, 0xfe, 0xba, 0xbe] => {
+            let count = u32::from_be_bytes([header[4], header[5], header[6], header[7]]);
+            (1..20).contains(&count)
+        }
+        _ => false,
+    }
 }
 
 async fn read_header(path: &std::path::Path) -> Option<Vec<u8>> {
@@ -454,6 +484,19 @@ mod tests {
         h[..4].copy_from_slice(b"\x7fELF");
         h[16] = e_type;
         h
+    }
+
+    #[test]
+    fn recognises_mach_o_executables() {
+        let mut thin = vec![0xcf, 0xfa, 0xed, 0xfe, 0x0c, 0, 0, 0x01, 0, 0, 0, 0, 2, 0, 0, 0];
+        assert!(is_mach_o_executable(&thin));
+        thin[12] = 6;
+        assert!(!is_mach_o_executable(&thin));
+        let fat = [0xca, 0xfe, 0xba, 0xbe, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0];
+        assert!(is_mach_o_executable(&fat));
+        let java = [0xca, 0xfe, 0xba, 0xbe, 0, 0, 0, 52, 0, 0, 0, 0, 0, 0, 0, 0];
+        assert!(!is_mach_o_executable(&java));
+        assert!(!is_mach_o_executable(b"MZ"));
     }
 
     #[tokio::test]

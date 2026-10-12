@@ -30,7 +30,7 @@ fn free_at(path: &Path) -> Option<u64> {
     Some(available)
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(unix)]
 fn free_at(path: &Path) -> Option<u64> {
     use std::ffi::CString;
     use std::os::unix::ffi::OsStrExt;
@@ -42,7 +42,7 @@ fn free_at(path: &Path) -> Option<u64> {
     Some((stat.f_bavail as u64).saturating_mul(stat.f_frsize as u64))
 }
 
-#[cfg(not(any(target_os = "windows", target_os = "linux")))]
+#[cfg(not(any(target_os = "windows", unix)))]
 fn free_at(_path: &Path) -> Option<u64> {
     None
 }
@@ -68,7 +68,7 @@ mod tests {
     #[test]
     fn missing_folders_use_the_nearest_existing_parent() {
         let missing = std::env::temp_dir().join("smd-space-test/does/not/exist");
-        assert!(free_bytes(&missing).is_some() || cfg!(not(any(target_os = "windows", target_os = "linux"))));
+        assert!(free_bytes(&missing).is_some() || cfg!(not(any(target_os = "windows", unix))));
     }
 
     #[test]
