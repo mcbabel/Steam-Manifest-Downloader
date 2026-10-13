@@ -219,9 +219,26 @@ jobs:
           OUT="$RUNNER_TEMP/games"
           "$SMD" search "$APP_ID" --manifests 0
           "$SMD" download "$APP_ID" --list
-          "$SMD" download "$APP_ID" --like-steam -o "$OUT" --json | tail -n 25
-          COUNT=$(find "$OUT" -type f | wc -l | tr -d ' ')
-          echo "Downloaded files: $COUNT"
+          "$SMD" download "$APP_ID" --like-steam -o "$OUT" --json > "$RUNNER_TEMP/events.jsonl" || true
+          tail -n 25 "$RUNNER_TEMP/events.jsonl"
           find "$OUT" -type f | head -n 20
           du -sh "$OUT"
-          test "$COUNT" -gt 0
+          # Files alone prove nothing (the manifest and half written files land
+          # there too): every depot has to be reported as downloaded.
+          python3 - "$RUNNER_TEMP/events.jsonl" <<'PY'
+          import json, sys
+          done = None
+          for line in open(sys.argv[1]):
+              try:
+                  ev = json.loads(line)
+              except ValueError:
+                  continue
+              if ev.get("type") == "complete":
+                  done = ev
+          if done is None:
+              sys.exit("::error::No complete event")
+          diag = done.get("diag") or {}
+          print(f"outcome={diag.get('outcome')} depots={diag.get('depots_ok')}/{diag.get('depots_total')}")
+          if diag.get("outcome") != "complete":
+              sys.exit(f"::error::Download did not complete: {done.get('message')}")
+          PY

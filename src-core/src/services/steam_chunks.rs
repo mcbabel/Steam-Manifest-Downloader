@@ -2,7 +2,7 @@ use std::io::Cursor;
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
-use crate::services::steam_manifest::symmetric_decrypt;
+use crate::services::steam_manifest::{symmetric_decrypt, unzip_first_entry};
 
 pub fn decode_chunk(
     encrypted: &[u8],
@@ -22,6 +22,10 @@ pub fn decode_chunk(
 }
 
 fn decompress_vz(input: &[u8]) -> Result<Vec<u8>, String> {
+    // Older depots (Spacewar 481 among them) still ship plain PKZip chunks.
+    if input.starts_with(b"PK\x03\x04") {
+        return unzip_first_entry(input, "chunk");
+    }
     if input.len() < 16 {
         return Err("VZ blob too short".to_string());
     }
@@ -145,4 +149,51 @@ fn decompress_vzstd(input: &[u8]) -> Result<Vec<u8>, String> {
     }
 
     Ok(out)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+
+    fn zip_one(name: &str, data: &[u8], method: zip::CompressionMethod) -> Vec<u8> {
+        let mut buf = Cursor::new(Vec::new());
+        {
+            let mut w = zip::ZipWriter::new(&mut buf);
+            let opts = zip::write::SimpleFileOptions::default().compression_method(method);
+            w.start_file(name, opts).unwrap();
+            w.write_all(data).unwrap();
+            w.finish().unwrap();
+        }
+        buf.into_inner()
+    }
+
+    #[test]
+    fn pkzip_chunks_are_decompressed() {
+        let data: Vec<u8> = (0..5000u32).map(|i| (i % 251) as u8).collect();
+        for method in [
+            zip::CompressionMethod::Deflated,
+            zip::CompressionMethod::Stored,
+        ] {
+            let blob = zip_one("z", &data, method);
+            assert_eq!(&blob[0..2], b"PK");
+            assert_eq!(decompress_vz(&blob).unwrap(), data, "{:?}", method);
+        }
+    }
+
+    #[test]
+    fn short_pkzip_chunk_is_not_rejected_as_too_short() {
+        let blob = zip_one("z", b"", zip::CompressionMethod::Stored);
+        assert!(decompress_vz(&blob).unwrap().is_empty());
+    }
+
+    #[test]
+    fn unknown_magic_is_still_an_error() {
+        let err = decompress_vz(&[0x5A; 32]).unwrap_err();
+        assert!(
+            err.contains("unrecognised chunk container magic: 5A 5A"),
+            "{}",
+            err
+        );
+    }
 }

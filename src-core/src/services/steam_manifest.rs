@@ -135,19 +135,25 @@ pub fn symmetric_decrypt(ciphertext: &[u8], key: &[u8; 32]) -> Result<Vec<u8>, S
 }
 
 fn unzip_single_entry(zip_bytes: &[u8]) -> Result<Vec<u8>, String> {
+    unzip_first_entry(zip_bytes, "manifest")
+}
+
+/// Reads the first entry of a PKZip blob. Steam wraps manifests and older
+/// depot chunks this way; `what` names the blob in error messages.
+pub(crate) fn unzip_first_entry(zip_bytes: &[u8], what: &str) -> Result<Vec<u8>, String> {
     let reader = Cursor::new(zip_bytes);
-    let mut archive = zip::ZipArchive::new(reader)
-        .map_err(|e| format!("manifest zip open failed: {}", e))?;
+    let mut archive =
+        zip::ZipArchive::new(reader).map_err(|e| format!("{} zip open failed: {}", what, e))?;
     if archive.is_empty() {
-        return Err("manifest zip is empty".to_string());
+        return Err(format!("{} zip is empty", what));
     }
     let mut entry = archive
         .by_index(0)
-        .map_err(|e| format!("manifest zip entry read failed: {}", e))?;
+        .map_err(|e| format!("{} zip entry read failed: {}", what, e))?;
     let mut out = Vec::with_capacity(entry.size() as usize);
     entry
         .read_to_end(&mut out)
-        .map_err(|e| format!("manifest zip entry decompress failed: {}", e))?;
+        .map_err(|e| format!("{} zip entry decompress failed: {}", what, e))?;
     Ok(out)
 }
 
