@@ -36,6 +36,11 @@ pub fn is_valid_app_id(s: &str) -> bool {
 impl App {
     pub(super) fn dispatch_source(&mut self, a: &Action) -> bool {
         match a {
+            Action::OpenPlaytest(id) => {
+                self.emit("playtest_opened", None);
+                self.wiz.search_input.set(id.to_string());
+                self.perform_search();
+            }
             Action::SearchHint(action) => {
                 self.emit("advice_action", Some(serde_json::json!({ "advice": "search_no_results", "action": action })));
                 self.wiz.search_no_results = false;
@@ -169,7 +174,9 @@ impl App {
         self.wiz.game_name = None;
         self.wiz.header_image = None;
         self.wiz.short_description = None;
+        self.wiz.playtests.clear();
         self.fetch_game_info(app_id.clone());
+        self.fetch_playtests(app_id.clone());
 
         let core = self.core.clone();
         let dir = self.data_dir.clone();
@@ -218,6 +225,21 @@ impl App {
                         app.wiz.search_error = Some(crate::i18n::localize_error(&e));
                         app.wiz.auto_redownload = false;
                     }
+                }
+            })
+        });
+    }
+
+    fn fetch_playtests(&mut self, app_id: String) {
+        let Ok(id) = app_id.parse::<u32>() else {
+            return;
+        };
+        let core = self.core.clone();
+        self.spawn(async move {
+            let found = smd_core::ops::search::find_playtests(&core, id).await;
+            apply(move |app| {
+                if app.wiz.search_app_id.as_deref() == Some(app_id.as_str()) {
+                    app.wiz.playtests = found;
                 }
             })
         });
@@ -822,6 +844,25 @@ impl App {
                     ButtonSpec::new(t("search.manageSources"), Fid::new("search.hintSources"), Action::SearchHint("sources"), Btn::Primary),
                     ButtonSpec::new(t("search.useUpload"), Fid::new("search.hintUpload"), Action::SearchHint("upload"), Btn::Secondary),
                 ],
+                false,
+            );
+            let _ = take_top(&mut rest, 1);
+        }
+        for p in self.wiz.playtests.iter().take(3) {
+            let text = tf("search.playtestFound", &[("name", &p.name), ("appId", &p.app_id)]);
+            let h = widgets::wrap_height(&text, rest.width).min(3);
+            widgets::paragraph(buf, take_top(&mut rest, h), &text, theme::dim());
+            let row = take_top(&mut rest, 1);
+            widgets::buttons(
+                buf,
+                ctx,
+                row,
+                &[ButtonSpec::new(
+                    t("search.openPlaytest"),
+                    Fid::idx("search.playtest", p.app_id as usize),
+                    Action::OpenPlaytest(p.app_id),
+                    Btn::Secondary,
+                )],
                 false,
             );
             let _ = take_top(&mut rest, 1);

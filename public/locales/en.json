@@ -60,6 +60,8 @@
     "filterName": "Lua/ST files"
   },
   "search": {
+    "playtestFound": "This game has a playtest: {name} (App ID {appId}). Playtests have their own App ID.",
+    "openPlaytest": "Open playtest",
     "noSourceTitle": "No depot source configured",
     "noSourceLead": "The app does not ship with any depot sources. Paste a URL pointing at a folder that follows the layout <code>branches/&lt;appid&gt;/&lt;files&gt;</code> (containing <code>.lua</code>, <code>.manifest</code> and optional <code>key.vdf</code> files). GitHub repos and <code>archive.org/view_archive.php</code> URLs are auto-detected; any plain HTTPS base URL also works.",
     "sourcePlaceholder": "https://github.com/user/repo  or  https://archive.org/view_archive.php?archive=…",

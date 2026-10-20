@@ -60,6 +60,8 @@
     "filterName": "Lua-/ST-Dateien"
   },
   "search": {
+    "playtestFound": "Zu diesem Spiel gibt es einen Playtest: {name} (App-ID {appId}). Playtests haben eine eigene App-ID.",
+    "openPlaytest": "Playtest öffnen",
     "noSourceTitle": "Keine Depot-Quelle konfiguriert",
     "noSourceLead": "Die App liefert keine Depot-Quellen mit. Füge eine URL ein, die auf einen Ordner zeigt, der dem Layout <code>branches/&lt;appid&gt;/&lt;files&gt;</code> folgt (mit <code>.lua</code>-, <code>.manifest</code>- und optional <code>key.vdf</code>-Dateien). GitHub-Repos und <code>archive.org/view_archive.php</code>-URLs werden automatisch erkannt; jede einfache HTTPS-Basis-URL funktioniert ebenfalls.",
     "sourcePlaceholder": "https://github.com/user/repo  oder  https://archive.org/view_archive.php?archive=…",

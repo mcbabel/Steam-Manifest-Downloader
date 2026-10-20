@@ -460,6 +460,8 @@ const ALLOWED_EVENT_KINDS: &[&str] = &[
     "account_login",
     "account_logout",
     "account_depots",
+    "playtest_opened",
+    "steam_keys_used",
 ];
 
 pub fn env_consent() -> Option<bool> {

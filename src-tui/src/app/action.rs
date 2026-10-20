@@ -103,6 +103,7 @@ pub enum Action {
     BranchCycle(i32),
     ToggleUseAccount,
     LoadFromAccount,
+    OpenPlaytest(u32),
     ForceQuit,
     Help,
     CloseModal,

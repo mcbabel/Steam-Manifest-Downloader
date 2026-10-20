@@ -302,6 +302,52 @@ pub async fn fetch_dlc_info(
     .await
 }
 
+/// A Steam playtest: its own app of type "Beta" whose parent is the game.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Playtest {
+    pub app_id: u32,
+    pub name: String,
+}
+
+fn playtest_of(app: &Table, app_id: u32, parent: u32) -> Option<Playtest> {
+    let kind = common_value(app, "type")?;
+    if !kind.eq_ignore_ascii_case("beta") {
+        return None;
+    }
+    let parent_of: u32 = common_value(app, "parent")?.parse().ok()?;
+    if parent_of != parent || app_id == parent {
+        return None;
+    }
+    let name = common_value(app, "name").unwrap_or_else(|| app_id.to_string());
+    Some(Playtest { app_id, name })
+}
+
+/// Playtests of `app_id` among `candidates` (the apps the store lists under
+/// the game) and the game's own DLC list.
+pub async fn find_playtests(
+    session: Arc<SteamSession>,
+    app_id: u32,
+    candidates: &[u32],
+) -> Result<Vec<Playtest>, String> {
+    call_with_retry(&session, 2, PICS_BATCH_TIMEOUT, "Steam PICS batch query timed out", |conn| async move {
+        let parent = pics_product_info_vdf(&conn, &[app_id]).await?;
+        let listed = parent.get(&app_id).map(parse_dlc_list).unwrap_or_default();
+        let mut ids: Vec<u32> = listed.iter().chain(candidates.iter()).copied().filter(|id| *id != app_id).collect();
+        ids.sort_unstable();
+        ids.dedup();
+        ids.truncate(300);
+        let mut found = Vec::new();
+        for chunk in ids.chunks(100) {
+            let info = pics_product_info_vdf(&conn, chunk).await?;
+            found.extend(info.iter().filter_map(|(id, app)| playtest_of(app, *id, app_id)));
+        }
+        found.sort_by_key(|p| p.app_id);
+        Ok::<_, String>(found)
+    })
+    .await
+}
+
 fn classify_role(
     dlc_app_id: Option<u32>,
     oslist: &Option<String>,
@@ -754,6 +800,21 @@ fn as_str(entry: &Entry) -> Option<&str> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn recognises_playtests_of_the_game() {
+        let app = |text: &str| -> Table { vdf_reader::from_str(text).unwrap() };
+        let playtest = app("\"common\" { \"name\" \"Game Playtest\" \"type\" \"Beta\" \"parent\" \"100\" }");
+        assert_eq!(
+            playtest_of(&playtest, 200, 100),
+            Some(Playtest { app_id: 200, name: "Game Playtest".into() })
+        );
+        // Another game's playtest, a DLC, and the game itself are no playtests of it.
+        assert_eq!(playtest_of(&playtest, 200, 101), None);
+        let dlc = app("\"common\" { \"name\" \"Soundtrack\" \"type\" \"DLC\" \"parent\" \"100\" }");
+        assert_eq!(playtest_of(&dlc, 300, 100), None);
+        assert_eq!(playtest_of(&playtest, 100, 100), None);
+    }
 
     #[test]
     fn reads_the_dlc_list() {

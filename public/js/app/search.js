@@ -20,11 +20,13 @@ async function performSearch() {
   state.accountMode = false;
   const accountRow = document.getElementById('search-account-row');
   if (accountRow) accountRow.classList.add('hidden');
+  hidePlaytests();
 
   els.searchLoading.classList.remove('hidden');
   els.btnSearch.disabled = true;
 
   fetchSearchGameInfo(appId);
+  showPlaytests(appId);
 
   try {
     const raw = await invoke('search_repos', {
@@ -97,6 +99,42 @@ function showSearchNoResults(appId) {
 function showSearchError(message) {
   els.searchError.textContent = message;
   els.searchError.classList.remove('hidden');
+}
+
+function hidePlaytests() {
+  const row = document.getElementById('search-playtest-row');
+  if (!row) return;
+  row.classList.add('hidden');
+  row.innerHTML = '';
+}
+
+// Playtests are their own app on Steam; point to them from the game.
+async function showPlaytests(appId) {
+  let found = [];
+  try {
+    found = await invoke('find_playtests', { appId: String(appId) });
+  } catch (e) {
+    console.warn('find_playtests failed:', e);
+  }
+  const row = document.getElementById('search-playtest-row');
+  if (!row || state.searchAppId !== appId || !Array.isArray(found) || !found.length) return;
+  row.innerHTML = '';
+  for (const p of found.slice(0, 3)) {
+    const text = document.createElement('span');
+    text.className = 'search-account-row__text';
+    text.textContent = window.i18n.t('search.playtestFound', { name: p.name, appId: p.appId });
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn--small btn--outline';
+    btn.textContent = window.i18n.t('search.openPlaytest');
+    btn.addEventListener('click', () => {
+      emitEvent('playtest_opened', {});
+      els.searchAppIdInput.value = String(p.appId);
+      performSearch();
+    });
+    row.append(text, btn);
+  }
+  row.classList.remove('hidden');
 }
 
 async function fetchSearchGameInfo(appId) {

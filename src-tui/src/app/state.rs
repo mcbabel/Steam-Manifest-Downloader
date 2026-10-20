@@ -201,6 +201,8 @@ pub struct Wizard {
     pub repo_chosen: Option<usize>,
     pub manifests_loading: bool,
     pub search_app_id: Option<String>,
+    /// Playtests Steam keeps as their own app next to the searched game.
+    pub playtests: Vec<smd_core::services::steam_pics::Playtest>,
     pub search_repo: Option<String>,
     pub search_key_vdf: Option<HashMap<String, String>>,
     pub source_type: Option<String>,
@@ -300,6 +302,7 @@ impl Wizard {
             repo_chosen: None,
             manifests_loading: false,
             search_app_id: None,
+            playtests: Vec::new(),
             search_repo: None,
             search_key_vdf: None,
             source_type: None,

@@ -1143,6 +1143,12 @@ pub async fn search(dir: PathBuf, args: SearchArgs) -> i32 {
         return 0;
     }
     if !args.json {
+        // Playtests are their own app; name them so the user can search those.
+        if let Ok(id) = args.query.parse::<u32>() {
+            for p in smd_core::ops::search::find_playtests(&core, id).await {
+                println!("{}", tf("search.playtestFound", &[("name", &p.name), ("appId", &p.app_id)]));
+            }
+        }
         if res.repos.is_empty() {
             println!("{}", tf("tui.cli.appNotFound", &[("app", &args.query)]));
             return 1;

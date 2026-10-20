@@ -34,6 +34,17 @@ pub async fn get_repo_manifests(
 }
 
 #[command]
+pub async fn find_playtests(
+    state: tauri::State<'_, AppState>,
+    app_id: String,
+) -> Result<Vec<steam_pics::Playtest>, String> {
+    let app_id: u32 = app_id
+        .parse()
+        .map_err(|_| format!("Invalid app id '{}'", app_id))?;
+    Ok(search::find_playtests(&state, app_id).await)
+}
+
+#[command]
 pub async fn get_steam_app_info(
     state: tauri::State<'_, AppState>,
     app_id: String,

@@ -570,6 +570,8 @@ const FEATURES: &[(&str, &str, &str)] = &[
     ("Steam account sign-in storage", "account_login", "storage"),
     ("Steam account sign-out", "account_logout", ""),
     ("Loaded from own account", "account_depots", "count"),
+    ("Playtest opened from its game", "playtest_opened", ""),
+    ("Depot keys from installed Steam", "steam_keys_used", "found"),
     ("Downloads with own account", "download_started", "account"),
     ("Download branch", "download_started", "branch"),
     ("App update check", "update_checked", "available"),

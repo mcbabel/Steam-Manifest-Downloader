@@ -12,6 +12,9 @@ pub struct GameInfo {
     pub short_description: Option<String>,
     #[serde(rename = "type")]
     pub app_type: Option<String>,
+    /// Apps the store lists under the game, DLC and playtests alike.
+    #[serde(default)]
+    pub dlc: Vec<u32>,
 }
 
 const MAX_CACHE_SIZE: usize = 500;
@@ -85,6 +88,11 @@ pub async fn get_game_info(
             .get("type")
             .and_then(|v| v.as_str())
             .map(|s| s.to_string()),
+        dlc: app_data
+            .get("dlc")
+            .and_then(|v| v.as_array())
+            .map(|ids| ids.iter().filter_map(|id| id.as_u64()).map(|id| id as u32).collect())
+            .unwrap_or_default(),
     };
 
     {

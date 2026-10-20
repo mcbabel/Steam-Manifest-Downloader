@@ -40,6 +40,7 @@ fn main() {
             commands::search_repos,
             commands::get_repo_manifests,
             commands::search_steam_games,
+            commands::find_playtests,
             commands::fetch_depot_metadata,
             commands::fetch_depot_metadata_steam,
             commands::recommend_depots,

@@ -118,6 +118,11 @@ When telemetry is enabled, the app sends small events describing:
   - `account_logout` — you signed out of your Steam account
   - `account_depots` — depots were loaded from your own account, with their
     count
+  - `playtest_opened` — you opened a game's playtest from the hint in the
+    search
+  - `steam_keys_used` — you let SMD look for missing depot keys in your
+    installed Steam, and how many it found (`found`, `missing`). Never the
+    keys or depot IDs
 
 ### Settings snapshot
 
