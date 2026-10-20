@@ -5680,9 +5680,55 @@ textarea.bug-report__input {
   align-items: center;
 }
 
-.branch-section__select {
+.branch-picker {
   flex: 1 1 220px;
   min-width: 0;
+}
+
+.branch-picker__button {
+  width: 100%;
+  min-height: 40px;
+  justify-content: space-between;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+}
+
+.branch-picker__label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.branch-picker__menu {
+  left: 0;
+  right: 0;
+}
+
+.branch-picker__menu .history-sort__option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: normal;
+}
+
+.branch-picker__name {
+  font-family: var(--font-mono);
+}
+
+.branch-picker__desc {
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.branch-picker__tag {
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .branch-section__password {
@@ -5708,11 +5754,3 @@ textarea.bug-report__input {
   font-size: 0.9rem;
 }
 
-.branch-section__select {
-  cursor: pointer;
-}
-
-.branch-section__select option {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-}

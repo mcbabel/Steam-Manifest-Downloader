@@ -8,6 +8,7 @@ const accountUi = {
   polling: false,
   interval: 5,
   branches: null,
+  branch: 'public',
 };
 
 function accountEl(id) {
@@ -179,13 +180,8 @@ async function accountLogout() {
 
 // ---- branches in the depot selection --------------------------------------------
 
-function branchSelectEl() {
-  return accountEl('branch-select');
-}
-
 function selectedBranch() {
-  const sel = branchSelectEl();
-  return sel && sel.value ? sel.value : 'public';
+  return accountUi.branch || 'public';
 }
 
 function selectedBranchInfo() {
@@ -222,27 +218,115 @@ function branchStartProblem() {
   return null;
 }
 
+function branchTag(b) {
+  if (b.passwordRequired) return window.i18n.t('branch.passwordTag');
+  if (!b.available) return window.i18n.t('branch.lockedTag');
+  return '';
+}
+
+function branchItemHtml(b) {
+  const tag = branchTag(b);
+  return `<span class="branch-picker__name">${escapeHtml(b.name)}</span>`
+    + (b.description ? `<span class="branch-picker__desc">${escapeHtml(b.description)}</span>` : '')
+    + (tag ? `<span class="depot-tag branch-picker__tag">${escapeHtml(tag)}</span>` : '');
+}
+
+function branchList() {
+  const list = (accountUi.branches && accountUi.branches.branches) || [];
+  return list.length ? list : [{ name: 'public', description: '', passwordRequired: false, available: true }];
+}
+
+function branchOptions() {
+  const menu = accountEl('branch-menu');
+  return menu ? Array.from(menu.querySelectorAll('.history-sort__option')) : [];
+}
+
 function renderBranchSection() {
-  const section = accountEl('branch-section');
-  const sel = branchSelectEl();
-  if (!section || !sel) return;
-  const data = accountUi.branches;
-  const list = (data && data.branches) || [];
-  const previous = sel.value || 'public';
-  sel.innerHTML = '';
-  const names = list.length ? list : [{ name: 'public', description: '', passwordRequired: false, available: true }];
-  for (const b of names) {
-    const opt = document.createElement('option');
-    opt.value = b.name;
-    let label = b.name;
-    if (b.description) label += ` – ${b.description}`;
-    if (b.passwordRequired) label += ` (${window.i18n.t('branch.passwordTag')})`;
-    else if (!b.available) label += ` (${window.i18n.t('branch.lockedTag')})`;
-    opt.textContent = label;
-    sel.appendChild(opt);
-  }
-  sel.value = names.some(b => b.name === previous) ? previous : 'public';
+  const menu = accountEl('branch-menu');
+  if (!menu) return;
+  const names = branchList();
+  if (!names.some(b => b.name === accountUi.branch)) accountUi.branch = 'public';
+  menu.innerHTML = names.map(b =>
+    `<li class="history-sort__option" role="option" data-value="${escapeHtml(b.name)}">${branchItemHtml(b)}</li>`,
+  ).join('');
+  branchOptions().forEach(opt => {
+    opt.addEventListener('click', () => chooseBranch(opt.dataset.value));
+    opt.addEventListener('mouseenter', () => {
+      branchOptions().forEach(o => o.classList.toggle('is-focused', o === opt));
+    });
+  });
+  setBranch(accountUi.branch);
+}
+
+function setBranch(name) {
+  accountUi.branch = name || 'public';
+  const label = accountEl('branch-button-label');
+  const current = branchList().find(b => b.name === accountUi.branch);
+  if (label && current) label.innerHTML = branchItemHtml(current);
+  branchOptions().forEach(opt => {
+    const active = opt.dataset.value === accountUi.branch;
+    opt.classList.toggle('is-active', active);
+    opt.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
   updateBranchControls();
+}
+
+function setBranchMenuOpen(open) {
+  const picker = accountEl('branch-picker');
+  const menu = accountEl('branch-menu');
+  const button = accountEl('branch-button');
+  if (!picker || !menu || !button) return;
+  menu.classList.toggle('hidden', !open);
+  button.setAttribute('aria-expanded', open ? 'true' : 'false');
+  picker.classList.toggle('is-open', open);
+  if (open) {
+    const active = menu.querySelector('.is-active') || menu.firstElementChild;
+    branchOptions().forEach(o => o.classList.toggle('is-focused', o === active));
+    if (active) active.scrollIntoView({ block: 'nearest' });
+  }
+}
+
+function chooseBranch(name) {
+  setBranch(name);
+  setBranchMenuOpen(false);
+  const button = accountEl('branch-button');
+  if (button) button.focus();
+}
+
+function bindBranchPicker() {
+  const picker = accountEl('branch-picker');
+  const menu = accountEl('branch-menu');
+  const button = accountEl('branch-button');
+  if (!picker || !menu || !button) return;
+  button.addEventListener('click', () => setBranchMenuOpen(menu.classList.contains('hidden')));
+  picker.addEventListener('keydown', (e) => {
+    const open = !menu.classList.contains('hidden');
+    const options = branchOptions();
+    const focused = options.findIndex(o => o.classList.contains('is-focused'));
+    if (e.key === 'Escape' && open) {
+      e.preventDefault();
+      e.stopPropagation();
+      setBranchMenuOpen(false);
+      button.focus();
+    } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (!open) {
+        setBranchMenuOpen(true);
+        return;
+      }
+      const next = (focused + (e.key === 'ArrowDown' ? 1 : options.length - 1)) % options.length;
+      options.forEach((o, i) => o.classList.toggle('is-focused', i === next));
+      options[next].scrollIntoView({ block: 'nearest' });
+    } else if ((e.key === 'Enter' || e.key === ' ') && open && focused >= 0) {
+      e.preventDefault();
+      chooseBranch(options[focused].dataset.value);
+    } else if (e.key === 'Tab' && open) {
+      setBranchMenuOpen(false);
+    }
+  }, true);
+  document.addEventListener('click', (e) => {
+    if (!picker.contains(e.target)) setBranchMenuOpen(false);
+  });
 }
 
 function updateBranchControls() {
@@ -292,6 +376,8 @@ async function refreshBranchSection() {
 
 function initBranchSection() {
   accountUi.branches = null;
+  accountUi.branch = 'public';
+  setBranchMenuOpen(false);
   const pw = accountEl('branch-password');
   if (pw) pw.value = '';
   const toggle = accountEl('use-account-toggle');
@@ -344,8 +430,7 @@ function initAccount() {
   if (cancel) cancel.addEventListener('click', () => closeAccountModal(true));
   const modal = accountEl('account-modal');
   if (modal) modal.querySelector('.modal__backdrop').addEventListener('click', () => closeAccountModal(true));
-  const sel = branchSelectEl();
-  if (sel) sel.addEventListener('change', updateBranchControls);
+  bindBranchPicker();
   const branchLogin = accountEl('btn-branch-login');
   if (branchLogin) branchLogin.addEventListener('click', () => openSettings('steam'));
   const fromAccount = accountEl('btn-search-account');

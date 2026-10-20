@@ -118,6 +118,7 @@ pub fn advice(stage: &str, class: &str) -> Advice {
         (_, NO_SOURCES) => a("no_sources", &["sources", "upload"]),
         ("source_probe", NOT_FOUND) => a("app_missing", &["sources", "upload"]),
         ("depot_key", NOT_FOUND) => a("no_depot_key", &["sources", "report_bug"]),
+        ("depot_key", UNAUTHORIZED) => a("account_no_depot_key", &["report_bug"]),
         ("manifest_code", NOT_FOUND) | ("manifest_fetch", NOT_FOUND) => {
             a("manifest_missing", &["enter_mh_key", "sources"])
         }
@@ -265,6 +266,7 @@ pub fn classify_pipeline_error(text: &str) -> (Stage, &'static str) {
         ("header read failed", Stage::ManifestDecode, DECODE),
         ("length read failed", Stage::ManifestDecode, DECODE),
         ("length overflow", Stage::ManifestDecode, DECODE),
+        ("gave your account no key", Stage::DepotKey, UNAUTHORIZED),
         ("depot key", Stage::DepotKey, NOT_FOUND),
         ("has no key", Stage::DepotKey, NOT_FOUND),
         ("key hex invalid", Stage::DepotKey, DECODE),
@@ -489,6 +491,11 @@ mod tests {
         assert_eq!(advice("source_probe", NO_SOURCES).actions, &["sources", "upload"]);
         assert_eq!(advice("source_probe", NOT_FOUND).id, "app_missing");
         assert_eq!(advice("depot_key", NOT_FOUND).id, "no_depot_key");
+        assert_eq!(advice("depot_key", UNAUTHORIZED).id, "account_no_depot_key");
+        assert_eq!(
+            classify_pipeline_error("Steam gave your account no key for depot 5309181: Steam answered AccessDenied (15)"),
+            (Stage::DepotKey, UNAUTHORIZED)
+        );
         assert_eq!(advice("manifest_code", NOT_FOUND).id, "manifest_missing");
         assert_eq!(advice("cdn_token", SERVER_ERROR).id, "network");
         assert_eq!(advice("login", CONNECT).actions, &["retry", "proxy"]);

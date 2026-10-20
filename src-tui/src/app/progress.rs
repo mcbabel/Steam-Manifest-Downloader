@@ -1558,6 +1558,7 @@ fn advice_id(id: &str) -> Option<&'static str> {
         "no_sources",
         "app_missing",
         "no_depot_key",
+        "account_no_depot_key",
         "manifest_missing",
         "rate_limited",
         "network",

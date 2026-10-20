@@ -870,6 +870,8 @@
     "picsTimeout": "Steam PICS query timed out after 20s",
     "picsBatchTimeout": "Steam PICS batch query timed out",
     "noDepotsSection": "App {0} has no 'depots' section",
+    "noDepotsAccess": "Steam only shows the depots of app {0} to accounts that may download it, and this connection has no access",
+    "accountNoDepotKey": "Steam gave your account no key for depot {0}: {1}",
     "historyDirFailed": "Failed to create history directory: {0}",
     "historyWriteFailed": "Failed to write history file: {0}",
     "hubcapNoKey": "Hubcap API key is not set",
@@ -1069,6 +1071,10 @@
     "no_depot_key": {
       "title": "No key for some depots",
       "text": "Your source has no decryption key for these depots, so they cannot be downloaded. Another source may have it. If you think the key should be there, report it."
+    },
+    "account_no_depot_key": {
+      "title": "Steam gave your account no key",
+      "text": "Steam only hands out depot keys for depots your account may download right now. That is not the case for a playtest that has ended, a game that is not out yet or one your account does not own. The message above says what Steam answered."
     },
     "manifest_missing": {
       "title": "The manifest could not be found",

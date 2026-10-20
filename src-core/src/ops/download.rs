@@ -513,11 +513,20 @@ async fn prepare_account_download(
         let Ok(depot_id) = depot.depot_id.parse::<u32>() else {
             continue;
         };
-        if let Some(key) = steam_branches::depot_key(session.clone(), app_id, depot_id).await {
-            depot.depot_key = Some(hex::encode(key));
+        match steam_branches::depot_key(session.clone(), app_id, depot_id).await {
+            Ok(key) => depot.depot_key = Some(hex::encode(key)),
+            Err(reason) => {
+                // The depot's error later says what Steam answered.
+                crate::dlog!("account", "no key for depot {}: {}", depot.depot_id, reason);
+                session.note_key_error(&depot.depot_id, reason);
+            }
         }
     }
     Ok(session)
+}
+
+fn account_key_error(depot: &str, reason: &str) -> String {
+    format!("Steam gave your account no key for depot {}: {}", depot, reason)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -1651,6 +1660,12 @@ async fn run_native_pipeline(
         let (depot_id_u, manifest_id_u, depot_key) = match prepare_native_depot(depot, depot_infos) {
             Ok(prepared) => prepared,
             Err(e) => {
+                // With the account, say what Steam answered instead of
+                // pointing at the depot sources.
+                let e = match session.key_error(&depot.depot_id) {
+                    Some(reason) => account_key_error(&depot.depot_id, &reason),
+                    None => e,
+                };
                 let mut err_event = ProgressEvent::new("error", job_id);
                 err_event.localized(
                     format!(

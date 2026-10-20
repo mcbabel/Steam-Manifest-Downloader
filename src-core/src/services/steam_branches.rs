@@ -319,12 +319,11 @@ async fn private_depot_section(
     }
 }
 
-/// Depot key for `depot_id` from the account. `None` when the account does
-/// not own the depot. Only asked for depots of a download that uses the
-/// account.
-pub async fn depot_key(session: Arc<SteamSession>, app_id: u32, depot_id: u32) -> Option<[u8; 32]> {
+/// Depot key for `depot_id` from the account. Only asked for depots of a
+/// download that uses the account; the error says what Steam answered.
+pub async fn depot_key(session: Arc<SteamSession>, app_id: u32, depot_id: u32) -> Result<[u8; 32], String> {
     if !session.uses_account() {
-        return None;
+        return Err("not signed in".into());
     }
     let resp: CMsgClientGetDepotDecryptionKeyResponse = call_with_retry(
         &session,
@@ -342,12 +341,18 @@ pub async fn depot_key(session: Arc<SteamSession>, app_id: u32, depot_id: u32) -
                 .map_err(|e| format!("GetDepotDecryptionKey failed: {}", e))
         },
     )
-    .await
-    .ok()?;
-    if resp.eresult.unwrap_or(2) != 1 {
-        return None;
+    .await?;
+    let code = resp.eresult.unwrap_or(2);
+    if code != 1 {
+        return Err(match steam_vent::EResult::try_from(code) {
+            Ok(e) => format!("Steam answered {:?} ({})", e, code),
+            Err(_) => format!("Steam answered {}", code),
+        });
     }
-    resp.depot_encryption_key.as_deref()?.try_into().ok()
+    resp.depot_encryption_key
+        .as_deref()
+        .and_then(|k| k.try_into().ok())
+        .ok_or_else(|| "Steam sent no key".to_string())
 }
 
 // ---- binary KeyValues -------------------------------------------------------

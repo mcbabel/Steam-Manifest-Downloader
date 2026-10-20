@@ -339,9 +339,15 @@
         <div id="depot-list" class="depot-list"></div>
 
         <div id="branch-section" class="settings-section branch-section">
-          <label for="branch-select" class="settings-section__label"><span data-i18n="branch.label">Steam branch</span></label>
+          <span id="branch-label" class="settings-section__label"><span data-i18n="branch.label">Steam branch</span></span>
           <div class="branch-section__row">
-            <select id="branch-select" class="dd-path__input branch-section__select"><option value="public">public</option></select>
+            <div id="branch-picker" class="history-sort branch-picker">
+              <button type="button" id="branch-button" class="history-sort__button branch-picker__button" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="branch-label">
+                <span id="branch-button-label" class="history-sort__label branch-picker__label">public</span>
+                <svg class="history-sort__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <ul id="branch-menu" class="history-sort__menu history-sort__menu--scroll branch-picker__menu hidden" role="listbox" tabindex="-1" aria-labelledby="branch-label"></ul>
+            </div>
             <input type="password" id="branch-password" class="dd-path__input branch-section__password hidden" autocomplete="off" spellcheck="false" data-i18n-attr="placeholder=branch.passwordPlaceholder,aria-label=branch.passwordPlaceholder">
             <button type="button" id="btn-branch-login" class="btn btn--small btn--outline hidden" data-i18n="account.signIn">Sign in with QR code</button>
           </div>

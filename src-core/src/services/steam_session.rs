@@ -23,6 +23,8 @@ pub struct SteamSession {
     login: Option<crate::services::steam_account::Account>,
     /// Branch a download with the account reads from (`None` = public).
     branch: Option<String>,
+    /// What Steam answered when it gave the account no key for a depot.
+    key_errors: std::sync::Mutex<std::collections::HashMap<String, String>>,
 }
 
 /// Why a logon with the stored account failed.
@@ -73,6 +75,7 @@ impl SteamSession {
             account: Mutex::new(None),
             login: None,
             branch: None,
+            key_errors: Default::default(),
         }
     }
 
@@ -88,7 +91,20 @@ impl SteamSession {
             account: Mutex::new(None),
             login: Some(account),
             branch: branch.filter(|b| !b.is_empty() && !b.eq_ignore_ascii_case("public")),
+            key_errors: Default::default(),
         }
+    }
+
+    /// Notes that Steam gave the account no key for `depot`, and why.
+    pub fn note_key_error(&self, depot: &str, reason: String) {
+        if let Ok(mut map) = self.key_errors.lock() {
+            map.insert(depot.to_string(), reason);
+        }
+    }
+
+    /// Why Steam gave the account no key for `depot`, if it refused.
+    pub fn key_error(&self, depot: &str) -> Option<String> {
+        self.key_errors.lock().ok()?.get(depot).cloned()
     }
 
     pub fn uses_account(&self) -> bool {
@@ -138,11 +154,13 @@ impl SteamSession {
             .await
             {
                 Ok(conn) => {
+                    crate::dlog!("steam", "logged on with the signed-in account");
                     *guard = Some((account.steam_id, conn.clone()));
                     return Ok(conn);
                 }
                 Err(e) => {
                     let err = classify_logon(&e);
+                    crate::dlog!("steam", "account logon failed: {}", err);
                     if matches!(err, AccountLogonError::Rejected(_)) {
                         return Err(err);
                     }

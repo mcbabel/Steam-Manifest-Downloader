@@ -694,7 +694,7 @@ function showCompletion(success, message) {
   }
 }
 
-const ADVICE_IDS = ['no_api_key', 'no_sources', 'app_missing', 'no_depot_key', 'manifest_missing', 'rate_limited', 'network', 'disk', 'unknown'];
+const ADVICE_IDS = ['no_api_key', 'no_sources', 'app_missing', 'no_depot_key', 'account_no_depot_key', 'manifest_missing', 'rate_limited', 'network', 'disk', 'unknown'];
 
 function adviceAction(action) {
   switch (action) {

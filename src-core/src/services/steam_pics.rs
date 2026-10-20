@@ -8,7 +8,7 @@ use steam_vent_proto::steammessages_clientserver_appinfo::{
     cmsg_client_picsproduct_info_request, CMsgClientPICSProductInfoRequest,
     CMsgClientPICSProductInfoResponse,
 };
-use vdf_reader::entry::{Entry, Table};
+use vdf_reader::entry::{Entry, Table, Value};
 
 use crate::services::steam_session::{call_with_retry, SteamSession};
 
@@ -144,7 +144,7 @@ pub async fn fetch_depots_with_names(
         let depot_root = parent
             .get("depots")
             .and_then(as_table)
-            .ok_or_else(|| format!("App {} has no 'depots' section", parent_app_id))?;
+            .ok_or_else(|| no_depots_error(parent, parent_app_id))?;
 
         let parent_game_name = parent
             .get("common")
@@ -372,11 +372,18 @@ pub(crate) async fn pics_access_tokens(conn: &Connection, app_ids: &[u32]) -> Ha
         ..Default::default()
     };
     match conn.job::<_, CMsgClientPICSAccessTokenResponse>(req).await {
-        Ok(resp) => resp
-            .app_access_tokens
-            .iter()
-            .filter_map(|t| Some((t.appid?, t.access_token?)))
-            .collect(),
+        Ok(resp) => {
+            let tokens: HashMap<u32, u64> = resp
+                .app_access_tokens
+                .iter()
+                .filter_map(|t| Some((t.appid?, t.access_token?)))
+                .collect();
+            if !resp.app_denied_tokens.is_empty() {
+                crate::dlog!("PICS", "access token denied for apps {:?}", resp.app_denied_tokens);
+            }
+            crate::dlog!("PICS", "access tokens for {} of {} apps", tokens.len(), app_ids.len());
+            tokens
+        }
         Err(e) => {
             crate::dlog!("PICS", "access token request failed: {}", e);
             HashMap::new()
@@ -414,6 +421,15 @@ async fn pics_product_info_vdf(
         let Some(appid) = app.appid else {
             continue;
         };
+        let missing_token = app.missing_token();
+        if missing_token {
+            crate::dlog!(
+                "PICS",
+                "app {} needs an access token, sent: {}",
+                appid,
+                tokens.contains_key(&appid)
+            );
+        }
         let Some(buffer) = app.buffer.as_deref() else {
             continue;
         };
@@ -424,14 +440,34 @@ async fn pics_product_info_vdf(
         let Ok(table) = vdf_reader::from_str::<Table>(trimmed) else {
             continue;
         };
-        let app_table = table
+        let mut app_table = table
             .get("appinfo")
             .and_then(as_table)
             .cloned()
             .unwrap_or(table);
+        if missing_token {
+            app_table.insert(MISSING_TOKEN_KEY.into(), Entry::Value(Value::from("1")));
+        }
         out.insert(appid, app_table);
     }
     Ok(out)
+}
+
+/// Marks app info Steam only gave out in its public form, because the
+/// connection had no access token for the app.
+const MISSING_TOKEN_KEY: &str = "_smd_missing_token";
+
+/// Error for app info without a depots section: Steam hides the depots of
+/// some apps from everyone who has no access to them.
+fn no_depots_error(app: &Table, app_id: u32) -> String {
+    if app.get(MISSING_TOKEN_KEY).is_some() {
+        format!(
+            "Steam only shows the depots of app {} to accounts that may download it, and this connection has no access",
+            app_id
+        )
+    } else {
+        format!("App {} has no 'depots' section", app_id)
+    }
 }
 
 pub async fn fetch_app_info(session: Arc<SteamSession>, app_id: u32) -> Result<Table, String> {

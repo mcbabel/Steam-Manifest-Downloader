@@ -870,6 +870,8 @@
     "picsTimeout": "Die Steam-PICS-Abfrage hat nach 20 s nicht geantwortet",
     "picsBatchTimeout": "Die Steam-PICS-Sammelabfrage hat nicht rechtzeitig geantwortet",
     "noDepotsSection": "App {0} hat keinen 'depots'-Abschnitt",
+    "noDepotsAccess": "Steam zeigt die Depots von App {0} nur Konten, die sie herunterladen dürfen, und diese Verbindung hat keinen Zugriff darauf. Bei einem Spiel, das noch nicht erschienen ist, geht das erst ab Release oder Preload.",
+    "accountNoDepotKey": "Steam gibt deinem Konto keinen Schlüssel für Depot {0}: {1}",
     "historyDirFailed": "Verlaufsordner konnte nicht erstellt werden: {0}",
     "historyWriteFailed": "Verlaufsdatei konnte nicht geschrieben werden: {0}",
     "hubcapNoKey": "Kein Hubcap-API-Key gesetzt",
@@ -1069,6 +1071,10 @@
     "no_depot_key": {
       "title": "Für einige Depots fehlt der Schlüssel",
       "text": "Deine Quelle hat für diese Depots keinen Schlüssel, deshalb lassen sie sich nicht laden. Eine andere Quelle hat ihn vielleicht. Wenn der Schlüssel eigentlich da sein müsste, melde es."
+    },
+    "account_no_depot_key": {
+      "title": "Steam gibt deinem Konto keinen Schlüssel",
+      "text": "Steam gibt Depot-Schlüssel nur für Depots heraus, die dein Konto gerade herunterladen darf. Bei einem beendeten Playtest, einem noch nicht erschienenen Spiel oder einem Spiel, das dein Konto nicht besitzt, ist das nicht der Fall. Was Steam geantwortet hat, steht in der Meldung darüber."
     },
     "manifest_missing": {
       "title": "Das Manifest wurde nicht gefunden",
