@@ -114,11 +114,13 @@ impl App {
             prefs.include_dlc = dlc;
         }
         let key_vdf = self.wiz.search_key_vdf.as_ref().filter(|_| self.wiz.from_search);
+        // Depots from the account get their keys from Steam.
+        let from_account = self.acct.from_account;
         let choice = depot_select::recommend_keyed(
             &meta,
             &candidates,
             |id| {
-                parsed.depots.iter().any(|d| d.depot_id == id && d.depot_key.is_some())
+                from_account || parsed.depots.iter().any(|d| d.depot_id == id && d.depot_key.is_some())
                     || key_vdf.is_some_and(|k| k.contains_key(id))
             },
             &prefs,
@@ -376,7 +378,12 @@ impl App {
         if selected.is_empty() {
             return None;
         }
-        let native = self.settings.use_native_downloader;
+        if let Some(key) = self.branch_problem() {
+            self.toast(Tone::Error, t(key));
+            return None;
+        }
+        let (branch, branch_password, use_account) = self.branch_fields();
+        let native = self.settings.use_native_downloader || use_account;
         let mh_key = self.wiz.mh_key.trimmed();
         self.prefs.mh_api_key = mh_key.clone();
         self.save_prefs();
@@ -459,9 +466,9 @@ impl App {
             like_steam: None,
             all_app_ids: Some(parsed.all_app_ids.clone()),
             include_dlc: self.wiz.depot_include_dlc,
-            branch: None,
-            branch_password: None,
-            use_account: false,
+            branch,
+            branch_password,
+            use_account,
         };
         let ids: Vec<String> = config.depots.iter().map(|d| d.depot_id.clone()).collect();
         Some((config, ids, native))
@@ -895,7 +902,7 @@ impl App {
                     theme::dim(),
                 ));
             }
-            if d.depot_key.is_none() {
+            if d.depot_key.is_none() && !self.acct.from_account {
                 info.push(Span::styled(
                     format!("   {}", t("tui.select.noKey")),
                     theme::warning(),
@@ -993,6 +1000,7 @@ impl App {
         let r_ = sv.next(1);
         widgets::heading(&mut sv.buf, r_, &t("tui.select.options"));
         sv.gap(1);
+        self.render_branch_options(&mut sv, ctx, w);
         let browse = ButtonSpec::new(
             t("tui.browse.button"),
             Fid::new("select.browseDir"),

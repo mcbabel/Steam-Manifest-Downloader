@@ -61,6 +61,7 @@ pub enum InputId {
     SettingsSourceAdd,
     BrowserPath,
     HistoryFilter,
+    BranchPassword,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -95,6 +96,13 @@ pub enum SettingToggle {
 pub enum Action {
     Nav(Page),
     Quit,
+
+    AccountLogin,
+    AccountLoginCancel,
+    AccountLogout,
+    BranchCycle(i32),
+    ToggleUseAccount,
+    LoadFromAccount,
     ForceQuit,
     Help,
     CloseModal,

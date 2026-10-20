@@ -40,6 +40,11 @@ impl App {
         let Some((config, _, _)) = self.build_download() else {
             return;
         };
+        // The branch password is never stored, so a queued download could not use it.
+        if config.branch_password.is_some() {
+            self.toast(Tone::Error, crate::i18n::t("branch.noQueueWithPassword"));
+            return;
+        }
         let item = QueuedDownload {
             id: String::new(),
             app_id: config.app_id.clone(),

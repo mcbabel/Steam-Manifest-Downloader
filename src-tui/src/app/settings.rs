@@ -13,11 +13,12 @@ use crate::theme::{self, ThemeMode};
 use crate::ui::widgets::{self, Btn, ButtonSpec, InputSpec, Tone};
 use crate::ui::{take_bottom, take_top, Ctx, Fid, Kind, ScrollView};
 
-const TABS: [&str; 5] = [
+const TABS: [&str; 6] = [
     "tui.settings.tabGeneral",
     "tui.settings.tabDownloads",
     "settings.depotSources",
     "tui.settings.tabKeys",
+    "account.title",
     "tui.settings.tabAbout",
 ];
 
@@ -502,6 +503,7 @@ impl App {
             0 => self.render_general(&mut sv, ctx, w),
             1 => self.render_downloads(&mut sv, ctx, w),
             3 => self.render_keys(&mut sv, ctx, w),
+            4 => self.render_account_tab(&mut sv, ctx, w),
             _ => self.render_about(&mut sv, ctx, w),
         }
         let mut scroll = self.set.scroll;

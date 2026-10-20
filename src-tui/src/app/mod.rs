@@ -1,3 +1,4 @@
+mod account;
 pub mod action;
 mod emulator;
 mod history;
@@ -105,6 +106,7 @@ pub struct App {
     pub queue: Vec<smd_core::services::download_queue::QueuedDownload>,
     pub queue_running: bool,
     pub queue_next_at: Option<Instant>,
+    pub acct: account::AccountUi,
 }
 
 impl App {
@@ -170,6 +172,7 @@ impl App {
             queue: Vec::new(),
             queue_running: false,
             queue_next_at: None,
+            acct: account::AccountUi::default(),
         };
         (app, rx)
     }
@@ -258,6 +261,7 @@ impl App {
     }
 
     fn startup(&mut self) {
+        self.account_refresh();
         let dir = self.data_dir.clone();
         let first_start = self.settings.language.is_empty();
         self.spawn(async move {
@@ -746,6 +750,7 @@ impl App {
             InputId::Setting(i) => self.set.inputs.get_mut(i)?,
             InputId::SettingsSourceAdd => &mut self.set.source_add,
             InputId::HistoryFilter => &mut self.hist.filter,
+            InputId::BranchPassword => &mut self.acct.branch_password,
             InputId::BrowserPath => match self.modal.as_mut()? {
                 Modal::Browser(fb) => &mut fb.path_input,
                 _ => return None,
@@ -1018,6 +1023,7 @@ impl App {
                     && !self.dispatch_history(&a)
                     && !self.dispatch_queue(&a)
                     && !self.dispatch_settings(&a)
+                    && !self.dispatch_account(&a)
                 {
                     self.dispatch_modal(a);
                 }

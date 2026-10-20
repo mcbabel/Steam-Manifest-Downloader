@@ -298,6 +298,7 @@ impl App {
                         app.wiz.search_repo = Some(repo.repo.clone());
                         app.wiz.search_key_vdf = Some(m.depot_keys);
                         app.wiz.source_type = Some(repo.source_type.clone());
+                        app.acct.from_account = false;
                         app.wiz.parsed = Some(Parsed {
                             main_app_id: app_id,
                             depots,
@@ -509,6 +510,7 @@ impl App {
         let Some(parsed) = &self.wiz.parsed else {
             return;
         };
+        let from_account = self.wiz.source_type.as_deref() == Some("account");
         let app_id = parsed.main_app_id.clone();
         self.wiz.selected.clear();
         self.wiz.depot_cursor = 0;
@@ -586,6 +588,7 @@ impl App {
                 }
             })
         });
+        self.branch_reset(from_account);
     }
 
     pub(super) fn render_source(&mut self, buf: &mut Buffer, area: Rect, ctx: &mut Ctx) {
@@ -820,6 +823,27 @@ impl App {
                     ButtonSpec::new(t("search.useUpload"), Fid::new("search.hintUpload"), Action::SearchHint("upload"), Btn::Secondary),
                 ],
                 false,
+            );
+            let _ = take_top(&mut rest, 1);
+        }
+        if self.acct.info.is_some() && self.wiz.search_app_id.is_some() && !self.wiz.search_loading {
+            let text = t("account.searchHint");
+            let row = take_top(&mut rest, 1);
+            widgets::text(buf, row, &format!("{} ", text), theme::dim());
+            let x = row.x + widgets::width(&text) + 1;
+            widgets::button(
+                buf,
+                ctx,
+                x,
+                row.y,
+                row.right().saturating_sub(x),
+                &ButtonSpec::new(
+                    t("account.loadFromAccount"),
+                    Fid::new("search.fromAccount"),
+                    Action::LoadFromAccount,
+                    Btn::Secondary,
+                )
+                .enabled(!self.acct.loading_depots),
             );
             let _ = take_top(&mut rest, 1);
         }
