@@ -107,6 +107,8 @@ pub struct DownloadArgs {
     pub branch_password: Option<String>,
     #[arg(long, help = t("tui.cli.argAccount"))]
     pub account: bool,
+    #[arg(long, help = t("tui.cli.argSteamKeys"))]
+    pub steam_keys: bool,
     #[arg(
         long,
         help = t("tui.cli.argJson")
@@ -593,12 +595,38 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
             }
         }
     }
-    let chosen: Vec<_> = plan
+    let mut chosen: Vec<_> = plan
         .depots
         .iter()
         .filter(|(id, ..)| wanted.is_empty() || wanted.contains(id))
         .cloned()
         .collect();
+    let keyless: Vec<String> = chosen
+        .iter()
+        .filter(|(id, _, key, _)| key.is_none() && !plan.key_vdf.as_ref().is_some_and(|k| k.contains_key(id)))
+        .map(|(id, ..)| id.clone())
+        .collect();
+    if args.steam_keys && !keyless.is_empty() {
+        let local = smd_core::services::steam_local_keys::read(&keyless).await;
+        for (id, _, key, _) in chosen.iter_mut() {
+            if key.is_none() {
+                if let Some(k) = local.keys.get(id) {
+                    *key = Some(k.clone());
+                }
+            }
+        }
+        cli_emit("steam_keys_used", serde_json::json!({ "found": local.keys.len(), "missing": keyless.len() - local.keys.len() })).await;
+        if !args.json {
+            let msg = if local.steam_found {
+                tf("select.steamKeysFound", &[("found", &local.keys.len()), ("count", &keyless.len())])
+            } else {
+                t("select.steamKeysNoSteam")
+            };
+            errln!("{}", msg);
+        }
+    } else if !keyless.is_empty() && !from_account && !args.json {
+        errln!("{}", t("tui.cli.steamKeysHint"));
+    }
 
     let title = match &plan.game_name {
         Some(name) => format!("{} (App {})", name, plan.app_id),
@@ -1143,7 +1171,6 @@ pub async fn search(dir: PathBuf, args: SearchArgs) -> i32 {
         return 0;
     }
     if !args.json {
-        // Playtests are their own app; name them so the user can search those.
         if let Ok(id) = args.query.parse::<u32>() {
             for p in smd_core::ops::search::find_playtests(&core, id).await {
                 println!("{}", tf("search.playtestFound", &[("name", &p.name), ("appId", &p.app_id)]));

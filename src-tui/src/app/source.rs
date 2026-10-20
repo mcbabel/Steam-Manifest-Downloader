@@ -542,6 +542,7 @@ impl App {
         self.wiz.depot_meta.clear();
         self.wiz.depot_pics.clear();
         self.wiz.mh_hint = None;
+        self.wiz.steam_keys_note = None;
         self.wiz.select_scroll = 0;
         if self.wiz.download_dir.is_empty() {
             self.wiz

@@ -12,7 +12,6 @@ pub struct GameInfo {
     pub short_description: Option<String>,
     #[serde(rename = "type")]
     pub app_type: Option<String>,
-    /// Apps the store lists under the game, DLC and playtests alike.
     #[serde(default)]
     pub dlc: Vec<u32>,
 }

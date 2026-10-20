@@ -5754,3 +5754,34 @@ textarea.bug-report__input {
   font-size: 0.9rem;
 }
 
+
+.steam-keys-offer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-active);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+}
+
+.steam-keys-offer__actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.steam-keys-offer--success {
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.steam-keys-offer--warning {
+  border-color: var(--warning);
+  color: var(--warning);
+}

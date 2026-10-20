@@ -301,7 +301,7 @@ fn windows_steam_candidates() -> Vec<PathBuf> {
     Vec::new()
 }
 
-fn steam_candidates() -> Vec<PathBuf> {
+pub(crate) fn steam_candidates() -> Vec<PathBuf> {
     let mut out: Vec<PathBuf> = custom_dir().into_iter().collect();
     out.extend(mac_steam_candidates());
     out.extend(linux_steam_candidates());

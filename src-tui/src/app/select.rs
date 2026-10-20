@@ -18,8 +18,97 @@ use crate::ui::widgets::{self, Btn, ButtonSpec, InputSpec, Tone};
 use crate::ui::{split_h, take_bottom, take_top, Ctx, Fid, Kind, ScrollView};
 
 impl App {
+    fn depots_without_key(&self) -> Vec<String> {
+        let key_vdf = self.wiz.search_key_vdf.as_ref().filter(|_| self.wiz.from_search);
+        self.wiz
+            .parsed
+            .as_ref()
+            .map(|p| {
+                p.depots
+                    .iter()
+                    .filter(|d| d.depot_key.is_none() && !key_vdf.is_some_and(|k| k.contains_key(&d.depot_id)))
+                    .map(|d| d.depot_id.clone())
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
+
+    fn look_for_steam_keys(&mut self) {
+        let Some(app_id) = self.wiz.parsed.as_ref().map(|p| p.main_app_id.clone()) else {
+            return;
+        };
+        self.wiz.steam_keys_asked = Some(app_id.clone());
+        let missing = self.depots_without_key();
+        self.spawn(async move {
+            let found = smd_core::services::steam_local_keys::read(&missing).await;
+            apply(move |app| {
+                let Some(parsed) = app.wiz.parsed.as_mut().filter(|p| p.main_app_id == app_id) else {
+                    return;
+                };
+                let mut count = 0;
+                for d in parsed.depots.iter_mut() {
+                    if let Some(key) = found.keys.get(&d.depot_id) {
+                        d.depot_key = Some(key.clone());
+                        count += 1;
+                    }
+                }
+                app.emit(
+                    "steam_keys_used",
+                    Some(serde_json::json!({ "found": count, "missing": missing.len() - count })),
+                );
+                app.wiz.steam_keys_note = Some(if !found.steam_found {
+                    (Tone::Warning, t("select.steamKeysNoSteam"))
+                } else if count > 0 {
+                    (Tone::Success, tf("select.steamKeysFound", &[("found", &count), ("count", &missing.len())]))
+                } else {
+                    (Tone::Warning, t("select.steamKeysNone"))
+                });
+            })
+        });
+    }
+
+    fn render_steam_keys_offer(&self, sv: &mut ScrollView, w: u16, ctx: &mut Ctx) {
+        if let Some((tone, msg)) = &self.wiz.steam_keys_note {
+            let h = widgets::status_height(msg, w);
+            let r_ = sv.next(h);
+            widgets::status(&mut sv.buf, r_, *tone, msg, self.tick);
+            sv.gap(1);
+            return;
+        }
+        let Some(app_id) = self.wiz.parsed.as_ref().map(|p| p.main_app_id.clone()) else {
+            return;
+        };
+        let missing = self.depots_without_key().len();
+        if missing == 0 || self.wiz.steam_keys_asked.as_deref() == Some(app_id.as_str()) {
+            return;
+        }
+        let msg = tf("select.steamKeysOffer", &[("count", &missing)]);
+        let h = widgets::status_height(&msg, w);
+        let r_ = sv.next(h);
+        widgets::status(&mut sv.buf, r_, Tone::Info, &msg, self.tick);
+        let r_ = sv.next(1);
+        widgets::buttons(
+            &mut sv.buf,
+            ctx,
+            r_,
+            &[
+                ButtonSpec::new(t("select.steamKeysLook"), Fid::new("select.steamKeysLook"), Action::SteamKeys(true), Btn::Primary),
+                ButtonSpec::new(t("select.steamKeysNo"), Fid::new("select.steamKeysNo"), Action::SteamKeys(false), Btn::Secondary),
+            ],
+            false,
+        );
+        sv.gap(1);
+    }
+
     pub(super) fn dispatch_select(&mut self, a: &Action) -> bool {
         match a {
+            Action::SteamKeys(look) => {
+                if *look {
+                    self.look_for_steam_keys();
+                } else {
+                    self.wiz.steam_keys_asked = self.wiz.parsed.as_ref().map(|p| p.main_app_id.clone());
+                }
+            }
             Action::ToggleDepot(pos) => {
                 self.touch_depot_selection();
                 let vis = self.wiz.visible_depots();
@@ -880,6 +969,7 @@ impl App {
             widgets::status(&mut sv.buf, r_, Tone::Info, &msg, tick);
             sv.gap(1);
         }
+        self.render_steam_keys_offer(&mut sv, w, ctx);
 
         if let (Some(i), Some(parsed)) = (cur, self.wiz.parsed.as_mut()) {
             let d = &mut parsed.depots[i];

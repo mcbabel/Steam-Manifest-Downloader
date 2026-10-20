@@ -105,6 +105,12 @@
     "errorScan": "Ordner konnte nicht gelesen werden: {message}"
   },
   "select": {
+    "steamKeysOffer": "Für {count} Depot(s) hat SMD noch keinen Schlüssel. In deinem installierten Steam nachsehen? Steam behält die Schlüssel von Spielen, die es heruntergeladen hat. SMD liest sie nur, auf diesem PC.",
+    "steamKeysLook": "In Steam nachsehen",
+    "steamKeysNo": "Nein",
+    "steamKeysFound": "Für {found} von {count} Depot(s) einen Schlüssel in deinem Steam gefunden.",
+    "steamKeysNone": "Dein Steam hat keine Schlüssel für diese Depots.",
+    "steamKeysNoSteam": "Kein installiertes Steam gefunden. Wähle deinen Steam-Ordner unter Einstellungen → Steam.",
     "gameInfoLoading": "Spielinfos werden geladen…",
     "appIdLabel": "App-ID:",
     "selectAll": "Alle auswählen",

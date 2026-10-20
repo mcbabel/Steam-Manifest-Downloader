@@ -9,6 +9,11 @@ pub async fn steam_library_detect() -> Result<SteamInstall, String> {
 }
 
 #[command]
+pub async fn local_steam_depot_keys(depot_ids: Vec<String>) -> smd_core::services::steam_local_keys::LocalKeys {
+    smd_core::services::steam_local_keys::read(&depot_ids).await
+}
+
+#[command]
 pub async fn steam_library_check_dir(path: String) -> Result<SteamInstall, String> {
     steam_library::check_steam_dir(&path)
 }

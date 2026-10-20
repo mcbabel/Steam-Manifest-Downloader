@@ -293,6 +293,8 @@
       "argBranch": "Steam-Branch, der geladen wird (Standard: public). Für nicht öffentliche Branches brauchst du smd login mit einem Konto, das Zugriff hat.",
       "argBranchPassword": "Passwort eines passwortgeschützten Branches. Es geht nur an Steam.",
       "argAccount": "Dein angemeldetes Steam-Konto für diesen Download nutzen (eigene Spiele und Playtests). Gilt mit --branch automatisch.",
+      "argSteamKeys": "Fehlende Depot-Schlüssel aus deinem installierten Steam nehmen (config.vdf). Wird nur gelesen, nie gespeichert oder verschickt.",
+      "steamKeysHint": "Für einige Depots fehlt der Schlüssel. Hat dein Steam das Spiel schon einmal geladen, holt --steam-keys die Schlüssel von dort.",
       "accountNeeded": "Nicht angemeldet. Führe zuerst smd login aus.",
       "accountNeedsAppId": "Mit --account oder --branch brauchst du eine App-ID.",
       "cmdBranches": "Branches einer App anzeigen (mit Konto: die, auf die es Zugriff hat)",

@@ -104,6 +104,7 @@ pub enum Action {
     ToggleUseAccount,
     LoadFromAccount,
     OpenPlaytest(u32),
+    SteamKeys(bool),
     ForceQuit,
     Help,
     CloseModal,

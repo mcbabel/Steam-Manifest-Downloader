@@ -105,6 +105,12 @@
     "errorScan": "Could not read that folder: {message}"
   },
   "select": {
+    "steamKeysOffer": "SMD has no key yet for {count} depot(s). Look for them in your installed Steam? Steam keeps the keys of games it has downloaded. SMD only reads them, on this PC.",
+    "steamKeysLook": "Look in Steam",
+    "steamKeysNo": "No",
+    "steamKeysFound": "Found a key in your Steam for {found} of {count} depot(s).",
+    "steamKeysNone": "Your Steam has no keys for these depots.",
+    "steamKeysNoSteam": "No installed Steam found. Choose your Steam folder under Settings → Steam.",
     "gameInfoLoading": "Fetching game info…",
     "appIdLabel": "App ID:",
     "selectAll": "Select All",

@@ -209,6 +209,7 @@ function showSelectionStep() {
   }
 
   updateDownloadButton();
+  offerSteamKeys();
   goToStep(2);
 
   fetchDepotMetadataAsync(data.mainAppId);
@@ -321,6 +322,80 @@ async function applyRecommendedDepots(depots) {
   }
   syncDlcButton();
   return selection;
+}
+
+function depotKnownKey(depot) {
+  if (depot.depotKey) return true;
+  const keys = state.mode === 'search' ? state.searchKeyVdfKeys : null;
+  return !!(keys && keys[String(depot.depotId)]);
+}
+
+function depotsWithoutKey() {
+  const data = state.parsedData;
+  return data ? data.depots.filter(d => !depotKnownKey(d)) : [];
+}
+
+function setSteamKeysOffer(html, tone) {
+  const box = document.getElementById('steam-keys-offer');
+  if (!box) return null;
+  box.className = `steam-keys-offer${tone ? ` steam-keys-offer--${tone}` : ''}`;
+  box.innerHTML = html;
+  box.classList.toggle('hidden', !html);
+  return box;
+}
+
+function offerSteamKeys() {
+  const data = state.parsedData;
+  const missing = depotsWithoutKey();
+  if (!data || !missing.length || state.steamKeysAsked === String(data.mainAppId)) {
+    setSteamKeysOffer('');
+    return;
+  }
+  const box = setSteamKeysOffer(`
+    <span class="steam-keys-offer__text">${escapeHtml(window.i18n.t('select.steamKeysOffer', { count: missing.length }))}</span>
+    <span class="steam-keys-offer__actions">
+      <button type="button" class="btn btn--small btn--primary" data-steam-keys="look">${escapeHtml(window.i18n.t('select.steamKeysLook'))}</button>
+      <button type="button" class="btn btn--small btn--outline" data-steam-keys="no">${escapeHtml(window.i18n.t('select.steamKeysNo'))}</button>
+    </span>`);
+  if (!box) return;
+  box.querySelector('[data-steam-keys="look"]').addEventListener('click', lookForSteamKeys);
+  box.querySelector('[data-steam-keys="no"]').addEventListener('click', () => {
+    state.steamKeysAsked = String(data.mainAppId);
+    setSteamKeysOffer('');
+  });
+}
+
+async function lookForSteamKeys() {
+  const data = state.parsedData;
+  if (!data) return;
+  const appId = String(data.mainAppId);
+  state.steamKeysAsked = appId;
+  const missing = depotsWithoutKey();
+  let result = { steamFound: false, keys: {} };
+  try {
+    result = await invoke('local_steam_depot_keys', { depotIds: missing.map(d => String(d.depotId)) });
+  } catch (e) {
+    console.warn('local_steam_depot_keys failed:', e);
+  }
+  if (!state.parsedData || String(state.parsedData.mainAppId) !== appId) return;
+  let found = 0;
+  for (const depot of missing) {
+    const key = result.keys && result.keys[String(depot.depotId)];
+    if (!key) continue;
+    depot.depotKey = key;
+    found += 1;
+    const tag = document.querySelector(`.depot-item[data-depot-id="${CSS.escape(String(depot.depotId))}"] .depot-tag--nokey`);
+    if (tag) tag.remove();
+  }
+  emitEvent('steam_keys_used', { found, missing: missing.length - found });
+  if (!result.steamFound) {
+    setSteamKeysOffer(escapeHtml(window.i18n.t('select.steamKeysNoSteam')), 'warning');
+  } else if (found) {
+    setSteamKeysOffer(escapeHtml(window.i18n.t('select.steamKeysFound', { found, count: missing.length })), 'success');
+    updateDownloadButton();
+  } else {
+    setSteamKeysOffer(escapeHtml(window.i18n.t('select.steamKeysNone')), 'warning');
+  }
 }
 
 function depotHasKey(depot) {

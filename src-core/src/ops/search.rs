@@ -66,8 +66,6 @@ pub async fn search_steam_games(
         .collect())
 }
 
-/// Playtests Steam keeps as their own app next to `app_id`. Empty when
-/// there are none or Steam cannot be asked.
 pub async fn find_playtests(state: &AppState, app_id: u32) -> Vec<crate::services::steam_pics::Playtest> {
     let listed = crate::services::steam_store_api::get_game_info(&state.http_client, &state.steam_cache, &app_id.to_string())
         .await

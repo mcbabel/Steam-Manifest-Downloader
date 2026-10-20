@@ -302,7 +302,6 @@ pub async fn fetch_dlc_info(
     .await
 }
 
-/// A Steam playtest: its own app of type "Beta" whose parent is the game.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Playtest {
@@ -323,8 +322,6 @@ fn playtest_of(app: &Table, app_id: u32, parent: u32) -> Option<Playtest> {
     Some(Playtest { app_id, name })
 }
 
-/// Playtests of `app_id` among `candidates` (the apps the store lists under
-/// the game) and the game's own DLC list.
 pub async fn find_playtests(
     session: Arc<SteamSession>,
     app_id: u32,
@@ -809,7 +806,6 @@ mod tests {
             playtest_of(&playtest, 200, 100),
             Some(Playtest { app_id: 200, name: "Game Playtest".into() })
         );
-        // Another game's playtest, a DLC, and the game itself are no playtests of it.
         assert_eq!(playtest_of(&playtest, 200, 101), None);
         let dlc = app("\"common\" { \"name\" \"Soundtrack\" \"type\" \"DLC\" \"parent\" \"100\" }");
         assert_eq!(playtest_of(&dlc, 300, 100), None);

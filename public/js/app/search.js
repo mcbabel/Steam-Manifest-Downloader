@@ -108,7 +108,6 @@ function hidePlaytests() {
   row.innerHTML = '';
 }
 
-// Playtests are their own app on Steam; point to them from the game.
 async function showPlaytests(appId) {
   let found = [];
   try {

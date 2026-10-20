@@ -293,6 +293,8 @@
       "argBranch": "Steam branch to download (default: public). A non-public branch needs smd login with an account that has access.",
       "argBranchPassword": "Password of a password-protected branch. It is only sent to Steam.",
       "argAccount": "Use your signed-in Steam account for this download (your own games and playtests). Implied by --branch.",
+      "argSteamKeys": "Take missing depot keys from your installed Steam (config.vdf). Only read, never stored or sent.",
+      "steamKeysHint": "Some depots have no key. If your Steam downloaded this game before, --steam-keys takes the keys from it.",
       "accountNeeded": "Not signed in. Run smd login first.",
       "accountNeedsAppId": "With --account or --branch, give an App ID.",
       "cmdBranches": "List the branches of an app (with your account: the ones it can access)",

@@ -24,6 +24,7 @@ pub mod emulator;
 pub mod game_data;
 pub mod depot_info;
 pub mod steam_library;
+pub mod steam_local_keys;
 pub mod steamless;
 pub mod steam_api_bypass;
 pub mod steam_pics;
