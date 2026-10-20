@@ -335,6 +335,7 @@ mod tests {
             osarch: None,
             language: None,
             manifest_gid: None,
+            manifest_size: None,
             role,
             low_violence: false,
             optional_dlc: false,

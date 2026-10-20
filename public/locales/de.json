@@ -105,6 +105,7 @@
     "errorScan": "Ordner konnte nicht gelesen werden: {message}"
   },
   "select": {
+    "emptyManifest": "Auf diesem Manifest liegt bei Steam gerade kein Build (Größe 0), es gibt also nichts zu laden. Trag eine ältere Manifest-ID ins Feld darüber ein, zum Beispiel von SteamDB.",
     "steamKeysOffer": "Für {count} Depot(s) hat SMD noch keinen Schlüssel. In deinem installierten Steam nachsehen? Steam behält die Schlüssel von Spielen, die es heruntergeladen hat. SMD liest sie nur, auf diesem PC.",
     "steamKeysLook": "In Steam nachsehen",
     "steamKeysNo": "Nein",

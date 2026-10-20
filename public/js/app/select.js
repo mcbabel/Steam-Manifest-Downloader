@@ -163,9 +163,17 @@ function showSelectionStep() {
           </button>
         </div>
         <span class="depot-manifest-status" data-depot-id="${safeDepotId}"></span>
+        <span class="depot-empty-note hidden" data-empty-note="${safeDepotId}"></span>
       </div>
     `;
 
+    const customInput = item.querySelector('.custom-manifest-input');
+    if (customInput) {
+      customInput.addEventListener('input', () => {
+        const note = item.querySelector('.depot-empty-note');
+        if (note && note.textContent) note.classList.toggle('hidden', !!customInput.value.trim());
+      });
+    }
     const fetchBtn = item.querySelector('.depot-manifest-fetch-btn');
     if (fetchBtn) {
       fetchBtn.addEventListener('click', (e) => {
@@ -259,6 +267,7 @@ async function fetchDepotNamesFromSteam(appId) {
         depotIdContainer.appendChild(document.createTextNode(' '));
         depotIdContainer.appendChild(badge);
       }
+      markEmptyManifest(d);
     });
     reorderDepotCards();
     state.depotPicsList = depots;
@@ -269,6 +278,17 @@ async function fetchDepotNamesFromSteam(appId) {
     state.depotAutoPending = false;
     console.warn('fetch_depot_metadata_steam failed:', e);
   }
+}
+
+function markEmptyManifest(meta) {
+  if (meta.manifestSize !== 0 || !meta.manifestGid) return;
+  const depot = state.parsedData && state.parsedData.depots.find(x => String(x.depotId) === String(meta.depotId));
+  if (!depot || String(depot.manifestId) !== String(meta.manifestGid)) return;
+  const note = document.querySelector(`[data-empty-note="${CSS.escape(String(meta.depotId))}"]`);
+  if (!note) return;
+  note.textContent = window.i18n.t('select.emptyManifest');
+  const input = document.querySelector(`.custom-manifest-input[data-depot-id="${CSS.escape(String(meta.depotId))}"]`);
+  note.classList.toggle('hidden', !!(input && input.value.trim()));
 }
 
 async function maybeAutoSelectDepots(depots) {

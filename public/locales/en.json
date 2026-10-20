@@ -105,6 +105,7 @@
     "errorScan": "Could not read that folder: {message}"
   },
   "select": {
+    "emptyManifest": "Steam has no build on this manifest right now (size 0), so there is nothing to download. Enter an older manifest ID in the field above, for example one from SteamDB.",
     "steamKeysOffer": "SMD has no key yet for {count} depot(s). Look for them in your installed Steam? Steam keeps the keys of games it has downloaded. SMD only reads them, on this PC.",
     "steamKeysLook": "Look in Steam",
     "steamKeysNo": "No",

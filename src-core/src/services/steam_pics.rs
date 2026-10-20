@@ -31,6 +31,8 @@ pub struct DepotMetadata {
     pub language: Option<String>,
     #[serde(rename = "manifestGid", skip_serializing_if = "Option::is_none")]
     pub manifest_gid: Option<String>,
+    #[serde(rename = "manifestSize", default, skip_serializing_if = "Option::is_none")]
+    pub manifest_size: Option<u64>,
     pub role: DepotRole,
     #[serde(rename = "lowViolence", default, skip_serializing_if = "std::ops::Not::not")]
     pub low_violence: bool,
@@ -192,14 +194,16 @@ pub async fn fetch_depots_with_names(
             let optional_dlc = flag(config, "optionaldlc");
             let shared_install =
                 flag(Some(depot_tbl), "sharedinstall") || depot_tbl.get("depotfromapp").is_some();
-            let manifest_gid = depot_tbl
+            let public = depot_tbl
                 .get("manifests")
                 .and_then(as_table)
                 .and_then(|m| m.get("public"))
-                .and_then(as_table)
-                .and_then(|p| p.get("gid"))
+                .and_then(as_table);
+            let manifest_gid = public.and_then(|p| p.get("gid")).and_then(as_str).map(String::from);
+            let manifest_size = public
+                .and_then(|p| p.get("size"))
                 .and_then(as_str)
-                .map(String::from);
+                .and_then(|s| s.parse::<u64>().ok());
 
             let role = classify_role(dlc_app_id, &oslist, &language);
 
@@ -211,6 +215,7 @@ pub async fn fetch_depots_with_names(
                 osarch,
                 language,
                 manifest_gid,
+                manifest_size,
                 role,
                 low_violence,
                 optional_dlc,

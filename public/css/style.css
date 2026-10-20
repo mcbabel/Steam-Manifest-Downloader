@@ -5793,3 +5793,10 @@ textarea.bug-report__input {
   border-color: var(--warning);
   color: var(--warning);
 }
+
+.depot-empty-note {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--warning);
+}

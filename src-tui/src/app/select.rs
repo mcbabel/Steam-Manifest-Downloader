@@ -1002,6 +1002,15 @@ impl App {
             }
             let r_ = sv.next(1);
             widgets::line(&mut sv.buf, r_, Line::from(info));
+            let empty = pics.is_some_and(|p| {
+                p.manifest_size == Some(0) && p.manifest_gid.as_deref() == Some(d.manifest_id.as_str())
+            });
+            if empty && d.custom_manifest.is_empty() {
+                let msg = t("select.emptyManifest");
+                let h = widgets::status_height(&msg, w);
+                let r_ = sv.next(h);
+                widgets::status(&mut sv.buf, r_, Tone::Warning, &msg, tick);
+            }
             let mut tags: Vec<Span> = Vec::new();
             if let Some(p) = pics {
                 if let Some((label, color)) = role_badge(p.role, p.language.as_deref()) {
