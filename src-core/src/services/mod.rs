@@ -15,6 +15,7 @@ pub mod steam_assets;
 pub mod settings;
 pub mod embedded_tools;
 pub mod history;
+pub mod config_secrets;
 pub mod followup;
 pub mod download_queue;
 pub mod install_state;

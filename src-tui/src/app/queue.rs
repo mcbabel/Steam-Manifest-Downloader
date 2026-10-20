@@ -130,11 +130,15 @@ impl App {
     }
 
     fn start_queued(&mut self, item: QueuedDownload) {
-        let Ok(config) = serde_json::from_value::<DownloadConfig>(item.config.clone()) else {
+        let Ok(mut config) = serde_json::from_value::<DownloadConfig>(item.config.clone()) else {
             self.toast(Tone::Error, tf("queue.broken", &[("name", &display_name(&item))]));
             self.queue_next_at = Some(Instant::now());
             return;
         };
+        // The key is not stored with queued items; use the current one.
+        if config.manifest_hub_api_key.is_none() && !self.prefs.mh_api_key.is_empty() {
+            config.manifest_hub_api_key = Some(self.prefs.mh_api_key.clone());
+        }
         self.reset_wizard();
         self.wiz.game_name = config.game_name.clone();
         self.wiz.header_image = config.header_image.clone();

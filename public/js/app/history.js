@@ -465,7 +465,13 @@ function renderHistoryEntries(entries) {
         state.dlStage = 'starting';
         state.dlDepotCount = resumeDepots;
         state.dlSourceCount = Array.isArray(settings.depot_sources) ? settings.depot_sources.length : null;
-        state.dlHadMhKey = !!(entry.resume_payload.manifestHubApiKey || '');
+        // The key is not stored with the entry; resume with the current one.
+        const resumeConfig = {
+          ...entry.resume_payload,
+          manifestHubApiKey: entry.resume_payload.manifestHubApiKey || localStorage.getItem(MH_APIKEY_STORAGE_KEY) || null,
+          resumeMode,
+        };
+        state.dlHadMhKey = !!resumeConfig.manifestHubApiKey;
         state.dlContext = { mode: 'resume', selection: 'resume', resume_mode: resumeMode === 'fast' ? 'fast' : 'full' };
         emitEvent('download_started', Object.assign({
           job: state.dlNonce,
@@ -489,7 +495,7 @@ function renderHistoryEntries(entries) {
         })));
         await connectProgressListener();
 
-        const result = await invoke('start_download', { config: { ...entry.resume_payload, resumeMode } });
+        const result = await invoke('start_download', { config: resumeConfig });
         if (!state.jobId) state.jobId = result.jobId;
         state.downloadDir = result.downloadDir || entry.download_dir;
         try {

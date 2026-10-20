@@ -200,7 +200,10 @@ pub async fn start_download(
                 depot_dirs: Vec::new(),
                 cancel_flag: Arc::new(std::sync::atomic::AtomicBool::new(false)),
                 pause_flag: Arc::new(std::sync::atomic::AtomicBool::new(false)),
-                config_snapshot: serde_json::to_value(&config).ok(),
+                config_snapshot: serde_json::to_value(&config).ok().map(|mut v| {
+                    crate::services::config_secrets::strip(&mut v);
+                    v
+                }),
                 started_at: Some(chrono::Utc::now().to_rfc3339()),
                 game_name: game_name.clone(),
                 header_image: header_image.clone(),

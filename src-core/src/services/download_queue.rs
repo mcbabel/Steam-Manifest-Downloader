@@ -25,11 +25,20 @@ fn queue_path(app_data_dir: &Path) -> PathBuf {
 }
 
 pub async fn load(app_data_dir: &Path) -> Vec<QueuedDownload> {
-    tokio::fs::read(queue_path(app_data_dir))
+    let mut queue: Vec<QueuedDownload> = tokio::fs::read(queue_path(app_data_dir))
         .await
         .ok()
         .and_then(|b| serde_json::from_slice(&b).ok())
-        .unwrap_or_default()
+        .unwrap_or_default();
+    // Older versions stored the ManifestHub key with each item.
+    let mut scrubbed = false;
+    for item in &mut queue {
+        scrubbed |= crate::services::config_secrets::strip(&mut item.config);
+    }
+    if scrubbed {
+        let _ = save(app_data_dir, &queue).await;
+    }
+    queue
 }
 
 async fn save(app_data_dir: &Path, queue: &[QueuedDownload]) -> Result<(), String> {
@@ -52,6 +61,7 @@ pub async fn add(app_data_dir: &Path, mut item: QueuedDownload) -> Result<Vec<Qu
     if item.id.is_empty() {
         item.id = uuid::Uuid::new_v4().to_string();
     }
+    crate::services::config_secrets::strip(&mut item.config);
     queue.push(item);
     save(app_data_dir, &queue).await?;
     Ok(queue)

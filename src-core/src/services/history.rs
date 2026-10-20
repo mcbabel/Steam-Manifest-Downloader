@@ -36,10 +36,21 @@ fn history_path(app_data_dir: &Path) -> PathBuf {
 
 pub async fn load_history(app_data_dir: &Path) -> History {
     let path = history_path(app_data_dir);
-    match fs::read_to_string(&path).await {
+    let mut history: History = match fs::read_to_string(&path).await {
         Ok(content) => serde_json::from_str(&content).unwrap_or_default(),
-        Err(_) => History::default(),
+        Err(_) => return History::default(),
+    };
+    // Older versions stored the ManifestHub key in the resume payload.
+    let mut scrubbed = false;
+    for entry in &mut history.entries {
+        if let Some(payload) = entry.resume_payload.as_mut() {
+            scrubbed |= crate::services::config_secrets::strip(payload);
+        }
     }
+    if scrubbed {
+        let _ = save_history(app_data_dir, &history).await;
+    }
+    history
 }
 
 async fn save_history(app_data_dir: &Path, history: &History) -> Result<(), String> {
@@ -125,6 +136,9 @@ pub async fn fill_missing_sizes(app_data_dir: &Path) -> History {
 
 pub async fn add_entry(app_data_dir: &Path, entry: HistoryEntry) -> Result<(), String> {
     let mut entry = entry;
+    if let Some(payload) = entry.resume_payload.as_mut() {
+        crate::services::config_secrets::strip(payload);
+    }
     if wants_size(&entry) {
         entry.size_bytes = measure(&entry.download_dir).await;
     }

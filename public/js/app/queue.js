@@ -162,6 +162,10 @@ async function runNextQueued() {
   state.updateAppId = next.config.updateDir ? String(next.app_id) : null;
   state.repairManifests = null;
   state.repairRunning = !!next.config.repair;
+  // The key is not stored with queued items; use the current one.
+  if (!next.config.manifestHubApiKey) {
+    next.config.manifestHubApiKey = localStorage.getItem(MH_APIKEY_STORAGE_KEY) || null;
+  }
   await runDownload(next.config, next.depots || [], true);
 }
 

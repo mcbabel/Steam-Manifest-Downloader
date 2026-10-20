@@ -228,6 +228,41 @@ impl ProgressEvent {
     }
 }
 
+/// DepotDownloader flags whose value is a secret. Extra arguments come from
+/// the user, so the shown command (terminal, bug report logs) hides them.
+const SECRET_FLAGS: &[&str] = &[
+    "-password",
+    "-betapassword",
+    "-branchpassword",
+    "-apptoken",
+    "-packagetoken",
+    "-loginid",
+];
+
+fn display_args(args: &[String]) -> Vec<String> {
+    let mut out = Vec::with_capacity(args.len());
+    let mut hide_next = false;
+    for arg in args {
+        if hide_next {
+            out.push("***".to_string());
+            hide_next = false;
+            continue;
+        }
+        let flag = arg.split('=').next().unwrap_or(arg).to_ascii_lowercase();
+        if SECRET_FLAGS.contains(&flag.as_str()) {
+            if arg.contains('=') {
+                out.push(format!("{}=***", arg.split('=').next().unwrap_or(arg)));
+            } else {
+                out.push(arg.clone());
+                hide_next = true;
+            }
+        } else {
+            out.push(arg.clone());
+        }
+    }
+    out
+}
+
 fn redact_payload(value: &mut serde_json::Value, sensitive: bool) {
     match value {
         serde_json::Value::String(text) if sensitive && text.contains("://") => {
@@ -348,11 +383,7 @@ pub async fn run_depot_downloader(
     }
     args.extend_from_slice(extra_args);
 
-    let command_display = format!(
-        "{} {}",
-        DDM_DISPLAY_NAME,
-        args.join(" ")
-    );
+    let command_display = format!("{} {}", DDM_DISPLAY_NAME, display_args(&args).join(" "));
 
     let mut event = ProgressEvent::new("status", job_id);
     event.step = Some("running_downloader".to_string());
@@ -663,4 +694,19 @@ pub async fn get_exe_path_async() -> Result<std::path::PathBuf, String> {
     }
 
     Err(format!("{} not found.", EXE_NAME))
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn shown_command_hides_secret_flag_values() {
+        let args: Vec<String> = ["-app", "480", "-username", "me", "-password", "hunter2", "-BetaPassword=xyz", "-max-downloads", "8"]
+            .iter()
+            .map(|s| s.to_string())
+            .collect();
+        assert_eq!(
+            super::display_args(&args),
+            ["-app", "480", "-username", "me", "-password", "***", "-BetaPassword=***", "-max-downloads", "8"]
+        );
+    }
 }
