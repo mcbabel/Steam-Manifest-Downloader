@@ -30,6 +30,7 @@ pub mod steam_pics;
 pub mod steam_session;
 pub mod steam_auth;
 pub mod steam_account;
+pub mod steam_branches;
 pub mod steam_manifest;
 pub mod steam_cdn;
 pub mod steam_chunks;

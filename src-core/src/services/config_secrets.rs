@@ -4,7 +4,7 @@
 /// Config keys (camelCase, as `DownloadConfig` serializes them) holding a
 /// secret. The frontends fill them in again from their own storage when they
 /// resume or start a stored download.
-const SECRET_KEYS: &[&str] = &["manifestHubApiKey"];
+const SECRET_KEYS: &[&str] = &["manifestHubApiKey", "branchPassword"];
 
 /// Removes the secret fields from a serialized `DownloadConfig`. Returns
 /// whether anything was removed.
@@ -31,6 +31,36 @@ mod tests {
         assert!(strip(&mut v));
         assert_eq!(v, json!({ "mainAppId": "480", "selectedDepots": [] }));
         assert!(!strip(&mut v));
+    }
+
+    #[test]
+    fn removes_the_branch_password() {
+        let mut v = json!({ "mainAppId": "480", "branch": "beta", "branchPassword": "pw", "selectedDepots": [] });
+        assert!(strip(&mut v));
+        assert_eq!(
+            v,
+            json!({ "mainAppId": "480", "branch": "beta", "selectedDepots": [] })
+        );
+    }
+
+    #[test]
+    fn a_branch_or_the_flag_means_the_account_is_used() {
+        let parse = |v: serde_json::Value| -> crate::ops::download::DownloadConfig {
+            serde_json::from_value(v).unwrap()
+        };
+        assert!(!parse(json!({ "mainAppId": "1", "selectedDepots": [] })).uses_account());
+        assert!(
+            !parse(json!({ "mainAppId": "1", "selectedDepots": [], "branch": "Public" }))
+                .uses_account()
+        );
+        assert!(
+            parse(json!({ "mainAppId": "1", "selectedDepots": [], "branch": "beta" }))
+                .uses_account()
+        );
+        assert!(
+            parse(json!({ "mainAppId": "1", "selectedDepots": [], "useAccount": true }))
+                .uses_account()
+        );
     }
 
     #[test]

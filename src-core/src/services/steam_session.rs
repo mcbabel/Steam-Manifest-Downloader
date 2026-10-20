@@ -5,8 +5,7 @@ use steam_vent::{Connection, ConnectionTrait, ServerList};
 use steam_vent_proto::steammessages_contentsystem_steamclient::{
     CContentServerDirectory_GetCDNAuthToken_Request,
     CContentServerDirectory_GetManifestRequestCode_Request,
-    CContentServerDirectory_GetServersForSteamPipe_Request,
-    CContentServerDirectory_ServerInfo,
+    CContentServerDirectory_GetServersForSteamPipe_Request, CContentServerDirectory_ServerInfo,
 };
 use tokio::sync::Mutex;
 use tokio::time::timeout;
@@ -19,6 +18,11 @@ pub struct SteamSession {
     /// account (branches, playtests, own depot keys); everything else stays
     /// on the anonymous connection.
     account: Mutex<Option<(u64, Connection)>>,
+    /// Set for a download that uses the account: `connection()` then logs on
+    /// as this account instead of anonymously.
+    login: Option<crate::services::steam_account::Account>,
+    /// Branch a download with the account reads from (`None` = public).
+    branch: Option<String>,
 }
 
 /// Why a logon with the stored account failed.
@@ -33,8 +37,14 @@ pub enum AccountLogonError {
 impl std::fmt::Display for AccountLogonError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            AccountLogonError::Rejected(e) => write!(f, "Steam no longer accepts this sign-in ({}). Sign in again.", e),
-            AccountLogonError::Other(e) => write!(f, "Could not log on to Steam with your account: {}", e),
+            AccountLogonError::Rejected(e) => write!(
+                f,
+                "Steam no longer accepts this sign-in ({}). Sign in again.",
+                e
+            ),
+            AccountLogonError::Other(e) => {
+                write!(f, "Could not log on to Steam with your account: {}", e)
+            }
         }
     }
 }
@@ -46,7 +56,9 @@ fn classify_logon(err: &steam_vent::ConnectionError) -> AccountLogonError {
         ConnectionError::AccessToken(_)
         | ConnectionError::LoginError(LoginError::InvalidCredentials)
         | ConnectionError::LoginError(LoginError::InvalidSteamId)
-        | ConnectionError::LoginError(LoginError::UnavailableAccount) => AccountLogonError::Rejected(text),
+        | ConnectionError::LoginError(LoginError::UnavailableAccount) => {
+            AccountLogonError::Rejected(text)
+        }
         ConnectionError::LoginError(LoginError::Unknown(
             EResult::AccessDenied | EResult::Expired | EResult::Revoked | EResult::InvalidPassword,
         )) => AccountLogonError::Rejected(text),
@@ -59,7 +71,33 @@ impl SteamSession {
         Self {
             inner: Mutex::new(None),
             account: Mutex::new(None),
+            login: None,
+            branch: None,
         }
+    }
+
+    /// A session for one download with the user's account: every Steam call
+    /// of that download (PICS, manifest request codes, CDN tokens) goes
+    /// through the account, and request codes ask for `branch`.
+    pub fn for_account(
+        account: crate::services::steam_account::Account,
+        branch: Option<String>,
+    ) -> Self {
+        Self {
+            inner: Mutex::new(None),
+            account: Mutex::new(None),
+            login: Some(account),
+            branch: branch.filter(|b| !b.is_empty() && !b.eq_ignore_ascii_case("public")),
+        }
+    }
+
+    pub fn uses_account(&self) -> bool {
+        self.login.is_some()
+    }
+
+    /// Non-public branch this session downloads from.
+    pub fn branch(&self) -> Option<&str> {
+        self.branch.as_deref()
     }
 
     /// A connection logged on as `account`, reused while it stays the same
@@ -83,13 +121,22 @@ impl SteamSession {
             let server_list = match ServerList::discover().await {
                 Ok(list) => list,
                 Err(e) => {
-                    last = Some(AccountLogonError::Other(format!("Steam server discovery failed: {}", e)));
+                    last = Some(AccountLogonError::Other(format!(
+                        "Steam server discovery failed: {}",
+                        e
+                    )));
                     continue;
                 }
             };
             // steam-vent sends the token as the logon access token; Steam
             // takes the refresh token there, as the crate's own login does.
-            match Connection::access(&server_list, &account.account_name, account.refresh_token.expose()).await {
+            match Connection::access(
+                &server_list,
+                &account.account_name,
+                account.refresh_token.expose(),
+            )
+            .await
+            {
                 Ok(conn) => {
                     *guard = Some((account.steam_id, conn.clone()));
                     return Ok(conn);
@@ -115,6 +162,14 @@ impl SteamSession {
         let mut guard = self.inner.lock().await;
         if let Some(conn) = guard.as_ref() {
             return Ok(conn.clone());
+        }
+        if let Some(account) = self.login.as_ref() {
+            let conn = self
+                .account_connection(account)
+                .await
+                .map_err(|e| e.to_string())?;
+            *guard = Some(conn.clone());
+            return Ok(conn);
         }
         let mut last_err: Option<String> = None;
         for attempt in 0..4u32 {
@@ -145,6 +200,9 @@ impl SteamSession {
 
     pub async fn reset(&self) {
         *self.inner.lock().await = None;
+        if self.login.is_some() {
+            *self.account.lock().await = None;
+        }
     }
 }
 
@@ -198,22 +256,28 @@ pub async fn discover_cdn_servers(
     cell_id: u32,
     max_servers: u32,
 ) -> Result<Vec<CdnServer>, String> {
-    call_with_retry(&session, 3, CDN_TIMEOUT, "Steam CDN server discovery timed out", |conn| async move {
-        let req = CContentServerDirectory_GetServersForSteamPipe_Request {
-            cell_id: Some(cell_id),
-            max_servers: Some(max_servers),
-            ..Default::default()
-        };
-        let resp = conn
-            .service_method(req)
-            .await
-            .map_err(|e| format!("GetServersForSteamPipe failed: {}", e))?;
-        Ok(resp
-            .servers
-            .into_iter()
-            .filter_map(server_info_to_cdn)
-            .collect())
-    })
+    call_with_retry(
+        &session,
+        3,
+        CDN_TIMEOUT,
+        "Steam CDN server discovery timed out",
+        |conn| async move {
+            let req = CContentServerDirectory_GetServersForSteamPipe_Request {
+                cell_id: Some(cell_id),
+                max_servers: Some(max_servers),
+                ..Default::default()
+            };
+            let resp = conn
+                .service_method(req)
+                .await
+                .map_err(|e| format!("GetServersForSteamPipe failed: {}", e))?;
+            Ok(resp
+                .servers
+                .into_iter()
+                .filter_map(server_info_to_cdn)
+                .collect())
+        },
+    )
     .await
 }
 
@@ -235,19 +299,31 @@ pub async fn fetch_manifest_request_code(
     depot_id: u32,
     manifest_id: u64,
 ) -> Result<u64, String> {
-    call_with_retry(&session, 2, CDN_TIMEOUT, "GetManifestRequestCode timed out", |conn| async move {
-        let req = CContentServerDirectory_GetManifestRequestCode_Request {
-            app_id: Some(app_id),
-            depot_id: Some(depot_id),
-            manifest_id: Some(manifest_id),
-            ..Default::default()
-        };
-        let resp = conn
-            .service_method(req)
-            .await
-            .map_err(|e| format!("GetManifestRequestCode failed: {}", e))?;
-        Ok(resp.manifest_request_code.unwrap_or(0))
-    })
+    let branch = session.branch().map(str::to_string);
+    call_with_retry(
+        &session,
+        2,
+        CDN_TIMEOUT,
+        "GetManifestRequestCode timed out",
+        |conn| {
+            let branch = branch.clone();
+            async move {
+                let req = CContentServerDirectory_GetManifestRequestCode_Request {
+                    app_id: Some(app_id),
+                    depot_id: Some(depot_id),
+                    manifest_id: Some(manifest_id),
+                    // Manifests of a non-public branch are only handed out with it.
+                    app_branch: branch,
+                    ..Default::default()
+                };
+                let resp = conn
+                    .service_method(req)
+                    .await
+                    .map_err(|e| format!("GetManifestRequestCode failed: {}", e))?;
+                Ok(resp.manifest_request_code.unwrap_or(0))
+            }
+        },
+    )
     .await
 }
 
@@ -257,21 +333,27 @@ pub async fn fetch_cdn_auth_token(
     app_id: u32,
     depot_id: u32,
 ) -> Result<Option<String>, String> {
-    call_with_retry(&session, 2, CDN_TIMEOUT, "GetCDNAuthToken timed out", |conn| {
-        let host = host.to_string();
-        async move {
-            let req = CContentServerDirectory_GetCDNAuthToken_Request {
-                app_id: Some(app_id),
-                depot_id: Some(depot_id),
-                host_name: Some(host),
-                ..Default::default()
-            };
-            let resp = conn
-                .service_method(req)
-                .await
-                .map_err(|e| format!("GetCDNAuthToken failed: {}", e))?;
-            Ok(resp.token)
-        }
-    })
+    call_with_retry(
+        &session,
+        2,
+        CDN_TIMEOUT,
+        "GetCDNAuthToken timed out",
+        |conn| {
+            let host = host.to_string();
+            async move {
+                let req = CContentServerDirectory_GetCDNAuthToken_Request {
+                    app_id: Some(app_id),
+                    depot_id: Some(depot_id),
+                    host_name: Some(host),
+                    ..Default::default()
+                };
+                let resp = conn
+                    .service_method(req)
+                    .await
+                    .map_err(|e| format!("GetCDNAuthToken failed: {}", e))?;
+                Ok(resp.token)
+            }
+        },
+    )
     .await
 }

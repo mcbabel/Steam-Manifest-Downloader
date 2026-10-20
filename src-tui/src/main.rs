@@ -56,6 +56,8 @@ enum Command {
     Logout,
     #[command(about = i18n::t("tui.cli.cmdAccount"))]
     Account(cli::AccountArgs),
+    #[command(about = i18n::t("tui.cli.cmdBranches"))]
+    Branches(cli::BranchesArgs),
 }
 
 fn main() {
@@ -123,6 +125,7 @@ fn main() {
                     Command::Login(a) => ("login", serde_json::json!({ "store_file": a.store_file })),
                     Command::Logout => ("logout", serde_json::json!({})),
                     Command::Account(a) => ("account", serde_json::json!({ "check": a.check, "json": a.json })),
+                    Command::Branches(a) => ("branches", serde_json::json!({ "json": a.json })),
                     _ => ("other", serde_json::json!({})),
                 };
                 cli::telemetry_start(&data_dir, name, props).await;
@@ -142,6 +145,10 @@ fn main() {
                     },
                     Command::Logout => cli::logout(data_dir).await,
                     Command::Account(a) => cli::account(data_dir, a).await,
+                    Command::Branches(a) => tokio::select! {
+                        code = cli::branches(data_dir, a) => code,
+                        _ = cli::stopped() => 130,
+                    },
                     Command::Tui | Command::Telemetry(_) => unreachable!(),
                 };
                 cli::telemetry_finish().await;

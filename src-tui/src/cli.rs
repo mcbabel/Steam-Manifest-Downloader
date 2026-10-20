@@ -94,6 +94,19 @@ pub struct DownloadArgs {
     pub platform: Option<String>,
     #[arg(long, value_name = "LANGUAGE", help = t("tui.cli.argLanguage"))]
     pub language: Option<String>,
+    #[arg(long, value_name = "NAME", help = t("tui.cli.argBranch"))]
+    pub branch: Option<String>,
+    #[arg(
+        long,
+        value_name = "PASSWORD",
+        env = "SMD_BRANCH_PASSWORD",
+        hide_env_values = true,
+        requires = "branch",
+        help = t("tui.cli.argBranchPassword")
+    )]
+    pub branch_password: Option<String>,
+    #[arg(long, help = t("tui.cli.argAccount"))]
+    pub account: bool,
     #[arg(
         long,
         help = t("tui.cli.argJson")
@@ -115,6 +128,14 @@ pub struct SearchArgs {
 pub struct LoginArgs {
     #[arg(long, help = t("tui.cli.argStoreFile"))]
     pub store_file: bool,
+}
+
+#[derive(Args, Debug)]
+pub struct BranchesArgs {
+    #[arg(help = t("tui.cli.argAppId"))]
+    pub app_id: u32,
+    #[arg(long, help = t("tui.cli.argBranchesJson"))]
+    pub json: bool,
 }
 
 #[derive(Args, Debug)]
@@ -325,6 +346,53 @@ async fn plan_from_source(
     }
 }
 
+impl DownloadArgs {
+    fn uses_account(&self) -> bool {
+        self.account
+            || self
+                .branch
+                .as_deref()
+                .is_some_and(|b| !smd_core::services::steam_branches::is_public(b))
+    }
+}
+
+/// Plan straight from the signed-in account: the app's depots and the
+/// manifests on the chosen branch. Keys come from the account during the
+/// download.
+async fn plan_from_account(
+    core: &AppState,
+    dir: &std::path::Path,
+    args: &DownloadArgs,
+) -> Result<(Plan, std::sync::Arc<smd_core::services::steam_session::SteamSession>), String> {
+    use smd_core::services::{steam_branches, steam_pics, steam_session::SteamSession};
+    let app_id: u32 = args.source.parse().map_err(|_| t("tui.cli.accountNeedsAppId"))?;
+    let account = core.account.get(dir).await.ok_or_else(|| t("tui.cli.accountNeeded"))?;
+    let session = std::sync::Arc::new(SteamSession::for_account(account, args.branch.clone()));
+    let branch = args.branch.as_deref().unwrap_or(steam_branches::PUBLIC);
+    let gids = steam_branches::manifests(session.clone(), app_id, branch, args.branch_password.as_deref())
+        .await
+        .map_err(|e| e.to_string())?;
+    let meta = steam_pics::fetch_depots_with_names(session.clone(), app_id).await?;
+    let mut depots: Vec<_> = meta
+        .iter()
+        .filter_map(|m| Some((m.depot_id.clone(), Some(gids.get(&m.depot_id)?.clone()), None, None)))
+        .collect();
+    depots.sort_by_key(|(id, ..): &(String, Option<String>, Option<String>, Option<u64>)| id.parse::<u64>().unwrap_or(u64::MAX));
+    Ok((
+        Plan {
+            app_id: args.source.clone(),
+            depots,
+            key_vdf: None,
+            source_type: Some("account".into()),
+            repo: None,
+            game_name: None,
+            header_image: None,
+            all_app_ids: Vec::new(),
+        },
+        session,
+    ))
+}
+
 fn fmt_bytes(b: u64) -> String {
     crate::ui::widgets::fmt_bytes(b)
 }
@@ -408,17 +476,25 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
     let _ = tokio::fs::create_dir_all(&dir).await;
     let settings = settings_service::seed_defaults_if_needed(&dir).await;
     let core = AppState::new();
+    let from_account = args.uses_account() && is_numeric(&args.source);
     let planned = tokio::select! {
-        r = plan_from_source(&core, &dir, &args) => r,
+        r = async {
+            if from_account {
+                plan_from_account(&core, &dir, &args).await.map(|(p, s)| (p, Some(s)))
+            } else {
+                plan_from_source(&core, &dir, &args).await.map(|p| (p, None))
+            }
+        } => r,
         _ = stopped() => return 130,
     };
-    let mut plan = match planned {
+    let (mut plan, account_session) = match planned {
         Ok(p) => p,
         Err(e) => {
             errln!("{}", tf("tui.cli.error", &[("message", &e)]));
             return 1;
         }
     };
+    let meta_session = account_session.unwrap_or_else(|| core.steam_session.clone());
     if plan.game_name.is_none() {
         let info = tokio::select! {
             r = smd_core::services::steam_store_api::get_game_info(
@@ -469,7 +545,7 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
     if wanted.is_empty() && args.update.is_none() && like_steam {
         let meta = match plan.app_id.parse::<u32>() {
             Ok(n) => tokio::select! {
-                r = smd_core::services::steam_pics::fetch_depots_with_names(core.steam_session.clone(), n) => r,
+                r = smd_core::services::steam_pics::fetch_depots_with_names(meta_session.clone(), n) => r,
                 _ = stopped() => return 130,
             },
             Err(_) => Err("invalid app id".to_string()),
@@ -495,7 +571,9 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
                     &meta,
                     &candidates,
                     |id| {
-                        plan.depots.iter().any(|(d, _, key, _)| d == id && key.is_some())
+                        // With the account, keys come from Steam for owned depots.
+                        from_account
+                            || plan.depots.iter().any(|(d, _, key, _)| d == id && key.is_some())
                             || plan.key_vdf.as_ref().is_some_and(|k| k.contains_key(id))
                     },
                     &prefs,
@@ -572,7 +650,7 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
                 .unwrap_or("N/A"),
             size.map(|s| format!("  {}", fmt_bytes(s)))
                 .unwrap_or_default(),
-            if key.is_none() {
+            if key.is_none() && !from_account {
                 format!("  {}", t("tui.cli.noKeyInFile"))
             } else {
                 String::new()
@@ -632,6 +710,9 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
         like_steam: Some(like_steam),
         all_app_ids: Some(plan.all_app_ids.clone()),
         include_dlc: args.dlc.then_some(true),
+        branch: args.branch.clone(),
+        branch_password: args.branch_password.clone(),
+        use_account: args.uses_account(),
     };
     if let Some(limit) = config.speed_limit.as_deref() {
         if let Err(e) = smd_core::services::speed_limit::parse_speed_limit(limit) {
@@ -1329,4 +1410,49 @@ pub async fn account(dir: PathBuf, args: AccountArgs) -> i32 {
             1
         }
     }
+}
+
+pub async fn branches(dir: PathBuf, args: BranchesArgs) -> i32 {
+    use smd_core::services::{steam_branches, steam_session::SteamSession};
+    let core = AppState::new();
+    let account = core.account.get(&dir).await;
+    let signed_in = account.is_some();
+    let session = match account {
+        Some(a) => std::sync::Arc::new(SteamSession::for_account(a, None)),
+        None => core.steam_session.clone(),
+    };
+    let list = match steam_branches::list(session, args.app_id).await {
+        Ok(l) => l,
+        Err(e) => {
+            errln!("{}", tf("tui.cli.error", &[("message", &e)]));
+            return 1;
+        }
+    };
+    if args.json {
+        println!("{}", serde_json::json!({ "appId": args.app_id, "signedIn": signed_in, "branches": list }));
+        return 0;
+    }
+    println!("{}", tf("tui.cli.branchesTitle", &[("app", &args.app_id)]));
+    for b in &list {
+        let mut tags = Vec::new();
+        if b.password_required {
+            tags.push(t("tui.cli.branchesPassword"));
+        }
+        tags.push(t(if b.available { "tui.cli.branchesAvailable" } else { "tui.cli.branchesLocked" }));
+        let updated = chrono::DateTime::from_timestamp(b.time_updated as i64, 0)
+            .map(|d| d.format("%Y-%m-%d").to_string())
+            .unwrap_or_default();
+        println!(
+            "  {:<24} {:>10}  {}  [{}]{}",
+            b.name,
+            b.build_id,
+            updated,
+            tags.join(", "),
+            if b.description.is_empty() { String::new() } else { format!("  {}", b.description) }
+        );
+    }
+    if !signed_in {
+        println!("{}", t("tui.cli.branchesHintLogin"));
+    }
+    0
 }

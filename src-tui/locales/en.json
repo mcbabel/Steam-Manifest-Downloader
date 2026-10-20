@@ -289,7 +289,20 @@
       "accountNone": "Not signed in. Run smd login to sign in with your Steam account.",
       "accountSignedIn": "Signed in as {name} (SteamID {id}).",
       "accountExpires": "The sign-in is valid until {date}.",
-      "accountCheckOk": "Steam accepts the sign-in."
+      "accountCheckOk": "Steam accepts the sign-in.",
+      "argBranch": "Steam branch to download (default: public). A non-public branch needs smd login with an account that has access.",
+      "argBranchPassword": "Password of a password-protected branch. It is only sent to Steam.",
+      "argAccount": "Use your signed-in Steam account for this download (your own games and playtests). Implied by --branch.",
+      "accountNeeded": "Not signed in. Run smd login first.",
+      "accountNeedsAppId": "With --account or --branch, give an App ID.",
+      "cmdBranches": "List the branches of an app (with your account: the ones it can access)",
+      "argBranchesJson": "Print the branches as JSON",
+      "branchesTitle": "Branches of App {app}:",
+      "branchesPassword": "password",
+      "branchesAvailable": "available",
+      "branchesLocked": "needs access",
+      "branchesHintLogin": "Only the public branch is open without an account. smd login shows the branches your account can access.",
+      "argAppId": "Steam App ID"
     }
   }
 }

@@ -289,7 +289,20 @@
       "accountNone": "Nicht angemeldet. Mit smd login meldest du dich mit deinem Steam-Konto an.",
       "accountSignedIn": "Angemeldet als {name} (SteamID {id}).",
       "accountExpires": "Die Anmeldung gilt bis {date}.",
-      "accountCheckOk": "Steam akzeptiert die Anmeldung."
+      "accountCheckOk": "Steam akzeptiert die Anmeldung.",
+      "argBranch": "Steam-Branch, der geladen wird (Standard: public). Für nicht öffentliche Branches brauchst du smd login mit einem Konto, das Zugriff hat.",
+      "argBranchPassword": "Passwort eines passwortgeschützten Branches. Es geht nur an Steam.",
+      "argAccount": "Dein angemeldetes Steam-Konto für diesen Download nutzen (eigene Spiele und Playtests). Gilt mit --branch automatisch.",
+      "accountNeeded": "Nicht angemeldet. Führe zuerst smd login aus.",
+      "accountNeedsAppId": "Mit --account oder --branch brauchst du eine App-ID.",
+      "cmdBranches": "Branches einer App anzeigen (mit Konto: die, auf die es Zugriff hat)",
+      "argBranchesJson": "Branches als JSON ausgeben",
+      "branchesTitle": "Branches von App {app}:",
+      "branchesPassword": "Passwort",
+      "branchesAvailable": "verfügbar",
+      "branchesLocked": "braucht Zugriff",
+      "branchesHintLogin": "Ohne Konto ist nur der öffentliche Branch offen. Mit smd login siehst du die Branches, auf die dein Konto Zugriff hat.",
+      "argAppId": "Steam-App-ID"
     }
   }
 }

@@ -28,7 +28,7 @@ use std::sync::Arc;
 
 const JOB_RETENTION: std::time::Duration = std::time::Duration::from_secs(30 * 60);
 
-#[derive(Debug, Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, Deserialize, serde::Serialize)]
 pub struct DownloadConfig {
     #[serde(rename = "mainAppId", alias = "app_id")]
     pub app_id: String,
@@ -62,9 +62,29 @@ pub struct DownloadConfig {
     pub all_app_ids: Option<Vec<String>>,
     #[serde(rename = "includeDlc", alias = "include_dlc", default)]
     pub include_dlc: Option<bool>,
+    /// Steam branch to download (`None` or "public" = the public branch).
+    /// A non-public branch needs the user's account.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub branch: Option<String>,
+    /// Password of a password branch. Sent to Steam only, never stored
+    /// (see `config_secrets`).
+    #[serde(rename = "branchPassword", default, skip_serializing_if = "Option::is_none")]
+    pub branch_password: Option<String>,
+    /// Use the signed-in account for this download (own games, playtests).
+    /// Implied by a non-public branch.
+    #[serde(rename = "useAccount", alias = "use_account", default)]
+    pub use_account: bool,
 }
 
 impl DownloadConfig {
+    pub fn uses_account(&self) -> bool {
+        self.use_account
+            || self
+                .branch
+                .as_deref()
+                .is_some_and(|b| !crate::services::steam_branches::is_public(b))
+    }
+
     pub fn update_target(&self) -> Option<PathBuf> {
         self.update_dir
             .as_deref()
@@ -293,7 +313,7 @@ pub async fn start_download(
                 }
             }
             Err(e) => {
-                if !is_cancelled {
+                if !is_cancelled && e != ALREADY_REPORTED {
                     let mut event = ProgressEvent::new("error", &job_id_clone);
                     event.localized(
                         format!("Unexpected error: {}", e),
@@ -339,7 +359,147 @@ pub async fn start_download(
     Ok(response)
 }
 
+/// Error text of a failure that was already reported to the frontend with
+/// its own event, so the task does not add an "Unexpected error" on top.
+const ALREADY_REPORTED: &str = "\u{0}already-reported";
+
+#[allow(clippy::too_many_arguments)]
 async fn run_download_pipeline(
+    sink: &Sink,
+    state: &AppState,
+    job_id: &str,
+    config: &DownloadConfig,
+    base_dir: &Path,
+    folder_name: &str,
+    game_name: Option<&str>,
+    header_image: Option<&str>,
+    app_data_dir: &Path,
+) -> Result<(), String> {
+    if !config.uses_account() {
+        return run_download_pipeline_inner(
+            sink, state, job_id, config, base_dir, folder_name, game_name, header_image, app_data_dir,
+        )
+        .await;
+    }
+    let mut config = config.clone();
+    let session = match prepare_account_download(sink, state, app_data_dir, job_id, &mut config).await {
+        Ok(session) => session,
+        Err(e) => {
+            let mut event = ProgressEvent::new("error", job_id);
+            event.localized(e.clone(), "events.accountError", serde_json::json!({ "error": e }));
+            emit_progress(sink, &event);
+            return Err(ALREADY_REPORTED.to_string());
+        }
+    };
+    let account_state = AppState {
+        active_jobs: state.active_jobs.clone(),
+        http_client: crate::services::net::HttpClient,
+        steam_cache: state.steam_cache.clone(),
+        telemetry: None,
+        steam_session: session,
+        shutdown_flush_done: state.shutdown_flush_done.clone(),
+        account: state.account.clone(),
+        pending_qr: state.pending_qr.clone(),
+    };
+    run_download_pipeline_inner(
+        sink,
+        &account_state,
+        job_id,
+        &config,
+        base_dir,
+        folder_name,
+        game_name,
+        header_image,
+        app_data_dir,
+    )
+    .await
+}
+
+/// For a download with the user's account: logs on as the account, takes
+/// the manifests of the chosen branch and asks Steam for the depot keys the
+/// account owns. Returns the session the rest of the download uses.
+async fn prepare_account_download(
+    sink: &Sink,
+    state: &AppState,
+    app_data_dir: &Path,
+    job_id: &str,
+    config: &mut DownloadConfig,
+) -> Result<Arc<crate::services::steam_session::SteamSession>, String> {
+    use crate::services::steam_branches::{self, BranchError};
+    let account = state.account.get(app_data_dir).await.ok_or_else(|| {
+        "Sign in with your Steam account first (Settings → Steam in the app, or smd login).".to_string()
+    })?;
+    if account.is_expired(chrono::Utc::now().timestamp()) {
+        return Err("Your Steam sign-in has expired. Sign in again.".to_string());
+    }
+    let branch = config
+        .branch
+        .clone()
+        .map(|b| b.trim().to_string())
+        .filter(|b| !steam_branches::is_public(b));
+    let branch_label = branch.clone().unwrap_or_else(|| steam_branches::PUBLIC.to_string());
+
+    let mut event = ProgressEvent::new("status", job_id);
+    event.step = Some("account_logon".to_string());
+    event.localized(
+        format!("Logging on to Steam as {}", account.account_name),
+        "events.accountLogon",
+        serde_json::json!({ "name": account.account_name }),
+    );
+    emit_progress(sink, &event);
+
+    let session = Arc::new(crate::services::steam_session::SteamSession::for_account(account, branch.clone()));
+    session.connection().await?;
+
+    let mut event = ProgressEvent::new("status", job_id);
+    event.step = Some("branch_manifests".to_string());
+    event.localized(
+        format!("Reading the builds on branch {}", branch_label),
+        "events.branchManifests",
+        serde_json::json!({ "branch": branch_label }),
+    );
+    emit_progress(sink, &event);
+
+    let app_id: u32 = config.app_id.parse().map_err(|_| "Invalid App ID".to_string())?;
+    let gids = steam_branches::manifests(session.clone(), app_id, &branch_label, config.branch_password.as_deref())
+        .await
+        .map_err(|e| e.to_string())?;
+    let mut missing = Vec::new();
+    for depot in config.depots.iter_mut() {
+        if depot.uploaded_manifest_path.is_some() || depot.custom_manifest_id.is_some() {
+            continue;
+        }
+        match gids.get(&depot.depot_id) {
+            Some(gid) => depot.manifest_id = gid.clone(),
+            None if branch.is_some() => missing.push(depot.depot_id.clone()),
+            None => {}
+        }
+    }
+    if !missing.is_empty() {
+        return Err(BranchError::NoBuild(missing).to_string());
+    }
+
+    for depot in config.depots.iter_mut() {
+        let known = depot.depot_key.is_some()
+            || config
+                .key_vdf_keys
+                .as_ref()
+                .is_some_and(|k| k.contains_key(&depot.depot_id));
+        if known {
+            continue;
+        }
+        let Ok(depot_id) = depot.depot_id.parse::<u32>() else {
+            continue;
+        };
+        if let Some(key) = steam_branches::depot_key(session.clone(), app_id, depot_id).await {
+            depot.depot_key = Some(hex::encode(key));
+        }
+    }
+    Ok(session)
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn run_download_pipeline_inner(
     sink: &Sink,
     state: &AppState,
     job_id: &str,
@@ -355,7 +515,9 @@ async fn run_download_pipeline(
     let work_dir = base_dir.join(folder_name);
     let loaded_settings = settings_service::load_settings(app_data_dir).await;
     let depot_sources_list = loaded_settings.depot_sources.clone();
-    let use_native = loaded_settings.use_native_downloader;
+    // Downloads with the account run on the built-in engine; DepotDownloaderMod
+    // would need its own (unencrypted) login.
+    let use_native = loaded_settings.use_native_downloader || config.uses_account();
     let merged = install_state::use_merged_layout(
         &work_dir,
         config.like_steam.unwrap_or(loaded_settings.auto_select_depots),
@@ -970,7 +1132,7 @@ async fn run_download_pipeline(
         settings.dd_extra_args.clone()
     };
 
-    let download_results = if settings.use_native_downloader {
+    let download_results = if use_native {
         run_native_pipeline(
             sink,
             state,

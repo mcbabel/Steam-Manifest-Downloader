@@ -459,6 +459,9 @@ impl App {
             like_steam: None,
             all_app_ids: Some(parsed.all_app_ids.clone()),
             include_dlc: self.wiz.depot_include_dlc,
+            branch: None,
+            branch_password: None,
+            use_account: false,
         };
         let ids: Vec<String> = config.depots.iter().map(|d| d.depot_id.clone()).collect();
         Some((config, ids, native))

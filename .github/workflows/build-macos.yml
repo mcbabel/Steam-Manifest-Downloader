@@ -218,6 +218,13 @@ jobs:
           SMD="$RUNNER_TEMP/smd"
           OUT="$RUNNER_TEMP/games"
           "$SMD" search "$APP_ID" --manifests 0
+          "$SMD" branches "$APP_ID"
+          # A non-public branch without a sign-in must stop with a clear error.
+          if "$SMD" download "$APP_ID" --branch smd-ci-check --list 2> "$RUNNER_TEMP/branch.err"; then
+            echo "::error::A non-public branch was accepted without a sign-in"
+            exit 1
+          fi
+          grep -q "smd login" "$RUNNER_TEMP/branch.err"
           "$SMD" download "$APP_ID" --list
           "$SMD" download "$APP_ID" --like-steam -o "$OUT" --json > "$RUNNER_TEMP/events.jsonl" || true
           tail -n 25 "$RUNNER_TEMP/events.jsonl"

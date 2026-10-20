@@ -79,6 +79,11 @@ pub async fn fetch_public_manifest_gid(
 }
 
 fn public_gids(app: &Table) -> HashMap<String, String> {
+    branch_gids(app, "public")
+}
+
+/// Manifest gid per depot on `branch`, as far as this app info shows them.
+pub fn branch_gids(app: &Table, branch: &str) -> HashMap<String, String> {
     let Some(depots) = app.get("depots").and_then(as_table) else {
         return HashMap::new();
     };
@@ -86,12 +91,31 @@ fn public_gids(app: &Table) -> HashMap<String, String> {
         .iter()
         .filter(|(key, _)| key.chars().all(|c| c.is_ascii_digit()))
         .filter_map(|(key, value)| {
-            let public = as_table(value)?.get("manifests").and_then(as_table)?.get("public")?;
-            let gid = as_table(public)
+            let entry = as_table(value)?.get("manifests").and_then(as_table)?.get(branch)?;
+            let gid = as_table(entry)
                 .and_then(|p| p.get("gid"))
                 .and_then(as_str)
-                .or_else(|| as_str(public))?;
+                .or_else(|| as_str(entry))?;
             Some((key.clone(), gid.to_string()))
+        })
+        .collect()
+}
+
+/// Depots that take their manifests from another app (`depotfromapp`).
+pub fn depots_from_other_apps(app: &Table) -> Vec<(String, u32)> {
+    let Some(depots) = app.get("depots").and_then(as_table) else {
+        return Vec::new();
+    };
+    depots
+        .iter()
+        .filter(|(key, _)| key.chars().all(|c| c.is_ascii_digit()))
+        .filter_map(|(key, value)| {
+            let t = as_table(value)?;
+            if t.get("manifests").is_some() {
+                return None;
+            }
+            let other = t.get("depotfromapp").and_then(as_str)?.trim().parse::<u32>().ok()?;
+            Some((key.clone(), other))
         })
         .collect()
 }
@@ -333,14 +357,43 @@ fn capitalise(s: &str) -> String {
     }
 }
 
+/// PICS access tokens for `app_ids`. Only a connection logged on as an
+/// account gets any; Steam hands them out for apps the account may see in
+/// full (owned games, playtests, granted branches).
+pub(crate) async fn pics_access_tokens(conn: &Connection, app_ids: &[u32]) -> HashMap<u32, u64> {
+    use steam_vent_proto::steammessages_clientserver_appinfo::{
+        CMsgClientPICSAccessTokenRequest, CMsgClientPICSAccessTokenResponse,
+    };
+    if conn.access_token().is_none() || app_ids.is_empty() {
+        return HashMap::new();
+    }
+    let req = CMsgClientPICSAccessTokenRequest {
+        appids: app_ids.to_vec(),
+        ..Default::default()
+    };
+    match conn.job::<_, CMsgClientPICSAccessTokenResponse>(req).await {
+        Ok(resp) => resp
+            .app_access_tokens
+            .iter()
+            .filter_map(|t| Some((t.appid?, t.access_token?)))
+            .collect(),
+        Err(e) => {
+            crate::dlog!("PICS", "access token request failed: {}", e);
+            HashMap::new()
+        }
+    }
+}
+
 async fn pics_product_info_vdf(
     conn: &Connection,
     app_ids: &[u32],
 ) -> Result<HashMap<u32, Table>, String> {
+    let tokens = pics_access_tokens(conn, app_ids).await;
     let apps = app_ids
         .iter()
         .map(|id| cmsg_client_picsproduct_info_request::AppInfo {
             appid: Some(*id),
+            access_token: tokens.get(id).copied(),
             only_public_obsolete: Some(false),
             ..Default::default()
         })
