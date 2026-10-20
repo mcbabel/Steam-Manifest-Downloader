@@ -6,6 +6,7 @@ const state = {
   updateDir: null,
   updateAppId: null,
   mode: 'upload', // 'upload' or 'search'
+  accountMode: false, // depots were read from the user's own Steam account
   parsedData: null,
   selectedDepots: new Set(),
   jobId: null,

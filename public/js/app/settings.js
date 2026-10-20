@@ -1,5 +1,6 @@
 async function openSettings(target) {
   try {
+    loadAccountStatus();
     const settings = await invoke('get_settings');
     els.autoUpdateToggle.checked = settings.auto_update !== false;
 

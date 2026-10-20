@@ -125,6 +125,15 @@ fn main() {
             commands::steam_api_bypass_status,
             // Native (pure-Rust) downloader — experimental, side-by-side with DepotDownloaderMod
             commands::native_download_depot,
+            // Steam account (QR sign-in) and branches
+            commands::account_status,
+            commands::account_check,
+            commands::account_login_start,
+            commands::account_login_poll,
+            commands::account_login_cancel,
+            commands::account_logout,
+            commands::list_branches,
+            commands::account_app_depots,
         ])
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {

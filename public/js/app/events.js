@@ -161,6 +161,7 @@ function initEvents() {
   bindDepotSelectionSettings();
   initSettingsLayout();
   initBugReport();
+  initAccount();
 
   if (els.btnCopyBuildInfo) {
     els.btnCopyBuildInfo.addEventListener('click', copyBuildInfo);

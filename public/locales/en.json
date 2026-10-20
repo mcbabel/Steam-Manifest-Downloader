@@ -821,7 +821,10 @@
     },
     "depotRetry": "Connection problem with depot {depot}, trying again ({attempt}/{max})…",
     "depotRetryDdm": "Depot {depot} failed, trying again ({attempt}/{max})…",
-    "networkUnreachable": "No connection to Steam or any manifest source ({reason}). The remaining {count} depot(s) were skipped. Check your internet connection, firewall, antivirus web protection, VPN or the proxy in the settings."
+    "networkUnreachable": "No connection to Steam or any manifest source ({reason}). The remaining {count} depot(s) were skipped. Check your internet connection, firewall, antivirus web protection, VPN or the proxy in the settings.",
+    "accountLogon": "Logging on to Steam as {name}",
+    "branchManifests": "Reading the builds on branch {branch}",
+    "accountError": "{error}"
   },
   "backend": {
     "entryRemovedPartial": "Entry removed, but {0} depot folder(s) could not be deleted: {1}",
@@ -1108,5 +1111,42 @@
     "issue": "Share an idea or bug",
     "dismiss": "Do not show again",
     "tui": "Glad SMD helps! A star on GitHub helps others find it: {url}"
+  },
+  "account": {
+    "title": "Steam account",
+    "signedOut": "Not signed in. Only needed for branches, playtests and games your account owns.",
+    "signedInAs": "Signed in as {name}.",
+    "storedKeychain": "The sign-in is kept in the system keychain.",
+    "storedFile": "The sign-in is kept in a file only you can read (not encrypted).",
+    "storedSession": "No system keychain found: the sign-in lasts until you close the app.",
+    "signIn": "Sign in with QR code",
+    "signOut": "Sign out",
+    "note": "Optional. You sign in with the Steam app on your phone, so SMD never sees your password. Your account only unlocks what Steam grants it: branches, playtests and depots of games you own or were invited to. Signing out also revokes the sign-in at Steam.",
+    "qrTitle": "Sign in with the Steam app",
+    "qrIntro": "Open the Steam app on your phone, tap the shield (Steam Guard) and scan the code.",
+    "qrNote": "SMD never sees your password. Your account only unlocks what Steam grants it: branches, playtests and depots of games you own or were invited to.",
+    "qrLoading": "Getting a code from Steam…",
+    "qrWaiting": "Waiting for you to scan the code…",
+    "qrScanned": "Code scanned. Confirm the sign-in in the Steam app.",
+    "qrExpired": "The code expired. Get a new one.",
+    "qrRetry": "New code",
+    "signedInToast": "Signed in as {name}.",
+    "signedOutToast": "Signed out of {name}. The sign-in was revoked at Steam.",
+    "searchHint": "Your own game or a playtest? Load it with your Steam account.",
+    "loadFromAccount": "Load with my Steam account",
+    "noDepots": "Your account sees no depots with a build for this app. You may not own it, or it has no public build."
+  },
+  "branch": {
+    "label": "Steam branch",
+    "passwordPlaceholder": "Branch password",
+    "passwordTag": "password",
+    "lockedTag": "needs access",
+    "useAccount": "Download with my Steam account (own games, playtests)",
+    "hintSignedOut": "Without an account only the public branch is open. Sign in to see the branches your account can access.",
+    "hintSignedIn": "Signed in as {name}. Other branches and own games load through your account and the built-in downloader.",
+    "hintBranch": "This branch loads through your account and the built-in downloader. SMD reads its builds when the download starts, so the manifest IDs above can still show the public build.",
+    "needsLogin": "This branch needs your Steam account. Sign in under Settings → Steam.",
+    "needsPassword": "Enter the branch password first.",
+    "noQueueWithPassword": "Downloads from password branches cannot go into the queue, because the password is never saved. Start it directly."
   }
 }

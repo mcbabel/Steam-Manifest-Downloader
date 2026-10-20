@@ -222,6 +222,7 @@ async function handleFilePath(filePath) {
   try {
     const raw = await invoke('parse_lua_file', { path: filePath });
 
+    state.accountMode = false;
     state.parsedData = {
       mainAppId: raw.main_app_id,
       depots: (raw.depots || []).map(d => ({

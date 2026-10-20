@@ -364,24 +364,24 @@ async fn plan_from_account(
     dir: &std::path::Path,
     args: &DownloadArgs,
 ) -> Result<(Plan, std::sync::Arc<smd_core::services::steam_session::SteamSession>), String> {
-    use smd_core::services::{steam_branches, steam_pics, steam_session::SteamSession};
+    use smd_core::services::steam_session::SteamSession;
     let app_id: u32 = args.source.parse().map_err(|_| t("tui.cli.accountNeedsAppId"))?;
     let account = core.account.get(dir).await.ok_or_else(|| t("tui.cli.accountNeeded"))?;
-    let session = std::sync::Arc::new(SteamSession::for_account(account, args.branch.clone()));
-    let branch = args.branch.as_deref().unwrap_or(steam_branches::PUBLIC);
-    let gids = steam_branches::manifests(session.clone(), app_id, branch, args.branch_password.as_deref())
-        .await
-        .map_err(|e| e.to_string())?;
-    let meta = steam_pics::fetch_depots_with_names(session.clone(), app_id).await?;
-    let mut depots: Vec<_> = meta
-        .iter()
-        .filter_map(|m| Some((m.depot_id.clone(), Some(gids.get(&m.depot_id)?.clone()), None, None)))
-        .collect();
-    depots.sort_by_key(|(id, ..): &(String, Option<String>, Option<String>, Option<u64>)| id.parse::<u64>().unwrap_or(u64::MAX));
+    let depots = smd_core::ops::account::app_depots(
+        core,
+        dir,
+        app_id,
+        args.branch.as_deref(),
+        args.branch_password.as_deref(),
+    )
+    .await?;
     Ok((
         Plan {
             app_id: args.source.clone(),
-            depots,
+            depots: depots
+                .into_iter()
+                .map(|d| (d.depot_id, Some(d.manifest_id), None, None))
+                .collect(),
             key_vdf: None,
             source_type: Some("account".into()),
             repo: None,
@@ -389,7 +389,7 @@ async fn plan_from_account(
             header_image: None,
             all_app_ids: Vec::new(),
         },
-        session,
+        std::sync::Arc::new(SteamSession::for_account(account, args.branch.clone())),
     ))
 }
 
@@ -1413,16 +1413,9 @@ pub async fn account(dir: PathBuf, args: AccountArgs) -> i32 {
 }
 
 pub async fn branches(dir: PathBuf, args: BranchesArgs) -> i32 {
-    use smd_core::services::{steam_branches, steam_session::SteamSession};
     let core = AppState::new();
-    let account = core.account.get(&dir).await;
-    let signed_in = account.is_some();
-    let session = match account {
-        Some(a) => std::sync::Arc::new(SteamSession::for_account(a, None)),
-        None => core.steam_session.clone(),
-    };
-    let list = match steam_branches::list(session, args.app_id).await {
-        Ok(l) => l,
+    let (signed_in, list) = match smd_core::ops::account::branches(&core, &dir, args.app_id).await {
+        Ok(l) => (l.signed_in, l.branches),
         Err(e) => {
             errln!("{}", tf("tui.cli.error", &[("message", &e)]));
             return 1;

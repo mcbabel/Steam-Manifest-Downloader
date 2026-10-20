@@ -5624,3 +5624,104 @@ textarea.bug-report__input {
   font-size: 0.85rem;
   color: var(--text-secondary);
 }
+
+/* ---- Steam account and branches ---- */
+.account-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.account-status {
+  color: var(--text-primary);
+}
+
+.account-note {
+  display: block;
+  margin-top: 6px;
+}
+
+.account-modal {
+  max-width: 420px;
+  text-align: center;
+}
+
+/* QR codes need dark modules on white, in both themes. */
+.account-qr {
+  width: 232px;
+  height: 232px;
+  margin: 16px auto 8px;
+  padding: 8px;
+  background: #ffffff;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 0 0 1px var(--border);
+}
+
+.account-qr svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.account-qr--empty {
+  background: var(--bg-input);
+}
+
+.account-modal__status {
+  min-height: 1.4em;
+  margin: 4px 0 12px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.account-modal__status--warning {
+  color: var(--warning);
+}
+
+.account-modal__status--error {
+  color: var(--error);
+}
+
+.branch-section__row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.branch-section__select {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.branch-section__password {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+.branch-section .filter-toggle {
+  margin-top: 8px;
+}
+
+.search-account-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px dashed var(--border-active);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.branch-section__select {
+  cursor: pointer;
+}
+
+.branch-section__select option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}

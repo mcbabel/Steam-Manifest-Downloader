@@ -165,3 +165,74 @@ async fn revoke(state: &AppState, account: &crate::services::steam_account::Acco
         crate::dlog!("Account", "token revoke timed out: {}", e);
     }
 }
+
+/// Branches of an app as the user may use them: with the account when
+/// signed in, otherwise anonymously (then only the public one is open).
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BranchList {
+    pub signed_in: bool,
+    pub branches: Vec<crate::services::steam_branches::BranchView>,
+}
+
+pub async fn branches(
+    state: &AppState,
+    data_dir: &Path,
+    app_id: u32,
+) -> Result<BranchList, String> {
+    use crate::services::{steam_branches, steam_session::SteamSession};
+    let account = state.account.get(data_dir).await;
+    let signed_in = account.is_some();
+    let session = match account {
+        Some(a) => std::sync::Arc::new(SteamSession::for_account(a, None)),
+        None => state.steam_session.clone(),
+    };
+    Ok(BranchList {
+        signed_in,
+        branches: steam_branches::list(session, app_id).await?,
+    })
+}
+
+/// A depot the account can download on a branch.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AccountDepot {
+    pub depot_id: String,
+    pub manifest_id: String,
+}
+
+/// The depots of `app_id` with their manifests on `branch`, read with the
+/// signed-in account. For games that are in no depot source: own games and
+/// playtests. Keys come from the account when the download runs.
+pub async fn app_depots(
+    state: &AppState,
+    data_dir: &Path,
+    app_id: u32,
+    branch: Option<&str>,
+    password: Option<&str>,
+) -> Result<Vec<AccountDepot>, String> {
+    use crate::services::{steam_branches, steam_pics, steam_session::SteamSession};
+    let account = state
+        .account
+        .get(data_dir)
+        .await
+        .ok_or_else(|| "Sign in with your Steam account first.".to_string())?;
+    let branch = branch.unwrap_or(steam_branches::PUBLIC);
+    let session = std::sync::Arc::new(SteamSession::for_account(account, Some(branch.to_string())));
+    let gids = steam_branches::manifests(session.clone(), app_id, branch, password)
+        .await
+        .map_err(|e| e.to_string())?;
+    // Only depots the app lists (not leftovers of other apps in the section).
+    let meta = steam_pics::fetch_depots_with_names(session, app_id).await?;
+    let mut out: Vec<AccountDepot> = meta
+        .iter()
+        .filter_map(|m| {
+            Some(AccountDepot {
+                depot_id: m.depot_id.clone(),
+                manifest_id: gids.get(&m.depot_id)?.clone(),
+            })
+        })
+        .collect();
+    out.sort_by_key(|d| d.depot_id.parse::<u64>().unwrap_or(u64::MAX));
+    Ok(out)
+}

@@ -26,6 +26,16 @@ async function addToQueue() {
   if (!data) return;
   const selectedDepots = data.depots.filter(d => state.selectedDepots.has(d.depotId));
   if (selectedDepots.length === 0) return;
+  const branchProblem = branchStartProblem();
+  if (branchProblem) {
+    showToast(window.i18n.t(branchProblem), 'error', 6000);
+    return;
+  }
+  // The branch password is never stored, so a queued download could not use it.
+  if (accountDownloadFields().branchPassword) {
+    showToast(window.i18n.t('branch.noQueueWithPassword'), 'error', 6000);
+    return;
+  }
   if (!(await confirmFreeSpace(selectedDepots, activeUpdateDir(data.mainAppId)))) return;
   const mhApiKey = rememberDownloadInputs();
   const repairManifests = activeRepair(data.mainAppId);

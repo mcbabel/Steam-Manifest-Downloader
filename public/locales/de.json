@@ -821,7 +821,10 @@
     },
     "depotRetry": "Verbindungsproblem bei Depot {depot}, neuer Versuch ({attempt}/{max}) …",
     "depotRetryDdm": "Depot {depot} ist fehlgeschlagen, neuer Versuch ({attempt}/{max}) …",
-    "networkUnreachable": "Keine Verbindung zu Steam oder einer Manifest-Quelle ({reason}). Die restlichen {count} Depot(s) wurden übersprungen. Prüfe Internetverbindung, Firewall, Web-Schutz des Virenscanners, VPN oder den Proxy in den Einstellungen."
+    "networkUnreachable": "Keine Verbindung zu Steam oder einer Manifest-Quelle ({reason}). Die restlichen {count} Depot(s) wurden übersprungen. Prüfe Internetverbindung, Firewall, Web-Schutz des Virenscanners, VPN oder den Proxy in den Einstellungen.",
+    "accountLogon": "Melde mich bei Steam als {name} an",
+    "branchManifests": "Lese die Builds auf dem Branch {branch}",
+    "accountError": "{error}"
   },
   "backend": {
     "entryRemovedPartial": "Eintrag entfernt, aber {0} Depot-Ordner konnten nicht gelöscht werden: {1}",
@@ -1108,5 +1111,42 @@
     "issue": "Idee oder Fehler melden",
     "dismiss": "Nicht mehr anzeigen",
     "tui": "Schön, dass SMD dir hilft! Ein Stern auf GitHub hilft anderen, es zu finden: {url}"
+  },
+  "account": {
+    "title": "Steam-Konto",
+    "signedOut": "Nicht angemeldet. Nur nötig für Branches, Playtests und Spiele, die dein Konto besitzt.",
+    "signedInAs": "Angemeldet als {name}.",
+    "storedKeychain": "Die Anmeldung liegt im System-Schlüsselbund.",
+    "storedFile": "Die Anmeldung liegt in einer Datei, die nur du lesen kannst (nicht verschlüsselt).",
+    "storedSession": "Kein System-Schlüsselbund gefunden: Die Anmeldung gilt, bis du die App schließt.",
+    "signIn": "Mit QR-Code anmelden",
+    "signOut": "Abmelden",
+    "note": "Optional. Du meldest dich mit der Steam-App auf dem Handy an, SMD sieht dein Passwort nie. Dein Konto schaltet nur frei, was Steam ihm erlaubt: Branches, Playtests und Depots von Spielen, die du besitzt oder zu denen du eingeladen bist. Beim Abmelden wird die Anmeldung auch bei Steam widerrufen.",
+    "qrTitle": "Mit der Steam-App anmelden",
+    "qrIntro": "Öffne die Steam-App auf dem Handy, tippe auf das Schild (Steam Guard) und scanne den Code.",
+    "qrNote": "SMD sieht dein Passwort nie. Dein Konto schaltet nur frei, was Steam ihm erlaubt: Branches, Playtests und Depots von Spielen, die du besitzt oder zu denen du eingeladen bist.",
+    "qrLoading": "Hole einen Code von Steam …",
+    "qrWaiting": "Warte darauf, dass du den Code scannst …",
+    "qrScanned": "Code gescannt. Bestätige die Anmeldung in der Steam-App.",
+    "qrExpired": "Der Code ist abgelaufen. Hol dir einen neuen.",
+    "qrRetry": "Neuer Code",
+    "signedInToast": "Angemeldet als {name}.",
+    "signedOutToast": "Von {name} abgemeldet. Die Anmeldung wurde bei Steam widerrufen.",
+    "searchHint": "Eigenes Spiel oder Playtest? Lade es über dein Steam-Konto.",
+    "loadFromAccount": "Über mein Steam-Konto laden",
+    "noDepots": "Dein Konto sieht für diese App keine Depots mit Build. Vielleicht besitzt du sie nicht, oder es gibt keinen öffentlichen Build."
+  },
+  "branch": {
+    "label": "Steam-Branch",
+    "passwordPlaceholder": "Branch-Passwort",
+    "passwordTag": "Passwort",
+    "lockedTag": "braucht Zugriff",
+    "useAccount": "Mit meinem Steam-Konto laden (eigene Spiele, Playtests)",
+    "hintSignedOut": "Ohne Konto ist nur der öffentliche Branch offen. Melde dich an, um die Branches zu sehen, auf die dein Konto Zugriff hat.",
+    "hintSignedIn": "Angemeldet als {name}. Andere Branches und eigene Spiele laden über dein Konto und den eingebauten Downloader.",
+    "hintBranch": "Dieser Branch lädt über dein Konto und den eingebauten Downloader. SMD liest seine Builds beim Start, die Manifest-IDs oben können also noch den öffentlichen Build zeigen.",
+    "needsLogin": "Dieser Branch braucht dein Steam-Konto. Melde dich unter Einstellungen → Steam an.",
+    "needsPassword": "Gib zuerst das Branch-Passwort ein.",
+    "noQueueWithPassword": "Downloads aus Passwort-Branches können nicht in die Warteschlange, weil das Passwort nie gespeichert wird. Starte sie direkt."
   }
 }

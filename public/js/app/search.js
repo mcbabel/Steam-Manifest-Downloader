@@ -17,6 +17,9 @@ async function performSearch() {
   state.selectedRepo = null;
   state.searchRepos = [];
   state.searchAppId = appId;
+  state.accountMode = false;
+  const accountRow = document.getElementById('search-account-row');
+  if (accountRow) accountRow.classList.add('hidden');
 
   els.searchLoading.classList.remove('hidden');
   els.btnSearch.disabled = true;
@@ -40,6 +43,7 @@ async function performSearch() {
     }));
     state.searchRepos = repos;
     emitSearchOutcome(repos.length, raw.sourceProbe);
+    if (accountRow && accountUi.info) accountRow.classList.remove('hidden');
 
     if (repos.length === 0) {
       showSearchNoResults(appId);
@@ -229,6 +233,7 @@ async function proceedFromSearch() {
       sizeBytes: m.size_bytes || null
     }));
 
+    state.accountMode = false;
     state.searchRepo = repo.name;
     state.searchSha = repo.sha;
     state.searchKeyVdfKeys = mRaw.depot_keys || null;

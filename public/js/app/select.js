@@ -118,6 +118,7 @@ function showSelectionStep() {
 
   els.depotList.innerHTML = '';
   state.selectedDepots.clear();
+  initBranchSection();
   cancelAutoStart();
   state.depotAutoPending = !autoSelectAllOnStep2;
   state.depotSelectionTouched = false;
@@ -324,6 +325,8 @@ async function applyRecommendedDepots(depots) {
 
 function depotHasKey(depot) {
   if (depot.depotKey) return true;
+  // Loaded from the account: Steam hands out the keys of owned depots.
+  if (state.accountMode) return true;
   const keys = state.mode === 'search' ? state.searchKeyVdfKeys : null;
   return !!(keys && keys[String(depot.depotId)]);
 }
@@ -617,7 +620,8 @@ function buildDownloadConfig(data, depots, mhApiKey, repairManifests) {
     updateDir: activeUpdateDir(data.mainAppId),
     repair: !!repairManifests,
     allAppIds: Array.isArray(data.allAppIds) ? data.allAppIds.map(String) : [],
-    includeDlc: typeof state.depotIncludeDlc === 'boolean' ? state.depotIncludeDlc : null
+    includeDlc: typeof state.depotIncludeDlc === 'boolean' ? state.depotIncludeDlc : null,
+    ...accountDownloadFields()
   };
   if (state.mode === 'search') {
     if (state.searchRepo) downloadConfig.repo = state.searchRepo;
@@ -647,6 +651,11 @@ async function startDownload() {
   const selectedDepots = data.depots.filter(d => state.selectedDepots.has(d.depotId));
 
   if (selectedDepots.length === 0) return;
+  const branchProblem = branchStartProblem();
+  if (branchProblem) {
+    showToast(window.i18n.t(branchProblem), 'error', 6000);
+    return;
+  }
   if (!(await confirmFreeSpace(selectedDepots, activeUpdateDir(data.mainAppId)))) return;
 
   const mhApiKey = rememberDownloadInputs();

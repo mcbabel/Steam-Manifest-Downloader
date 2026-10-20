@@ -14,6 +14,7 @@ mod steam_library;
 mod steamless;
 mod steam_api_bypass;
 mod native_download;
+mod account;
 
 pub use file_ops::*;
 pub use search::*;
@@ -31,6 +32,7 @@ pub use steam_library::*;
 pub use steamless::*;
 pub use steam_api_bypass::*;
 pub use native_download::*;
+pub use account::*;
 
 use std::path::PathBuf;
 use std::sync::Arc;

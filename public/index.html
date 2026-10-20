@@ -230,6 +230,11 @@
             </button>
           </div>
 
+          <div id="search-account-row" class="search-account-row hidden">
+            <span class="search-account-row__text" data-i18n="account.searchHint">Your own game or a playtest? Load it with your Steam account.</span>
+            <button id="btn-search-account" class="btn btn--small btn--outline" data-i18n="account.loadFromAccount">Load with my Steam account</button>
+          </div>
+
           <div id="manifest-loading" class="loading hidden">
             <div class="spinner"></div>
             <span data-i18n="search.manifestLoading">Fetching manifests...</span>
@@ -332,6 +337,20 @@
         </div>
 
         <div id="depot-list" class="depot-list"></div>
+
+        <div id="branch-section" class="settings-section branch-section">
+          <label for="branch-select" class="settings-section__label"><span data-i18n="branch.label">Steam branch</span></label>
+          <div class="branch-section__row">
+            <select id="branch-select" class="dd-path__input branch-section__select"><option value="public">public</option></select>
+            <input type="password" id="branch-password" class="dd-path__input branch-section__password hidden" autocomplete="off" spellcheck="false" data-i18n-attr="placeholder=branch.passwordPlaceholder,aria-label=branch.passwordPlaceholder">
+            <button type="button" id="btn-branch-login" class="btn btn--small btn--outline hidden" data-i18n="account.signIn">Sign in with QR code</button>
+          </div>
+          <label id="use-account-row" class="filter-toggle hidden">
+            <input type="checkbox" id="use-account-toggle" />
+            <span data-i18n="branch.useAccount">Download with my Steam account (own games, playtests)</span>
+          </label>
+          <p id="branch-hint" class="dd-path__hint"></p>
+        </div>
 
         <div class="settings-section">
           <label for="download-dir" class="settings-section__label">
@@ -1545,6 +1564,19 @@
 
           <section class="settings__panel" data-section="steam" role="tabpanel">
             <h4 class="settings__panel-title" data-i18n="settings.sectionSteam">Steam</h4>
+            <div class="settings-group" id="account-group">
+              <div class="settings-row">
+                <span class="settings-row__text">
+                  <span class="settings-row__label" data-i18n="account.title">Steam account</span>
+                  <span class="settings-row__hint account-status" id="account-status" data-i18n="account.signedOut">Not signed in.</span>
+                  <span class="settings-row__hint account-note" data-i18n="account.note">Optional. You sign in with the Steam app on your phone, so SMD never sees your password.</span>
+                </span>
+                <span class="account-actions">
+                  <button type="button" id="btn-account-login" class="btn btn--small btn--primary" data-i18n="account.signIn">Sign in with QR code</button>
+                  <button type="button" id="btn-account-logout" class="btn btn--small btn--outline hidden" data-i18n="account.signOut">Sign out</button>
+                </span>
+              </div>
+            </div>
             <div class="settings-group">
               <div class="settings-row settings-row--stack">
                 <label class="settings-row__text" for="steam-webapi-key-input">
@@ -1879,6 +1911,21 @@
 
   <div id="app-toast" class="app-toast hidden" role="status" aria-live="polite"></div>
 </div>
+  <div id="account-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="account-modal-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content account-modal">
+      <h3 class="modal__title" id="account-modal-title" data-i18n="account.qrTitle">Sign in with the Steam app</h3>
+      <p class="modal__text" data-i18n="account.qrIntro">Open the Steam app on your phone, tap the shield (Steam Guard) and scan the code.</p>
+      <div id="account-qr" class="account-qr account-qr--empty" aria-label="QR code"></div>
+      <p id="account-modal-status" class="account-modal__status" role="status"></p>
+      <p class="settings-row__hint" data-i18n="account.qrNote">SMD never sees your password. Your account only unlocks what Steam grants it: branches, playtests and depots of games you own or were invited to.</p>
+      <div class="modal__actions">
+        <button id="btn-account-cancel" class="btn btn--outline" data-i18n="settings.cancel">Cancel</button>
+        <button id="btn-account-retry" class="btn btn--primary hidden" data-i18n="account.qrRetry">New code</button>
+      </div>
+    </div>
+  </div>
+
   <script src="js/i18n.js"></script>
   <script src="js/app/core.js"></script>
   <script src="js/app/telemetry.js"></script>
@@ -1894,6 +1941,7 @@
   <script src="js/app/shortcuts.js"></script>
   <script src="js/app/emulator.js"></script>
   <script src="js/app/settings.js"></script>
+  <script src="js/app/account.js"></script>
   <script src="js/app/updater.js"></script>
   <script src="js/app/bug-report.js"></script>
   <script src="js/app/onboarding.js"></script>
