@@ -268,7 +268,28 @@
       "telemetryStatusOn": "Anonyme Nutzungsstatistik: an",
       "telemetryStatusOff": "Anonyme Nutzungsstatistik: aus",
       "telemetryEnv": "Festgelegt durch SMD_TELEMETRY={value}",
-      "telemetryId": "Diagnose-ID: {id}"
+      "telemetryId": "Diagnose-ID: {id}",
+      "cmdLogin": "Mit dem Steam-Konto per QR-Code anmelden (für Branches und Playtests, auf die dein Konto Zugriff hat)",
+      "cmdLogout": "Vom Steam-Konto abmelden und die Anmeldung widerrufen",
+      "cmdAccount": "Angemeldetes Steam-Konto anzeigen",
+      "argStoreFile": "Ohne System-Schlüsselbund (Server, Docker): Anmeldung in steam-login.json im Datenordner speichern. Nur du kannst sie lesen, sie ist aber nicht verschlüsselt.",
+      "argAccountCheck": "Bei Steam anmelden, um zu prüfen, ob die Anmeldung noch gilt",
+      "argAccountJson": "Konto als JSON ausgeben",
+      "loginIntro": "Öffne die Steam-App auf dem Handy, tippe auf das Schild (Steam Guard) und scanne diesen Code. SMD sieht dein Passwort nie.",
+      "loginRisk": "Dein Konto schaltet nur frei, was Steam ihm erlaubt: Branches, Playtests und Depots von Spielen, die du besitzt oder zu denen du eingeladen bist.",
+      "loginScanned": "Code gescannt. Bestätige die Anmeldung in der Steam-App.",
+      "loginNewCode": "Steam hat einen neuen Code ausgegeben:",
+      "loginTimeout": "Die Anmeldung wurde nicht rechtzeitig bestätigt. Starte smd login noch einmal.",
+      "loginReplacing": "Angemeldet als {name}. Eine neue Anmeldung ersetzt sie.",
+      "loginDone": "Angemeldet als {name}.",
+      "loginStoredKeychain": "Die Anmeldung ist im System-Schlüsselbund gespeichert.",
+      "loginStoredFile": "Die Anmeldung ist in {path} gespeichert. Nur du kannst sie lesen, sie ist aber nicht verschlüsselt.",
+      "loginStoredSession": "Kein System-Schlüsselbund gefunden. Die Anmeldung konnte nicht gespeichert werden und wurde wieder widerrufen. Mit smd login --store-file wird sie stattdessen in einer Datei gespeichert.",
+      "logoutDone": "Von {name} abgemeldet. Die Anmeldung wurde bei Steam widerrufen.",
+      "accountNone": "Nicht angemeldet. Mit smd login meldest du dich mit deinem Steam-Konto an.",
+      "accountSignedIn": "Angemeldet als {name} (SteamID {id}).",
+      "accountExpires": "Die Anmeldung gilt bis {date}.",
+      "accountCheckOk": "Steam akzeptiert die Anmeldung."
     }
   }
 }

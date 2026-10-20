@@ -28,6 +28,8 @@ pub mod steamless;
 pub mod steam_api_bypass;
 pub mod steam_pics;
 pub mod steam_session;
+pub mod steam_auth;
+pub mod steam_account;
 pub mod steam_manifest;
 pub mod steam_cdn;
 pub mod steam_chunks;
@@ -50,6 +52,8 @@ pub struct AppState {
     pub telemetry: Option<telemetry::Telemetry>,
     pub steam_session: Arc<steam_session::SteamSession>,
     pub shutdown_flush_done: Arc<AtomicBool>,
+    pub account: Arc<steam_account::AccountStore>,
+    pub pending_qr: Arc<Mutex<Option<steam_auth::QrChallenge>>>,
 }
 
 pub struct JobInfo {
@@ -84,6 +88,8 @@ impl AppState {
             telemetry: None,
             steam_session: Arc::new(steam_session::SteamSession::new()),
             shutdown_flush_done: Arc::new(AtomicBool::new(false)),
+            account: Arc::new(steam_account::AccountStore::new()),
+            pending_qr: Arc::new(Mutex::new(None)),
         }
     }
 

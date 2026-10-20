@@ -227,6 +227,8 @@ pub async fn start_download(
     let active_jobs = state.active_jobs.clone();
     let steam_cache = state.steam_cache.clone();
     let steam_session = state.steam_session.clone();
+    let account = state.account.clone();
+    let pending_qr = state.pending_qr.clone();
     let app_data_dir = app_data_dir.to_path_buf();
     let download_dir_for_history = download_dir.to_string_lossy().to_string();
     tokio::spawn(async move {
@@ -239,6 +241,8 @@ pub async fn start_download(
             telemetry: None,
             steam_session: steam_session.clone(),
             shutdown_flush_done: Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            account: account.clone(),
+            pending_qr: pending_qr.clone(),
         };
 
         let result = run_download_pipeline(

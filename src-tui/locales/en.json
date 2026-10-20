@@ -268,7 +268,28 @@
       "telemetryStatusOn": "Anonymous usage statistics: on",
       "telemetryStatusOff": "Anonymous usage statistics: off",
       "telemetryEnv": "Set by SMD_TELEMETRY={value}",
-      "telemetryId": "Diagnostic ID: {id}"
+      "telemetryId": "Diagnostic ID: {id}",
+      "cmdLogin": "Sign in with your Steam account by QR code (for branches and playtests your account can access)",
+      "cmdLogout": "Sign out of your Steam account and revoke the sign-in",
+      "cmdAccount": "Show the signed-in Steam account",
+      "argStoreFile": "Without a system keychain (servers, Docker): keep the sign-in in steam-login.json in the data directory. Only you can read it, but it is not encrypted.",
+      "argAccountCheck": "Log on to Steam to check that the sign-in still works",
+      "argAccountJson": "Print the account as JSON",
+      "loginIntro": "Open the Steam app on your phone, tap the shield (Steam Guard) and scan this code. SMD never sees your password.",
+      "loginRisk": "Your account only unlocks what Steam grants it: branches, playtests and depots of games you own or were invited to.",
+      "loginScanned": "Code scanned. Confirm the sign-in in the Steam app.",
+      "loginNewCode": "Steam issued a new code:",
+      "loginTimeout": "The sign-in was not confirmed in time. Run smd login again.",
+      "loginReplacing": "Signed in as {name}. A new sign-in replaces it.",
+      "loginDone": "Signed in as {name}.",
+      "loginStoredKeychain": "The sign-in is saved in the system keychain.",
+      "loginStoredFile": "The sign-in is saved in {path}. Only you can read it, but it is not encrypted.",
+      "loginStoredSession": "No system keychain found, so the sign-in could not be saved and was revoked again. Run smd login --store-file to keep it in a file instead.",
+      "logoutDone": "Signed out of {name}. The sign-in was revoked at Steam.",
+      "accountNone": "Not signed in. Run smd login to sign in with your Steam account.",
+      "accountSignedIn": "Signed in as {name} (SteamID {id}).",
+      "accountExpires": "The sign-in is valid until {date}.",
+      "accountCheckOk": "Steam accepts the sign-in."
     }
   }
 }

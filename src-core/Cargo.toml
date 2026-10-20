@@ -37,6 +37,7 @@ sha2 = "0.11"
 hex = "0.4"
 lzma-rs = "0.3"
 protobuf = "3.5"
+qrcode = { version = "0.14", default-features = false, features = ["svg"] }
 byteorder = "1"
 futures = "0.3"
 base64 = "0.23"
@@ -48,3 +49,17 @@ libc = "0.2"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 windows = { version = "0.62", features = ["Win32_Foundation", "Win32_Storage_FileSystem", "Win32_System_Com", "Win32_UI_Shell"] }
+
+[target.'cfg(target_os = "windows")'.dependencies.keyring]
+version = "3"
+features = ["windows-native"]
+
+[target.'cfg(target_os = "macos")'.dependencies.keyring]
+version = "3"
+features = ["apple-native"]
+
+# Secret Service over zbus (pure Rust), so the static musl build and the
+# Alpine Docker image keep working without libdbus.
+[target.'cfg(target_os = "linux")'.dependencies.keyring]
+version = "3"
+features = ["async-secret-service", "tokio", "crypto-rust"]

@@ -1,3 +1,4 @@
+pub mod account;
 pub mod consent;
 pub mod download;
 pub mod emulator;

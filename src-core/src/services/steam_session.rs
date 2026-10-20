@@ -15,13 +15,100 @@ const CDN_TIMEOUT: Duration = Duration::from_secs(15);
 
 pub struct SteamSession {
     inner: Mutex<Option<Connection>>,
+    /// Logged on as the user's own account. Only used for what needs the
+    /// account (branches, playtests, own depot keys); everything else stays
+    /// on the anonymous connection.
+    account: Mutex<Option<(u64, Connection)>>,
+}
+
+/// Why a logon with the stored account failed.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AccountLogonError {
+    /// Steam no longer accepts the token (expired, revoked, password
+    /// changed). The user has to sign in again.
+    Rejected(String),
+    Other(String),
+}
+
+impl std::fmt::Display for AccountLogonError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AccountLogonError::Rejected(e) => write!(f, "Steam no longer accepts this sign-in ({}). Sign in again.", e),
+            AccountLogonError::Other(e) => write!(f, "Could not log on to Steam with your account: {}", e),
+        }
+    }
+}
+
+fn classify_logon(err: &steam_vent::ConnectionError) -> AccountLogonError {
+    use steam_vent::{ConnectionError, EResult, LoginError};
+    let text = err.to_string();
+    match err {
+        ConnectionError::AccessToken(_)
+        | ConnectionError::LoginError(LoginError::InvalidCredentials)
+        | ConnectionError::LoginError(LoginError::InvalidSteamId)
+        | ConnectionError::LoginError(LoginError::UnavailableAccount) => AccountLogonError::Rejected(text),
+        ConnectionError::LoginError(LoginError::Unknown(
+            EResult::AccessDenied | EResult::Expired | EResult::Revoked | EResult::InvalidPassword,
+        )) => AccountLogonError::Rejected(text),
+        _ => AccountLogonError::Other(text),
+    }
 }
 
 impl SteamSession {
     pub fn new() -> Self {
         Self {
             inner: Mutex::new(None),
+            account: Mutex::new(None),
         }
+    }
+
+    /// A connection logged on as `account`, reused while it stays the same
+    /// account.
+    pub async fn account_connection(
+        &self,
+        account: &crate::services::steam_account::Account,
+    ) -> Result<Connection, AccountLogonError> {
+        let mut guard = self.account.lock().await;
+        if let Some((steam_id, conn)) = guard.as_ref() {
+            if *steam_id == account.steam_id {
+                return Ok(conn.clone());
+            }
+        }
+        *guard = None;
+        let mut last: Option<AccountLogonError> = None;
+        for attempt in 0..3u32 {
+            if attempt > 0 {
+                tokio::time::sleep(Duration::from_millis(1000 * u64::from(attempt))).await;
+            }
+            let server_list = match ServerList::discover().await {
+                Ok(list) => list,
+                Err(e) => {
+                    last = Some(AccountLogonError::Other(format!("Steam server discovery failed: {}", e)));
+                    continue;
+                }
+            };
+            // steam-vent sends the token as the logon access token; Steam
+            // takes the refresh token there, as the crate's own login does.
+            match Connection::access(&server_list, &account.account_name, account.refresh_token.expose()).await {
+                Ok(conn) => {
+                    *guard = Some((account.steam_id, conn.clone()));
+                    return Ok(conn);
+                }
+                Err(e) => {
+                    let err = classify_logon(&e);
+                    if matches!(err, AccountLogonError::Rejected(_)) {
+                        return Err(err);
+                    }
+                    last = Some(err);
+                }
+            }
+        }
+        Err(last.unwrap_or_else(|| AccountLogonError::Other("Steam logon failed".into())))
+    }
+
+    /// Drops the account connection (sign-out, or after it broke).
+    pub async fn reset_account(&self) {
+        *self.account.lock().await = None;
     }
 
     pub async fn connection(&self) -> Result<Connection, String> {

@@ -26,7 +26,8 @@ mod tests {
 
     #[test]
     fn removes_the_manifesthub_key_and_keeps_the_rest() {
-        let mut v = json!({ "mainAppId": "480", "manifestHubApiKey": "secret", "selectedDepots": [] });
+        let mut v =
+            json!({ "mainAppId": "480", "manifestHubApiKey": "secret", "selectedDepots": [] });
         assert!(strip(&mut v));
         assert_eq!(v, json!({ "mainAppId": "480", "selectedDepots": [] }));
         assert!(!strip(&mut v));
@@ -40,7 +41,8 @@ mod tests {
 
     #[test]
     fn a_stripped_snapshot_still_parses_as_a_download_config() {
-        let mut v = json!({ "mainAppId": "480", "manifestHubApiKey": "secret", "selectedDepots": [] });
+        let mut v =
+            json!({ "mainAppId": "480", "manifestHubApiKey": "secret", "selectedDepots": [] });
         strip(&mut v);
         let config: crate::ops::download::DownloadConfig = serde_json::from_value(v).unwrap();
         assert!(config.manifest_hub_api_key.is_none());

@@ -112,6 +112,20 @@ pub struct SearchArgs {
 }
 
 #[derive(Args, Debug)]
+pub struct LoginArgs {
+    #[arg(long, help = t("tui.cli.argStoreFile"))]
+    pub store_file: bool,
+}
+
+#[derive(Args, Debug)]
+pub struct AccountArgs {
+    #[arg(long, help = t("tui.cli.argAccountCheck"))]
+    pub check: bool,
+    #[arg(long, help = t("tui.cli.argAccountJson"))]
+    pub json: bool,
+}
+
+#[derive(Args, Debug)]
 pub struct HistoryArgs {
     #[arg(long, help = t("tui.cli.argHistoryJson"))]
     pub json: bool,
@@ -1153,5 +1167,166 @@ fn status_label(e: &HistoryEntry) -> String {
         "cancelled_resumable" if e.resume_payload.is_some() => t("history.statusResumable"),
         "cancelled" | "cancelled_resumable" => t("history.statusCancelled"),
         _ => t("history.statusFailed"),
+    }
+}
+
+
+// ---- Steam account --------------------------------------------------------
+
+fn print_qr(url: &str) {
+    use std::io::IsTerminal;
+    let tty = std::io::stdout().is_terminal();
+    // On a terminal: black on white, so it scans on light and dark themes.
+    // Without colors (logs): light blocks, which reads right on dark logs.
+    match smd_core::services::steam_auth::qr_text(url, !tty) {
+        Ok(lines) => {
+            for line in lines {
+                if tty {
+                    println!("  \x1b[30;47m{}\x1b[0m", line);
+                } else {
+                    println!("  {}", line);
+                }
+            }
+        }
+        Err(e) => errln!("{}", tf("tui.cli.error", &[("message", &e)])),
+    }
+    println!("  {}", url);
+}
+
+fn storage_line(info: &smd_core::services::steam_account::AccountInfo, dir: &std::path::Path) -> String {
+    use smd_core::services::steam_account::Storage;
+    match info.storage {
+        Storage::Keychain => t("tui.cli.loginStoredKeychain"),
+        Storage::File => tf(
+            "tui.cli.loginStoredFile",
+            &[("path", &dir.join("steam-login.json").display())],
+        ),
+        Storage::Session => t("tui.cli.loginStoredSession"),
+    }
+}
+
+pub async fn login(dir: PathBuf, args: LoginArgs) -> i32 {
+    use smd_core::ops::account::{self, QrStatus};
+    let _ = tokio::fs::create_dir_all(&dir).await;
+    let core = AppState::new();
+    if let Some(info) = account::status(&core, &dir).await {
+        println!("{}", tf("tui.cli.loginReplacing", &[("name", &info.account_name)]));
+    }
+    println!("{}", t("tui.cli.loginIntro"));
+    println!("{}", t("tui.cli.loginRisk"));
+    println!();
+    let mut restarts = 0;
+    let qr = match account::start_qr(&core).await {
+        Ok(q) => q,
+        Err(e) => {
+            errln!("{}", tf("tui.cli.error", &[("message", &e)]));
+            return 1;
+        }
+    };
+    print_qr(&qr.challenge_url);
+    let mut interval = qr.interval_secs;
+    let mut told_scanned = false;
+    let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(600);
+    loop {
+        tokio::time::sleep(std::time::Duration::from_secs_f32(interval)).await;
+        if tokio::time::Instant::now() > deadline {
+            account::cancel_qr(&core).await;
+            errln!("{}", tf("tui.cli.error", &[("message", &t("tui.cli.loginTimeout"))]));
+            return 1;
+        }
+        match account::poll_qr(&core, &dir, args.store_file).await {
+            Ok(QrStatus::Waiting { scanned, qr }) => {
+                if scanned && !told_scanned {
+                    told_scanned = true;
+                    println!("{}", t("tui.cli.loginScanned"));
+                }
+                if let Some(q) = qr {
+                    println!("{}", t("tui.cli.loginNewCode"));
+                    print_qr(&q.challenge_url);
+                    interval = q.interval_secs;
+                }
+            }
+            Ok(QrStatus::Done { account: info }) => {
+                println!("{}", tf("tui.cli.loginDone", &[("name", &info.account_name)]));
+                println!("{}", storage_line(&info, &dir));
+                if info.storage == smd_core::services::steam_account::Storage::Session {
+                    // A CLI run ends right here, so an unsaved sign-in would
+                    // only linger at Steam. Revoke it.
+                    account::logout(&core, &dir).await;
+                    return 1;
+                }
+                return 0;
+            }
+            Ok(QrStatus::Expired) if restarts < 3 => {
+                restarts += 1;
+                match account::start_qr(&core).await {
+                    Ok(q) => {
+                        println!("{}", t("tui.cli.loginNewCode"));
+                        print_qr(&q.challenge_url);
+                        interval = q.interval_secs;
+                        told_scanned = false;
+                    }
+                    Err(e) => {
+                        errln!("{}", tf("tui.cli.error", &[("message", &e)]));
+                        return 1;
+                    }
+                }
+            }
+            Ok(QrStatus::Expired) | Ok(QrStatus::Idle) => {
+                errln!("{}", tf("tui.cli.error", &[("message", &t("tui.cli.loginTimeout"))]));
+                return 1;
+            }
+            Err(e) => {
+                account::cancel_qr(&core).await;
+                errln!("{}", tf("tui.cli.error", &[("message", &e)]));
+                return 1;
+            }
+        }
+    }
+}
+
+pub async fn logout(dir: PathBuf) -> i32 {
+    let core = AppState::new();
+    match smd_core::ops::account::status(&core, &dir).await {
+        Some(info) => {
+            smd_core::ops::account::logout(&core, &dir).await;
+            println!("{}", tf("tui.cli.logoutDone", &[("name", &info.account_name)]));
+        }
+        None => println!("{}", t("tui.cli.accountNone")),
+    }
+    0
+}
+
+pub async fn account(dir: PathBuf, args: AccountArgs) -> i32 {
+    let core = AppState::new();
+    let result = if args.check {
+        smd_core::ops::account::check(&core, &dir).await
+    } else {
+        Ok(smd_core::ops::account::status(&core, &dir).await)
+    };
+    match result {
+        Ok(info) if args.json => {
+            println!("{}", serde_json::json!({ "signedIn": info.is_some(), "account": info }));
+            0
+        }
+        Ok(Some(info)) => {
+            println!("{}", tf("tui.cli.accountSignedIn", &[("name", &info.account_name), ("id", &info.steam_id)]));
+            println!("{}", storage_line(&info, &dir));
+            if let Some(exp) = info.expires_at.and_then(|e| chrono::DateTime::from_timestamp(e, 0)) {
+                println!("{}", tf("tui.cli.accountExpires", &[("date", &exp.format("%Y-%m-%d"))]));
+            }
+            if args.check {
+                println!("{}", t("tui.cli.accountCheckOk"));
+            }
+            0
+        }
+        Ok(None) => {
+            println!("{}", t("tui.cli.accountNone"));
+            0
+        }
+        Err(e) => {
+            errln!("{}", tf("tui.cli.error", &[("message", &e)]));
+            1
+        }
     }
 }
