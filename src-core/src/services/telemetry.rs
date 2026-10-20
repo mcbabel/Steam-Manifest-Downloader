@@ -457,6 +457,9 @@ const ALLOWED_EVENT_KINDS: &[&str] = &[
     "advice_action",
     "whats_new_shown",
     "feedback_prompt",
+    "account_login",
+    "account_logout",
+    "account_depots",
 ];
 
 pub fn env_consent() -> Option<bool> {

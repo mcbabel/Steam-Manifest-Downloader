@@ -118,6 +118,7 @@ fn main() {
                             "like_steam": a.like_steam, "all_depots": a.all_depots, "dlc": a.dlc,
                             "shutdown": a.shutdown, "list": a.list, "speed_limit": a.speed_limit.is_some(),
                             "depots_given": !a.depots.is_empty(), "out": a.out.is_some(),
+                            "account": a.account || a.branch.is_some(), "branch": a.branch.is_some(),
                         }),
                     ),
                     Command::Search(a) => ("search", serde_json::json!({ "json": a.json, "manifests": a.manifests.is_some() })),

@@ -13,6 +13,28 @@ pub struct DepotInstall {
     pub files: Vec<String>,
 }
 
+/// Remembers which Steam branch an install came from, so the update check
+/// does not compare a beta build against the public one. No file means the
+/// public branch.
+pub fn save_branch(work_dir: &Path, branch: Option<&str>) {
+    let path = work_dir.join(".smd-branch.json");
+    match branch.filter(|b| !crate::services::steam_branches::is_public(b)) {
+        Some(b) => {
+            let _ = std::fs::write(&path, serde_json::json!({ "branch": b }).to_string());
+        }
+        None => {
+            let _ = std::fs::remove_file(&path);
+        }
+    }
+}
+
+/// The non-public branch an install came from, if any.
+pub fn branch(work_dir: &Path) -> Option<String> {
+    let bytes = std::fs::read(work_dir.join(".smd-branch.json")).ok()?;
+    let v: serde_json::Value = serde_json::from_slice(&bytes).ok()?;
+    v.get("branch")?.as_str().map(str::to_string)
+}
+
 pub fn record_path(work_dir: &Path, depot_id: &str) -> PathBuf {
     work_dir.join(format!(".smd-depot-{}.json", depot_id))
 }
@@ -207,6 +229,22 @@ pub fn lower_set(files: &[String]) -> HashSet<String> {
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn remembers_a_non_public_branch_and_forgets_public() {
+        let dir = std::env::temp_dir().join(format!("smd-branch-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        assert_eq!(super::branch(&dir), None);
+        super::save_branch(&dir, Some("beta"));
+        assert_eq!(super::branch(&dir).as_deref(), Some("beta"));
+        super::save_branch(&dir, Some("public"));
+        assert_eq!(super::branch(&dir), None);
+        super::save_branch(&dir, Some("beta"));
+        super::save_branch(&dir, None);
+        assert_eq!(super::branch(&dir), None);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
     use super::*;
 
     #[test]

@@ -139,6 +139,7 @@
           <ul class="toc__list" aria-labelledby="toc-4">
             <li><a href="#settings">Settings</a></li>
             <li class="sub"><a href="#settings-advanced">Settings in detail</a></li>
+            <li class="sub"><a href="#steam-account">Steam account</a></li>
             <li class="sub"><a href="#download-options">Download page options</a></li>
             <li><a href="#manifest-sources">Manifest sources</a></li>
           </ul>
@@ -292,6 +293,7 @@
                 <ul class="docnav__subs">
                   <li><a href="#settings-top">Top level settings</a></li>
                   <li><a href="#settings-advanced">Settings in detail</a></li>
+                  <li><a href="#steam-account">Steam account and branches</a></li>
                   <li><a href="#download-options">Download page options</a></li>
                   <li><a href="#settings-emulator">Emulator settings persistence</a></li>
                 </ul>
@@ -573,7 +575,7 @@ paru -S steam-manifest-downloader</code></pre>
               <h3 id="step-download">Step 3: download <a class="alink" href="#step-download" aria-label="Permalink to Step 3: download">#</a></h3>
               <p>Click the <strong>Download</strong> button to begin. Behind the scenes the application performs several operations:</p>
               <ol>
-                <li><strong>Steam session.</strong> Signs in to Steam anonymously and pulls app and depot metadata via PICS</li>
+                <li><strong>Steam session.</strong> Signs in to Steam anonymously and pulls app and depot metadata via PICS. A download from another branch or with your <a href="#steam-account">Steam account</a> logs on as your account instead</li>
                 <li><strong>Manifest fetch.</strong> Requests each depot's manifest from Steam directly. If that fails, SMD falls back to your configured depot sources or Hubcap, then to the ManifestHub API if you have a key set</li>
                 <li><strong>Manifest decode.</strong> Unwraps the ZIP container, decrypts with AES-256 and parses the protobuf payload, encrypted filenames included</li>
                 <li><strong>Depot keys generation.</strong> Creates a <code>steam.keys</code> file containing all known depot decryption keys</li>
@@ -866,7 +868,7 @@ setManifestid(1392863, "4398981003384795747", 13789896785)</code></pre>
                 <li><strong>Downloads</strong>: the <a href="#download-engine">download engine</a>, the <a href="#speed-limit">speed limit</a>, <a href="#cancel-behaviour">keeping files when cancelling</a>, and under Fine tuning the retries, the parallel chunks and the <a href="#depotdownloader-arguments-depotdownloadermod-path-only">DepotDownloaderMod arguments</a></li>
                 <li><strong>Depot selection</strong>: the switch for <a href="#like-steam">Like Steam mode</a> with its options for starting right away, DLC, platform and game language. Off by default</li>
                 <li><strong>Sources &amp; network</strong>: the <a href="#settings-manifest-sources">depot sources</a>, the <a href="#api-keys-optional">Hubcap and Ryuu keys</a> and the <a href="#network">proxy</a> with its Test button</li>
-                <li><strong>Steam</strong>: the Steam folder. Empty means SMD finds Steam itself. Set it when Steam is installed somewhere else, see <a href="#linux-add-to-steam-library">Step 4</a></li>
+                <li><strong>Steam</strong>: the Steam folder. Empty means SMD finds Steam itself. Set it when Steam is installed somewhere else, see <a href="#linux-add-to-steam-library">Step 4</a>. Below it the optional <a href="#steam-account">Steam account</a> sign-in</li>
                 <li><strong>Privacy &amp; diagnostics</strong>: <a href="#anonymous-telemetry-opt-in">anonymous usage statistics</a>, the build details, <strong>Copy Diagnostic Info</strong> and <strong>Report a bug</strong></li>
               </ul>
 
@@ -909,6 +911,30 @@ setManifestid(1392863, "4398981003384795747", 13789896785)</code></pre>
               <p>SMD can send anonymous usage counters, meaning which features get used, to the maintainer's server to help prioritise development. Events are end to end encrypted with an embedded public key, so only the maintainer's server can decrypt them. It is disabled by default, the choice is asked on first launch, and it can be changed here anytime. When it is on, crashes, the names of error messages you saw and downloads that stopped because the app closed are reported too, so bugs get fixed even when nobody opens an issue. Never sent: game IDs, depot IDs, file contents, error texts, paths, IP addresses, account info. The full list is in <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/blob/main/PRIVACY.md">PRIVACY.md</a>.</p>
               <p><strong>Report a bug</strong>, the bug icon in the header or the button here, opens a short form for a summary, what happened, the steps and what you expected. Diagnostic info is attached by default and the last lines of the download log on request. GitHub then opens in your browser with a new issue filled in, so you can check and edit everything before you send it. After a failed download, <strong>Report this error</strong> next to the result fills in the error message for you.</p>
               <p><strong>Copy Diagnostic Info</strong> copies the version, platform, install type and engine for bug reports. With telemetry on it also contains a short diagnostic ID, which lets the maintainer find the errors your app reported.</p>
+
+              <h3 id="steam-account">Steam account and branches <a class="alink" href="#steam-account" aria-label="Permalink to Steam account and branches">#</a></h3>
+              <p><strong>Without an account SMD reads the public branch only.</strong> It signs in to Steam anonymously, and depot content is decrypted with the keys from your depot sources. Signing in with your own Steam account is optional and unlocks what your account is entitled to:</p>
+              <ul>
+                <li>beta and dev branches of games you own, and password branches when you enter the branch password, which Steam checks, like DepotDownloader's <code>-branch</code> and <code>-branchpassword</code></li>
+                <li>playtests your account was invited to</li>
+                <li>games you own that are in no depot source, with the depot keys Steam hands out to your account</li>
+              </ul>
+              <p>Your account only unlocks what Steam grants it. SMD does not guess passwords, use shared tokens or anything else to reach branches your account has no access to.</p>
+              <h4 id="steam-sign-in">Signing in <a class="alink" href="#steam-sign-in" aria-label="Permalink to Signing in">#</a></h4>
+              <p>Under <strong>Settings, Steam</strong> press <strong>Sign in with QR code</strong>, open the Steam app on your phone, tap the Steam Guard shield and scan the code, then confirm there. Sign-in works by QR code only, so SMD never sees your Steam password. In the terminal interface the same button is on the <strong>Account</strong> tab of the settings, and <code>smd login</code> prints the code in the terminal.</p>
+              <ul class="rows">
+                <li><span class="rows__k">Keychain</span><span class="rows__v">The sign-in is kept in the system keychain: Windows Credential Manager, the macOS Keychain or the Secret Service on Linux</span></li>
+                <li><span class="rows__k">Session only</span><span class="rows__v">Without a keychain the sign-in lasts until you close the app</span></li>
+                <li><span class="rows__k">File</span><span class="rows__v">On servers and in Docker, <code>smd login --store-file</code> keeps it in <code>steam-login.json</code> in the data directory. Only you can read it (mode 600), but it is <strong>not encrypted</strong></span></li>
+              </ul>
+              <p>The sign-in token never goes into the settings file, the history, the logs, bug reports or the usage statistics, and never reaches the app's web view. <strong>Sign out</strong> revokes the sign-in at Steam and deletes it locally.</p>
+              <h4 id="steam-branch">Choosing a branch <a class="alink" href="#steam-branch" aria-label="Permalink to Choosing a branch">#</a></h4>
+              <p>In step 2, below the depots, <strong>Steam branch</strong> lists the branches your account can see, with their build and when they were last updated. Branches marked <strong>password</strong> ask for the branch password, which is only sent to Steam and never saved. That is also why a download from a password branch cannot go into the queue. <strong>Download with my Steam account</strong> loads the depots of an own game or a playtest straight from your account, and the search has <strong>Load with my Steam account</strong> for App IDs no depot source knows.</p>
+              <p>Downloads with the account always run on the built-in downloader, since DepotDownloaderMod would keep its own, unencrypted login. A game downloaded from another branch is skipped by the update check, because the check compares with the public build.</p>
+              <div class="note">
+                <p class="note__tag">At your own risk</p>
+                <p>SMD uses the same Steam interfaces as DepotDownloader, but it also works with third-party depot keys and the gbe_fork emulator, and Steam may treat accounts as it sees fit. Signing in is optional.</p>
+              </div>
 
               <h3 id="download-options">Download page options <a class="alink" href="#download-options" aria-label="Permalink to Download page options">#</a></h3>
               <p>These options appear on the download page, step 3, just above the download button. The switch to shut down the PC afterwards sits on the download screen itself, see <a href="#shutdown-after-download">Shut down after the download</a>.</p>
@@ -1041,7 +1067,14 @@ smd download 220 --list             <span class="cm"># show what would be downlo
 smd download 220 --depots 221,222 -o /data/games
 smd download game.lua --json        <span class="cm"># progress as JSON lines</span>
 smd history
-smd telemetry on                    <span class="cm"># opt in to anonymous usage statistics, also off and status</span></code></pre>
+smd telemetry on                    <span class="cm"># opt in to anonymous usage statistics, also off and status</span>
+
+smd login                           <span class="cm"># sign in with your Steam account, QR code in the terminal</span>
+smd branches 220                    <span class="cm"># branches your account can see</span>
+smd download 220 --branch beta      <span class="cm"># a branch of a game you own</span>
+smd download 220 --account          <span class="cm"># an own game or playtest straight from your account</span>
+smd account --check                 <span class="cm"># who is signed in, and does Steam still accept it</span>
+smd logout                          <span class="cm"># sign out and revoke the sign-in</span></code></pre>
               </div>
               <p>Options of <code>smd download</code>, with the matching environment variable where there is one:</p>
               <ul class="rows">
@@ -1057,6 +1090,9 @@ smd telemetry on                    <span class="cm"># opt in to anonymous usage
                 <li><span class="rows__k rows__k--literal">--manifest</span><span class="rows__v"><code>DEPOT=ID</code> pins a depot to a specific manifest, repeatable</span></li>
                 <li><span class="rows__k rows__k--literal">--update</span><span class="rows__v"><code>&lt;GAME_DIR&gt;</code> updates an existing download in place, see <a href="#step-update">Update a downloaded game</a></span></li>
                 <li><span class="rows__k rows__k--literal">--repair</span><span class="rows__v">With <code>--update</code>: checks every file and repairs what is damaged or missing, without updating</span></li>
+                <li><span class="rows__k rows__k--literal">--branch</span><span class="rows__v">Downloads this Steam branch instead of <code>public</code>. Needs <code>smd login</code> with an account that has access, see <a href="#steam-account">Steam account and branches</a></span></li>
+                <li><span class="rows__k rows__k--literal">--branch-password</span><span class="rows__v">Password of a password branch, also <code>SMD_BRANCH_PASSWORD</code>. Only sent to Steam, never stored</span></li>
+                <li><span class="rows__k rows__k--literal">--account</span><span class="rows__v">Uses your signed-in account for this download, for own games and playtests. With an App ID the depots come from your account instead of the depot sources</span></li>
                 <li><span class="rows__k rows__k--literal">--list</span><span class="rows__v">Shows the depots that would be downloaded and stops</span></li>
                 <li><span class="rows__k rows__k--literal">--ignore-space</span><span class="rows__v">Starts even when the download does not fit on the disk. Without it, <code>smd download</code> stops with an error in that case</span></li>
                 <li><span class="rows__k rows__k--literal">--speed-limit</span><span class="rows__v">Caps the speed, for example <code>10MB/s</code> or <code>100Mbit/s</code>, also <code>SMD_SPEED_LIMIT</code>. <code>0</code> means unlimited, and the setting is the default</span></li>

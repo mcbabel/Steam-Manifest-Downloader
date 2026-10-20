@@ -679,6 +679,9 @@ function downloadContext(downloadConfig, depots, fromQueue) {
     dlc: typeof downloadConfig.includeDlc === 'boolean' ? downloadConfig.includeDlc : null,
     keyless: countBucket(depots.filter(d => !d.depotKey && !keys[String(d.depotId)]).length),
     custom_manifest: depots.some(d => !!d.customManifestId),
+    account: !!downloadConfig.useAccount,
+    // Only the kind of branch, never its name.
+    branch: !downloadConfig.branch ? 'public' : downloadConfig.branchPassword ? 'password' : 'other',
   };
 }
 

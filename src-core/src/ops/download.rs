@@ -76,6 +76,20 @@ pub struct DownloadConfig {
     pub use_account: bool,
 }
 
+/// Telemetry label for the branch: never the branch name itself.
+pub fn branch_kind(config: &DownloadConfig) -> &'static str {
+    match config.branch.as_deref() {
+        Some(b) if !crate::services::steam_branches::is_public(b) => {
+            if config.branch_password.is_some() {
+                "password"
+            } else {
+                "other"
+            }
+        }
+        _ => "public",
+    }
+}
+
 impl DownloadConfig {
     pub fn uses_account(&self) -> bool {
         self.use_account
@@ -376,10 +390,14 @@ async fn run_download_pipeline(
     app_data_dir: &Path,
 ) -> Result<(), String> {
     if !config.uses_account() {
-        return run_download_pipeline_inner(
+        let r = run_download_pipeline_inner(
             sink, state, job_id, config, base_dir, folder_name, game_name, header_image, app_data_dir,
         )
         .await;
+        if r.is_ok() {
+            install_state::save_branch(&base_dir.join(folder_name), None);
+        }
+        return r;
     }
     let mut config = config.clone();
     let session = match prepare_account_download(sink, state, app_data_dir, job_id, &mut config).await {
@@ -401,7 +419,7 @@ async fn run_download_pipeline(
         account: state.account.clone(),
         pending_qr: state.pending_qr.clone(),
     };
-    run_download_pipeline_inner(
+    let r = run_download_pipeline_inner(
         sink,
         &account_state,
         job_id,
@@ -412,7 +430,11 @@ async fn run_download_pipeline(
         header_image,
         app_data_dir,
     )
-    .await
+    .await;
+    if r.is_ok() {
+        install_state::save_branch(&base_dir.join(folder_name), config.branch.as_deref());
+    }
+    r
 }
 
 /// For a download with the user's account: logs on as the account, takes
@@ -539,6 +561,8 @@ async fn run_download_pipeline_inner(
             "mode": mode,
             "resumed": config.resume_mode.is_some(),
             "merged": merged,
+            "account": config.uses_account(),
+            "branch": branch_kind(config),
             "step": "manifests",
         }),
     );

@@ -112,6 +112,12 @@ When telemetry is enabled, the app sends small events describing:
   - `cli_command` — which command line command ran (`download`, `search`,
     `history`) and which of its options were used, as true or false
   - `heartbeat` and `session_end` — see *Time in the app* below
+  - `account_login` — a Steam sign-in was started, finished, cancelled, expired
+    or failed (`step`), and where the finished sign-in is kept (`keychain`,
+    `file` or `session`). Never the account name, the SteamID or the token
+  - `account_logout` — you signed out of your Steam account
+  - `account_depots` — depots were loaded from your own account, with their
+    count
 
 ### Settings snapshot
 
@@ -140,6 +146,8 @@ label like `german` or `linux`).
 | `dlc` | whether DLC was included |
 | `keyless` | how many selected depots had no decryption key, as a range |
 | `custom_manifest` | whether a manifest ID was entered by hand |
+| `account` | whether the download used your own Steam account |
+| `branch` | `public`, `other` or `password`: the kind of branch, never its name |
 | `err_key` | for failures, the name of the error text that was shown, like `backend.noSources`. It names the message, it never contains it |
 
 ### Download failure diagnosis
@@ -236,6 +244,16 @@ inventory and the Steam Input layout, `api.steampowered.com`,
 `steamcommunity.com` for leaderboards and the Steam CDNs for icons. With media
 on, also `store.steampowered.com` and the Steam image and video CDNs.
 
+## Steam account
+
+If you sign in with your Steam account, the sign-in token is kept in the
+system keychain (or, only if you ask for it with `smd login --store-file`, in a
+file in the data directory that only you can read). It is only sent to Steam:
+the Steam network and `api.steampowered.com` for the sign-in itself. Your
+account name, SteamID and token are never sent to the maintainer, never
+written into the settings, the history or a log, and signing out revokes the
+sign-in at Steam. Branch passwords are only sent to Steam and never stored.
+
 ## What is NEVER collected
 
 - Steam App IDs, depot IDs, manifest IDs
@@ -243,6 +261,8 @@ on, also `store.steampowered.com` and the Steam image and video CDNs.
 - Game names, cover art, descriptions
 - File paths, directory contents, download targets
 - Your GitHub / Steam credentials, API keys, or any tokens
+- Your Steam account name, SteamID, sign-in token, branch names or branch
+  passwords
 - The text of error messages, or anything you typed into a field
 - Your IP address (stripped at the reverse proxy before anything reaches
   the server log)

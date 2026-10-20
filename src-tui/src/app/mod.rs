@@ -200,7 +200,7 @@ impl App {
     }
 
     fn with_download_context(&self, kind: &str, props: Option<serde_json::Value>) -> Option<serde_json::Value> {
-        const KEYS: &[&str] = &["mode", "selection", "source", "queue", "dlc", "custom_manifest", "resume_mode", "source_count", "had_mh_key", "engine"];
+        const KEYS: &[&str] = &["mode", "selection", "source", "queue", "dlc", "custom_manifest", "resume_mode", "source_count", "had_mh_key", "engine", "account", "branch"];
         let Ok(mut ctx) = self.dl_context.lock() else {
             return props;
         };

@@ -225,6 +225,8 @@ pub async fn check_updates(
         .entries
         .into_iter()
         .filter(|e| e.status == "complete" && !e.download_dir.is_empty())
+        // Installs from another branch cannot be compared with the public build.
+        .filter(|e| crate::services::install_state::branch(Path::new(&e.download_dir)).is_none())
         .filter_map(|e| {
             let installed = crate::services::install_state::installed(Path::new(&e.download_dir));
             (!installed.is_empty()).then_some((e, installed))

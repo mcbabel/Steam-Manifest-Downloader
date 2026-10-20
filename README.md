@@ -72,17 +72,43 @@ Upload `.lua` / `.st` files or search by App ID across configurable sources (Git
 
 ### 📌 Scope
 
-**Public branch only.** SMD reads the `public` branch from Steam PICS over an
-anonymous connection. Private and password-protected beta branches are out of
-scope, and the encrypted manifest IDs they use are never decrypted.
+**Without an account: the public branch only.** By default SMD reads the
+`public` branch from Steam PICS over an anonymous connection. Depot **content**
+is a separate matter: decryption keys come from your configured depot sources,
+and the depots you select are decrypted with them.
 
-Depot **content** is a separate matter: decryption keys come from your
-configured depot sources, and the depots you select are decrypted with them.
+**With your own Steam account: what your account is entitled to.** You can sign
+in with your Steam account (Settings → Steam, or `smd login`). Then SMD also
+downloads, through your account:
 
-Looking for builds from a beta or dev branch of a game you own?
-[DepotDownloader](https://github.com/SteamRE/DepotDownloader) covers that with
-`-branch` / `-betapassword`. It signs in as your account, so ownership grants
-the access.
+- beta and dev branches of games you own, and password branches when you
+  enter the branch password (Steam checks it, like DepotDownloader's
+  `-branch` / `-branchpassword`),
+- playtests your account was invited to,
+- games you own that are in no depot source, with the depot keys Steam hands
+  out to your account.
+
+Your account only unlocks what Steam grants it. SMD does not guess passwords,
+use shared tokens or anything else to reach branches your account has no
+access to.
+
+#### 🔐 Steam sign-in
+
+- **QR code only.** You scan the code with the Steam app on your phone and
+  confirm there. SMD never sees your Steam password.
+- **Where the sign-in is kept:** the system keychain (Windows Credential
+  Manager, macOS Keychain, the Secret Service on Linux). Without a keychain the
+  sign-in lasts until you close the app. On servers and in Docker,
+  `smd login --store-file` keeps it in `steam-login.json` in the data
+  directory: readable only by you (mode 600), but **not encrypted**.
+- The sign-in token never goes into the settings file, the history, the logs,
+  bug reports or the usage statistics, and never reaches the app's web view.
+- **Signing out** revokes the sign-in at Steam and deletes it locally.
+- Downloads with the account always run on the built-in downloader.
+  DepotDownloaderMod would keep its own, unencrypted login.
+- Signing in to a tool like this is at your own risk. SMD uses the same Steam
+  interfaces as DepotDownloader, but it also works with third-party depot keys
+  and the gbe_fork emulator, and Steam may treat accounts as it sees fit.
 
 ---
 
@@ -260,6 +286,13 @@ smd download 220 --depots 221,222 -o /data/games
 smd download game.lua --json        # progress as JSON lines
 smd history
 smd telemetry on                    # opt in to anonymous usage statistics (off, status)
+
+smd login                           # sign in with your Steam account (QR code in the terminal)
+smd branches 220                    # branches your account can see
+smd download 220 --branch beta      # a branch of a game you own
+smd download 220 --account          # an own game or playtest straight from your account
+smd account --check                 # who is signed in, and does Steam still accept it
+smd logout                          # sign out and revoke the sign-in
 ```
 
 | Option / variable | Meaning |
@@ -275,6 +308,9 @@ smd telemetry on                    # opt in to anonymous usage statistics (off,
 | `--manifest DEPOT=ID` | Pin a depot to a specific manifest (repeatable) |
 | `--update <GAME_DIR>` | Update an existing download in place: only changed files are downloaded, files removed from the game are deleted |
 | `--repair` | With `--update`: check every file and repair what is damaged or missing, without updating |
+| `--branch NAME` | Download this Steam branch instead of `public`. Needs `smd login` with an account that has access |
+| `--branch-password` / `SMD_BRANCH_PASSWORD` | Password of a password branch. Only sent to Steam, never stored |
+| `--account` | Use your signed-in account for this download (own games, playtests). With an App ID the depots come from your account instead of the depot sources |
 | `--list` | Show the depots that would be downloaded and stop |
 | `--ignore-space` | Start even when the download does not fit on the disk |
 | `--shutdown` | Shut down the computer when the download has finished (60 s countdown, Ctrl+C aborts) |

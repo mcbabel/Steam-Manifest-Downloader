@@ -349,6 +349,8 @@ impl App {
                 "queue": false,
                 "dlc": config.include_dlc,
                 "custom_manifest": config.depots.iter().any(|d| d.custom_manifest_id.is_some()),
+                "account": config.uses_account(),
+                "branch": smd_core::ops::download::branch_kind(&config),
             })),
         );
         self.begin_download(config, ids, native);
