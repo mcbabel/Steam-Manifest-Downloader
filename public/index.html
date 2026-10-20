@@ -1564,19 +1564,6 @@
 
           <section class="settings__panel" data-section="steam" role="tabpanel">
             <h4 class="settings__panel-title" data-i18n="settings.sectionSteam">Steam</h4>
-            <div class="settings-group" id="account-group">
-              <div class="settings-row">
-                <span class="settings-row__text">
-                  <span class="settings-row__label" data-i18n="account.title">Steam account</span>
-                  <span class="settings-row__hint account-status" id="account-status" data-i18n="account.signedOut">Not signed in.</span>
-                  <span class="settings-row__hint account-note" data-i18n="account.note">Optional. You sign in with the Steam app on your phone, so SMD never sees your password.</span>
-                </span>
-                <span class="account-actions">
-                  <button type="button" id="btn-account-login" class="btn btn--small btn--primary" data-i18n="account.signIn">Sign in with QR code</button>
-                  <button type="button" id="btn-account-logout" class="btn btn--small btn--outline hidden" data-i18n="account.signOut">Sign out</button>
-                </span>
-              </div>
-            </div>
             <div class="settings-group">
               <div class="settings-row settings-row--stack">
                 <label class="settings-row__text" for="steam-webapi-key-input">
@@ -1595,6 +1582,20 @@
                   <button type="button" id="btn-steam-path-browse" class="btn btn--small btn--outline" data-i18n="shortcut.browse">Browse</button>
                 </div>
                 <p id="steam-path-status" class="proxy-status hidden" role="status"></p>
+              </div>
+            </div>
+            <h5 class="settings__group-title" data-i18n="account.title">Steam account</h5>
+            <div class="settings-group" id="account-group">
+              <div class="settings-row">
+                <span class="settings-row__text">
+                  <span class="settings-row__label" id="account-status" data-i18n="account.signedOut">Not signed in</span>
+                  <span class="settings-row__hint" id="account-detail" data-i18n="account.signedOutHint">Optional. Only needed for branches, playtests and depots of games you own or were invited to.</span>
+                  <span class="settings-row__hint" data-i18n="account.note">You sign in with the Steam app on your phone, so SMD never sees your password. Signing out also revokes the sign-in at Steam.</span>
+                </span>
+                <span class="account-actions">
+                  <button type="button" id="btn-account-login" class="btn btn--small btn--primary" data-i18n="account.signIn">Sign in with QR code</button>
+                  <button type="button" id="btn-account-logout" class="btn btn--small btn--outline hidden" data-i18n="account.signOut">Sign out</button>
+                </span>
               </div>
             </div>
           </section>

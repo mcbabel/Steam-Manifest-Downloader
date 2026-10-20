@@ -5632,15 +5632,6 @@ textarea.bug-report__input {
   flex-shrink: 0;
 }
 
-.account-status {
-  color: var(--text-primary);
-}
-
-.account-note {
-  display: block;
-  margin-top: 6px;
-}
-
 .account-modal {
   max-width: 420px;
   text-align: center;

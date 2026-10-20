@@ -490,14 +490,17 @@ function filterSettings(query) {
     let panelHit = false;
     panel.querySelectorAll('.settings-group').forEach(group => {
       let groupHit = false;
+      const prev = group.previousElementSibling;
+      const title = prev && prev.classList.contains('settings__group-title') ? prev : null;
+      // A match on the group title keeps all of its rows.
+      const titleHit = !!q && !!title && title.textContent.toLowerCase().includes(q);
       group.querySelectorAll('.settings-row').forEach(row => {
-        const hit = !q || row.textContent.toLowerCase().includes(q);
+        const hit = !q || titleHit || row.textContent.toLowerCase().includes(q);
         row.classList.toggle('is-filtered', !hit);
         if (hit) groupHit = true;
       });
       group.classList.toggle('is-filtered', !groupHit);
-      const title = group.previousElementSibling;
-      if (title && title.classList.contains('settings__group-title')) title.classList.toggle('is-filtered', !groupHit);
+      if (title) title.classList.toggle('is-filtered', !groupHit);
       if (groupHit) panelHit = true;
     });
     panel.classList.toggle('is-match', !!q && panelHit);

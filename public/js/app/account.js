@@ -34,16 +34,19 @@ async function loadAccountStatus() {
 
 function renderAccountSettings() {
   const status = accountEl('account-status');
+  const detail = accountEl('account-detail');
   const login = accountEl('btn-account-login');
   const logout = accountEl('btn-account-logout');
-  if (!status || !login || !logout) return;
+  if (!status || !detail || !login || !logout) return;
   const info = accountUi.info;
   if (info) {
-    status.textContent = `${window.i18n.t('account.signedInAs', { name: info.accountName })} ${accountStorageText(info)}`;
+    status.textContent = window.i18n.t('account.signedInAs', { name: info.accountName });
+    detail.textContent = accountStorageText(info);
     login.classList.add('hidden');
     logout.classList.remove('hidden');
   } else {
     status.textContent = window.i18n.t('account.signedOut');
+    detail.textContent = window.i18n.t('account.signedOutHint');
     login.classList.remove('hidden');
     logout.classList.add('hidden');
   }
