@@ -486,6 +486,47 @@ impl App {
 
     /// Branch row, password and the account toggle in the selection panel.
     pub(super) fn render_branch_options(&mut self, sv: &mut ScrollView, ctx: &mut Ctx, w: u16) {
+        let others = self
+            .acct
+            .branches
+            .as_ref()
+            .map_or(0, |l| l.branches.len().saturating_sub(1));
+        if self.acct.info.is_none() {
+            if others > 0 {
+                let text = tf("branch.moreBranches", &[("count", &others)]);
+                let h = widgets::wrap_height(&text, w);
+                let r = sv.next(h);
+                hint(&mut sv.buf, r, &text);
+                sv.gap(1);
+            }
+            return;
+        }
+        if others > 0 || self.acct.non_public() {
+            self.render_branch_picker(sv, ctx);
+        }
+        self.render_branch_password(sv, ctx);
+        let r = sv.next(1);
+        let locked = self.acct.non_public() || self.acct.from_account;
+        widgets::checkbox(
+            &mut sv.buf,
+            ctx,
+            r,
+            self.acct.uses_account(),
+            &t("branch.useAccount"),
+            Fid::new("branch.useAccount"),
+            Action::ToggleUseAccount,
+            !locked,
+        );
+        if self.acct.non_public() {
+            let text = t("branch.hintBranch");
+            let h = widgets::wrap_height(&text, w);
+            let r = sv.next(h);
+            hint(&mut sv.buf, r, &text);
+        }
+        sv.gap(1);
+    }
+
+    fn render_branch_picker(&mut self, sv: &mut ScrollView, ctx: &mut Ctx) {
         let r = sv.next(1);
         let label = format!("{}: ", t("branch.label"));
         widgets::text(&mut sv.buf, r, &label, theme::text());
@@ -530,7 +571,9 @@ impl App {
                 .enabled(many),
             ) + 1;
         }
+    }
 
+    fn render_branch_password(&mut self, sv: &mut ScrollView, ctx: &mut Ctx) {
         if self.acct.needs_password() {
             let mask_label = if self.acct.branch_password.masked {
                 t("tui.show")
@@ -559,38 +602,5 @@ impl App {
                 &mask,
             );
         }
-
-        if self.acct.info.is_some() {
-            let r = sv.next(1);
-            let locked = self.acct.non_public() || self.acct.from_account;
-            widgets::checkbox(
-                &mut sv.buf,
-                ctx,
-                r,
-                self.acct.uses_account(),
-                &t("branch.useAccount"),
-                Fid::new("branch.useAccount"),
-                Action::ToggleUseAccount,
-                !locked,
-            );
-        }
-        let key = if self.acct.info.is_none() {
-            "branch.hintSignedOut"
-        } else if self.acct.non_public() {
-            "branch.hintBranch"
-        } else {
-            "branch.hintSignedIn"
-        };
-        let name = self
-            .acct
-            .info
-            .as_ref()
-            .map(|i| i.account_name.clone())
-            .unwrap_or_default();
-        let text = tf(key, &[("name", &name)]);
-        let h = widgets::wrap_height(&text, w);
-        let r = sv.next(h);
-        hint(&mut sv.buf, r, &text);
-        sv.gap(1);
     }
 }

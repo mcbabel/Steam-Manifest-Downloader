@@ -336,23 +336,29 @@ function updateBranchControls() {
   const hint = accountEl('branch-hint');
   const accountRow = accountEl('use-account-row');
   const toggle = accountEl('use-account-toggle');
-  const loginBtn = accountEl('btn-branch-login');
+  const section = accountEl('branch-section');
+  const label = accountEl('branch-label');
+  const row = accountEl('branch-row');
+  const loginRow = accountEl('branch-login-row');
+  const more = accountEl('branch-more');
   const signedIn = !!accountUi.info;
   const nonPublic = !isPublicBranch(branch);
+  const others = branchList().length - 1;
 
+  if (section) section.classList.toggle('hidden', !signedIn && others < 1);
+  if (label) label.classList.toggle('hidden', others < 1 && !nonPublic);
+  if (row) row.classList.toggle('hidden', !signedIn || (others < 1 && !nonPublic));
+  if (loginRow) loginRow.classList.toggle('hidden', signedIn || others < 1);
+  if (more) more.textContent = window.i18n.t('branch.moreBranches', { count: others });
   if (pw) pw.classList.toggle('hidden', !(nonPublic && info && info.passwordRequired && !info.available));
   if (accountRow) accountRow.classList.toggle('hidden', !signedIn);
   if (toggle) {
     toggle.disabled = nonPublic || !!state.accountMode;
     if (nonPublic || state.accountMode) toggle.checked = true;
   }
-  if (loginBtn) loginBtn.classList.toggle('hidden', signedIn);
   if (hint) {
-    let key;
-    if (!signedIn) key = 'branch.hintSignedOut';
-    else if (nonPublic) key = 'branch.hintBranch';
-    else key = 'branch.hintSignedIn';
-    hint.textContent = window.i18n.t(key, { name: signedIn ? accountUi.info.accountName : '' });
+    hint.textContent = signedIn && nonPublic ? window.i18n.t('branch.hintBranch') : '';
+    hint.classList.toggle('hidden', !hint.textContent);
   }
 }
 

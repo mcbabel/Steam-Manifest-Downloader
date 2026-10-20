@@ -341,9 +341,9 @@
         <div id="steam-keys-offer" class="steam-keys-offer hidden" role="status"></div>
         <div id="depot-list" class="depot-list"></div>
 
-        <div id="branch-section" class="settings-section branch-section">
+        <div id="branch-section" class="settings-section branch-section hidden">
           <span id="branch-label" class="settings-section__label"><span data-i18n="branch.label">Steam branch</span></span>
-          <div class="branch-section__row">
+          <div id="branch-row" class="branch-section__row">
             <div id="branch-picker" class="history-sort branch-picker">
               <button type="button" id="branch-button" class="history-sort__button branch-picker__button" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="branch-label">
                 <span id="branch-button-label" class="history-sort__label branch-picker__label">public</span>
@@ -352,12 +352,18 @@
               <ul id="branch-menu" class="history-sort__menu history-sort__menu--scroll branch-picker__menu hidden" role="listbox" tabindex="-1" aria-labelledby="branch-label"></ul>
             </div>
             <input type="password" id="branch-password" class="dd-path__input branch-section__password hidden" autocomplete="off" spellcheck="false" data-i18n-attr="placeholder=branch.passwordPlaceholder,aria-label=branch.passwordPlaceholder">
-            <button type="button" id="btn-branch-login" class="btn btn--small btn--outline hidden" data-i18n="account.signIn">Sign in with QR code</button>
           </div>
-          <label id="use-account-row" class="filter-toggle hidden">
-            <input type="checkbox" id="use-account-toggle" />
-            <span data-i18n="branch.useAccount">Download with my Steam account (own games, playtests)</span>
-          </label>
+          <div id="branch-login-row" class="branch-section__login hidden">
+            <span id="branch-more" class="dd-path__hint"></span>
+            <button type="button" id="btn-branch-login" class="btn btn--small btn--outline" data-i18n="account.signIn">Sign in with QR code</button>
+          </div>
+          <div id="use-account-row" class="settings-field__toggle-wrap branch-section__account hidden">
+            <label class="toggle-switch">
+              <input type="checkbox" id="use-account-toggle">
+              <span class="toggle-switch__slider"></span>
+            </label>
+            <label for="use-account-toggle" class="settings-field__toggle-text" data-i18n="branch.useAccount">Download through my Steam account</label>
+          </div>
           <p id="branch-hint" class="dd-path__hint"></p>
         </div>
 

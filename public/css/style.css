@@ -5736,8 +5736,16 @@ textarea.bug-report__input {
   min-width: 0;
 }
 
-.branch-section .filter-toggle {
+.branch-section__account {
   margin-top: 8px;
+}
+
+.branch-section__login {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .search-account-row {
