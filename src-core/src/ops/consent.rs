@@ -2,6 +2,14 @@ use std::path::Path;
 
 use crate::services::settings::{self as settings_service, TelemetryConsent};
 
+fn label(consent: &TelemetryConsent) -> &'static str {
+    match consent {
+        TelemetryConsent::Pending => "pending",
+        TelemetryConsent::Accepted => "accepted",
+        TelemetryConsent::Declined => "declined",
+    }
+}
+
 pub async fn telemetry_status(app_data_dir: &Path) -> serde_json::Value {
     let settings = settings_service::load_settings(app_data_dir).await;
     let consent = match settings.telemetry_consent {
@@ -17,8 +25,19 @@ pub async fn telemetry_status(app_data_dir: &Path) -> serde_json::Value {
     };
     serde_json::json!({
         "consent": consent,
+        "behavior": label(&settings.telemetry_behavior),
         "installation_id": settings.installation_id,
     })
+}
+
+pub async fn set_behavior_consent(app_data_dir: &Path, accept: bool) -> Result<(), String> {
+    let mut settings = settings_service::load_settings(app_data_dir).await;
+    settings.telemetry_behavior = if accept {
+        TelemetryConsent::Accepted
+    } else {
+        TelemetryConsent::Declined
+    };
+    settings_service::save_settings(app_data_dir, &settings).await
 }
 
 pub async fn set_telemetry_consent(app_data_dir: &Path, accept: bool) -> Result<(), String> {

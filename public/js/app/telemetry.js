@@ -15,20 +15,36 @@ async function initTelemetryConsent() {
       });
     } else if (status.consent === 'accepted') {
       invoke('emit_telemetry_event', { kind: 'app_start', props: { locale: window.i18n.getCurrentLocale() } }).catch(() => {});
+      const behaviorModal = document.getElementById('behavior-modal');
+      if (status.behavior === 'pending' && behaviorModal) behaviorModal.classList.remove('hidden');
+      else if (status.behavior === 'accepted') startJourney();
     }
   } catch (e) {
     console.error('Failed to load telemetry status:', e);
   }
 }
 
-async function acceptTelemetry() {
+async function acceptTelemetry(everything = true) {
   try {
     await invoke('set_telemetry_consent', { accept: true });
+    await invoke('set_behavior_consent', { accept: everything });
     invoke('emit_telemetry_event', { kind: 'app_start', props: { locale: window.i18n.getCurrentLocale() } }).catch(() => {});
+    if (everything) startJourney();
   } catch (e) {
     console.error('Failed to accept telemetry:', e);
   }
   els.telemetryModal.classList.add('hidden');
+}
+
+async function answerBehavior(accept) {
+  try {
+    await invoke('set_behavior_consent', { accept });
+    if (accept) startJourney();
+  } catch (e) {
+    console.error('Failed to save behaviour consent:', e);
+  }
+  const modal = document.getElementById('behavior-modal');
+  if (modal) modal.classList.add('hidden');
 }
 
 async function declineTelemetry() {

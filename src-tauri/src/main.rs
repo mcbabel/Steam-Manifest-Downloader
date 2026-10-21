@@ -100,6 +100,7 @@ fn main() {
             // Telemetry
             commands::get_telemetry_status,
             commands::set_telemetry_consent,
+            commands::set_behavior_consent,
             commands::emit_telemetry_event,
             commands::set_telemetry_focus,
             // Emulator (gbe_fork)

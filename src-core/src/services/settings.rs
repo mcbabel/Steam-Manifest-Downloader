@@ -37,6 +37,8 @@ pub struct Settings {
     #[serde(default)]
     pub telemetry_consent: TelemetryConsent,
     #[serde(default)]
+    pub telemetry_behavior: TelemetryConsent,
+    #[serde(default)]
     pub installation_id: String,
     #[serde(default, alias = "manifest_sources")]
     pub depot_sources: Vec<String>,
@@ -139,6 +141,7 @@ impl Default for Settings {
             download_speed_limit: String::new(),
             proxy: String::new(),
             telemetry_consent: TelemetryConsent::Pending,
+            telemetry_behavior: TelemetryConsent::Pending,
             installation_id: String::new(),
             depot_sources: Vec::new(),
             language: String::new(),

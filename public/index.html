@@ -1230,6 +1230,7 @@
             <li data-i18n="modals.telemetry.collectItem2">Which features get used (counters only)</li>
             <li data-i18n="modals.telemetry.collectItem3">A random install ID (not tied to you)</li>
             <li data-i18n="modals.telemetry.collectItem4">Why a download failed — which step and what kind of error, from a fixed list of labels</li>
+            <li data-i18n="modals.telemetry.collectItem5">With "Allow everything": how you move through the app, so we see where it gets stuck</li>
           </ul>
         </div>
         <div class="telemetry-modal__col telemetry-modal__col--never">
@@ -1254,7 +1255,41 @@
       </p>
       <div class="modal__actions">
         <button id="btn-telemetry-decline" class="btn btn--outline" data-modal-cancel data-i18n="modals.telemetry.decline">No thanks</button>
-        <button id="btn-telemetry-accept" class="btn btn--primary" data-i18n="modals.telemetry.accept">Yes, help out</button>
+        <button id="btn-telemetry-basic" class="btn btn--outline" data-i18n="modals.telemetry.basic">Statistics only</button>
+        <button id="btn-telemetry-accept" class="btn btn--primary" data-i18n="modals.telemetry.accept">Allow everything</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="behavior-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="behavior-modal-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content telemetry-modal-content">
+      <h3 class="modal__title" id="behavior-modal-title">
+        <span data-i18n="modals.behavior.title">Show us where the app gets stuck?</span>
+      </h3>
+      <p class="telemetry-modal__lead" data-i18n="modals.behavior.lead">You already share anonymous usage statistics. Would you also let SMD record how you move through the app?</p>
+      <div class="telemetry-modal__list">
+        <div class="telemetry-modal__col telemetry-modal__col--collect">
+          <h4><span data-i18n="modals.telemetry.collectTitle">We collect</span></h4>
+          <ul>
+            <li data-i18n="modals.behavior.item1">Which screens and steps you open, and how long you stay</li>
+            <li data-i18n="modals.behavior.item2">Which buttons you click, by their internal name</li>
+            <li data-i18n="modals.behavior.item3">Clicks on things that are not clickable, and repeated clicks where nothing happens</li>
+            <li data-i18n="modals.behavior.item4">Long pauses, going back and forth, and opened hints</li>
+          </ul>
+        </div>
+        <div class="telemetry-modal__col telemetry-modal__col--never">
+          <h4><span data-i18n="modals.telemetry.neverTitle">We never collect</span></h4>
+          <ul>
+            <li data-i18n="modals.behavior.never1">What you type, game names, IDs or paths</li>
+            <li data-i18n="modals.behavior.never2">Screen contents or mouse positions</li>
+          </ul>
+        </div>
+      </div>
+      <p class="dd-path__hint" data-i18n="modals.behavior.hint">Encrypted like everything else. You can switch it off anytime under Settings → Privacy &amp; diagnostics.</p>
+      <div class="modal__actions">
+        <button id="btn-behavior-decline" class="btn btn--outline" data-modal-cancel data-i18n="modals.behavior.decline">No, statistics only</button>
+        <button id="btn-behavior-accept" class="btn btn--primary" data-i18n="modals.behavior.accept">Yes, allow</button>
       </div>
     </div>
   </div>
@@ -1628,6 +1663,16 @@
                   <span class="toggle-switch__slider"></span>
                 </span>
               </label>
+              <label class="settings-row" for="behavior-toggle" id="behavior-row">
+                <span class="settings-row__text">
+                  <span class="settings-row__label" data-i18n="settings.telemetryBehavior">Usage behaviour</span>
+                  <span class="settings-row__hint" data-i18n="settings.telemetryBehaviorHint">Which screens you open and what you click, so we see where the app gets stuck. Never what you type.</span>
+                </span>
+                <span class="toggle-switch">
+                  <input type="checkbox" id="behavior-toggle">
+                  <span class="toggle-switch__slider"></span>
+                </span>
+              </label>
             </div>
             <h5 class="settings__group-title" data-i18n="settings.debugInfo">Debug Info</h5>
             <div class="settings-group">
@@ -1946,6 +1991,7 @@
   <script src="js/app/core.js"></script>
   <script src="js/app/telemetry.js"></script>
   <script src="js/app/ui.js"></script>
+  <script src="js/app/journey.js"></script>
   <script src="js/app/steps.js"></script>
   <script src="js/app/sources.js"></script>
   <script src="js/app/search.js"></script>

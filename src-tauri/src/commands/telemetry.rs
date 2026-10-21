@@ -30,6 +30,19 @@ pub async fn set_telemetry_consent(app: AppHandle, accept: bool) -> Result<(), S
 }
 
 #[command]
+pub async fn set_behavior_consent(app: AppHandle, accept: bool) -> Result<(), String> {
+    consent::set_behavior_consent(&app_data_dir(&app), accept).await?;
+    if let Some(state) = app.try_state::<AppState>() {
+        if let Some(telemetry) = state.telemetry.clone() {
+            telemetry
+                .emit(Event::new("behavior_consent").with_props(serde_json::json!({ "accept": accept })))
+                .await;
+        }
+    }
+    Ok(())
+}
+
+#[command]
 pub async fn set_telemetry_focus(app: AppHandle, focused: bool) -> Result<(), String> {
     if let Some(state) = app.try_state::<AppState>() {
         if let Some(telemetry) = state.telemetry.clone() {

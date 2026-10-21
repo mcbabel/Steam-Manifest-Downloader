@@ -266,7 +266,9 @@
       "neverItem4": "Deine Manifest-Quell-URLs — nur die Art der Quelle, nie die Adresse",
       "hint": "Events sind Ende-zu-Ende verschlüsselt mit einem in der App eingebetteten öffentlichen Schlüssel — nur der Server des Maintainers kann sie entschlüsseln. Du kannst deine Auswahl jederzeit unter Einstellungen → Datenschutz & Diagnose ändern.",
       "decline": "Nein, danke",
-      "accept": "Ja, gerne helfen"
+      "accept": "Alles erlauben",
+      "collectItem5": "Bei „Alles erlauben“: wie du dich durch die App bewegst (Bildschirme, Klicks auf Knöpfe, Klicks ins Leere), damit wir sehen, wo es hakt. Nie, was du eintippst.",
+      "basic": "Nur Statistiken"
     },
     "update": {
       "title": "Update verfügbar",
@@ -370,6 +372,19 @@
       "title": "Welche Datei startet das Spiel?",
       "body": "Wähl die Programmdatei des Spiels. SMD merkt sie sich für den nächsten Start.",
       "start": "Spielen"
+    },
+    "behavior": {
+      "title": "Zeigst du uns, wo die App hakt?",
+      "lead": "Du teilst schon anonyme Nutzungsstatistiken. Darf SMD auch erfassen, wie du dich durch die App bewegst? So sehen wir, wo Fragen aufkommen und was besser erklärt werden muss.",
+      "item1": "Welche Bildschirme und Schritte du öffnest und wie lange du bleibst",
+      "item2": "Welche Knöpfe du klickst, über ihren internen Namen",
+      "item3": "Klicks auf Dinge, die nicht klickbar sind, und wiederholte Klicks, bei denen nichts passiert",
+      "item4": "Lange Pausen, Hin und Her zwischen Schritten und geöffnete Hinweise",
+      "never1": "Was du eintippst, Spielnamen, IDs oder Pfade",
+      "never2": "Bildschirminhalte oder Mauspositionen",
+      "hint": "Verschlüsselt wie alles andere. Du kannst es jederzeit unter Einstellungen → Datenschutz & Diagnose ausschalten.",
+      "decline": "Nein, nur Statistiken",
+      "accept": "Ja, erlauben"
     }
   },
   "emulator": {
@@ -775,7 +790,9 @@
     "saved": "Einstellungen gespeichert",
     "steamWebApiKey": "Steam-Web-API-Key",
     "steamWebApiKeyPlaceholder": "Steam-Web-API-Key einfügen…",
-    "steamWebApiKeyHint": "Optional, für Achievements und Stats im Emulator-Schritt. Einen kostenlosen Key gibt es auf <a href=\"https://steamcommunity.com/dev/apikey\" target=\"_blank\" rel=\"noopener\" class=\"link\">steamcommunity.com/dev/apikey</a>. Er bleibt auf diesem PC und geht nur an Steam."
+    "steamWebApiKeyHint": "Optional, für Achievements und Stats im Emulator-Schritt. Einen kostenlosen Key gibt es auf <a href=\"https://steamcommunity.com/dev/apikey\" target=\"_blank\" rel=\"noopener\" class=\"link\">steamcommunity.com/dev/apikey</a>. Er bleibt auf diesem PC und geht nur an Steam.",
+    "telemetryBehavior": "Nutzungsverhalten",
+    "telemetryBehaviorHint": "Welche Bildschirme du öffnest und was du klickst, damit wir sehen, wo die App hakt. Nie, was du eintippst."
   },
   "errors": {
     "noManifests": "Für diese App-ID wurden in keiner konfigurierten Depot-Quelle Manifests gefunden. Füge weitere Quellen in den Einstellungen hinzu oder aktiviere sie.",

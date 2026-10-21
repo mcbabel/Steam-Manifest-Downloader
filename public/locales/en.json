@@ -266,7 +266,9 @@
       "neverItem4": "Your manifest source URLs — only the kind of source, never the address",
       "hint": "Events are end-to-end encrypted with a public key embedded in the app — only the maintainer's server can decrypt them. You can change your choice anytime in Settings → Privacy & diagnostics.",
       "decline": "No Thanks",
-      "accept": "Yes, Help Out"
+      "accept": "Allow Everything",
+      "collectItem5": "With \"Allow everything\": how you move through the app (screens, clicks on buttons, clicks where nothing happens), so we see where it gets stuck. Never what you type.",
+      "basic": "Statistics Only"
     },
     "update": {
       "title": "Update Available",
@@ -370,6 +372,19 @@
       "title": "Which File Starts the Game?",
       "body": "Pick the program file of the game. SMD remembers it for the next start.",
       "start": "Play"
+    },
+    "behavior": {
+      "title": "Show us where the app gets stuck?",
+      "lead": "You already share anonymous usage statistics. Would you also let SMD record how you move through the app? It shows us where questions come up and what needs a better explanation.",
+      "item1": "Which screens and steps you open, and how long you stay",
+      "item2": "Which buttons you click, by their internal name",
+      "item3": "Clicks on things that are not clickable, and repeated clicks where nothing happens",
+      "item4": "Long pauses, going back and forth, and opened hints",
+      "never1": "What you type, game names, IDs or paths",
+      "never2": "Screen contents or mouse positions",
+      "hint": "Encrypted like everything else. You can switch it off anytime under Settings → Privacy & diagnostics.",
+      "decline": "No, Statistics Only",
+      "accept": "Yes, Allow"
     }
   },
   "emulator": {
@@ -775,7 +790,9 @@
     "saved": "Settings saved",
     "steamWebApiKey": "Steam Web API key",
     "steamWebApiKeyPlaceholder": "Paste your Steam Web API key…",
-    "steamWebApiKeyHint": "Optional, for achievements and stats in the emulator step. Get a free key at <a href=\"https://steamcommunity.com/dev/apikey\" target=\"_blank\" rel=\"noopener\" class=\"link\">steamcommunity.com/dev/apikey</a>. It stays on this PC and is only sent to Steam."
+    "steamWebApiKeyHint": "Optional, for achievements and stats in the emulator step. Get a free key at <a href=\"https://steamcommunity.com/dev/apikey\" target=\"_blank\" rel=\"noopener\" class=\"link\">steamcommunity.com/dev/apikey</a>. It stays on this PC and is only sent to Steam.",
+    "telemetryBehavior": "Usage Behaviour",
+    "telemetryBehaviorHint": "Which screens you open and what you click, so we see where the app gets stuck. Never what you type."
   },
   "errors": {
     "noManifests": "No manifests found for this App ID in any configured depot source. Add or enable more sources in Settings.",

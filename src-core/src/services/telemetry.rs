@@ -192,6 +192,11 @@ impl Telemetry {
         if !consented(&settings) {
             return;
         }
+        if BEHAVIOR_EVENT_KINDS.contains(&event.kind.as_str())
+            && settings.telemetry_behavior != TelemetryConsent::Accepted
+        {
+            return;
+        }
         let mut extra: Vec<Event> = Vec::new();
         if event.kind == "app_start" {
             let mut props = match std::mem::take(&mut event.props) {
@@ -462,7 +467,11 @@ const ALLOWED_EVENT_KINDS: &[&str] = &[
     "account_depots",
     "playtest_opened",
     "steam_keys_used",
+    "behavior_consent",
+    "ui_screen",
 ];
+
+const BEHAVIOR_EVENT_KINDS: &[&str] = &["ui_screen"];
 
 pub fn env_consent() -> Option<bool> {
     let value = std::env::var("SMD_TELEMETRY").ok()?;
@@ -528,6 +537,7 @@ pub fn sanitize_props(kind: &str, props: serde_json::Value) -> serde_json::Value
                 .unwrap_or_default();
             map.insert("keys".to_string(), serde_json::Value::Array(keys));
         }
+        "ui_screen" => sanitize_screen(&mut map),
         "proxy_tested" => {
             if let Some(serde_json::Value::String(key)) = map.get("key") {
                 let clean = safe_label(key);
@@ -549,6 +559,60 @@ fn safe_label(text: &str) -> String {
         text.to_string()
     } else {
         "unmatched".to_string()
+    }
+}
+
+const SCREEN_MAPS: &[&str] = &["clicks", "dead", "rage", "hovers", "keys"];
+const SCREEN_LABELS: &[&str] = &["screen", "next", "via"];
+const SCREEN_NUMBERS: &[&str] = &["dwell_s", "first_action_s", "longest_pause_s", "visit", "back"];
+
+fn ui_label(text: &str) -> String {
+    let mut out = String::new();
+    let mut run = String::new();
+    for c in text.chars().map(Some).chain(std::iter::once(None)) {
+        if let Some(d) = c.filter(char::is_ascii_digit) {
+            run.push(d);
+            continue;
+        }
+        out.push_str(if run.len() >= 3 { "n" } else { &run });
+        run.clear();
+        out.extend(c);
+    }
+    safe_label(&out)
+}
+
+fn sanitize_screen(map: &mut serde_json::Map<String, serde_json::Value>) {
+    map.retain(|k, _| {
+        SCREEN_MAPS.contains(&k.as_str())
+            || SCREEN_LABELS.contains(&k.as_str())
+            || SCREEN_NUMBERS.contains(&k.as_str())
+    });
+    for key in SCREEN_LABELS {
+        if let Some(serde_json::Value::String(v)) = map.get(*key) {
+            let clean = ui_label(v);
+            map.insert((*key).to_string(), serde_json::Value::String(clean));
+        }
+    }
+    for key in SCREEN_NUMBERS {
+        match map.get(*key).and_then(|v| v.as_u64()) {
+            Some(n) => {
+                map.insert((*key).to_string(), serde_json::json!(n.min(86_400)));
+            }
+            None => {
+                map.remove(*key);
+            }
+        }
+    }
+    for key in SCREEN_MAPS {
+        if let Some(serde_json::Value::Object(counts)) = map.get(*key) {
+            let clean: serde_json::Map<String, serde_json::Value> = counts
+                .iter()
+                .filter_map(|(name, n)| Some((ui_label(name), serde_json::json!(n.as_u64()?.min(999)))))
+                .filter(|(name, _)| name != "unmatched")
+                .take(40)
+                .collect();
+            map.insert((*key).to_string(), serde_json::Value::Object(clean));
+        }
     }
 }
 
@@ -857,6 +921,27 @@ pub fn diagnostic_id(installation_id: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn keeps_only_known_screen_fields() {
+        let mut props = serde_json::json!({
+            "screen": "select",
+            "next": "depot-5309181",
+            "dwell_s": 999999,
+            "clicks": { "select.btnDownload": 2, "Spielname mit Leerzeichen": 1 },
+            "dead": { "depot-221-name": 3 },
+            "text": "should go",
+        });
+        if let serde_json::Value::Object(map) = &mut props {
+            sanitize_screen(map);
+        }
+        assert_eq!(props["screen"], "select");
+        assert_eq!(props["next"], "depot-n");
+        assert_eq!(props["dwell_s"], 86_400);
+        assert_eq!(props["clicks"], serde_json::json!({ "select.btnDownload": 2 }));
+        assert_eq!(props["dead"], serde_json::json!({ "depot-n-name": 3 }));
+        assert!(props.get("text").is_none());
+    }
 
     #[test]
     fn crash_messages_lose_paths_quotes_and_numbers() {

@@ -29,6 +29,10 @@ async function openSettings(target) {
     els.notificationSoundToggle.checked = settings.notification_sound !== false;
     els.telemetryToggle.checked = settings.telemetry_consent === 'accepted';
     state.savedTelemetry = settings.telemetry_consent === 'accepted';
+    const behavior = document.getElementById('behavior-toggle');
+    if (behavior) behavior.checked = settings.telemetry_behavior === 'accepted';
+    state.savedBehavior = settings.telemetry_behavior === 'accepted';
+    syncBehaviorToggle();
     state.pendingSources = Array.isArray(settings.depot_sources) ? settings.depot_sources.slice() : [];
     state.pristineSources = Array.isArray(settings.pristine_default_sources) ? settings.pristine_default_sources : [];
   } catch (e) {
@@ -145,6 +149,15 @@ async function saveSettings() {
       changedKeys.push('telemetry_consent');
       await invoke('set_telemetry_consent', { accept: telemetryOn });
       state.savedTelemetry = telemetryOn;
+    }
+    const behaviorToggle = document.getElementById('behavior-toggle');
+    const behaviorOn = !!(behaviorToggle && behaviorToggle.checked && telemetryOn);
+    if (behaviorToggle && behaviorOn !== state.savedBehavior) {
+      changedKeys.push('telemetry_behavior');
+      await invoke('set_behavior_consent', { accept: behaviorOn });
+      state.savedBehavior = behaviorOn;
+      if (behaviorOn) startJourney();
+      else stopJourney();
     }
     if (changedKeys.length && telemetryOn) emitEvent('settings_saved', { keys: changedKeys });
     state.pendingSources = null;
@@ -460,6 +473,14 @@ function bindSpeedLimitControls() {
 
 const SETTINGS_SECTION_KEY = 'settingsSection';
 
+function syncBehaviorToggle() {
+  const toggle = document.getElementById('behavior-toggle');
+  const row = document.getElementById('behavior-row');
+  const on = els.telemetryToggle.checked;
+  if (toggle) toggle.disabled = !on;
+  if (row) row.classList.toggle('is-disabled', !on);
+}
+
 function showSettingsSection(section) {
   const modal = els.settingsModal;
   if (!modal) return;
@@ -492,7 +513,6 @@ function filterSettings(query) {
       let groupHit = false;
       const prev = group.previousElementSibling;
       const title = prev && prev.classList.contains('settings__group-title') ? prev : null;
-      // A match on the group title keeps all of its rows.
       const titleHit = !!q && !!title && title.textContent.toLowerCase().includes(q);
       group.querySelectorAll('.settings-row').forEach(row => {
         const hit = !q || titleHit || row.textContent.toLowerCase().includes(q);
@@ -507,6 +527,8 @@ function filterSettings(query) {
     if (panelHit) any = true;
   });
   if (els.settingsNoResults) els.settingsNoResults.classList.toggle('hidden', !q || any);
+  if (q.length >= 3 && !any && state.settingsSearchHit !== false) journeyNote('settings.searchEmpty');
+  state.settingsSearchHit = !q || any;
 }
 
 const SETTINGS_NOT_SAVED = new Set(['settings-search', 'sources-add-input']);

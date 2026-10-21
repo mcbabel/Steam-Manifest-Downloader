@@ -167,7 +167,14 @@ function initEvents() {
     els.btnCopyBuildInfo.addEventListener('click', copyBuildInfo);
   }
 
-  if (els.btnTelemetryAccept) els.btnTelemetryAccept.addEventListener('click', acceptTelemetry);
+  if (els.btnTelemetryAccept) els.btnTelemetryAccept.addEventListener('click', () => acceptTelemetry(true));
+  if (els.telemetryToggle) els.telemetryToggle.addEventListener('change', syncBehaviorToggle);
+  const basic = document.getElementById('btn-telemetry-basic');
+  if (basic) basic.addEventListener('click', () => acceptTelemetry(false));
+  const behaviorYes = document.getElementById('btn-behavior-accept');
+  if (behaviorYes) behaviorYes.addEventListener('click', () => answerBehavior(true));
+  const behaviorNo = document.getElementById('btn-behavior-decline');
+  if (behaviorNo) behaviorNo.addEventListener('click', () => answerBehavior(false));
   if (els.btnTelemetryDecline) els.btnTelemetryDecline.addEventListener('click', declineTelemetry);
 
   els.btnUpdateNow.addEventListener('click', performUpdate);
