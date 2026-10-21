@@ -115,7 +115,7 @@ access to.
 ## 🚀 Quick Start
 
 1. 📥 **Install** — grab the latest build from [Releases](../../releases) (installer or standalone ZIP for Windows, AppImage for Linux, AUR for Arch, DMG for macOS (beta), `smd` for the terminal, or the Docker image)
-2. 🌍 **First launch** — pick your language, accept or decline anonymous telemetry, done
+2. 🌍 **First launch** — pick your language, then allow everything, statistics only, or no telemetry, done
 
 Then walk through the 5-step pipeline:
 

@@ -41,7 +41,11 @@ client sends when the user opts in.
 
 `smd-telemetry-server report` turns the stored events into one HTML file
 with active installs, success rate per version, the steps downloads fail
-at, crashes, shown errors, interrupted downloads and feature use.
+at, crashes, shown errors, interrupted downloads and feature use. From
+installs that allowed usage behaviour it adds a funnel per session, time
+and hesitation per screen, paths between screens, and rankings of clicks
+on non-clickable areas, fast repeated clicks, keys without a function and
+hovered hints.
 
 ```sh
 smd-telemetry-server report --data ./data --out report.html --days 90

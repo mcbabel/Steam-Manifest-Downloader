@@ -572,6 +572,7 @@ const FEATURES: &[(&str, &str, &str)] = &[
     ("Loaded from own account", "account_depots", "count"),
     ("Playtest opened from its game", "playtest_opened", ""),
     ("Depot keys from installed Steam", "steam_keys_used", "found"),
+    ("Usage behaviour consent", "behavior_consent", "accept"),
     ("Downloads with own account", "download_started", "account"),
     ("Download branch", "download_started", "branch"),
     ("App update check", "update_checked", "available"),
@@ -691,6 +692,206 @@ fn group_rows(groups: &[Group], limit: usize) -> Vec<Vec<String>> {
             row
         })
         .collect()
+}
+
+pub struct ScreenRow {
+    pub screen: String,
+    pub frontend: String,
+    pub visits: usize,
+    pub installs: usize,
+    pub median_dwell: u64,
+    pub median_first_action: Option<u64>,
+    pub no_action: usize,
+    pub long_pause: usize,
+    pub back: usize,
+}
+
+pub struct Counted {
+    pub key: Vec<String>,
+    pub count: u64,
+    pub installs: usize,
+}
+
+pub struct Behaviour {
+    pub screens: Vec<ScreenRow>,
+    pub paths: Vec<Counted>,
+    pub dead: Vec<Counted>,
+    pub rage: Vec<Counted>,
+    pub keys: Vec<Counted>,
+    pub hovers: Vec<Counted>,
+    pub clicks: Vec<Counted>,
+    pub funnel: Vec<(&'static str, usize)>,
+}
+
+const LONG_PAUSE_S: u64 = 30;
+const FUNNEL: &[(&str, &[&str])] = &[
+    ("Opened a source", &["source"]),
+    ("Picked depots", &["select"]),
+    ("Started a download", &["download"]),
+    ("Went on after the download", &["shortcut", "library", "emulator"]),
+];
+
+fn median(values: &mut [u64]) -> u64 {
+    values.sort_unstable();
+    values.get(values.len() / 2).copied().unwrap_or(0)
+}
+
+fn counted(map: HashMap<Vec<String>, (u64, HashSet<String>)>, limit: usize) -> Vec<Counted> {
+    let mut list: Vec<Counted> = map
+        .into_iter()
+        .map(|(key, (count, installs))| Counted { key, count, installs: installs.len() })
+        .collect();
+    list.sort_by(|a, b| b.count.cmp(&a.count).then_with(|| a.key.cmp(&b.key)));
+    list.truncate(limit);
+    list
+}
+
+pub fn behaviour(events: &[Ev]) -> Behaviour {
+    struct Acc {
+        visits: usize,
+        installs: HashSet<String>,
+        dwell: Vec<u64>,
+        first: Vec<u64>,
+        no_action: usize,
+        long_pause: usize,
+        back: usize,
+    }
+    let mut screens: BTreeMap<(String, String), Acc> = BTreeMap::new();
+    let mut maps: [HashMap<Vec<String>, (u64, HashSet<String>)>; 6] = Default::default();
+    let mut reached: HashMap<&str, HashSet<String>> = HashMap::new();
+    for e in events.iter().filter(|e| e.kind == "ui_screen") {
+        let screen = prop(e, "screen");
+        let next = prop(e, "next");
+        let acc = screens.entry((screen.clone(), e.frontend.clone())).or_insert_with(|| Acc {
+            visits: 0,
+            installs: HashSet::new(),
+            dwell: Vec::new(),
+            first: Vec::new(),
+            no_action: 0,
+            long_pause: 0,
+            back: 0,
+        });
+        acc.visits += 1;
+        acc.installs.insert(e.install.clone());
+        acc.dwell.push(e.props["dwell_s"].as_u64().unwrap_or(0));
+        match e.props["first_action_s"].as_u64() {
+            Some(f) => acc.first.push(f),
+            None => acc.no_action += 1,
+        }
+        if e.props["longest_pause_s"].as_u64().unwrap_or(0) >= LONG_PAUSE_S {
+            acc.long_pause += 1;
+        }
+        if e.props["back"].as_u64() == Some(1) {
+            acc.back += 1;
+        }
+        let path = maps[0].entry(vec![screen.clone(), next]).or_default();
+        path.0 += 1;
+        path.1.insert(e.install.clone());
+        for (i, field) in ["dead", "rage", "keys", "hovers", "clicks"].iter().enumerate() {
+            if let Some(obj) = e.props[*field].as_object() {
+                for (name, n) in obj {
+                    let entry = maps[i + 1].entry(vec![screen.clone(), name.clone()]).or_default();
+                    entry.0 += n.as_u64().unwrap_or(0);
+                    entry.1.insert(e.install.clone());
+                }
+            }
+        }
+        reached.entry(&e.session).or_default().insert(screen.split('.').next().unwrap_or("").to_string());
+    }
+    let funnel = FUNNEL
+        .iter()
+        .map(|(label, stages)| {
+            let n = reached.values().filter(|seen| stages.iter().any(|s| seen.contains(*s))).count();
+            (*label, n)
+        })
+        .collect();
+    let mut rows: Vec<ScreenRow> = screens
+        .into_iter()
+        .map(|((screen, frontend), mut a)| ScreenRow {
+            screen,
+            frontend,
+            visits: a.visits,
+            installs: a.installs.len(),
+            median_dwell: median(&mut a.dwell),
+            median_first_action: (!a.first.is_empty()).then(|| median(&mut a.first)),
+            no_action: a.no_action,
+            long_pause: a.long_pause,
+            back: a.back,
+        })
+        .collect();
+    rows.sort_by(|a, b| b.visits.cmp(&a.visits).then_with(|| a.screen.cmp(&b.screen)));
+    let [paths, dead, rage, keys, hovers, clicks] = maps;
+    Behaviour {
+        screens: rows,
+        paths: counted(paths, 40),
+        dead: counted(dead, 40),
+        rage: counted(rage, 30),
+        keys: counted(keys, 30),
+        hovers: counted(hovers, 30),
+        clicks: counted(clicks, 60),
+        funnel,
+    }
+}
+
+fn counted_rows(list: &[Counted]) -> Vec<Vec<String>> {
+    let max = list.first().map_or(0, |c| c.count as usize);
+    list.iter()
+        .map(|c| {
+            let mut row: Vec<String> = c.key.iter().map(|k| format!("<code>{}</code>", esc(k))).collect();
+            row.push(format!("{} {}", c.count, bar(c.count as usize, max)));
+            row.push(c.installs.to_string());
+            row
+        })
+        .collect()
+}
+
+fn render_behaviour(out: &mut String, events: &[Ev]) {
+    let b = behaviour(events);
+    out.push_str("<h2>Usage behaviour</h2><p class=\"muted\">From installs that allowed usage behaviour. One record per visited screen: time spent, time to the first action, the longest pause, and what was clicked there. Controls appear by their internal id or class.</p>");
+    if b.screens.is_empty() {
+        out.push_str("<p class=\"muted\">No usage behaviour in this period.</p>");
+        return;
+    }
+    out.push_str("<h3>Funnel per session</h3>");
+    let top = b.funnel.first().map_or(0, |f| f.1);
+    let rows: Vec<Vec<String>> = b
+        .funnel
+        .iter()
+        .map(|(label, n)| vec![esc(label), format!("{} {}", n, bar(*n, top)), pct(*n, top)])
+        .collect();
+    table(out, &["Stage", "Sessions", "Of first stage"], &rows);
+
+    out.push_str("<h3>Screens</h3><p class=\"muted\">Left without acting: visits with no click or key at all. Long pause: at least 30 seconds without input, a hint that something is unclear. Back: the next screen was an earlier step.</p>");
+    let rows: Vec<Vec<String>> = b
+        .screens
+        .iter()
+        .map(|r| {
+            vec![
+                format!("<code>{}</code>", esc(&r.screen)),
+                esc(&r.frontend),
+                r.visits.to_string(),
+                r.installs.to_string(),
+                format!("{} s", r.median_dwell),
+                r.median_first_action.map_or("-".into(), |f| format!("{} s", f)),
+                format!("{} ({})", r.no_action, pct(r.no_action, r.visits)),
+                format!("{} ({})", r.long_pause, pct(r.long_pause, r.visits)),
+                format!("{} ({})", r.back, pct(r.back, r.visits)),
+            ]
+        })
+        .collect();
+    table(out, &["Screen", "Frontend", "Visits", "Installs", "Median time", "First action", "Left without acting", "Long pause", "Back"], &rows);
+
+    for (title, hint, head, list) in [
+        ("Clicks on things that are not clickable", "Often a sign that something looks clickable or that people look for help there.", "Area", &b.dead),
+        ("Rapid repeated clicks", "Three or more clicks on the same thing within a moment, usually because nothing seemed to happen.", "Target", &b.rage),
+        ("Keys without a function", "Terminal interface: keys pressed on a screen where they do nothing.", "Key", &b.keys),
+        ("Hovered hints", "Tooltips people stopped on for a moment.", "Element", &b.hovers),
+        ("Paths", "Which screen people went to next.", "Next", &b.paths),
+        ("Most used controls", "Clicked controls and terminal actions per screen.", "Control", &b.clicks),
+    ] {
+        let _ = write!(out, "<h3>{}</h3><p class=\"muted\">{}</p>", esc(title), esc(hint));
+        table(out, &["Screen", head, "Count", "Installs"], &counted_rows(list));
+    }
 }
 
 pub fn render(events: &[Ev], today: NaiveDate, days: i64) -> String {
@@ -854,6 +1055,8 @@ pub fn render(events: &[Ev], today: NaiveDate, days: i64) -> String {
         .collect();
     table(&mut out, &["Feature", "Detail", "Uses", "Installs", "Share", "GUI", "TUI", "CLI"], &rows);
 
+    render_behaviour(&mut out, events);
+
     out.push_str("<h2>Settings in use</h2><p class=\"muted\">From the newest app_start of each install that sends schema 3.</p>");
     let rows: Vec<Vec<String>> = settings_share(events)
         .into_iter()
@@ -929,6 +1132,39 @@ mod tests {
 
     fn ts(s: &str) -> i64 {
         day(s).and_hms_opt(11, 0, 0).unwrap().and_utc().timestamp()
+    }
+
+    #[test]
+    fn summarises_usage_behaviour() {
+        let since = day("2026-01-01");
+        let screen = |screen: &str, next: &str, first: Value, pause: u64, dead: Value| {
+            serde_json::json!({ "kind": "ui_screen", "ts": ts("2026-03-02"), "props": {
+                "screen": screen, "next": next, "dwell_s": 10, "first_action_s": first,
+                "longest_pause_s": pause, "back": 0, "clicks": { "btn-search": 1 }, "dead": dead,
+            } })
+        };
+        let events = parse_record(
+            &record(
+                "2026-03-02",
+                "a",
+                "1.5.0",
+                serde_json::json!([
+                    screen("source.search", "select", serde_json::json!(2), 5, serde_json::json!({ "header__subtitle": 2 })),
+                    screen("select", "exit", Value::Null, 45, serde_json::json!({})),
+                ]),
+            ),
+            since,
+            true,
+        );
+        let b = behaviour(&events);
+        assert_eq!(b.funnel[0], ("Opened a source", 1));
+        assert_eq!(b.funnel[1], ("Picked depots", 1));
+        assert_eq!(b.funnel[2], ("Started a download", 0));
+        let select = b.screens.iter().find(|r| r.screen == "select").unwrap();
+        assert_eq!((select.no_action, select.long_pause), (1, 1));
+        assert_eq!(b.dead[0].key, vec!["source.search".to_string(), "header__subtitle".to_string()]);
+        assert_eq!(b.dead[0].count, 2);
+        assert!(render(&events, day("2026-03-03"), 90).contains("Usage behaviour"));
     }
 
     #[test]

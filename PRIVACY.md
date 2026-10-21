@@ -7,10 +7,15 @@ sent, and how you can opt in or out.
 
 ## Telemetry is opt-in
 
-On first launch the app shows a dialog asking whether you want to help.
-**Nothing is transmitted unless you click "Yes, help out."** Declining is the
-default if you close the dialog. You can change your choice anytime in
-**Settings → Privacy & diagnostics → Anonymous Usage Statistics**.
+On first launch the app shows a dialog asking whether you want to help, with
+three answers: **Allow everything** (statistics and [usage
+behaviour](#usage-behaviour)), **Statistics only**, or **No thanks**.
+**Nothing is transmitted unless you pick one of the first two.** Declining is
+the default if you close the dialog. You can change your choice anytime in
+**Settings → Privacy & diagnostics**, where both have their own switch.
+If you agreed to the statistics in an earlier version, the app asks once
+whether usage behaviour may be added; nothing of it is sent before you say
+yes.
 
 The command line version (`smd download`, `smd search`, `smd history`, also in
 Docker) never asks and sends nothing unless you switch it on: with the
@@ -213,6 +218,34 @@ when it closes, the app sends how many minutes it has been open, how many of
 them the window was in front (not for the command line), and whether a
 download was running. Nothing about what you looked at or typed is part of it.
 
+## Usage behaviour
+
+Only with its own consent (see above), the app and the terminal interface
+also record how you move through them, so the maintainer can see where
+people get stuck, where questions come up and what needs a better
+explanation. For every screen you visit (a step, a settings tab, a dialog)
+one `ui_screen` event is sent when you leave it:
+
+| Field | What it is |
+|---|---|
+| `screen`, `next` | the screen's internal name, like `select` or `settings.privacy`, and the one you went to (`exit` when the app closed) |
+| `visit` | the how-many-th visit to that screen in this session |
+| `dwell_s` | seconds spent there |
+| `first_action_s` | seconds until the first click or key, empty if there was none |
+| `longest_pause_s` | the longest stretch without any input |
+| `back` | 1 when the next screen was an earlier step |
+| `clicks` | which controls were used, with counts: their internal id or class in the app (`btn-search`), the kind of action in the terminal interface (`StartDownload`) |
+| `dead` | clicks on things that are not clickable, by the area they landed in |
+| `rage` | three or more fast clicks on the same thing |
+| `hovers` | elements with a tooltip you stopped on for a moment |
+| `keys` | terminal interface: keys that did nothing on that screen, only `char` for any letter, never which one |
+
+Names come from the app's own markup and code. Numbers inside a name (like
+the ID in a depot card) are replaced with `n` before anything is sent. Never
+part of it: what you type into a field, the text on the screen, game names,
+IDs, paths, mouse positions or screenshots. `behavior_consent` records when
+you switch it on or off.
+
 ## Errors and crashes
 
 Most bugs are never reported, so the app tells the maintainer when something
@@ -269,6 +302,8 @@ sign-in at Steam. Branch passwords are only sent to Steam and never stored.
 - Your Steam account name, SteamID, sign-in token, branch names or branch
   passwords
 - The text of error messages, or anything you typed into a field
+- Screen contents, mouse positions or screenshots, also with usage behaviour
+  switched on
 - Your IP address (stripped at the reverse proxy before anything reaches
   the server log)
 - Any identifier linked to your operating-system user account
@@ -294,7 +329,9 @@ match against unless you send the UUID yourself.
 ## Opting out later
 
 Turn the toggle off in **Settings → Privacy & diagnostics**. After that no
-events are sent and no installation UUID is used. Already-transmitted
+events are sent and no installation UUID is used. The **Usage behaviour**
+switch below it stops only the screen and click records and keeps the
+statistics. Already-transmitted
 events can't be un-sent (they've left your machine), but they're
 anonymous and will age out of the server logs per the retention policy.
 
