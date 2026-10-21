@@ -161,6 +161,15 @@ impl App {
                         d.auto_start_download = !d.auto_start_download
                     }
                     SettingToggle::IncludeDlc => d.include_dlc = !d.include_dlc,
+                    SettingToggle::Behavior => {
+                        if self.settings.telemetry_consent != TelemetryConsent::Accepted {
+                            self.toast(Tone::Info, t("tui.settings.behaviorNeedsTelemetry"));
+                            return true;
+                        }
+                        let accept = self.settings.telemetry_behavior != TelemetryConsent::Accepted;
+                        self.dispatch(Action::BehaviorAnswer(accept));
+                        return true;
+                    }
                     SettingToggle::Telemetry => {
                         let accept = self.settings.telemetry_consent != TelemetryConsent::Accepted;
                         let dir = self.data_dir.clone();
@@ -622,6 +631,16 @@ impl App {
             &t("settings.telemetryHint"),
             Fid::new("settings.telemetry"),
             Action::SettingsToggle(SettingToggle::Telemetry),
+        );
+        self.toggle_row(
+            sv,
+            ctx,
+            w,
+            accepted && self.settings.telemetry_behavior == TelemetryConsent::Accepted,
+            &t("settings.telemetryBehavior"),
+            &t("settings.telemetryBehaviorHint"),
+            Fid::new("settings.behavior"),
+            Action::SettingsToggle(SettingToggle::Behavior),
         );
     }
 

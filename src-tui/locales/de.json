@@ -152,6 +152,7 @@
       "play": "Spielen"
     },
     "settings": {
+      "behaviorNeedsTelemetry": "Schalte zuerst die Nutzungsstatistiken ein.",
       "tabGeneral": "Allgemein",
       "tabDownloads": "Downloads",
       "tabKeys": "API-Keys",
@@ -268,6 +269,8 @@
       "telemetryStatusOn": "Anonyme Nutzungsstatistik: an",
       "telemetryStatusOff": "Anonyme Nutzungsstatistik: aus",
       "telemetryEnv": "Festgelegt durch SMD_TELEMETRY={value}",
+      "behaviorOn": "Nutzungsverhalten in App und Terminal-Oberfläche: an",
+      "behaviorOff": "Nutzungsverhalten in App und Terminal-Oberfläche: aus",
       "telemetryId": "Diagnose-ID: {id}",
       "cmdLogin": "Mit dem Steam-Konto per QR-Code anmelden (für Branches und Playtests, auf die dein Konto Zugriff hat)",
       "cmdLogout": "Vom Steam-Konto abmelden und die Anmeldung widerrufen",

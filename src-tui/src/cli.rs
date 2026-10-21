@@ -232,6 +232,10 @@ pub async fn telemetry(dir: PathBuf, args: TelemetryArgs) -> i32 {
             if let Some(v) = env {
                 println!("{}", tf("tui.cli.telemetryEnv", &[("value", &if v { "on" } else { "off" })]));
             }
+            if on {
+                let behavior = settings.telemetry_behavior == settings_service::TelemetryConsent::Accepted;
+                println!("{}", t(if behavior { "tui.cli.behaviorOn" } else { "tui.cli.behaviorOff" }));
+            }
             if on && !settings.installation_id.is_empty() {
                 println!(
                     "{}",

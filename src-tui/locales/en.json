@@ -152,6 +152,7 @@
       "play": "Play"
     },
     "settings": {
+      "behaviorNeedsTelemetry": "Switch on the usage statistics first.",
       "tabGeneral": "General",
       "tabDownloads": "Downloads",
       "tabKeys": "API keys",
@@ -268,6 +269,8 @@
       "telemetryStatusOn": "Anonymous usage statistics: on",
       "telemetryStatusOff": "Anonymous usage statistics: off",
       "telemetryEnv": "Set by SMD_TELEMETRY={value}",
+      "behaviorOn": "Usage behaviour in the app and terminal interface: on",
+      "behaviorOff": "Usage behaviour in the app and terminal interface: off",
       "telemetryId": "Diagnostic ID: {id}",
       "cmdLogin": "Sign in with your Steam account by QR code (for branches and playtests your account can access)",
       "cmdLogout": "Sign out of your Steam account and revoke the sign-in",

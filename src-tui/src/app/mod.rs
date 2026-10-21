@@ -2,6 +2,7 @@ mod account;
 pub mod action;
 mod emulator;
 mod history;
+mod journey;
 mod modal;
 mod post;
 mod prefs;
@@ -78,6 +79,7 @@ pub struct App {
     pub telemetry: Option<Telemetry>,
 
     pub page: Page,
+    journey: journey::Journey,
     pub wiz: Wizard,
     pub emu: Option<EmuState>,
     pub hist: HistoryState,
@@ -146,6 +148,7 @@ impl App {
             prefs,
             telemetry: Some(telemetry),
             page: Page::Wizard,
+            journey: Default::default(),
             wiz,
             emu: None,
             hist: HistoryState::new(),
@@ -269,7 +272,12 @@ impl App {
             apply(move |app| {
                 match status["consent"].as_str() {
                     Some("pending") => app.queue_modal(Modal::telemetry()),
-                    Some("accepted") => app.emit("app_start", Some(serde_json::json!({ "locale": i18n::language() }))),
+                    Some("accepted") => {
+                        app.emit("app_start", Some(serde_json::json!({ "locale": i18n::language() })));
+                        if status["behavior"].as_str() == Some("pending") {
+                            app.queue_modal(Modal::Behavior);
+                        }
+                    }
                     _ => {}
                 }
                 if first_start {
@@ -424,6 +432,7 @@ impl App {
                 }
                 _ = ticker.tick() => self.on_tick(),
             }
+            self.journey_check();
             self.draw(terminal)?;
         }
         self.shutdown().await;
@@ -431,6 +440,9 @@ impl App {
     }
 
     async fn shutdown(&mut self) {
+        if let (Some(props), Some(tel)) = (self.journey_final(), self.telemetry.clone()) {
+            tel.emit(TelemetryEvent::new("ui_screen").with_props(props)).await;
+        }
         if let Some(job) = self.wiz.job_id.clone() {
             if self.download_active() {
                 if let Some(tel) = self.telemetry.clone() {
@@ -560,6 +572,13 @@ impl App {
     }
 
     fn on_key(&mut self, key: KeyEvent) {
+        let typing = matches!(self.focused_entry().map(|f| f.kind), Some(Kind::Input(_)));
+        self.journey.acted = false;
+        self.on_key_inner(key);
+        self.journey_key(key.code, typing);
+    }
+
+    fn on_key_inner(&mut self, key: KeyEvent) {
         if !matches!(key.code, KeyCode::PageUp | KeyCode::PageDown) {
             self.manual_scroll = false;
         }
@@ -934,7 +953,9 @@ impl App {
                     .last_click
                     .is_some_and(|(p, at)| p == pos && at.elapsed() < Duration::from_millis(450));
                 self.last_click = Some((pos, Instant::now()));
-                let Some(hit) = self.ctx.hit_at(pos).cloned() else {
+                let hit = self.ctx.hit_at(pos).cloned();
+                self.journey_click(pos, hit.as_ref().map(|h| &h.action));
+                let Some(hit) = hit else {
                     return;
                 };
                 if let Some(fid) = hit.fid {
@@ -996,6 +1017,7 @@ impl App {
     }
 
     pub fn dispatch(&mut self, action: Action) {
+        self.journey_action(&action);
         match action {
             Action::Quit => self.request_quit(),
             Action::ForceQuit => {

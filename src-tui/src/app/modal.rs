@@ -38,6 +38,7 @@ pub enum Modal {
     Confirm(Confirm),
     Browser(FileBrowser),
     Telemetry,
+    Behavior,
     Language(&'static str),
     Update(UpdateInfo),
     Help,
@@ -103,8 +104,14 @@ impl Modal {
                 _ => None,
             },
             Modal::Telemetry => match c {
-                'y' | 'j' => Some(Action::TelemetryAnswer(true)),
-                'n' => Some(Action::TelemetryAnswer(false)),
+                'y' | 'j' | 'a' => Some(Action::TelemetryAnswer(true, true)),
+                's' => Some(Action::TelemetryAnswer(true, false)),
+                'n' => Some(Action::TelemetryAnswer(false, false)),
+                _ => None,
+            },
+            Modal::Behavior => match c {
+                'y' | 'j' => Some(Action::BehaviorAnswer(true)),
+                'n' => Some(Action::BehaviorAnswer(false)),
                 _ => None,
             },
             Modal::Browser(_) => match c {
@@ -119,7 +126,8 @@ impl Modal {
     pub fn cancel_action(&self) -> Option<Action> {
         match self {
             Modal::Confirm(c) => Some(c.on_no.clone().unwrap_or(Action::CloseModal)),
-            Modal::Telemetry => Some(Action::TelemetryAnswer(false)),
+            Modal::Telemetry => Some(Action::TelemetryAnswer(false, false)),
+            Modal::Behavior => Some(Action::BehaviorAnswer(false)),
             Modal::Language(code) => Some(Action::LanguageChosen(code)),
             Modal::Welcome => Some(Action::WelcomeChoice("closed")),
             _ => Some(Action::CloseModal),
@@ -258,16 +266,30 @@ impl App {
                     self.on_browsed(purpose, path);
                 }
             }
-            Action::TelemetryAnswer(accept) => {
+            Action::TelemetryAnswer(accept, behavior) => {
                 self.close_modal();
                 let dir = self.data_dir.clone();
                 self.spawn(async move {
                     let r = smd_core::ops::consent::set_telemetry_consent(&dir, accept).await;
+                    if accept {
+                        let _ = smd_core::ops::consent::set_behavior_consent(&dir, behavior).await;
+                    }
                     apply(move |app| {
                         if r.is_ok() && accept {
                             app.emit("consent_accepted", None);
                             app.emit("app_start", Some(serde_json::json!({ "locale": crate::i18n::language() })));
                         }
+                        app.reload_settings();
+                    })
+                });
+            }
+            Action::BehaviorAnswer(accept) => {
+                self.close_modal();
+                let dir = self.data_dir.clone();
+                self.spawn(async move {
+                    let _ = smd_core::ops::consent::set_behavior_consent(&dir, accept).await;
+                    apply(move |app| {
+                        app.emit("behavior_consent", Some(serde_json::json!({ "accept": accept })));
                         app.reload_settings();
                     })
                 });
@@ -348,6 +370,7 @@ impl App {
             Modal::Confirm(c) => render_confirm(buf, area, ctx, c),
             Modal::Browser(fb) => render_browser(buf, area, ctx, fb),
             Modal::Telemetry => render_telemetry(buf, area, ctx),
+            Modal::Behavior => render_behavior(buf, area, ctx),
             Modal::Language(code) => render_language(buf, area, ctx, code),
             Modal::Update(u) => render_update(buf, area, ctx, u),
             Modal::Help => render_help(buf, area, ctx),
@@ -608,7 +631,7 @@ fn render_telemetry(buf: &mut Buffer, area: Rect, ctx: &mut Ctx) {
     let iw = width - 4;
     let lead = t("modals.telemetry.lead");
     let hint = t("modals.telemetry.hint");
-    let collect: Vec<String> = (1..=4)
+    let collect: Vec<String> = (1..=5)
         .map(|i| t(&format!("modals.telemetry.collectItem{}", i)))
         .collect();
     let never: Vec<String> = (1..=4)
@@ -673,15 +696,57 @@ fn render_telemetry(buf: &mut Buffer, area: Rect, ctx: &mut Ctx) {
         ButtonSpec::new(
             t("modals.telemetry.decline"),
             f("modal.no"),
-            Action::TelemetryAnswer(false),
+            Action::TelemetryAnswer(false, false),
+            Btn::Secondary,
+        ),
+        ButtonSpec::new(
+            t("modals.telemetry.basic"),
+            f("modal.basic"),
+            Action::TelemetryAnswer(true, false),
             Btn::Secondary,
         ),
         ButtonSpec::new(
             t("modals.telemetry.accept"),
             f("modal.yes"),
-            Action::TelemetryAnswer(true),
+            Action::TelemetryAnswer(true, true),
             Btn::Primary,
         ),
+    ];
+    widgets::buttons(buf, ctx, row, &specs, true);
+    ctx.prefer(f("modal.yes"));
+}
+
+fn render_behavior(buf: &mut Buffer, area: Rect, ctx: &mut Ctx) {
+    let width = 72u16;
+    let iw = width - 4;
+    let lead = t("modals.behavior.lead");
+    let hint = t("modals.behavior.hint");
+    let collect: Vec<String> = (1..=4).map(|i| t(&format!("modals.behavior.item{}", i))).collect();
+    let never: Vec<String> = (1..=2).map(|i| t(&format!("modals.behavior.never{}", i))).collect();
+    let list_h = |items: &[String]| items.iter().map(|s| widgets::wrap_height(s, iw - 4)).sum::<u16>();
+    let h = widgets::wrap_height(&lead, iw) + list_h(&collect) + list_h(&never) + widgets::wrap_height(&hint, iw) + 10;
+    let inner = frame(buf, area, width, h, &t("modals.behavior.title"));
+    let mut y = inner.y + 1;
+    let w = inner.width;
+    y += widgets::paragraph(buf, Rect::new(inner.x, y, w, 6), &lead, theme::text()) + 1;
+    for (title, items, ok) in [
+        (t("modals.telemetry.collectTitle"), &collect, true),
+        (t("modals.telemetry.neverTitle"), &never, false),
+    ] {
+        buf.set_string(inner.x, y, &title, theme::text().add_modifier(Modifier::BOLD));
+        y += 1;
+        for item in items {
+            let (mark, st) = if ok { ("✓", theme::success()) } else { ("✗", theme::error()) };
+            buf.set_string(inner.x + 1, y, mark, st);
+            y += widgets::paragraph(buf, Rect::new(inner.x + 3, y, w.saturating_sub(3), 3), item, theme::dim());
+        }
+    }
+    y += 1;
+    widgets::paragraph(buf, Rect::new(inner.x, y, w, 4), &hint, theme::muted());
+    let row = Rect::new(inner.x, inner.y + inner.height - 1, inner.width, 1);
+    let specs = [
+        ButtonSpec::new(t("modals.behavior.decline"), f("modal.no"), Action::BehaviorAnswer(false), Btn::Secondary),
+        ButtonSpec::new(t("modals.behavior.accept"), f("modal.yes"), Action::BehaviorAnswer(true), Btn::Primary),
     ];
     widgets::buttons(buf, ctx, row, &specs, true);
     ctx.prefer(f("modal.yes"));
