@@ -156,7 +156,7 @@
               <polyline points="17 8 12 3 7 8"/>
               <line x1="12" y1="3" x2="12" y2="15"/>
             </svg>
-            <p class="drop-zone__text" data-i18n-html="upload.dropText">Drop your <strong>.lua</strong> or <strong>.st</strong> file here</p>
+            <p class="drop-zone__text" data-i18n-html="upload.dropText">Drop your <strong>.lua</strong>, <strong>.st</strong> or depot key file here</p>
             <p class="drop-zone__hint" data-i18n="upload.dropHint">or click to browse</p>
           </div>
           <div id="file-info" class="file-info hidden">
@@ -168,6 +168,7 @@
             <button id="file-remove" class="file-info__remove" data-i18n-attr="title=upload.removeFile,aria-label=upload.removeFile">&times;</button>
           </div>
           <div id="upload-error" class="error-message hidden"></div>
+          <div id="upload-choice" class="next-steps hidden"></div>
           <div id="upload-loading" class="loading hidden">
             <div class="spinner"></div>
             <span data-i18n="upload.parsing">Parsing file...</span>

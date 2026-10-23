@@ -33,6 +33,7 @@ pub enum AcTarget {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BrowsePurpose {
     UploadFile,
+    KeyFile,
     PatchDir,
     DownloadDir,
     DepotManifest(usize),
@@ -106,6 +107,8 @@ pub enum Action {
     LoadFromAccount,
     OpenPlaytest(u32),
     SteamKeys(bool),
+    KeysFromFile,
+    UploadPickApp(u64),
     ForceQuit,
     Help,
     CloseModal,

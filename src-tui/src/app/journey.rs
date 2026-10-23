@@ -230,7 +230,7 @@ mod tests {
 
     #[test]
     fn labels_carry_no_payload() {
-        assert_eq!(action_label(&Action::OpenPlaytest(5309180)), "OpenPlaytest");
+        assert_eq!(action_label(&Action::OpenPlaytest(1000)), "OpenPlaytest");
         assert_eq!(action_label(&Action::Quit), "Quit");
         assert_eq!(key_label(KeyCode::Char('x')), "char");
         assert_eq!(key_label(KeyCode::F(5)), "f5");

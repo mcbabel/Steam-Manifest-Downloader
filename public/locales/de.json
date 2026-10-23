@@ -52,12 +52,14 @@
     "patchOnly": "Ordner patchen"
   },
   "upload": {
-    "dropText": "Lege deine <strong>.lua</strong>- oder <strong>.st</strong>-Datei hier ab",
+    "dropText": "Lege deine <strong>.lua</strong>-, <strong>.st</strong>- oder Depot-Schlüssel-Datei (<strong>.json</strong>, <strong>.csv</strong>) hier ab",
     "dropHint": "oder klicke zum Durchsuchen",
     "removeFile": "Datei entfernen",
     "parsing": "Datei wird gelesen…",
-    "wrongFile": "Bitte wähle eine .lua- oder .st-Datei",
-    "filterName": "Lua-/ST-Dateien"
+    "wrongFile": "Bitte wähle eine .lua- oder .st-Datei oder eine Depot-Schlüssel-Datei (.json, .csv)",
+    "filterName": "Lua-, ST- und Depot-Schlüssel-Dateien",
+    "chooseGame": "Welches Spiel?",
+    "chooseGameText": "Die Schlüssel-Datei enthält {count} Spiele. Wähle das, das du laden willst."
   },
   "search": {
     "playtestFound": "Zu diesem Spiel gibt es einen Playtest: {name} (App-ID {appId}). Playtests haben eine eigene App-ID.",
@@ -153,7 +155,11 @@
       "no_key": "kein Schlüssel vorhanden"
     },
     "autoSelectDlc": "DLCs auch auswählen",
-    "autoSelectNoDlc": "DLCs abwählen"
+    "autoSelectNoDlc": "DLCs abwählen",
+    "keysFromFile": "Aus einer Schlüssel-Datei",
+    "keyFilesFilter": "Depot-Schlüssel-Dateien",
+    "keyFileFound": "Die Schlüssel-Datei hatte einen Schlüssel für {found} von {count} Depot(s).",
+    "keyFileNone": "Die Schlüssel-Datei hat keine Schlüssel für diese Depots."
   },
   "progress": {
     "diskSpaceLoading": "Speicherplatz wird geprüft…",
@@ -877,7 +883,7 @@
     "readFileFailed": "Datei konnte nicht gelesen werden: {0}",
     "invalidLua": "Ungültige .lua-Datei: {0}",
     "invalidSt": "Ungültige .st-Datei: {0}",
-    "unsupportedFile": "Nicht unterstützter Dateityp: .{0}. Erwartet wird .lua oder .st",
+    "unsupportedFile": "Dateityp .{0} wird nicht unterstützt. Erwartet: .lua, .st oder eine Depot-Schlüssel-Datei (.json, .csv, .vdf, .txt)",
     "invalidLuaContent": "Ungültiger Lua-Inhalt: {0}",
     "luaNoEntries": "Die Datei enthält keine bekannten Einträge. Erwartet wird mindestens ein addappid(...)- oder setManifestid(...)-Aufruf.",
     "stDecompressFailed": "Die .st-Daten konnten nicht entpackt werden: {0}",
@@ -988,7 +994,11 @@
     "steamNotInFolder": "In diesem Ordner ist keine Steam-Installation: {0}",
     "steamNoUser": "Steam wurde in {0} gefunden, aber dort hat sich noch niemand angemeldet. Starte Steam und melde dich einmal an.",
     "steamNotFound": "Steam wurde nicht gefunden. Wähle deinen Steam-Ordner in den Einstellungen.",
-    "noFolderSelected": "Kein Ordner ausgewählt"
+    "noFolderSelected": "Kein Ordner ausgewählt",
+    "keyFileOnlyKeys": "Diese Schlüssel-Datei enthält nur Depot-Schlüssel, kein Spiel. Lade das Spiel per Suche, .lua-Datei oder Konto und füge die Schlüssel in Schritt 2 hinzu",
+    "keyFileManyGames": "Die Schlüssel-Datei enthält {0} Spiele. Wähle eins aus",
+    "keyFileNoKeys": "Die Schlüssel-Datei enthält keine Depot-Schlüssel",
+    "keyFileUnknownApp": "App {0} ist nicht in der Schlüssel-Datei"
   },
   "shortcuts": {
     "ctrl": "Strg",

@@ -340,8 +340,8 @@ mod tests {
     #[test]
     fn translates_backend_errors() {
         assert_eq!(
-            localize_depth("de", "Unsupported file type: .txt. Expected .lua or .st", 0),
-            "Nicht unterstützter Dateityp: .txt. Erwartet wird .lua oder .st"
+            localize_depth("de", "Unsupported file type: .zip. Expected .lua, .st or a depot key file (.json, .csv, .vdf, .txt)", 0),
+            "Dateityp .zip wird nicht unterstützt. Erwartet: .lua, .st oder eine Depot-Schlüssel-Datei (.json, .csv, .vdf, .txt)"
         );
         assert_eq!(
             localize_depth("de", "Failed to start DepotDownloaderMod for depot 7: Path not found: x", 0),

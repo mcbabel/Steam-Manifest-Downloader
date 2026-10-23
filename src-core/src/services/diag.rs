@@ -493,7 +493,7 @@ mod tests {
         assert_eq!(advice("depot_key", NOT_FOUND).id, "no_depot_key");
         assert_eq!(advice("depot_key", UNAUTHORIZED).id, "account_no_depot_key");
         assert_eq!(
-            classify_pipeline_error("Steam gave your account no key for depot 5309181: Steam answered AccessDenied (15)"),
+            classify_pipeline_error("Steam gave your account no key for depot 1001: Steam answered AccessDenied (15)"),
             (Stage::DepotKey, UNAUTHORIZED)
         );
         assert_eq!(advice("manifest_code", NOT_FOUND).id, "manifest_missing");

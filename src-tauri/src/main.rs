@@ -36,6 +36,8 @@ fn main() {
             // File operations
             commands::parse_lua_file,
             commands::parse_lua_content,
+            commands::key_file_apps,
+            commands::read_key_file,
             // Search
             commands::search_repos,
             commands::get_repo_manifests,

@@ -105,7 +105,7 @@ async function openFileDialog() {
   try {
     const { open } = window.__TAURI__.dialog;
     const filePath = await open({
-      filters: [{ name: window.i18n.t('upload.filterName'), extensions: ['lua', 'st'] }]
+      filters: [{ name: window.i18n.t('upload.filterName'), extensions: ['lua', 'st', 'json', 'csv', 'vdf', 'txt'] }]
     });
     if (filePath) {
       await handleFilePath(filePath);
@@ -204,11 +204,42 @@ async function fetchLatestManifestForDepot(depotId, btnEl) {
   }
 }
 
-async function handleFilePath(filePath) {
+const KEY_FILE_EXTS = ['json', 'csv', 'vdf', 'txt'];
+
+function showKeyFileChoice(filePath, apps) {
+  const box = document.getElementById('upload-choice');
+  if (!box) return;
+  renderNextSteps(box, {
+    title: window.i18n.t('upload.chooseGame'),
+    text: window.i18n.t('upload.chooseGameText', { count: apps.length }),
+    actions: apps.slice(0, 12).map(a => ({
+      label: a.name ? `${a.name} (${a.appId})` : String(a.appId),
+      onClick: () => {
+        box.classList.add('hidden');
+        handleFilePath(filePath, a.appId);
+      },
+    })),
+  });
+  box.classList.remove('hidden');
+}
+
+async function handleFilePath(filePath, appId = null) {
   const ext = filePath.split('.').pop().toLowerCase();
-  if (ext !== 'lua' && ext !== 'st') {
+  if (ext !== 'lua' && ext !== 'st' && !KEY_FILE_EXTS.includes(ext)) {
     showUploadError(window.i18n.t('upload.wrongFile'));
     return;
+  }
+  const choice = document.getElementById('upload-choice');
+  if (choice) choice.classList.add('hidden');
+  if (KEY_FILE_EXTS.includes(ext) && appId === null) {
+    try {
+      const apps = await invoke('key_file_apps', { path: filePath });
+      if (apps.length > 1) {
+        els.uploadError.classList.add('hidden');
+        showKeyFileChoice(filePath, apps);
+        return;
+      }
+    } catch (_) {}
   }
 
   const fileName = filePath.split(/[\\/]/).pop();
@@ -220,7 +251,7 @@ async function handleFilePath(filePath) {
   els.uploadLoading.classList.remove('hidden');
 
   try {
-    const raw = await invoke('parse_lua_file', { path: filePath });
+    const raw = await invoke('parse_lua_file', { path: filePath, appId });
 
     state.accountMode = false;
     state.parsedData = {
@@ -235,7 +266,7 @@ async function handleFilePath(filePath) {
     };
     state.mode = 'upload';
     els.uploadLoading.classList.add('hidden');
-    emitEvent('lua_parsed', { depot_count: state.parsedData.depots.length });
+    emitEvent('lua_parsed', { depot_count: state.parsedData.depots.length, format: ext });
 
     showSelectionStep();
   } catch (error) {

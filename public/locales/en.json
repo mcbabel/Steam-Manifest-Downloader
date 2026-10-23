@@ -52,12 +52,14 @@
     "patchOnly": "Patch Existing Folder"
   },
   "upload": {
-    "dropText": "Drop your <strong>.lua</strong> or <strong>.st</strong> file here",
+    "dropText": "Drop your <strong>.lua</strong>, <strong>.st</strong> or depot key file (<strong>.json</strong>, <strong>.csv</strong>) here",
     "dropHint": "or click to browse",
     "removeFile": "Remove file",
     "parsing": "Parsing file…",
-    "wrongFile": "Please select a .lua or .st file",
-    "filterName": "Lua/ST files"
+    "wrongFile": "Please choose a .lua or .st file, or a depot key file (.json, .csv)",
+    "filterName": "Lua, ST and depot key files",
+    "chooseGame": "Which game?",
+    "chooseGameText": "The key file contains {count} games. Choose the one to download."
   },
   "search": {
     "playtestFound": "This game has a playtest: {name} (App ID {appId}). Playtests have their own App ID.",
@@ -153,7 +155,11 @@
       "no_key": "no key available"
     },
     "autoSelectDlc": "Add DLC",
-    "autoSelectNoDlc": "Remove DLC"
+    "autoSelectNoDlc": "Remove DLC",
+    "keysFromFile": "From a key file",
+    "keyFilesFilter": "Depot key files",
+    "keyFileFound": "The key file had a key for {found} of {count} depot(s).",
+    "keyFileNone": "The key file has no keys for these depots."
   },
   "progress": {
     "diskSpaceLoading": "Checking disk space…",
@@ -877,7 +883,7 @@
     "readFileFailed": "Failed to read file: {0}",
     "invalidLua": "Invalid .lua file: {0}",
     "invalidSt": "Invalid .st file: {0}",
-    "unsupportedFile": "Unsupported file type: .{0}. Expected .lua or .st",
+    "unsupportedFile": "Unsupported file type: .{0}. Expected .lua, .st or a depot key file (.json, .csv, .vdf, .txt)",
     "invalidLuaContent": "Invalid lua content: {0}",
     "luaNoEntries": "The file does not contain any recognised entries. Expected at least one addappid(...) or setManifestid(...) call.",
     "stDecompressFailed": "Failed to decompress .st data: {0}",
@@ -988,7 +994,11 @@
     "steamNotInFolder": "No Steam installation in this folder: {0}",
     "steamNoUser": "Steam was found in {0}, but no user has signed in there yet. Start Steam and sign in once.",
     "steamNotFound": "Steam was not found. Choose your Steam folder in the settings.",
-    "noFolderSelected": "No folder selected"
+    "noFolderSelected": "No folder selected",
+    "keyFileOnlyKeys": "This key file has only depot keys, no game. Load the game by search, a .lua file or your account and add the keys in step 2",
+    "keyFileManyGames": "The key file contains {0} games. Choose one",
+    "keyFileNoKeys": "The key file contains no depot keys",
+    "keyFileUnknownApp": "App {0} is not in the key file"
   },
   "shortcuts": {
     "ctrl": "Ctrl",

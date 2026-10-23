@@ -144,10 +144,17 @@ impl App {
         let (mode, title, start): (BrowseMode, String, Option<PathBuf>) = match purpose {
             BrowsePurpose::UploadFile => (
                 BrowseMode::File {
-                    exts: vec!["lua", "st"],
+                    exts: vec!["lua", "st", "json", "csv", "vdf", "txt"],
                 },
                 t("tui.browse.luaTitle"),
                 non_empty(self.wiz.upload_path.value()),
+            ),
+            BrowsePurpose::KeyFile => (
+                BrowseMode::File {
+                    exts: vec!["json", "csv", "vdf", "txt"],
+                },
+                t("select.keyFilesFilter"),
+                None,
             ),
             BrowsePurpose::PatchDir => (
                 BrowseMode::Dir,
@@ -209,6 +216,7 @@ impl App {
                 self.wiz.upload_path.set(s);
                 self.dispatch(Action::LoadUpload);
             }
+            BrowsePurpose::KeyFile => self.apply_key_file(s),
             BrowsePurpose::PatchDir => {
                 self.wiz.patch_dir.set(s);
                 self.wiz.patch_error = None;

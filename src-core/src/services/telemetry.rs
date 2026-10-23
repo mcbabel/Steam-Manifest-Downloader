@@ -467,6 +467,7 @@ const ALLOWED_EVENT_KINDS: &[&str] = &[
     "account_depots",
     "playtest_opened",
     "steam_keys_used",
+    "key_file_used",
     "behavior_consent",
     "ui_screen",
 ];
@@ -926,7 +927,7 @@ mod tests {
     fn keeps_only_known_screen_fields() {
         let mut props = serde_json::json!({
             "screen": "select",
-            "next": "depot-5309181",
+            "next": "depot-1234",
             "dwell_s": 999999,
             "clicks": { "select.btnDownload": 2, "Spielname mit Leerzeichen": 1 },
             "dead": { "depot-221-name": 3 },

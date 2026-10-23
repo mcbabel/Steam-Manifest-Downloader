@@ -131,6 +131,7 @@
             <li class="sub"><a href="#format-lua">.lua files</a></li>
             <li class="sub"><a href="#format-st">.st files</a></li>
             <li class="sub"><a href="#format-vdf">key.vdf from a source</a></li>
+            <li class="sub"><a href="#format-keys">Depot key files</a></li>
           </ul>
         </div>
 
@@ -286,6 +287,7 @@
                   <li><a href="#format-lua">.lua files</a></li>
                   <li><a href="#format-st">.st files</a></li>
                   <li><a href="#format-vdf">key.vdf from a depot source</a></li>
+                  <li><a href="#format-keys">Depot key files</a></li>
                 </ul>
               </li>
               <li class="docnav__sec">
@@ -531,10 +533,10 @@ paru -S steam-manifest-downloader</code></pre>
               <h3 id="step-upload">Step 1: upload a file <a class="alink" href="#step-upload" aria-label="Permalink to Step 1: upload a file">#</a></h3>
               <p>Start by providing a manifest data file. You can either:</p>
               <ul>
-                <li><strong>Drag and drop</strong> a <code>.lua</code> or <code>.st</code> file onto the upload area</li>
+                <li><strong>Drag and drop</strong> a <code>.lua</code> or <code>.st</code> file, or a depot key file (<code>.json</code>, <code>.csv</code>), onto the upload area</li>
                 <li><strong>Click</strong> the upload area to open a file picker</li>
               </ul>
-              <p>The file picker filters on those two extensions, and anything else is turned away with the message Please select a .lua or .st file.</p>
+              <p>The file picker filters on these extensions, and anything else is turned away with the message Please choose a .lua or .st file, or a depot key file (.json, .csv). When a key file lists several games, SMD asks which one to load. See <a href="#format-keys">Depot key files</a>.</p>
               <p>The application then parses the file and extracts all depot IDs, manifest IDs, app IDs and depot keys contained within.</p>
               <div class="note">
                 <p class="note__tag">Tip</p>
@@ -745,7 +747,7 @@ paru -S steam-manifest-downloader</code></pre>
 
               <h3 id="desktop-keys">Keyboard shortcuts and taskbar <a class="alink" href="#desktop-keys" aria-label="Permalink to Keyboard shortcuts and taskbar">#</a></h3>
               <ul class="rows">
-                <li><span class="rows__k rows__k--literal">Ctrl+O</span><span class="rows__v">Open a .lua or .st file in step 1</span></li>
+                <li><span class="rows__k rows__k--literal">Ctrl+O</span><span class="rows__v">Open a .lua, .st or key file in step 1</span></li>
                 <li><span class="rows__k rows__k--literal">Ctrl+F</span><span class="rows__v">Focus the search: App ID in step 1, depots in step 2, the history when it is open</span></li>
                 <li><span class="rows__k rows__k--literal">Ctrl+H</span><span class="rows__v">Open or close the history</span></li>
                 <li><span class="rows__k rows__k--literal">Ctrl+,</span><span class="rows__v">Open the settings</span></li>
@@ -760,16 +762,17 @@ paru -S steam-manifest-downloader</code></pre>
             <div class="rail">
               <p class="kicker"><span class="kicker__idx">03</span> File formats</p>
               <span class="rail__rule" aria-hidden="true"></span>
-              <span class="chip chip--key">two inputs</span>
+              <span class="chip chip--key">lua, st, key files</span>
             </div>
             <h2 id="h-formats" class="h2-paper">Supported file formats <a class="alink" href="#file-formats" aria-label="Permalink to Supported file formats">#</a></h2>
-            <p class="lead-paper">SMD accepts two input files, <code>.lua</code> and <code>.st</code>. A third format, <code>key.vdf</code>, is not something you drop in: SMD reads it from a configured depot source during a search.</p>
+            <p class="lead-paper">SMD accepts <code>.lua</code> and <code>.st</code> files, plus depot key files as <code>.json</code>, <code>.csv</code>, <code>.vdf</code> or <code>.txt</code>. A <code>key.vdf</code> from a configured depot source is also read during a search.</p>
             <nav class="qidx" aria-label="Inside Supported file formats">
               <p class="qidx__lab">In this section</p>
               <ul class="qidx__list">
                 <li><a href="#format-lua">.lua files</a></li>
                 <li><a href="#format-st">.st files</a></li>
                 <li><a href="#format-vdf">key.vdf from a depot source</a></li>
+                <li><a href="#format-keys">Depot key files</a></li>
               </ul>
             </nav>
 
@@ -832,10 +835,24 @@ setManifestid(1392863, "4398981003384795747", 13789896785)</code></pre>
 }</code></pre>
               </div>
               <p>The parser extracts each depot ID and its associated decryption key from the VDF structure.</p>
-              <div class="note note--key">
-                <p class="note__tag">Not an input format</p>
-                <p>A <code>.vdf</code> file cannot be dropped into the app. The file picker filters on <code>.lua</code> and <code>.st</code> only, and anything else is rejected with the message Please select a .lua or .st file. <code>key.vdf</code> reaches SMD only through a configured depot source.</p>
+              <h3 id="format-keys">Depot key files <a class="alink" href="#format-keys" aria-label="Permalink to Depot key files">#</a></h3>
+              <p>Tools that export your own depot keys write them in one of four shapes. SMD reads all of them:</p>
+              <ul>
+                <li><code>.json</code> with an <code>apps</code> list, each app with <code>appid</code>, <code>name</code> and <code>depots</code> (<code>depotid</code>, <code>manifest</code>, <code>size</code>, <code>key</code>). A plain list of depots or a map from depot ID to key works too</li>
+                <li><code>.csv</code> with a header row. SMD looks for the columns <code>appid</code>, <code>app_name</code>, <code>depotid</code>, <code>manifest</code>, <code>size</code> and <code>key</code>, in any order</li>
+                <li><code>.vdf</code> in the <code>"depots"</code> shape shown above</li>
+                <li><code>.txt</code> with one <code>depot;key</code> per line</li>
+              </ul>
+              <div class="snip">
+                <div class="snip__bar">
+                  <p class="snip__lang">txt</p>
+                  <button class="copy" type="button" aria-label="Copy the example key text file"><span class="copy__label">Copy</span></button>
+                </div>
+                <pre tabindex="0"><code>1995891;a1b2c3d4e5f6...
+1995892;f6e5d4c3b2a1...</code></pre>
               </div>
+              <p>A <code>.json</code> or <code>.csv</code> file names the game, its depots and manifests, so it can be loaded in step 1 like a <code>.lua</code> file. A <code>.vdf</code> or <code>.txt</code> file only holds keys: load the game by search, a <code>.lua</code> file or your account, and when depots have no key, step 2 offers <strong>From a key file</strong>. Any of the four formats works there. Keys must be 64 hex characters, other lines are skipped.</p>
+              <p>In the terminal: <code>smd download depot_keys.json --app 220</code> picks a game from a file with several, and <code>smd download 220 --keys depot_keys.vdf</code> fills in missing keys.</p>
             </div>
           </div>
         </section>
@@ -1067,6 +1084,8 @@ smd search 220 --manifests 0        <span class="cm"># sources and depots for an
 smd download 220 --list             <span class="cm"># show what would be downloaded</span>
 smd download 220 --depots 221,222 -o /data/games
 smd download game.lua --json        <span class="cm"># progress as JSON lines</span>
+smd download depot_keys.json --app 220   <span class="cm"># a game from a key file with several games</span>
+smd download 220 --keys depot_keys.vdf   <span class="cm"># take missing depot keys from a key file</span>
 smd history
 smd telemetry on                    <span class="cm"># opt in to anonymous usage statistics, also off and status</span>
 
@@ -1088,6 +1107,8 @@ smd logout                          <span class="cm"># sign out and revoke the s
                 <li><span class="rows__k rows__k--literal">--dlc</span><span class="rows__v">With <code>--like-steam</code>: also downloads the DLC in the file. The emulator step later marks them as owned for gbe_fork</span></li>
                 <li><span class="rows__k rows__k--literal">--platform</span><span class="rows__v">With <code>--like-steam</code>: <code>windows</code>, <code>linux</code> or <code>macos</code>. In Docker the default is Linux, so use <code>--platform windows</code> for the Windows version</span></li>
                 <li><span class="rows__k rows__k--literal">--language</span><span class="rows__v">With <code>--like-steam</code>: game language as Steam names it, for example <code>german</code> or <code>english</code>. Defaults to the app language</span></li>
+                <li><span class="rows__k rows__k--literal">--keys</span><span class="rows__v">Depot keys from a key file (<code>.json</code>, <code>.csv</code>, <code>.vdf</code>, <code>.txt</code>) for depots that have none, repeatable. See <a href="#format-keys">Depot key files</a></span></li>
+                <li><span class="rows__k rows__k--literal">--app</span><span class="rows__v">Which game to take from a key file that lists several</span></li>
                 <li><span class="rows__k rows__k--literal">--manifest</span><span class="rows__v"><code>DEPOT=ID</code> pins a depot to a specific manifest, repeatable</span></li>
                 <li><span class="rows__k rows__k--literal">--update</span><span class="rows__v"><code>&lt;GAME_DIR&gt;</code> updates an existing download in place, see <a href="#step-update">Update a downloaded game</a></span></li>
                 <li><span class="rows__k rows__k--literal">--repair</span><span class="rows__v">With <code>--update</code>: checks every file and repairs what is damaged or missing, without updating</span></li>

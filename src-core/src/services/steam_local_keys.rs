@@ -134,7 +134,7 @@ mod tests {
 				"CellID"		"1"
 				"depots"
 				{{
-					"5309181"
+					"1001"
 					{{
 						"DecryptionKey"		"{KEY}"
 					}}
@@ -151,7 +151,7 @@ mod tests {
         );
         let keys = parse_keys(&text);
         assert_eq!(keys.len(), 1);
-        assert_eq!(keys.get("5309181").map(String::as_str), Some(KEY));
+        assert_eq!(keys.get("1001").map(String::as_str), Some(KEY));
     }
 
     #[test]

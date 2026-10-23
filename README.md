@@ -12,7 +12,7 @@
 ![Downloads](https://img.shields.io/github/downloads/MCbabel/Steam-Manifest-Downloader/total?color=brightgreen)
 [![Lines of Code](https://img.shields.io/endpoint?url=https%3A%2F%2Ftokei.kojix2.net%2Fbadge%2Fgithub%2FMCbabel%2FSteam-Manifest-Downloader%2Flines)](https://tokei.kojix2.net/github/MCbabel/Steam-Manifest-Downloader)
 
-Upload `.lua` / `.st` files or search by App ID across configurable sources (GitHub, archive.org, plain HTTPS folders, Hubcap, Ryuu). The app downloads the depots straight from Steam's CDN with its built-in Rust engine (DepotDownloaderMod stays available as an option), keeps games up to date from the history, optionally creates Steam library entries with full grid art, and can patch games with the gbe_fork emulator + Steamless DRM removal. Desktop app, terminal version and Docker image.
+Upload `.lua` / `.st` files or depot key exports (`.json`, `.csv`), or search by App ID across configurable sources (GitHub, archive.org, plain HTTPS folders, Hubcap, Ryuu). The app downloads the depots straight from Steam's CDN with its built-in Rust engine (DepotDownloaderMod stays available as an option), keeps games up to date from the history, optionally creates Steam library entries with full grid art, and can patch games with the gbe_fork emulator + Steamless DRM removal. Desktop app, terminal version and Docker image.
 
 </div>
 
@@ -44,7 +44,7 @@ Upload `.lua` / `.st` files or search by App ID across configurable sources (Git
 
 | | Feature |
 |---|---|
-| 📂 | **Drag & drop** `.lua` / `.st` upload, or search by App ID |
+| 📂 | **Drag & drop** `.lua` / `.st` or depot key file (`.json`, `.csv`) upload, or search by App ID |
 | 🔍 | **Configurable depot sources** — GitHub, archive.org, plain HTTPS, plus Hubcap and Ryuu with your own key; asked in the order you set |
 | 🏷️ | **Live depot metadata** — Windows / Linux / macOS, 32/64-bit and language tags via Steam PICS |
 | 🔑 | **Automatic depot keys** generation |
@@ -121,7 +121,7 @@ Then walk through the 5-step pipeline:
 
 | Step | What it does |
 |---|---|
-| 1 · Upload | Drop a `.lua` / `.st` file or search by App ID |
+| 1 · Upload | Drop a `.lua` / `.st` file or a depot key file, or search by App ID |
 | 2 · Select | Pick depots — each row shows OS / arch / language tags from Steam PICS — or let Like Steam mode pick them; *Add to Queue* for later |
 | 3 · Download | The built-in engine (or DepotDownloaderMod) downloads every selected depot, after checking the free disk space |
 | 4 · Shortcuts / Steam Library | Optional — Windows shortcut or non-Steam Steam library entry with grid art |
@@ -271,7 +271,7 @@ checkboxes — and the mouse wheel scrolls. Keyboard works just as well:
 | `p` `r` `d` `u` `v` `o` `e` `x` | History: play, resume, download again, update, check, open folder, edit emulator, remove |
 | `Ctrl+Q` / `F10` | Quit (asks first while a download runs) |
 
-Dragging a `.lua` / `.st` file onto the terminal window loads it right away
+Dragging a `.lua` / `.st` or key file onto the terminal window loads it right away
 (most terminals paste the path). The UI uses true color where the terminal
 supports it, falls back to the 16 terminal colors otherwise, and respects
 `NO_COLOR`.
@@ -284,6 +284,8 @@ smd search 220 --manifests 0        # sources + depots for an App ID
 smd download 220 --list             # show what would be downloaded
 smd download 220 --depots 221,222 -o /data/games
 smd download game.lua --json        # progress as JSON lines
+smd download depot_keys.json --app 220   # a game from a key file with several games
+smd download 220 --keys depot_keys.vdf   # take missing depot keys from a key file
 smd history
 smd telemetry on                    # opt in to anonymous usage statistics (off, status)
 
@@ -305,6 +307,8 @@ smd logout                          # sign out and revoke the sign-in
 | `--all-depots` | Every depot into separate subfolders, even when "Like Steam" is enabled in the settings |
 | `--dlc` | With `--like-steam`: also download the DLC in the file. The emulator step later marks them as owned for gbe_fork |
 | `--platform` / `--language` | With `--like-steam`: pick depots for another platform (`windows`, `linux`, `macos`) or game language (`german`, `english`, …). In Docker the default platform is Linux, so use `--platform windows` for the Windows version |
+| `--keys FILE` | Depot keys from a key file (`.json`, `.csv`, `.vdf`, `.txt`) for depots that have none. Repeatable |
+| `--app APP_ID` | Which game to take from a key file that lists several |
 | `--manifest DEPOT=ID` | Pin a depot to a specific manifest (repeatable) |
 | `--update <GAME_DIR>` | Update an existing download in place: only changed files are downloaded, files removed from the game are deleted |
 | `--repair` | With `--update`: check every file and repair what is damaged or missing, without updating |

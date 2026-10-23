@@ -39,7 +39,7 @@
       "pathLabel": "Depot file (.lua / .st)",
       "pathPlaceholder": "/path/to/game.lua",
       "load": "Load file",
-      "wrongType": "Please select a .lua or .st file."
+      "wrongType": "Please select a .lua or .st file, or a depot key file (.json, .csv)."
     },
     "browse": {
       "button": "Browse…",
@@ -297,6 +297,9 @@
       "argBranchPassword": "Password of a password-protected branch. It is only sent to Steam.",
       "argAccount": "Use your signed-in Steam account for this download (your own games and playtests). Implied by --branch.",
       "argSteamKeys": "Take missing depot keys from your installed Steam (config.vdf). Only read, never stored or sent.",
+      "argKeys": "Depot key file (.json, .csv, .vdf, .txt) for depots without a key. Repeatable",
+      "argApp": "With a key file that contains several games: the App ID to download",
+      "keyFileUsed": "Key file: keys for {found} depot(s)",
       "steamKeysHint": "Some depots have no key. If your Steam downloaded this game before, --steam-keys takes the keys from it.",
       "accountNeeded": "Not signed in. Run smd login first.",
       "accountNeedsAppId": "With --account or --branch, give an App ID.",

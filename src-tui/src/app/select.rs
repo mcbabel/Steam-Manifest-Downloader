@@ -67,6 +67,45 @@ impl App {
         });
     }
 
+    pub(super) fn apply_key_file(&mut self, path: String) {
+        let Some(app_id) = self.wiz.parsed.as_ref().map(|p| p.main_app_id.clone()) else {
+            return;
+        };
+        let missing = self.depots_without_key();
+        self.spawn(async move {
+            let r = smd_core::ops::files::read_key_file(&path).await;
+            apply(move |app| {
+                let Some(parsed) = app.wiz.parsed.as_mut().filter(|p| p.main_app_id == app_id) else {
+                    return;
+                };
+                app.wiz.steam_keys_asked = Some(app_id);
+                let keys = match r {
+                    Ok(k) => k,
+                    Err(e) => {
+                        app.wiz.steam_keys_note = Some((Tone::Warning, crate::i18n::localize_error(&e)));
+                        return;
+                    }
+                };
+                let mut count = 0;
+                for d in parsed.depots.iter_mut().filter(|d| missing.contains(&d.depot_id)) {
+                    if let Some(key) = keys.get(&d.depot_id) {
+                        d.depot_key = Some(key.clone());
+                        count += 1;
+                    }
+                }
+                app.emit(
+                    "key_file_used",
+                    Some(serde_json::json!({ "found": count, "missing": missing.len() - count, "where": "select" })),
+                );
+                app.wiz.steam_keys_note = Some(if count > 0 {
+                    (Tone::Success, tf("select.keyFileFound", &[("found", &count), ("count", &missing.len())]))
+                } else {
+                    (Tone::Warning, t("select.keyFileNone"))
+                });
+            })
+        });
+    }
+
     fn render_steam_keys_offer(&self, sv: &mut ScrollView, w: u16, ctx: &mut Ctx) {
         if let Some((tone, msg)) = &self.wiz.steam_keys_note {
             let h = widgets::status_height(msg, w);
@@ -93,6 +132,7 @@ impl App {
             r_,
             &[
                 ButtonSpec::new(t("select.steamKeysLook"), Fid::new("select.steamKeysLook"), Action::SteamKeys(true), Btn::Primary),
+                ButtonSpec::new(t("select.keysFromFile"), Fid::new("select.keysFromFile"), Action::KeysFromFile, Btn::Secondary),
                 ButtonSpec::new(t("select.steamKeysNo"), Fid::new("select.steamKeysNo"), Action::SteamKeys(false), Btn::Secondary),
             ],
             false,
@@ -102,6 +142,7 @@ impl App {
 
     pub(super) fn dispatch_select(&mut self, a: &Action) -> bool {
         match a {
+            Action::KeysFromFile => self.open_browser(super::action::BrowsePurpose::KeyFile),
             Action::SteamKeys(look) => {
                 if *look {
                     self.look_for_steam_keys();

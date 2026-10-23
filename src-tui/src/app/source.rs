@@ -36,6 +36,7 @@ pub fn is_valid_app_id(s: &str) -> bool {
 impl App {
     pub(super) fn dispatch_source(&mut self, a: &Action) -> bool {
         match a {
+            Action::UploadPickApp(id) => self.load_upload_for(Some(*id)),
             Action::OpenPlaytest(id) => {
                 self.emit("playtest_opened", None);
                 self.wiz.search_input.set(id.to_string());
@@ -82,17 +83,37 @@ impl App {
     }
 
     fn load_upload(&mut self) {
+        self.load_upload_for(None);
+    }
+
+    fn load_upload_for(&mut self, app_id: Option<u64>) {
         let path = crate::ui::file_browser::expand_tilde(&self.wiz.upload_path.trimmed());
         let path_s = path.to_string_lossy().to_string();
-        let lower = path_s.to_lowercase();
-        if !(lower.ends_with(".lua") || lower.ends_with(".st")) {
+        let ext = path
+            .extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or("")
+            .to_ascii_lowercase();
+        let key_file = smd_core::services::key_files::EXTENSIONS.contains(&ext.as_str());
+        if !(ext == "lua" || ext == "st" || key_file) {
             self.wiz.upload_error = Some(t("tui.upload.wrongType"));
             return;
         }
         self.wiz.upload_error = None;
+        self.wiz.upload_apps.clear();
         self.wiz.upload_loading = true;
         self.spawn(async move {
-            let r = smd_core::ops::files::parse_source_file(&path_s).await;
+            if key_file && app_id.is_none() {
+                if let Ok(apps) = smd_core::ops::files::key_file_apps(&path_s).await {
+                    if apps.len() > 1 {
+                        return apply(move |app| {
+                            app.wiz.upload_loading = false;
+                            app.wiz.upload_apps = apps;
+                        });
+                    }
+                }
+            }
+            let r = smd_core::ops::files::parse_source_file_for(&path_s, app_id).await;
             apply(move |app| {
                 app.wiz.upload_loading = false;
                 match r {
@@ -111,7 +132,7 @@ impl App {
                             .collect::<Vec<_>>();
                         app.emit(
                             "lua_parsed",
-                            Some(serde_json::json!({ "depot_count": depots.len() })),
+                            Some(serde_json::json!({ "depot_count": depots.len(), "format": ext })),
                         );
                         app.wiz.parsed = Some(Parsed {
                             main_app_id: parsed
@@ -719,6 +740,24 @@ impl App {
         } else if let Some(e) = &self.wiz.upload_error {
             let h = widgets::status_height(e, rest.width);
             widgets::status(buf, take_top(&mut rest, h), Tone::Error, e, self.tick);
+        } else if !self.wiz.upload_apps.is_empty() {
+            widgets::heading(buf, take_top(&mut rest, 1), &t("upload.chooseGame"));
+            let text = tf("upload.chooseGameText", &[("count", &self.wiz.upload_apps.len())]);
+            let h = widgets::wrap_height(&text, rest.width);
+            widgets::paragraph(buf, take_top(&mut rest, h), &text, theme::dim());
+            for (i, a) in self.wiz.upload_apps.iter().take(12).enumerate() {
+                let label = match &a.name {
+                    Some(n) => format!("{} ({})", n, a.app_id),
+                    None => a.app_id.to_string(),
+                };
+                widgets::buttons(
+                    buf,
+                    ctx,
+                    take_top(&mut rest, 1),
+                    &[ButtonSpec::new(label, Fid::idx("upload.app", i), Action::UploadPickApp(a.app_id), Btn::Secondary)],
+                    false,
+                );
+            }
         }
         ctx.prefer(Fid::new("upload.path"));
     }

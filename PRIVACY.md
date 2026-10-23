@@ -45,8 +45,9 @@ When telemetry is enabled, the app sends small events describing:
     found, how many sources had it, and whether your configured sources were
     reachable (`found` / `missing` / `unreachable` / `no_sources`) — never the
     App ID you searched for
-  - `lua_parsed` — a `.lua` / `.st` file was successfully parsed (with
-    a depot count — **not** the IDs)
+  - `lua_parsed` — a `.lua` / `.st` file or a depot key file was successfully
+    parsed (with a depot count and the file type, like `lua` or `json` —
+    **not** the IDs)
   - `download_started` — with a depot count, which engine is in use, how many
     manifest sources you have configured, and whether a ManifestHub key is set
   - `download_completed` — with a depot count and the failure diagnosis
@@ -128,6 +129,8 @@ When telemetry is enabled, the app sends small events describing:
   - `steam_keys_used` — you let SMD look for missing depot keys in your
     installed Steam, and how many it found (`found`, `missing`). Never the
     keys or depot IDs
+  - `key_file_used` — you added depot keys from a key file in step 2, and how
+    many matched (`found`, `missing`). Never the keys, IDs or the file name
 
 ### Settings snapshot
 

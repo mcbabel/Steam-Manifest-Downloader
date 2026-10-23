@@ -375,14 +375,55 @@ function offerSteamKeys() {
     <span class="steam-keys-offer__text">${escapeHtml(window.i18n.t('select.steamKeysOffer', { count: missing.length }))}</span>
     <span class="steam-keys-offer__actions">
       <button type="button" class="btn btn--small btn--primary" data-steam-keys="look">${escapeHtml(window.i18n.t('select.steamKeysLook'))}</button>
+      <button type="button" class="btn btn--small btn--outline" data-steam-keys="file">${escapeHtml(window.i18n.t('select.keysFromFile'))}</button>
       <button type="button" class="btn btn--small btn--outline" data-steam-keys="no">${escapeHtml(window.i18n.t('select.steamKeysNo'))}</button>
     </span>`);
   if (!box) return;
   box.querySelector('[data-steam-keys="look"]').addEventListener('click', lookForSteamKeys);
+  box.querySelector('[data-steam-keys="file"]').addEventListener('click', loadKeysFromFile);
   box.querySelector('[data-steam-keys="no"]').addEventListener('click', () => {
     state.steamKeysAsked = String(data.mainAppId);
     setSteamKeysOffer('');
   });
+}
+
+function applyFoundKeys(missing, keys) {
+  let found = 0;
+  for (const depot of missing) {
+    const key = keys && keys[String(depot.depotId)];
+    if (!key) continue;
+    depot.depotKey = key;
+    found += 1;
+    const tag = document.querySelector(`.depot-item[data-depot-id="${CSS.escape(String(depot.depotId))}"] .depot-tag--nokey`);
+    if (tag) tag.remove();
+  }
+  return found;
+}
+
+async function loadKeysFromFile() {
+  const data = state.parsedData;
+  if (!data) return;
+  const path = await window.__TAURI__.dialog.open({
+    multiple: false,
+    filters: [{ name: window.i18n.t('select.keyFilesFilter'), extensions: ['json', 'csv', 'vdf', 'txt'] }],
+  });
+  if (!path) return;
+  const missing = depotsWithoutKey();
+  try {
+    const keys = await invoke('read_key_file', { path });
+    if (!state.parsedData || state.parsedData !== data) return;
+    state.steamKeysAsked = String(data.mainAppId);
+    const found = applyFoundKeys(missing, keys);
+    emitEvent('key_file_used', { found, missing: missing.length - found, where: 'select' });
+    if (found) {
+      setSteamKeysOffer(escapeHtml(window.i18n.t('select.keyFileFound', { found, count: missing.length })), 'success');
+      updateDownloadButton();
+    } else {
+      setSteamKeysOffer(escapeHtml(window.i18n.t('select.keyFileNone')), 'warning');
+    }
+  } catch (e) {
+    setSteamKeysOffer(escapeHtml(window.i18n.localizeError(String(e))), 'warning');
+  }
 }
 
 async function lookForSteamKeys() {
@@ -398,15 +439,7 @@ async function lookForSteamKeys() {
     console.warn('local_steam_depot_keys failed:', e);
   }
   if (!state.parsedData || String(state.parsedData.mainAppId) !== appId) return;
-  let found = 0;
-  for (const depot of missing) {
-    const key = result.keys && result.keys[String(depot.depotId)];
-    if (!key) continue;
-    depot.depotKey = key;
-    found += 1;
-    const tag = document.querySelector(`.depot-item[data-depot-id="${CSS.escape(String(depot.depotId))}"] .depot-tag--nokey`);
-    if (tag) tag.remove();
-  }
+  const found = applyFoundKeys(missing, result.keys);
   emitEvent('steam_keys_used', { found, missing: missing.length - found });
   if (!result.steamFound) {
     setSteamKeysOffer(escapeHtml(window.i18n.t('select.steamKeysNoSteam')), 'warning');

@@ -109,6 +109,10 @@ pub struct DownloadArgs {
     pub account: bool,
     #[arg(long, help = t("tui.cli.argSteamKeys"))]
     pub steam_keys: bool,
+    #[arg(long, value_name = "FILE", help = t("tui.cli.argKeys"))]
+    pub keys: Vec<std::path::PathBuf>,
+    #[arg(long, value_name = "APP_ID", help = t("tui.cli.argApp"))]
+    pub app: Option<u64>,
     #[arg(
         long,
         help = t("tui.cli.argJson")
@@ -322,7 +326,7 @@ async fn plan_from_source(
         })
     } else {
         let path = crate::ui::file_browser::expand_tilde(&args.source);
-        let parsed = smd_core::ops::files::parse_source_file(&path.to_string_lossy()).await?;
+        let parsed = smd_core::ops::files::parse_source_file_for(&path.to_string_lossy(), args.app).await?;
         let app_id = parsed
             .main_app_id
             .map(|i| i.to_string())
@@ -605,6 +609,28 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
         .filter(|(id, ..)| wanted.is_empty() || wanted.contains(id))
         .cloned()
         .collect();
+    for file in &args.keys {
+        let path = crate::ui::file_browser::expand_tilde(&file.to_string_lossy());
+        match smd_core::ops::files::read_key_file(&path.to_string_lossy()).await {
+            Ok(keys) => {
+                let mut found = 0;
+                for (id, _, key, _) in chosen.iter_mut().filter(|(_, _, k, _)| k.is_none()) {
+                    if let Some(k) = keys.get(id) {
+                        *key = Some(k.clone());
+                        found += 1;
+                    }
+                }
+                cli_emit("key_file_used", serde_json::json!({ "found": found, "where": "cli" })).await;
+                if !args.json {
+                    errln!("{}", tf("tui.cli.keyFileUsed", &[("found", &found)]));
+                }
+            }
+            Err(e) => {
+                errln!("{}", tf("tui.cli.error", &[("message", &crate::i18n::localize_error(&e))]));
+                return 1;
+            }
+        }
+    }
     let keyless: Vec<String> = chosen
         .iter()
         .filter(|(id, _, key, _)| key.is_none() && !plan.key_vdf.as_ref().is_some_and(|k| k.contains_key(id)))

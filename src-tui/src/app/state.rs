@@ -190,6 +190,7 @@ pub struct Wizard {
     pub upload_path: TextInput,
     pub upload_loading: bool,
     pub upload_error: Option<String>,
+    pub upload_apps: Vec<smd_core::ops::files::KeyFileApp>,
 
     pub search_input: TextInput,
     pub search_loading: bool,
@@ -293,6 +294,7 @@ impl Wizard {
             upload_path: TextInput::default(),
             upload_loading: false,
             upload_error: None,
+            upload_apps: Vec::new(),
             search_input: TextInput::default(),
             search_loading: false,
             search_error: None,
