@@ -278,6 +278,7 @@ impl App {
                         if r.is_ok() && accept {
                             app.emit("consent_accepted", None);
                             app.emit("app_start", Some(serde_json::json!({ "locale": crate::i18n::language() })));
+                            app.toast(Tone::Success, t("modals.behavior.thanks"));
                         }
                         app.reload_settings();
                     })
@@ -290,6 +291,9 @@ impl App {
                     let _ = smd_core::ops::consent::set_behavior_consent(&dir, accept).await;
                     apply(move |app| {
                         app.emit("behavior_consent", Some(serde_json::json!({ "accept": accept })));
+                        if accept {
+                            app.toast(Tone::Success, t("modals.behavior.thanks"));
+                        }
                         app.reload_settings();
                     })
                 });

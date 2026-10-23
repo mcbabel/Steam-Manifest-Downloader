@@ -1263,14 +1263,15 @@
 
   <div id="behavior-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="behavior-modal-title" aria-hidden="true">
     <div class="modal__backdrop"></div>
-    <div class="modal__content telemetry-modal-content">
+    <div class="modal__content telemetry-modal-content behavior-modal-content">
       <h3 class="modal__title" id="behavior-modal-title">
+        <svg class="modal__title-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="M13 13l6 6"/></svg>
         <span data-i18n="modals.behavior.title">Show us where the app gets stuck?</span>
       </h3>
       <p class="telemetry-modal__lead" data-i18n="modals.behavior.lead">You already share anonymous usage statistics. Would you also let SMD record how you move through the app?</p>
       <div class="telemetry-modal__list">
         <div class="telemetry-modal__col telemetry-modal__col--collect">
-          <h4><span data-i18n="modals.telemetry.collectTitle">We collect</span></h4>
+          <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span data-i18n="modals.telemetry.collectTitle">We collect</span></h4>
           <ul>
             <li data-i18n="modals.behavior.item1">Which screens and steps you open, and how long you stay</li>
             <li data-i18n="modals.behavior.item2">Which buttons you click, by their internal name</li>
@@ -1279,14 +1280,14 @@
           </ul>
         </div>
         <div class="telemetry-modal__col telemetry-modal__col--never">
-          <h4><span data-i18n="modals.telemetry.neverTitle">We never collect</span></h4>
+          <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.69 14a6.9 6.9 0 0 0 .31-2V5l-8-3-3.16 1.18"/><path d="M4.73 4.73 4 5v7c0 6 8 10 8 10a20.29 20.29 0 0 0 5.62-4.38"/><line x1="1" y1="1" x2="23" y2="23"/></svg><span data-i18n="modals.telemetry.neverTitle">We never collect</span></h4>
           <ul>
             <li data-i18n="modals.behavior.never1">What you type, game names, IDs or paths</li>
             <li data-i18n="modals.behavior.never2">Screen contents or mouse positions</li>
           </ul>
         </div>
       </div>
-      <p class="dd-path__hint" data-i18n="modals.behavior.hint">Encrypted like everything else. You can switch it off anytime under Settings → Privacy &amp; diagnostics.</p>
+      <p class="dd-path__hint behavior-modal__hint" data-i18n="modals.behavior.hint">Encrypted like everything else. You can switch it off anytime under Settings → Privacy &amp; diagnostics.</p>
       <div class="modal__actions">
         <button id="btn-behavior-decline" class="btn btn--outline" data-modal-cancel data-i18n="modals.behavior.decline">No, statistics only</button>
         <button id="btn-behavior-accept" class="btn btn--primary" data-i18n="modals.behavior.accept">Yes, allow</button>

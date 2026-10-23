@@ -3977,6 +3977,31 @@ textarea.bug-report__input {
   text-align: left;
 }
 
+.behavior-modal-content {
+  max-width: 620px;
+}
+
+.behavior-modal-content .telemetry-modal__list {
+  grid-template-columns: 3fr 2fr;
+  gap: 24px;
+  padding: 16px 18px;
+}
+
+.behavior-modal-content .telemetry-modal__col ul {
+  gap: 8px;
+  line-height: 1.45;
+}
+
+.behavior-modal__hint {
+  margin: 0 0 20px;
+}
+
+@media (max-width: 560px) {
+  .behavior-modal-content .telemetry-modal__list {
+    grid-template-columns: 1fr;
+  }
+}
+
 .telemetry-modal__lead {
   color: var(--text-secondary);
   margin-bottom: 16px;

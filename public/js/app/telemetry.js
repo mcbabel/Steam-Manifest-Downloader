@@ -30,6 +30,7 @@ async function acceptTelemetry(everything = true) {
     await invoke('set_behavior_consent', { accept: everything });
     invoke('emit_telemetry_event', { kind: 'app_start', props: { locale: window.i18n.getCurrentLocale() } }).catch(() => {});
     if (everything) startJourney();
+    showToast(window.i18n.t('modals.behavior.thanks'), 'success');
   } catch (e) {
     console.error('Failed to accept telemetry:', e);
   }
@@ -39,7 +40,10 @@ async function acceptTelemetry(everything = true) {
 async function answerBehavior(accept) {
   try {
     await invoke('set_behavior_consent', { accept });
-    if (accept) startJourney();
+    if (accept) {
+      startJourney();
+      showToast(window.i18n.t('modals.behavior.thanks'), 'success');
+    }
   } catch (e) {
     console.error('Failed to save behaviour consent:', e);
   }

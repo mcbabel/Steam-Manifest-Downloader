@@ -384,7 +384,8 @@
       "never2": "Bildschirminhalte oder Mauspositionen",
       "hint": "Verschlüsselt wie alles andere. Du kannst es jederzeit unter Einstellungen → Datenschutz & Diagnose ausschalten.",
       "decline": "Nein, nur Statistiken",
-      "accept": "Ja, erlauben"
+      "accept": "Ja, erlauben",
+      "thanks": "Danke, dass du hilfst, SMD besser zu machen!"
     }
   },
   "emulator": {

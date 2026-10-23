@@ -384,7 +384,8 @@
       "never2": "Screen contents or mouse positions",
       "hint": "Encrypted like everything else. You can switch it off anytime under Settings → Privacy & diagnostics.",
       "decline": "No, Statistics Only",
-      "accept": "Yes, Allow"
+      "accept": "Yes, Allow",
+      "thanks": "Thanks for helping to make SMD better!"
     }
   },
   "emulator": {
