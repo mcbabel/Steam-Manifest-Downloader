@@ -727,6 +727,8 @@
     "cancelKeepFiles": "Cancel-Verhalten",
     "cancelKeepFilesToggle": "Heruntergeladene Dateien beim Abbruch behalten",
     "cancelKeepFilesHint": "Ein abgebrochener Download kann dann dort weitermachen, wo er aufgehört hat.",
+    "folderStyle": "Name des Spielordners",
+    "folderStyleHint": "Für neue Downloads. Mit Unterstrichen oder Bindestrichen braucht man in Skripten und im Terminal keine Anführungszeichen. Spiele im Verlauf behalten ihren Ordner.",
     "nativeDownloader": "Download-Engine",
     "nativeDownloaderToggle": "Direkt von Steam laden (nativ, empfohlen)",
     "nativeDownloaderOnly": "Auf diesem System gibt es nur den nativen Downloader. DepotDownloaderMod wird dafür nicht mitgeliefert.",

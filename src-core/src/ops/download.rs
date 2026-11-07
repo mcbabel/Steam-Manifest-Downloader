@@ -58,6 +58,8 @@ pub struct DownloadConfig {
     pub repair: bool,
     #[serde(rename = "likeSteam", alias = "like_steam", default)]
     pub like_steam: Option<bool>,
+    #[serde(rename = "folderStyle", alias = "folder_style", default, skip_serializing_if = "Option::is_none")]
+    pub folder_style: Option<String>,
     #[serde(rename = "allAppIds", alias = "all_app_ids", default)]
     pub all_app_ids: Option<Vec<String>>,
     #[serde(rename = "includeDlc", alias = "include_dlc", default)]
@@ -160,7 +162,6 @@ pub async fn start_download(
         .await
         .map_err(|e| format!("Cannot create download directory: {}", e))?;
 
-    let mut folder_name = config.app_id.clone();
     let mut game_name = config.game_name.clone();
     let mut header_image: Option<String> = config.header_image.clone();
 
@@ -171,12 +172,6 @@ pub async fn start_download(
             Ok(Some(info)) => {
                 game_name = info.name.clone();
                 header_image = info.header_image.clone();
-                if let Some(ref name) = info.name {
-                    let sanitized = steam_store_api::sanitize_game_name(name);
-                    if !sanitized.is_empty() {
-                        folder_name = format!("{} - {}", config.app_id, sanitized);
-                    }
-                }
             }
             Ok(None) => {}
             Err(e) => {
@@ -186,12 +181,12 @@ pub async fn start_download(
                 );
             }
         }
-    } else if let Some(ref name) = game_name {
-        let sanitized = steam_store_api::sanitize_game_name(name);
-        if !sanitized.is_empty() {
-            folder_name = format!("{} - {}", config.app_id, sanitized);
-        }
     }
+    let folder_style = match &config.folder_style {
+        Some(s) => s.clone(),
+        None => crate::services::settings::load_settings(app_data_dir).await.folder_style,
+    };
+    let folder_name = steam_store_api::game_folder_name(&config.app_id, game_name.as_deref(), &folder_style);
 
     let (base_dir, folder_name) = match config.update_target() {
         Some(target) => {

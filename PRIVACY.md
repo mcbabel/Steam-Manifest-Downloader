@@ -137,7 +137,8 @@ When telemetry is enabled, the app sends small events describing:
 `app_start` carries which options are switched on, so the maintainer knows
 which settings matter. Only on/off values and fixed labels are sent, never a
 value you typed: the engine (`native` / `ddm`), whether Like Steam, auto start,
-DLC, the speed limit, auto update and keep-files-on-cancel are on, the proxy
+DLC, the speed limit, auto update and keep-files-on-cancel are on, how the
+game folder is named (`default`, `underscore` or `dash`), the proxy
 type, how many manifest sources are configured (as a range) and whether they
 differ from the defaults, whether a Hubcap or Ryuu key and a Steam folder are
 set (true or false, never the key or the path), whether a Steam Web API key

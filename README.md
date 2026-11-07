@@ -306,6 +306,7 @@ smd logout                          # sign out and revoke the sign-in
 | `--like-steam` | Work like Steam: pick the depots Steam would install for the base game (platform, 64-bit, language) and put them into one game folder. Also on when "Like Steam" is enabled in the settings |
 | `--all-depots` | Every depot into separate subfolders, even when "Like Steam" is enabled in the settings |
 | `--dlc` | With `--like-steam`: also download the DLC in the file. The emulator step later marks them as owned for gbe_fork |
+| `--folder-style` | Name of the game folder: `default` (`220 - Half-Life 2`), `underscore` (`220_Half-Life_2`) or `dash` (`220-Half-Life-2`). Defaults to the setting |
 | `--platform` / `--language` | With `--like-steam`: pick depots for another platform (`windows`, `linux`, `macos`) or game language (`german`, `english`, …). In Docker the default platform is Linux, so use `--platform windows` for the Windows version |
 | `--keys FILE` | Depot keys from a key file (`.json`, `.csv`, `.vdf`, `.txt`) for depots that have none. Repeatable |
 | `--app APP_ID` | Which game to take from a key file that lists several |

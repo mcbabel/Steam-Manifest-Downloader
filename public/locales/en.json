@@ -727,6 +727,8 @@
     "cancelKeepFiles": "Cancel behaviour",
     "cancelKeepFilesToggle": "Keep downloaded files when cancelling",
     "cancelKeepFilesHint": "A cancelled download can then be resumed where it stopped.",
+    "folderStyle": "Game folder name",
+    "folderStyleHint": "For new downloads. Underscores or dashes leave nothing scripts and terminals need quotes for. Games already in the history keep their folder.",
     "nativeDownloader": "Download engine",
     "nativeDownloaderToggle": "Download directly from Steam (native, recommended)",
     "nativeDownloaderOnly": "On this system only the native downloader is available. DepotDownloaderMod is not shipped for it.",

@@ -104,6 +104,26 @@ pub async fn get_game_info(
     Ok(Some(info))
 }
 
+pub const FOLDER_STYLES: [&str; 3] = ["", "underscore", "dash"];
+
+pub fn game_folder_name(app_id: &str, name: Option<&str>, style: &str) -> String {
+    let clean = name.map(sanitize_game_name).unwrap_or_default();
+    let base = if clean.is_empty() { app_id.to_string() } else { format!("{} - {}", app_id, clean) };
+    let sep = match style {
+        "underscore" => '_',
+        "dash" => '-',
+        _ => return base,
+    };
+    let mut out = String::with_capacity(base.len());
+    for part in base.split(' ').filter(|p| !p.is_empty() && *p != "-") {
+        if !out.is_empty() {
+            out.push(sep);
+        }
+        out.push_str(part);
+    }
+    out
+}
+
 pub fn sanitize_game_name(name: &str) -> String {
     let cleaned: String = name
         .chars()
@@ -126,4 +146,19 @@ pub fn sanitize_game_name(name: &str) -> String {
 
     result = result.trim().to_string();
     result.trim_end_matches(|c: char| c == '.' || c == ' ').to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn folder_names_follow_the_style() {
+        assert_eq!(game_folder_name("220", Some("Half-Life 2"), ""), "220 - Half-Life 2");
+        assert_eq!(game_folder_name("220", Some("Half-Life 2"), "underscore"), "220_Half-Life_2");
+        assert_eq!(game_folder_name("220", Some("Half-Life 2"), "dash"), "220-Half-Life-2");
+        assert_eq!(game_folder_name("220", Some("A: B  C"), "underscore"), "220_A_B_C");
+        assert_eq!(game_folder_name("220", None, "dash"), "220");
+        assert_eq!(game_folder_name("220", Some("???"), ""), "220");
+    }
 }

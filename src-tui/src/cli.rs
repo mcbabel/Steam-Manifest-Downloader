@@ -92,6 +92,13 @@ pub struct DownloadArgs {
         help = t("tui.cli.argPlatform")
     )]
     pub platform: Option<String>,
+    #[arg(
+        long,
+        value_name = "STYLE",
+        value_parser = ["default", "underscore", "dash"],
+        help = t("tui.cli.argFolderStyle")
+    )]
+    pub folder_style: Option<String>,
     #[arg(long, value_name = "LANGUAGE", help = t("tui.cli.argLanguage"))]
     pub language: Option<String>,
     #[arg(long, value_name = "NAME", help = t("tui.cli.argBranch"))]
@@ -762,6 +769,10 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
         resume_mode: None,
         repair: args.repair,
         like_steam: Some(like_steam),
+        folder_style: args
+            .folder_style
+            .as_deref()
+            .map(|s| if s == "default" { String::new() } else { s.to_string() }),
         all_app_ids: Some(plan.all_app_ids.clone()),
         include_dlc: args.dlc.then_some(true),
         branch: args.branch.clone(),

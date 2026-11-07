@@ -874,6 +874,7 @@ fn settings_snapshot(s: &settings_service::Settings) -> serde_json::Value {
         "engine": if s.use_native_downloader { "native" } else { "ddm" },
         "like_steam": s.auto_select_depots,
         "auto_start": s.auto_start_download,
+        "folder_style": match s.folder_style.as_str() { "underscore" | "dash" => s.folder_style.as_str(), _ => "default" },
         "include_dlc": s.include_dlc,
         "proxy": proxy_kind(&s.proxy),
         "speed_limit": !limit.is_empty() && limit != "0",

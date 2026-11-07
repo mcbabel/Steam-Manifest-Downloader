@@ -200,6 +200,10 @@ impl App {
                 self.set.draft.target_platform = p.to_string();
                 self.set.dirty = true;
             }
+            Action::SettingsFolderStyle(style) => {
+                self.set.draft.folder_style = style.to_string();
+                self.set.dirty = true;
+            }
             Action::SettingsGameMedia(m) => {
                 self.set.draft.game_data_media = m.to_string();
                 self.set.dirty = true;
@@ -412,6 +416,7 @@ impl App {
             s.auto_update = draft.auto_update;
             s.use_native_downloader = draft.use_native_downloader;
             s.cancel_keep_files = draft.cancel_keep_files;
+            s.folder_style = draft.folder_style.clone();
             s.auto_select_depots = draft.auto_select_depots;
             s.auto_start_download = draft.auto_start_download;
             s.include_dlc = draft.include_dlc;
@@ -721,6 +726,28 @@ impl App {
             Fid::new("settings.keepFiles"),
             Action::SettingsToggle(SettingToggle::CancelKeepFiles),
         );
+        let r = sv.next(1);
+        let label = format!("{}: ", t("settings.folderStyle"));
+        widgets::text(&mut sv.buf, r, &label, theme::text());
+        let mut x = r.x + widgets::width(&label);
+        let styles: [(&'static str, &str); 3] =
+            [("", "220 - Half-Life 2"), ("underscore", "220_Half-Life_2"), ("dash", "220-Half-Life-2")];
+        for (i, (value, example)) in styles.iter().enumerate() {
+            let cell = Rect::new(x, r.y, r.right().saturating_sub(x), 1);
+            x += widgets::radio(
+                &mut sv.buf,
+                ctx,
+                cell,
+                d.folder_style == *value,
+                example,
+                Fid::idx("settings.folderStyle", i),
+                Action::SettingsFolderStyle(value),
+            ) + 2;
+        }
+        let ht = t("settings.folderStyleHint");
+        let r = sv.next(widgets::wrap_height(&ht, w));
+        hint(&mut sv.buf, r, &ht);
+        sv.gap(1);
         self.render_depot_selection(sv, ctx, w, &d);
 
         let fields: [(usize, &str, &str, &str); 5] = [

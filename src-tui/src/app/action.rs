@@ -205,6 +205,7 @@ pub enum Action {
     SettingsToggle(SettingToggle),
     SettingsPlatform(&'static str),
     SettingsGameMedia(&'static str),
+    SettingsFolderStyle(&'static str),
     SettingsGameLanguage(i32),
     SettingsLanguage(&'static str),
     SettingsTheme(ThemeMode),

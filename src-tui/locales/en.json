@@ -260,6 +260,7 @@
       "argAllDepots": "Download every depot in the file into separate subfolders, even when \"Like Steam\" is on in the settings.",
       "argPlatform": "With --like-steam: platform to pick depots for. Default: this system, or Windows when the game has no build for it.",
       "argLanguage": "With --like-steam: game language as Steam names it (for example german, english, french). Default: the app language.",
+      "argFolderStyle": "Name of the game folder: default (\"220 - Half-Life 2\"), underscore (\"220_Half-Life_2\") or dash (\"220-Half-Life-2\"). Default: the setting.",
       "autoSelectFailed": "Could not read the depot list from Steam, so every depot is downloaded: {message}",
       "argDlc": "With --like-steam: also download the DLC in the file and mark them as owned for gbe_fork.",
       "argLikeSteam": "Work like Steam for this download: pick the depots Steam would install and put them into one game folder (default: the setting).",

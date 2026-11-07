@@ -132,6 +132,7 @@ async function saveSettings() {
     if (els.autoSelectDepotsToggle) {
       currentSettings.auto_select_depots = els.autoSelectDepotsToggle.checked;
       currentSettings.auto_start_download = els.autoStartDownloadToggle.checked;
+      currentSettings.folder_style = state.folderStyle || '';
       currentSettings.include_dlc = els.includeDlcToggle.checked;
       currentSettings.target_platform = state.targetPlatform || '';
       currentSettings.game_language = state.gameLanguage || '';
@@ -241,6 +242,7 @@ function populateDepotSelectionSettings(settings) {
   if (!els.autoSelectDepotsToggle) return;
   els.autoSelectDepotsToggle.checked = !!settings.auto_select_depots;
   els.autoStartDownloadToggle.checked = !!settings.auto_start_download;
+  setFolderStyle(settings.folder_style || '');
   els.includeDlcToggle.checked = !!settings.include_dlc;
   setTargetPlatform(settings.target_platform || '');
   setGameLanguage(settings.game_language || '');
@@ -249,6 +251,15 @@ function populateDepotSelectionSettings(settings) {
 
 function syncAutoSelectOptions() {
   els.autoSelectOptions.classList.toggle('is-disabled', !els.autoSelectDepotsToggle.checked);
+}
+
+function setFolderStyle(value) {
+  state.folderStyle = value;
+  document.querySelectorAll('#folder-style-options .segmented__option').forEach(btn => {
+    const on = btn.dataset.value === value;
+    btn.classList.toggle('is-active', on);
+    btn.setAttribute('aria-checked', on ? 'true' : 'false');
+  });
 }
 
 function setTargetPlatform(value) {
@@ -312,6 +323,9 @@ function bindDepotSelectionSettings() {
   els.autoSelectDepotsToggle.addEventListener('change', syncAutoSelectOptions);
   els.targetPlatformOptions.querySelectorAll('.segmented__option').forEach(btn => {
     btn.addEventListener('click', () => setTargetPlatform(btn.dataset.value));
+  });
+  document.querySelectorAll('#folder-style-options .segmented__option').forEach(btn => {
+    btn.addEventListener('click', () => setFolderStyle(btn.dataset.value));
   });
   els.gameLanguageButton.addEventListener('click', () => {
     setGameLanguageOpen(els.gameLanguageMenu.classList.contains('hidden'));

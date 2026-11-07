@@ -1465,6 +1465,17 @@
                   </div>
                 </div>
               </div>
+              <div class="settings-row settings-row--wrap">
+                <span class="settings-row__text">
+                  <span class="settings-row__label" data-i18n="settings.folderStyle">Game folder name</span>
+                  <span class="settings-row__hint" data-i18n="settings.folderStyleHint">For new downloads. Underscores or dashes leave nothing scripts and terminals need quotes for. Games already in the history keep their folder.</span>
+                </span>
+                <div id="folder-style-options" class="segmented" role="radiogroup" data-i18n-attr="aria-label=settings.folderStyle">
+                  <button type="button" class="segmented__option is-active" data-value="" role="radio" aria-checked="true">220 - Half-Life 2</button>
+                  <button type="button" class="segmented__option" data-value="underscore" role="radio" aria-checked="false">220_Half-Life_2</button>
+                  <button type="button" class="segmented__option" data-value="dash" role="radio" aria-checked="false">220-Half-Life-2</button>
+                </div>
+              </div>
               <label class="settings-row" for="cancel-keep-files-toggle">
                 <span class="settings-row__text">
                   <span class="settings-row__label" data-i18n="settings.cancelKeepFilesToggle">Keep downloaded files when cancelling</span>

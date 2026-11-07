@@ -71,6 +71,8 @@ pub struct Settings {
     #[serde(default)]
     pub target_platform: String,
     #[serde(default)]
+    pub folder_style: String,
+    #[serde(default)]
     pub steam_path: String,
     #[serde(default)]
     pub last_seen_version: String,
@@ -158,6 +160,7 @@ impl Default for Settings {
             include_dlc: false,
             game_language: String::new(),
             target_platform: String::new(),
+            folder_style: String::new(),
             steam_path: String::new(),
             last_seen_version: String::new(),
             feedback_prompt_done: false,

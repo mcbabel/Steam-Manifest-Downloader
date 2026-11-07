@@ -115,6 +115,7 @@ fn main() {
                         "download",
                         serde_json::json!({
                             "json": a.json, "update": a.update.is_some(), "repair": a.repair,
+                            "folder_style": a.folder_style.is_some(),
                             "like_steam": a.like_steam, "all_depots": a.all_depots, "dlc": a.dlc,
                             "shutdown": a.shutdown, "list": a.list, "speed_limit": a.speed_limit.is_some(),
                             "depots_given": !a.depots.is_empty(), "out": a.out.is_some(),
