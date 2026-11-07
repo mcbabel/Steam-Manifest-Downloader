@@ -2,7 +2,10 @@ name: Dependabot auto-merge
 
 on:
   pull_request_target:
-    types: [opened, reopened, synchronize]
+    types: [opened, reopened, synchronize, closed]
+  schedule:
+    - cron: "40 5 * * *"
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -10,7 +13,7 @@ permissions:
 
 jobs:
   automerge:
-    if: github.actor == 'dependabot[bot]' && github.event.pull_request.base.ref == 'dev'
+    if: github.event_name == 'pull_request_target' && github.event.action != 'closed' && github.actor == 'dependabot[bot]' && github.event.pull_request.base.ref == 'dev'
     runs-on: ubuntu-latest
     steps:
       - name: Read update metadata
@@ -32,3 +35,19 @@ jobs:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh pr comment "$PR_URL" --body "Major update — not auto-merged. Needs a look before this lands on dev."
+
+  cleanup:
+    if: github.event_name != 'pull_request_target' || github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete Dependabot branches without an open pull request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          open=$(gh api --paginate "repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=100" --jq '.[].head.ref')
+          gh api --paginate "repos/$GITHUB_REPOSITORY/branches?per_page=100" --jq '.[].name' | grep '^dependabot/' | while read -r branch; do
+            if ! grep -qxF "$branch" <<< "$open"; then
+              echo "Deleting $branch"
+              gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$branch" || true
+            fi
+          done
