@@ -684,7 +684,16 @@
     "settingsOnlyChanged": "Nur geänderte",
     "settingsReset": "Alle zurücksetzen",
     "settingsNoMatch": "Keine Einstellung passt.",
-    "settingsResetDone": "Alle Emulator-Einstellungen auf die gbe_fork-Standards zurückgesetzt."
+    "settingsResetDone": "Alle Emulator-Einstellungen auf die gbe_fork-Standards zurückgesetzt.",
+    "patchedWith": "Gepatcht mit gbe_fork {tag}{variant}.",
+    "patchedWithUnknown": "Gepatcht mit unbekannter gbe_fork-Version, vermutlich bevor SMD sie sich gemerkt hat.",
+    "updateGbe": "Auf {tag} aktualisieren",
+    "drmRestore": {
+      "title": "Steam-DRM entfernt",
+      "hint": "Steamless hat die Original-Programmdateien behalten. Stell eine wieder her, um das Steam-DRM zurückzubringen.",
+      "restore": "Original wiederherstellen",
+      "done": "Original-Programmdatei wiederhergestellt."
+    }
   },
   "steamLibrary": {
     "title": "Zur Steam-Bibliothek hinzufügen",

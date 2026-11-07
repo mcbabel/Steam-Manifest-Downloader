@@ -64,7 +64,7 @@ Upload `.lua` / `.st` files or depot key exports (`.json`, `.csv`), or search by
 | 🌐 | **Proxy with a test button** — HTTP, HTTPS or SOCKS5 for every connection, retries on connection errors, readable error messages that never show API keys |
 | 🎮 | **Steam Store API** integration — game names + cover art |
 | 🖼️ | **Add to Steam Library** — non-Steam shortcut with banner / hero / logo / icon (Linux step + Windows toggle). Steam is found automatically (registry, usual folders, Flatpak, Snap) or set under Settings → Steam folder |
-| 🔧 | **gbe_fork emulator** patching — Regular + Experimental variants, 39 settings in groups with search, per file selection; edit or revert later, or patch a folder that is already on disk |
+| 🔧 | **gbe_fork emulator** patching — Regular + Experimental variants, 39 settings in groups with search, per file selection; edit, update to a newer gbe_fork or revert later, restore DRM originals one by one, or patch a folder that is already on disk |
 | 🎮 | **Controller support** — writes the game's Steam Input layout with button icons for gbe_fork when patching, your own layout file, controller type, and Steam Input through Steam for PlayStation and Switch controllers |
 | 🛡️ | **DRM detection & removal** via Steamless (works through `mono` on Linux) |
 | 🪝 | **Steam-API-Check Bypass** — bundled `version.dll` hijack for stubborn integrity checks |

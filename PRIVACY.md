@@ -90,6 +90,10 @@ When telemetry is enabled, the app sends small events describing:
     range
   - `steamless_used`, `api_bypass`, `dlc_merged` — the DRM removal, the Steam
     API check bypass or the DLC depot merge ran, and whether it worked
+  - `drm_restored` — an original program file with Steam DRM was put back,
+    one by one (`single`) or while reverting the patch (`revert`)
+  - `emu_gbe_updated` — a patched game was updated to the newest gbe_fork
+    release, and whether the old version was known (`known` or `unknown`)
   - `game_data_written` — the emulator step wrote game data for gbe_fork,
     where the achievements came from (`web_api`, `keyless` or `none`), how
     many languages, depots, branches, achievements, achievement languages,

@@ -20,6 +20,10 @@ pub enum Variant {
 }
 
 impl Variant {
+    pub fn as_str(self) -> &'static str {
+        self.folder()
+    }
+
     fn folder(self) -> &'static str {
         match self {
             Variant::Regular => "regular",
@@ -1085,6 +1089,36 @@ fn apply_to_target(
     Ok(())
 }
 
+const PATCH_INFO_FILE: &str = ".smd-emulator.json";
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+pub struct PatchInfo {
+    pub tag: Option<String>,
+    pub variant: Option<String>,
+}
+
+fn patch_info_path(target: &Path) -> Option<PathBuf> {
+    target.parent().map(|p| p.join("steam_settings").join(PATCH_INFO_FILE))
+}
+
+pub fn write_patch_info(target: &Path, tag: &str, variant: Variant) {
+    let Some(path) = patch_info_path(target) else { return };
+    let info = PatchInfo {
+        tag: Some(tag.to_string()).filter(|t| !t.is_empty()),
+        variant: Some(variant.as_str().to_string()),
+    };
+    if let Ok(json) = serde_json::to_string_pretty(&info) {
+        let _ = fs::write(path, json);
+    }
+}
+
+pub fn read_patch_info(target: &Path) -> PatchInfo {
+    patch_info_path(target)
+        .and_then(|p| fs::read_to_string(p).ok())
+        .and_then(|s| serde_json::from_str(&s).ok())
+        .unwrap_or_default()
+}
+
 pub fn read_emu_settings_for_target(target: &Path) -> Result<EmuSettings, String> {
     let parent = target
         .parent()
@@ -1130,6 +1164,7 @@ pub fn revert_replacement(target: &Path) -> Result<(), TargetError> {
         let _ = fs::remove_file(settings_dir.join("steam_appid.txt"));
         let _ = fs::remove_file(settings_dir.join("installed_app_ids.txt"));
         let _ = fs::remove_file(settings_dir.join("configs.app.ini"));
+        let _ = fs::remove_file(settings_dir.join(PATCH_INFO_FILE));
         let _ = fs::remove_dir(&settings_dir);
     }
     Ok(())
@@ -1756,6 +1791,25 @@ mod ini_field_tests {
         fs::create_dir_all(&dir).unwrap();
         fs::write(dir.join("configs.main.ini"), "[main::general]\nsteam_deck=1\n").unwrap();
         assert_eq!(EmuSettings::read_from_dir(&dir).steam_deck, Some(true));
+        let _ = fs::remove_dir_all(&dir);
+    }
+}
+
+#[cfg(test)]
+mod patch_info_tests {
+    use super::*;
+
+    #[test]
+    fn remembers_the_release_and_build_of_a_patch() {
+        let dir = std::env::temp_dir().join(format!("smd-patchinfo-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(dir.join("steam_settings")).unwrap();
+        let target = dir.join("steam_api64.dll");
+        assert_eq!(read_patch_info(&target), PatchInfo::default());
+        write_patch_info(&target, "release-2026_10_01", Variant::Experimental);
+        let info = read_patch_info(&target);
+        assert_eq!(info.tag.as_deref(), Some("release-2026_10_01"));
+        assert_eq!(info.variant.as_deref(), Some("experimental"));
         let _ = fs::remove_dir_all(&dir);
     }
 }

@@ -607,6 +607,71 @@ impl App {
         );
     }
 
+    fn load_drm_backups(&mut self) {
+        let Some(e) = self.emu.as_ref() else { return };
+        let dir = e.game_dir.clone();
+        self.spawn(async move {
+            let list = smd_core::ops::emulator::drm_backups(dir).await;
+            apply(move |app| {
+                if let Some(e) = app.emu.as_mut() {
+                    e.drm_backups = list;
+                }
+            })
+        });
+    }
+
+    fn load_patch_info(&mut self) {
+        let Some(e) = self.emu.as_mut() else { return };
+        let Some(first) = e.edit_targets.first() else {
+            e.patch_info = None;
+            return;
+        };
+        let info = smd_core::ops::emulator::patch_info(&first.path);
+        if let Some(v) = info.variant.as_deref() {
+            e.experimental = v == "experimental";
+        }
+        e.patch_info = Some(info);
+    }
+
+    fn restore_drm(&mut self, i: usize) {
+        let Some(b) = self.emu.as_ref().and_then(|e| e.drm_backups.get(i)).cloned() else { return };
+        match smd_core::ops::emulator::restore_drm(&b.path) {
+            Ok(()) => {
+                self.emit("drm_restored", Some(serde_json::json!({ "where": "single" })));
+                self.toast(Tone::Success, t("emulator.drmRestore.done"));
+            }
+            Err(e) => self.toast(Tone::Error, crate::i18n::localize_error(&e)),
+        }
+        self.load_drm_backups();
+        if let Some(e) = self.emu.as_ref() {
+            let d = e.game_dir.clone();
+            self.spawn(async move {
+                let r = tokio::task::spawn_blocking(move || {
+                    smd_core::services::steamless::scan_game_dir_for_drm(std::path::Path::new(&d))
+                })
+                .await
+                .unwrap_or_default();
+                apply(move |app| {
+                    if let Some(e) = app.emu.as_mut() {
+                        e.drm = r;
+                    }
+                })
+            });
+        }
+    }
+
+    fn emu_update_gbe(&mut self) {
+        let Some(e) = self.emu.as_mut() else { return };
+        if e.busy || e.edit_targets.is_empty() {
+            return;
+        }
+        e.selected = e.edit_targets.iter().map(|t| t.path.clone()).collect();
+        e.selection_explicit = true;
+        let from = if e.patch_info.as_ref().is_some_and(|p| p.tag.is_some()) { "known" } else { "unknown" };
+        self.emit("emu_gbe_updated", Some(serde_json::json!({ "from": from })));
+        self.emu_apply();
+    }
+
     fn emu_side_scans(&mut self) {
         self.load_controller_info();
         let Some(emu) = &self.emu else { return };
@@ -616,7 +681,11 @@ impl App {
         let edit = emu.edit_mode;
         let core = self.core.clone();
         let data = self.data_dir.clone();
-        if !edit {
+        self.load_drm_backups();
+        self.load_patch_info();
+        {
+            let core = core.clone();
+            let data = data.clone();
             self.spawn(async move {
                 let r = smd_core::services::emulator::fetch_release_info(&core.http_client, &data)
                     .await;
@@ -626,6 +695,8 @@ impl App {
                     }
                 })
             });
+        }
+        if !edit {
             let d = dir.clone();
             self.spawn(async move {
                 let r = tokio::task::spawn_blocking(move || {
@@ -712,6 +783,8 @@ impl App {
                     e.refresh_patched(scan);
                     e.settings_prefill_path = e.edit_targets.first().map(|t| t.path.clone());
                 }
+                app.load_patch_info();
+                app.load_drm_backups();
             })
         });
     }
@@ -919,6 +992,8 @@ impl App {
             }
             Action::EmuMergeDlc => self.emu_merge(),
             Action::EmuRemoveDrm => self.emu_remove_drm(),
+            Action::EmuRestoreDrm(i) => self.restore_drm(*i),
+            Action::EmuUpdateGbe => self.emu_update_gbe(),
             Action::EmuDone => self.reset_wizard(),
             _ => return false,
         }
@@ -1051,7 +1126,9 @@ impl App {
                         }
                         e.status = Some((Tone::Success, msg));
                         let app_id = e.app_id.clone();
-                        if e.standalone {
+                        if e.edit_mode {
+                            app.refresh_emu_scan();
+                        } else if e.standalone {
                             app.refresh_emu_scan();
                         } else {
                             e.apply_complete = true;
@@ -1399,13 +1476,23 @@ impl App {
         e.status = Some((Tone::Busy, t("emulator.reverting")));
         let targets = e.edit_targets.clone();
         let paths: Vec<String> = targets.iter().map(|t| t.path.clone()).collect();
+        let game_dir = e.game_dir.clone();
         let entry = self.emu_entry();
         self.spawn(async move {
             let r = smd_core::ops::emulator::revert_replacement(paths.clone()).await;
             for p in &paths {
                 let _ = smd_core::services::steam_api_bypass::revert_for_target(std::path::Path::new(p));
             }
+            let mut drm_restored = 0;
+            for b in smd_core::ops::emulator::drm_backups(game_dir).await {
+                if smd_core::ops::emulator::restore_drm(&b.path).is_ok() {
+                    drm_restored += 1;
+                }
+            }
             apply(move |app| {
+                if drm_restored > 0 {
+                    app.emit("drm_restored", Some(serde_json::json!({ "where": "revert" })));
+                }
                 let results = match r {
                     Ok(r) => r,
                     Err(err) => {
@@ -1740,6 +1827,42 @@ impl App {
             w: lw,
             y: top,
         };
+        if let Some(info) = e.patch_info.as_ref() {
+            let variant = match info.variant.as_deref() {
+                Some("experimental") => format!(" ({})", t("emulator.variantExperimental")),
+                Some("regular") => format!(" ({})", t("emulator.variantRegular")),
+                _ => String::new(),
+            };
+            let text = match &info.tag {
+                Some(tag) => tf("emulator.patchedWith", &[("tag", tag), ("variant", &variant)]),
+                None => t("emulator.patchedWithUnknown"),
+            };
+            let h = widgets::wrap_height(&text, lw);
+            let r = col.next(h);
+            widgets::paragraph(&mut sv.buf, r, &text, theme::dim());
+            let latest = match &e.release {
+                Some(Ok(rel)) => Some(rel.tag.clone()),
+                _ => None,
+            };
+            if let Some(latest) = latest.filter(|l| info.tag.as_deref() != Some(l.as_str())) {
+                let r = col.next(1);
+                widgets::button(
+                    &mut sv.buf,
+                    ctx,
+                    r.x,
+                    r.y,
+                    r.width,
+                    &ButtonSpec::new(
+                        tf("emulator.updateGbe", &[("tag", &latest)]),
+                        Fid::new("emu.updateGbe"),
+                        Action::EmuUpdateGbe,
+                        Btn::Primary,
+                    )
+                    .enabled(!e.busy),
+                );
+            }
+            col.gap(1);
+        }
         let r = col.next(1);
         widgets::heading(&mut sv.buf, r, &t("emulator.detectedLabel"));
         if e.scan.is_empty() {
@@ -1881,6 +2004,32 @@ impl App {
                 let h = widgets::status_height(msg, lw).min(10);
                 let r = col.next(h);
                 widgets::status(&mut sv.buf, r, *tone, msg, tick);
+            }
+        }
+
+        if !e.drm_backups.is_empty() {
+            col.gap(1);
+            let r = col.next(1);
+            widgets::heading(&mut sv.buf, r, &t("emulator.drmRestore.title"));
+            let d = t("emulator.drmRestore.hint");
+            let h = widgets::wrap_height(&d, lw);
+            let r = col.next(h);
+            widgets::paragraph(&mut sv.buf, r, &d, theme::dim());
+            let dir = e.game_dir.clone();
+            let label = t("emulator.drmRestore.restore");
+            let bw = widgets::width(&label) + 4;
+            for (i, b) in e.drm_backups.iter().enumerate() {
+                let r = col.next(1);
+                let rel = b.path.strip_prefix(&dir).unwrap_or(&b.path).trim_start_matches(['/', '\\']).to_string();
+                widgets::text(&mut sv.buf, Rect::new(r.x + 2, r.y, r.width.saturating_sub(bw + 3), 1), &rel, theme::text());
+                widgets::button(
+                    &mut sv.buf,
+                    ctx,
+                    r.x + r.width.saturating_sub(bw),
+                    r.y,
+                    bw,
+                    &ButtonSpec::new(label.clone(), Fid::idx("emu.drmRestore", i), Action::EmuRestoreDrm(i), Btn::Secondary),
+                );
             }
         }
 

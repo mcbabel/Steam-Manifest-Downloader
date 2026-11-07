@@ -710,7 +710,16 @@
             </div>
 
             <div class="emu-section">
+              <div id="emu-patch-version" class="emu-patch-version hidden">
+                <span id="emu-patch-version-text"></span>
+                <button type="button" id="btn-emu-update-gbe" class="btn btn--small btn--primary hidden"></button>
+              </div>
               <div id="emu-file-list" class="emu-file-list" aria-live="polite"></div>
+              <div id="emu-drm-restore" class="emu-drm-restore hidden">
+                <p class="emu-gamedata__key-label" data-i18n="emulator.drmRestore.title">Steam DRM removed</p>
+                <p class="dd-path__hint" data-i18n="emulator.drmRestore.hint">Steamless kept the original program files. Restore one to put Steam DRM back in.</p>
+                <div id="emu-drm-restore-list" class="emu-drm-restore__list"></div>
+              </div>
               <p id="emu-file-empty" class="emu-file-empty hidden" data-i18n="emulator.noFiles">No Steam API libraries were found in the download folder.</p>
               <p id="emu-already-patched" class="emu-already-patched hidden"></p>
             </div>

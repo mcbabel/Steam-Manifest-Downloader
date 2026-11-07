@@ -260,8 +260,71 @@ pub async fn unpack_with_steamless(
     Ok(result)
 }
 
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
+pub struct DrmBackup {
+    pub path: String,
+    pub backup: String,
+}
+
+pub fn drm_backups(game_dir: &Path) -> Vec<DrmBackup> {
+    let mut out = Vec::new();
+    if !game_dir.exists() {
+        return out;
+    }
+    for entry in WalkDir::new(game_dir).follow_links(false).into_iter().flatten() {
+        if !entry.file_type().is_file() {
+            continue;
+        }
+        let name = entry.file_name().to_string_lossy().to_string();
+        let Some(exe) = name.strip_suffix(".drm.bak") else { continue };
+        if !exe.to_ascii_lowercase().ends_with(".exe") {
+            continue;
+        }
+        out.push(DrmBackup {
+            path: entry.path().with_file_name(exe).to_string_lossy().to_string(),
+            backup: entry.path().to_string_lossy().to_string(),
+        });
+    }
+    out.sort_by(|a, b| a.path.cmp(&b.path));
+    out
+}
+
+pub fn restore_drm(exe: &Path) -> Result<(), String> {
+    let backup = backup_path_for(exe);
+    if !backup.exists() {
+        return Err(format!("no backup found at {}", backup.display()));
+    }
+    std::fs::copy(&backup, exe).map_err(|e| format!("restore from backup: {}", e))?;
+    let _ = std::fs::remove_file(&backup);
+    Ok(())
+}
+
 fn backup_path_for(target: &Path) -> PathBuf {
     let mut p = target.as_os_str().to_owned();
     p.push(".drm.bak");
     PathBuf::from(p)
+}
+
+#[cfg(test)]
+mod drm_backup_tests {
+    use super::*;
+
+    #[test]
+    fn lists_and_restores_kept_originals() {
+        let dir = std::env::temp_dir().join(format!("smd-drmbak-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(dir.join("bin")).unwrap();
+        let exe = dir.join("bin").join("Game.exe");
+        std::fs::write(&exe, b"unpacked").unwrap();
+        std::fs::write(dir.join("bin").join("Game.exe.drm.bak"), b"original").unwrap();
+        std::fs::write(dir.join("notes.txt.drm.bak"), b"x").unwrap();
+        let list = drm_backups(&dir);
+        assert_eq!(list.len(), 1);
+        assert_eq!(Path::new(&list[0].path), exe.as_path());
+        restore_drm(&exe).unwrap();
+        assert_eq!(std::fs::read(&exe).unwrap(), b"original");
+        assert!(drm_backups(&dir).is_empty());
+        assert!(restore_drm(&exe).is_err());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 }

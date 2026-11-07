@@ -51,6 +51,7 @@ async function goToEmulatorStep(opts = {}) {
   scanForDlcMergeAsync();
   scanForDrmAsync();
   loadEmuControllerInfo();
+  refreshEmuDrmRestore();
   await loadEmuReleaseInfo();
 }
 
@@ -624,6 +625,7 @@ async function loadEmuReleaseInfo() {
     els.emuReleaseStatus.classList.remove('emu-release-status--busy');
     els.emuReleaseStatus.classList.add('emu-release-status--ready');
     els.emuReleaseStatus.textContent = window.i18n.t('emulator.releaseReady', { tag: info.tag });
+    refreshEmuPatchVersion();
   } catch (e) {
     console.error('emu_release_info failed:', e);
     els.emuReleaseStatus.classList.remove('emu-release-status--busy', 'emu-release-status--ready');
@@ -1001,6 +1003,98 @@ function initEmuController() {
   renderEmuControllerState();
 }
 
+async function refreshEmuPatchVersion() {
+  const box = document.getElementById('emu-patch-version');
+  const text = document.getElementById('emu-patch-version-text');
+  const btn = document.getElementById('btn-emu-update-gbe');
+  const target = (state.emuEditTargets || [])[0];
+  if (!box || !text || !btn) return;
+  if (!target) {
+    box.classList.add('hidden');
+    return;
+  }
+  let info = {};
+  try { info = await invoke('emu_patch_info', { target: target.path }) || {}; } catch (_) {}
+  state.emuPatchInfo = info;
+  const radio = info.variant && document.querySelector(`input[name="emu-variant"][value="${info.variant}"]`);
+  if (radio && !radio.checked) {
+    radio.checked = true;
+    radio.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  const variant = info.variant === 'experimental'
+    ? window.i18n.t('emulator.variantExperimental')
+    : info.variant === 'regular' ? window.i18n.t('emulator.variantRegular') : '';
+  text.textContent = info.tag
+    ? window.i18n.t('emulator.patchedWith', { tag: info.tag, variant: variant ? ` (${variant})` : '' })
+    : window.i18n.t('emulator.patchedWithUnknown');
+  const latest = state.emulatorReleaseInfo && state.emulatorReleaseInfo.tag;
+  const outdated = !!latest && latest !== info.tag;
+  btn.textContent = window.i18n.t('emulator.updateGbe', { tag: latest || '' });
+  btn.classList.toggle('hidden', !outdated);
+  box.classList.remove('hidden');
+}
+
+async function updateEmuInPlace() {
+  const targets = state.emuEditTargets || [];
+  if (!targets.length || state.emuBusy) return;
+  state.emuSelectedFiles = new Set(targets.map(t => t.path));
+  state.emuSelectionExplicit = true;
+  emitEvent('emu_gbe_updated', { from: state.emuPatchInfo && state.emuPatchInfo.tag ? 'known' : 'unknown' });
+  await applyEmuReplacement();
+}
+
+async function refreshEmuDrmRestore() {
+  const box = document.getElementById('emu-drm-restore');
+  const list = document.getElementById('emu-drm-restore-list');
+  if (!box || !list || !state.downloadDir) return;
+  let backups = [];
+  try { backups = await invoke('emu_drm_backups', { gameDir: state.downloadDir }) || []; } catch (_) {}
+  list.innerHTML = '';
+  backups.forEach(b => {
+    const row = document.createElement('div');
+    row.className = 'emu-drm-restore__row';
+    const name = document.createElement('span');
+    name.className = 'emu-drm-restore__path';
+    name.textContent = relativizeEmuPath(b.path);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn--small btn--outline';
+    btn.textContent = window.i18n.t('emulator.drmRestore.restore');
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      try {
+        await invoke('emu_restore_drm', { exe: b.path });
+        emitEvent('drm_restored', { where: 'single' });
+        showToast(window.i18n.t('emulator.drmRestore.done'), 'success');
+      } catch (e) {
+        showToast(window.i18n.localizeError(String(e)), 'error');
+      }
+      refreshEmuDrmRestore();
+      scanForDrmAsync();
+    });
+    row.append(name, btn);
+    list.appendChild(row);
+  });
+  box.classList.toggle('hidden', backups.length === 0);
+}
+
+async function restoreAllDrm() {
+  if (!state.downloadDir) return 0;
+  let backups = [];
+  try { backups = await invoke('emu_drm_backups', { gameDir: state.downloadDir }) || []; } catch (_) {}
+  let restored = 0;
+  for (const b of backups) {
+    try {
+      await invoke('emu_restore_drm', { exe: b.path });
+      restored += 1;
+    } catch (e) {
+      console.error('emu_restore_drm failed:', e);
+    }
+  }
+  if (restored) emitEvent('drm_restored', { where: 'revert' });
+  return restored;
+}
+
 function collectInstalledAppIds(mainAppId) {
   const list = (state.parsedData && Array.isArray(state.parsedData.allAppIds))
     ? state.parsedData.allAppIds.slice()
@@ -1074,7 +1168,9 @@ async function applyEmuReplacement() {
         : '';
       setEmuApplyStatus('success', window.i18n.t('emulator.applySuccess', { count: success, total }) + dlcNote + extra + gameNote + controllerNote);
       saveLastEmuSettings(gathered);
-      if (state.emuStandalone) {
+      if (state.emuEditMode) {
+        refreshEmuPatchVersion();
+      } else if (state.emuStandalone) {
         await refreshEmuScanInPlace();
       } else {
         state.emuApplyComplete = true;
@@ -1349,6 +1445,7 @@ async function confirmEmuRevert() {
     const results = await invoke('emu_revert_replacement', { targets: paths });
     try { await invoke('steam_api_bypass_revert', { targets: paths }); }
     catch (e) { console.error('bypass revert during emu revert:', e); }
+    await restoreAllDrm();
     success = results.filter(r => r.success).length;
     failed = results.length - success;
     details = results
@@ -1498,6 +1595,8 @@ async function openEmuEditFromHistory(entry) {
   if (els.emuApplyStatus) els.emuApplyStatus.classList.add('hidden');
   await hydrateEmuPatchedContext();
   loadEmuControllerInfo();
+  refreshEmuDrmRestore();
+  loadEmuReleaseInfo();
 }
 
 function setEmuApplyStatus(kind, text, details) {

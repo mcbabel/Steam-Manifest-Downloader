@@ -84,6 +84,21 @@ pub async fn emu_generate_game_data(
 }
 
 #[command]
+pub async fn emu_patch_info(target: String) -> Result<smd_core::services::emulator::PatchInfo, String> {
+    Ok(emu_ops::patch_info(&target))
+}
+
+#[command]
+pub async fn emu_drm_backups(game_dir: String) -> Result<Vec<smd_core::services::steamless::DrmBackup>, String> {
+    Ok(emu_ops::drm_backups(game_dir).await)
+}
+
+#[command]
+pub async fn emu_restore_drm(exe: String) -> Result<(), String> {
+    emu_ops::restore_drm(&exe)
+}
+
+#[command]
 pub async fn emu_controller_info(
     state: tauri::State<'_, AppState>,
     app_id: String,

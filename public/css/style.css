@@ -1714,6 +1714,49 @@ button:disabled,
   line-height: 1.4;
 }
 
+.emu-patch-version {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0.9rem;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.emu-drm-restore {
+  margin-top: 0.75rem;
+}
+
+.emu-drm-restore__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.emu-drm-restore__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.9rem;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.emu-drm-restore__path {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
 .steps__connector--emulator,
 .steps__item--emulator { transition: opacity var(--transition); }
 

@@ -537,6 +537,8 @@ const FEATURES: &[(&str, &str, &str)] = &[
     ("Emulator revert", "patch_reverted", "entry"),
     ("Emulator settings saved", "patch_settings_saved", ""),
     ("Steamless", "steamless_used", "outcome"),
+    ("Steam DRM restored", "drm_restored", "where"),
+    ("gbe_fork updated in place", "emu_gbe_updated", "from"),
     ("Steam API check bypass", "api_bypass", "action"),
     ("Merge DLC depots", "dlc_merged", "ok"),
     ("Game data for gbe_fork", "game_data_written", "source"),

@@ -467,6 +467,8 @@ const ALLOWED_EVENT_KINDS: &[&str] = &[
     "steam_keys_used",
     "key_file_used",
     "controller_applied",
+    "emu_gbe_updated",
+    "drm_restored",
     "behavior_consent",
     "ui_screen",
 ];

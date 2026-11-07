@@ -322,6 +322,10 @@ function initEvents() {
   if (els.btnEmuDownloadNo) {
     els.btnEmuDownloadNo.addEventListener('click', cancelEmuDownload);
   }
+  const btnUpdateGbe = document.getElementById('btn-emu-update-gbe');
+  if (btnUpdateGbe) {
+    btnUpdateGbe.addEventListener('click', updateEmuInPlace);
+  }
   if (els.emuDownloadModal) {
     els.emuDownloadModal.querySelector('.modal__backdrop').addEventListener('click', cancelEmuDownload);
     els.emuDownloadModal.addEventListener('click', (e) => {

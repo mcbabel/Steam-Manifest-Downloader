@@ -190,6 +190,8 @@ pub enum Action {
     EmuRevertConfirmed,
     EmuMergeDlc,
     EmuRemoveDrm,
+    EmuRestoreDrm(usize),
+    EmuUpdateGbe,
     EmuDone,
 
     HistoryResume(usize),

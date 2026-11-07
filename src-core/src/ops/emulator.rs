@@ -523,7 +523,7 @@ pub async fn apply_replacement(
         let path = Path::new(&t.path);
         let platform_cache = cache_root.join(t.platform.cache_subdir());
         let x64 = t.arch == "x64";
-        results.push(emulator::apply_replacement(
+        let r = emulator::apply_replacement(
             path,
             &platform_cache,
             variant,
@@ -533,7 +533,11 @@ pub async fn apply_replacement(
             &installed_app_ids,
             settings_ref,
             dlcs.as_deref(),
-        ));
+        );
+        if r.success {
+            emulator::write_patch_info(path, &info.tag, variant);
+        }
+        results.push(r);
     }
     let succeeded = results.iter().filter(|r| r.success).count();
     crate::dlog!(
@@ -589,6 +593,20 @@ fn dlc_entries(ids: &[String], info: &crate::services::steam_pics::DlcInfo) -> V
             Some((id.clone(), name))
         })
         .collect()
+}
+
+pub fn patch_info(target_path: &str) -> emulator::PatchInfo {
+    emulator::read_patch_info(Path::new(target_path))
+}
+
+pub async fn drm_backups(game_dir: String) -> Vec<crate::services::steamless::DrmBackup> {
+    tokio::task::spawn_blocking(move || crate::services::steamless::drm_backups(Path::new(&game_dir)))
+        .await
+        .unwrap_or_default()
+}
+
+pub fn restore_drm(exe: &str) -> Result<(), String> {
+    crate::services::steamless::restore_drm(Path::new(exe))
 }
 
 pub fn read_emu_settings(target_path: &str) -> Result<EmuSettings, String> {

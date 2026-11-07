@@ -684,7 +684,16 @@
     "settingsOnlyChanged": "Only changed",
     "settingsReset": "Reset all",
     "settingsNoMatch": "No setting matches.",
-    "settingsResetDone": "All emulator settings reset to the gbe_fork defaults."
+    "settingsResetDone": "All emulator settings reset to the gbe_fork defaults.",
+    "patchedWith": "Patched with gbe_fork {tag}{variant}.",
+    "patchedWithUnknown": "Patched with an unknown gbe_fork version, probably before SMD kept track.",
+    "updateGbe": "Update to {tag}",
+    "drmRestore": {
+      "title": "Steam DRM removed",
+      "hint": "Steamless kept the original program files. Restore one to put Steam DRM back in.",
+      "restore": "Restore original",
+      "done": "Original program file restored."
+    }
   },
   "steamLibrary": {
     "title": "Add to Steam Library",

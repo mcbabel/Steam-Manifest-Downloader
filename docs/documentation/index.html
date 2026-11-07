@@ -719,7 +719,9 @@ paru -S steam-manifest-downloader</code></pre>
               <h4 id="history-actions-per-game">History actions, per game <a class="alink" href="#history-actions-per-game" aria-label="Permalink to History actions, per game">#</a></h4>
               <p>After applying, the game appears in your download history, reachable via <strong>Back to Start</strong>, with an extra action button:</p>
               <ul>
-                <li><strong>Edit emulator settings</strong>, the gear button, re-opens step 5 in edit mode. The variant picker is hidden, the settings are filled in from the existing INI files, the Apply button becomes <strong>Save settings</strong> and a red <strong>Revert patch</strong> button appears. Reverting restores the original DLL, deletes <code>steam_settings/</code> and is gated by a confirmation modal</li>
+                <li><strong>Edit emulator settings</strong>, the gear button, re-opens step 5 in edit mode. The variant picker is hidden, the settings are filled in from the existing INI files, the Apply button becomes <strong>Save settings</strong> and a red <strong>Revert patch</strong> button appears. Reverting restores the original DLL, deletes <code>steam_settings/</code>, puts back every program file Steamless changed and is gated by a confirmation modal</li>
+                <li>Above the file list the step shows which gbe_fork release and build the game was patched with, remembered in <code>steam_settings/.smd-emulator.json</code>. When a newer release is out, <strong>Update to …</strong> patches the same files with it and keeps your settings. Games patched before SMD remembered the version show as unknown</li>
+                <li>When Steamless removed Steam DRM, its kept originals are listed under <strong>Steam DRM removed</strong>, each with <strong>Restore original</strong> to put the DRM back into that one file</li>
               </ul>
               <p>If you delete the game folder externally, the Edit action shows an inline error banner in the history modal instead of crashing.</p>
 
