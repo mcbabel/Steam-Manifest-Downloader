@@ -189,6 +189,7 @@ function renderDrmSection() {
     els.emuDrmSection.classList.add('hidden');
     return;
   }
+  setDrmDone(false);
   els.emuDrmSection.classList.remove('hidden');
   if (els.emuDrmList) {
     els.emuDrmList.innerHTML = state.drmTargets.map(t => {
@@ -205,6 +206,24 @@ function renderDrmSection() {
     els.btnEmuDrmRemove.disabled = false;
     els.btnEmuDrmRemove.textContent = window.i18n.t('emulator.drmRemove');
   }
+}
+
+function setDrmDone(done) {
+  if (!els.emuDrmSection) return;
+  els.emuDrmSection.classList.toggle('emu-drm-section--done', done);
+  const title = els.emuDrmSection.querySelector('.emu-drm-title');
+  const desc = els.emuDrmSection.querySelector('.emu-drm-description');
+  const titleKey = done ? 'emulator.drmDoneTitle' : 'emulator.drmTitle';
+  const descKey = done ? 'emulator.drmDoneDescription' : 'emulator.drmDescription';
+  if (title) {
+    title.setAttribute('data-i18n', titleKey);
+    title.textContent = window.i18n.t(titleKey);
+  }
+  if (desc) {
+    desc.setAttribute('data-i18n', descKey);
+    desc.textContent = window.i18n.t(descKey);
+  }
+  if (typeof updateEmuOverview === 'function') updateEmuOverview();
 }
 
 function setDrmStatus(kind, text) {
@@ -262,6 +281,7 @@ async function removeDrm() {
         if (item && r.success) item.classList.add('emu-drm-item--success');
       });
       state.drmTargets = [];
+      setDrmDone(true);
     } else {
       const first = results.find(r => !r.success);
       const errMsg = first && first.error ? first.error : 'unknown error';
@@ -477,7 +497,9 @@ function updateEmuOverview() {
   const t = (key, params) => window.i18n.t(key, params);
   const total = (state.emulatorScan || []).length;
   const selected = getSelectedEmuTargets().length;
-  const drmShown = !!(els.emuDrmSection && !els.emuDrmSection.classList.contains('hidden'));
+  const drmVisible = !!(els.emuDrmSection && !els.emuDrmSection.classList.contains('hidden'));
+  const drmDone = drmVisible && els.emuDrmSection.classList.contains('emu-drm-section--done');
+  const drmShown = drmVisible && !drmDone;
   const mergeShown = !!(els.emuDlcMergeSection && !els.emuDlcMergeSection.classList.contains('hidden'));
   const gameData = document.getElementById('emu-gamedata-toggle');
   const bypass = document.getElementById('emu-bypass-toggle');
@@ -502,6 +524,7 @@ function updateEmuOverview() {
   if (bypassOn) chip(escapeHtml(t('emulator.bypassLabel')), 'on');
   if (custom) chip(escapeHtml(t('emulator.summary.custom', { count: custom })));
   if (drmShown) chip(escapeHtml(t('emulator.drmTitle')), 'warn');
+  if (drmDone) chip(escapeHtml(t('emulator.drmDoneTitle')), 'on');
   if (mergeShown) chip(escapeHtml(t('emulator.dlcMergeLabel')), 'warn');
   summary.innerHTML = chips.join('');
 }

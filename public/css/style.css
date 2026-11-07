@@ -1939,6 +1939,20 @@ button:disabled,
   margin: 0 0 0.25rem 0;
 }
 
+.emu-drm-section--done {
+  background: var(--success-bg);
+  border-color: var(--success);
+}
+
+.emu-drm-section--done .emu-drm-icon,
+.emu-drm-section--done .emu-drm-title {
+  color: var(--success);
+}
+
+.emu-drm-section--done #btn-emu-drm-remove {
+  display: none;
+}
+
 .emu-drm-description {
   font-size: 0.85rem;
   color: var(--text-secondary);

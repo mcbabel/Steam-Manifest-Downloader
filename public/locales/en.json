@@ -811,7 +811,9 @@
       "linksDone": "{count} desktop or start menu shortcut(s) now start the game through the loader.",
       "linksBack": "{count} desktop or start menu shortcut(s) start the game directly again."
     },
-    "releaseNewer": "gbe_fork {tag} is available. On this PC: {local}."
+    "releaseNewer": "gbe_fork {tag} is available. On this PC: {local}.",
+    "drmDoneTitle": "Steam DRM removed",
+    "drmDoneDescription": "These executables now run with the emulator. The originals stay next to them as .drm.bak."
   },
   "steamLibrary": {
     "title": "Add to Steam Library",

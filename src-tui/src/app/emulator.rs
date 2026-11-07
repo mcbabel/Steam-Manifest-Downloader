@@ -1799,6 +1799,7 @@ impl App {
                         tf("emulator.drmRemoveSuccess", &[("count", &success)]),
                     ));
                     e.drm.clear();
+                    app.load_drm_backups();
                 } else {
                     let msg = results
                         .iter()
@@ -2087,8 +2088,15 @@ impl App {
 
         if !e.drm.is_empty() || e.drm_status.is_some() {
             col.gap(1);
+            let done = e.drm.is_empty() && matches!(e.drm_status, Some((Tone::Success, _)));
             let r = col.next(1);
-            widgets::heading(&mut sv.buf, r, &t("emulator.drmTitle"));
+            widgets::heading(&mut sv.buf, r, &t(if done { "emulator.drmDoneTitle" } else { "emulator.drmTitle" }));
+            if done {
+                let d = t("emulator.drmDoneDescription");
+                let h = widgets::wrap_height(&d, lw);
+                let r = col.next(h);
+                widgets::paragraph(&mut sv.buf, r, &d, theme::success());
+            }
             if !e.drm.is_empty() {
                 let d = t("emulator.drmDescription");
                 let h = widgets::wrap_height(&d, lw);

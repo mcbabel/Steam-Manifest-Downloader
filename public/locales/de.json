@@ -811,7 +811,9 @@
       "linksDone": "{count} Desktop- oder Startmenü-Verknüpfung(en) starten das Spiel jetzt über den Loader.",
       "linksBack": "{count} Desktop- oder Startmenü-Verknüpfung(en) starten das Spiel wieder direkt."
     },
-    "releaseNewer": "gbe_fork {tag} ist verfügbar. Auf diesem PC: {local}."
+    "releaseNewer": "gbe_fork {tag} ist verfügbar. Auf diesem PC: {local}.",
+    "drmDoneTitle": "Steam-DRM entfernt",
+    "drmDoneDescription": "Diese Programme laufen jetzt mit dem Emulator. Die Originale liegen als .drm.bak daneben."
   },
   "steamLibrary": {
     "title": "Zur Steam-Bibliothek hinzufügen",
