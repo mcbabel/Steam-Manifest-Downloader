@@ -1,22 +1,11 @@
-//! Steam sign-in with a QR code, over the IAuthenticationService Web API.
-//!
-//! SMD never sees the Steam password: the user scans the code with the Steam
-//! mobile app and approves the sign-in there. Steam then hands out a refresh
-//! token for this device, which `steam_account` stores and `steam_session`
-//! uses to log on to Steam.
-
 use std::fmt;
 
 use serde::Deserialize;
 
 const API: &str = "https://api.steampowered.com/IAuthenticationService";
-/// Shown in the Steam app when approving, and in the account's device list.
 pub const DEVICE_NAME: &str = "Steam Manifest Downloader";
-/// k_EAuthTokenPlatformType_SteamClient: a token a CM client logon accepts.
 const PLATFORM_STEAM_CLIENT: &str = "1";
 
-/// A token that must never end up in logs, events, settings or telemetry.
-/// It has no `Serialize`, and `Debug` prints `***`.
 #[derive(Clone, PartialEq, Eq)]
 pub struct Secret(String);
 
@@ -38,16 +27,13 @@ impl fmt::Debug for Secret {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AuthError {
-    /// The code timed out or was replaced; start a new one.
     Expired,
-    /// Steam answered with an EResult other than OK.
     Steam(i32),
     Network(String),
     Invalid(String),
 }
 
 impl AuthError {
-    /// Stable key for translations and telemetry.
     pub fn key(&self) -> &'static str {
         match self {
             AuthError::Expired => "expired",
@@ -69,8 +55,6 @@ impl fmt::Display for AuthError {
     }
 }
 
-/// A running QR sign-in. `challenge_url` is what the QR code encodes; Steam
-/// may replace it while the sign-in runs.
 #[derive(Clone)]
 pub struct QrChallenge {
     pub client_id: String,
@@ -90,7 +74,6 @@ impl fmt::Debug for QrChallenge {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum QrPoll {
-    /// Not approved yet. `scanned` turns true once the code was scanned.
     Waiting { scanned: bool, new_url: bool },
     Approved {
         account_name: String,
@@ -145,7 +128,6 @@ async fn post<T: for<'de> Deserialize<'de>>(
     }
     match eresult {
         1 => {}
-        // FileNotFound / Expired / AccessDenied: the session is gone.
         9 | 27 | 15 => return Err(AuthError::Expired),
         other => return Err(AuthError::Steam(other)),
     }
@@ -155,7 +137,6 @@ async fn post<T: for<'de> Deserialize<'de>>(
         .map_err(|e| AuthError::Invalid(e.to_string()))
 }
 
-/// Starts a QR sign-in.
 pub async fn begin_qr() -> Result<QrChallenge, AuthError> {
     let r: BeginResponse = post(
         "BeginAuthSessionViaQR",
@@ -176,8 +157,6 @@ pub async fn begin_qr() -> Result<QrChallenge, AuthError> {
     }
 }
 
-/// Asks Steam whether the code was approved. Updates `challenge` when Steam
-/// hands out a new code.
 pub async fn poll_qr(challenge: &mut QrChallenge) -> Result<QrPoll, AuthError> {
     let client_id = challenge.client_id.clone();
     let request_id = challenge.request_id.clone();
@@ -215,12 +194,9 @@ fn apply_poll(challenge: &mut QrChallenge, r: PollResponse) -> QrPoll {
     }
 }
 
-/// What a refresh token says about itself (it is a JWT). Read only for
-/// display and for the logon; the signature is checked by Steam.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TokenInfo {
     pub steam_id: u64,
-    /// Unix seconds.
     pub expires_at: Option<i64>,
 }
 
@@ -246,7 +222,6 @@ pub fn token_info(token: &Secret) -> Option<TokenInfo> {
     })
 }
 
-/// SVG of a QR code for `url`, sized by its container.
 pub fn qr_svg(url: &str) -> Result<String, String> {
     use qrcode::render::svg;
     let code = qrcode::QrCode::new(url.as_bytes()).map_err(|e| e.to_string())?;
@@ -258,10 +233,6 @@ pub fn qr_svg(url: &str) -> Result<String, String> {
         .build())
 }
 
-/// The QR code as text for a terminal, two module rows per character.
-/// Blocks are drawn for dark modules; with `blocks_are_light` they are drawn
-/// for the light ones instead, which reads right on a dark terminal without
-/// colors.
 pub fn qr_text(url: &str, blocks_are_light: bool) -> Result<Vec<String>, String> {
     use qrcode::render::unicode::Dense1x2;
     let code = qrcode::QrCode::new(url.as_bytes()).map_err(|e| e.to_string())?;

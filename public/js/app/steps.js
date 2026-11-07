@@ -81,8 +81,6 @@ function initUpload() {
     dropZone.classList.remove('drag-over');
   });
 
-  // HTML5 drag-drop inside a WebView doesn't surface file paths; we rely on the
-  // 'tauri://drag-drop' event below instead of e.dataTransfer.
   dropZone.addEventListener('drop', (e) => {
     e.preventDefault();
     dropZone.classList.remove('drag-over');
@@ -344,7 +342,6 @@ function onAutocompleteInput(input, dropdown) {
     autocompleteDebounceTimer = null;
   }
 
-  // If empty or numeric → no autocomplete
   if (!val || isNumericInput(val)) {
     hideAutocomplete(dropdown);
     return;
@@ -355,7 +352,6 @@ function onAutocompleteInput(input, dropdown) {
     return;
   }
 
-  // Debounce: 400ms
   autocompleteDebounceTimer = setTimeout(() => {
     triggerAutocomplete(input, dropdown, val);
   }, 400);

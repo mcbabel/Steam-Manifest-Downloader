@@ -1,13 +1,5 @@
-//! Secrets that a download config carries for one run but that must never be
-//! written to disk with it (history resume payloads, the download queue).
-
-/// Config keys (camelCase, as `DownloadConfig` serializes them) holding a
-/// secret. The frontends fill them in again from their own storage when they
-/// resume or start a stored download.
 const SECRET_KEYS: &[&str] = &["manifestHubApiKey", "branchPassword"];
 
-/// Removes the secret fields from a serialized `DownloadConfig`. Returns
-/// whether anything was removed.
 pub fn strip(config: &mut serde_json::Value) -> bool {
     let Some(map) = config.as_object_mut() else {
         return false;

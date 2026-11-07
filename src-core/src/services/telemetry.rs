@@ -9,9 +9,6 @@ use uuid::Uuid;
 
 use crate::services::settings::{self as settings_service, TelemetryConsent};
 
-// Rotate: generate a fresh X25519 keypair, replace these bytes, ship the new
-// private half to the server. Old clients keep sending against the old pubkey
-// until they update.
 const SERVER_PUBLIC_KEY: [u8; 32] = [
     0x78, 0xc6, 0xed, 0x23, 0xd8, 0x2f, 0x86, 0xab, 0x49, 0xf8, 0x08, 0xe7,
     0x9b, 0x75, 0x5c, 0xf8, 0x55, 0xb2, 0x28, 0x4f, 0x34, 0x4e, 0x62, 0xde,
@@ -412,8 +409,6 @@ fn cap_queue(batches: &mut Vec<QueuedBatch>, cap: usize) {
     }
 }
 
-// Allowlist enforced at the command boundary so the JS layer can't invent
-// new event kinds and break the server-side schema.
 const ALLOWED_EVENT_KINDS: &[&str] = &[
     "app_start",
     "settings_opened",

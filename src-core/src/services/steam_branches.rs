@@ -1,12 +1,3 @@
-//! Branches of an app and their manifests, with the user's own account.
-//!
-//! Anonymous sessions only ever see the public branch. Logged on as the
-//! account, PICS also shows branches the account was granted (owned games,
-//! playtests, beta groups). Password branches need the branch password:
-//! Steam checks it and returns a key for the branch, and with that key the
-//! private depot section of the branch can be read. This mirrors what
-//! DepotDownloader does with `-branch` / `-branchpassword`.
-
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
@@ -33,21 +24,15 @@ pub fn is_public(branch: &str) -> bool {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BranchError {
-    /// The branch is not public: sign in with an account that has access.
     NeedsLogin,
-    /// The branch is protected by a password and none was given.
     NeedsPassword,
-    /// Steam did not accept the password for this branch.
     WrongPassword,
-    /// The branch does not exist, or the account has no access to it.
     NotFound,
-    /// None of the selected depots has a build on this branch.
     NoBuild(Vec<String>),
     Steam(String),
 }
 
 impl BranchError {
-    /// Stable key for translations and telemetry.
     pub fn key(&self) -> &'static str {
         match self {
             BranchError::NeedsLogin => "needs_login",
@@ -73,7 +58,6 @@ impl std::fmt::Display for BranchError {
     }
 }
 
-/// A branch as frontends list it.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BranchView {
@@ -82,13 +66,9 @@ pub struct BranchView {
     pub password_required: bool,
     pub build_id: u64,
     pub time_updated: u64,
-    /// The current session sees manifests on this branch (no password or
-    /// sign-in needed beyond what it already has).
     pub available: bool,
 }
 
-/// Branches of `app_id` as the session sees them. With an account this
-/// includes the branches the account was granted.
 pub async fn list(session: Arc<SteamSession>, app_id: u32) -> Result<Vec<BranchView>, String> {
     let app = steam_pics::fetch_app_info(session, app_id).await?;
     Ok(steam_pics::branches(&app)
@@ -107,8 +87,6 @@ pub async fn list(session: Arc<SteamSession>, app_id: u32) -> Result<Vec<BranchV
         .collect())
 }
 
-/// Manifest gid per depot on `branch`. `password` is only used for password
-/// branches; it is sent to Steam and nowhere else.
 pub async fn manifests(
     session: Arc<SteamSession>,
     app_id: u32,
@@ -144,7 +122,6 @@ pub async fn manifests(
         return Err(BranchError::NotFound);
     };
     if !listed.protected {
-        // Listed, but the account sees no manifests on it.
         return Err(BranchError::NotFound);
     }
     let password = password
@@ -160,7 +137,6 @@ pub async fn manifests(
     Ok(gids)
 }
 
-/// Asks Steam for the key of `branch` with its password.
 async fn branch_key(
     session: Arc<SteamSession>,
     app_id: u32,
@@ -199,8 +175,6 @@ async fn branch_key(
         .ok_or(BranchError::WrongPassword)
 }
 
-// CMsgClientPICSPrivateBeta has no EMsg in steam-vent-proto. The numbers are
-// SteamKit2's EMsg.ClientPICSPrivateBetaRequest / Response.
 mod private_beta {
     use steam_vent_proto::steammessages_clientserver_appinfo::{
         CMsgClientPICSPrivateBetaRequest, CMsgClientPICSPrivateBetaResponse,
@@ -274,7 +248,6 @@ mod private_beta {
     wrap!(Response, CMsgClientPICSPrivateBetaResponse, Kind::Response);
 }
 
-/// The depot section of a password branch (binary KeyValues).
 async fn private_depot_section(
     session: Arc<SteamSession>,
     app_id: u32,
@@ -319,8 +292,6 @@ async fn private_depot_section(
     }
 }
 
-/// Depot key for `depot_id` from the account. Only asked for depots of a
-/// download that uses the account; the error says what Steam answered.
 pub async fn depot_key(session: Arc<SteamSession>, app_id: u32, depot_id: u32) -> Result<[u8; 32], String> {
     if !session.uses_account() {
         return Err("not signed in".into());
@@ -354,8 +325,6 @@ pub async fn depot_key(session: Arc<SteamSession>, app_id: u32, depot_id: u32) -
         .and_then(|k| k.try_into().ok())
         .ok_or_else(|| "Steam sent no key".to_string())
 }
-
-// ---- binary KeyValues -------------------------------------------------------
 
 #[derive(Debug, Clone, PartialEq)]
 enum Kv {
@@ -428,8 +397,6 @@ fn parse_binary_kv(data: &[u8]) -> Option<Kv> {
     parse_table(data, &mut pos, 0).map(Kv::Table)
 }
 
-/// Manifest gids on `branch` from a private depot section. The section is
-/// either the depots themselves or a single root key ("depots") holding them.
 fn gids_from_private_section(section: &[u8], branch: &str) -> HashMap<String, String> {
     let Some(root) = parse_binary_kv(section) else {
         return HashMap::new();
@@ -487,9 +454,9 @@ mod tests {
         b.push(0x07);
         b.extend_from_slice(b"size\0");
         b.extend_from_slice(&5_000_000u64.to_le_bytes());
-        b.push(0x08); // beta
-        b.push(0x08); // manifests
-        b.push(0x08); // 481
+        b.push(0x08);
+        b.push(0x08);
+        b.push(0x08);
         kv_open(&mut b, "482");
         kv_open(&mut b, "manifests");
         kv_str(&mut b, "other", "1");

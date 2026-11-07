@@ -138,8 +138,6 @@ fn unzip_single_entry(zip_bytes: &[u8]) -> Result<Vec<u8>, String> {
     unzip_first_entry(zip_bytes, "manifest")
 }
 
-/// Reads the first entry of a PKZip blob. Steam wraps manifests and older
-/// depot chunks this way; `what` names the blob in error messages.
 pub(crate) fn unzip_first_entry(zip_bytes: &[u8], what: &str) -> Result<Vec<u8>, String> {
     let reader = Cursor::new(zip_bytes);
     let mut archive =

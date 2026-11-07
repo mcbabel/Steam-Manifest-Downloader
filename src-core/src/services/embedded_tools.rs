@@ -40,7 +40,6 @@ pub async fn ensure_extracted() -> Result<PathBuf, String> {
     let marker_file = base_dir.join(".extracted");
     let exe_path = base_dir.join(platform::EXE_NAME);
 
-    // Marker + exe both present → skip the write churn.
     if marker_file.exists() && exe_path.exists() {
         return Ok(exe_path);
     }

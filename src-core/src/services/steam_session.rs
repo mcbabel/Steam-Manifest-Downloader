@@ -14,24 +14,14 @@ const CDN_TIMEOUT: Duration = Duration::from_secs(15);
 
 pub struct SteamSession {
     inner: Mutex<Option<Connection>>,
-    /// Logged on as the user's own account. Only used for what needs the
-    /// account (branches, playtests, own depot keys); everything else stays
-    /// on the anonymous connection.
     account: Mutex<Option<(u64, Connection)>>,
-    /// Set for a download that uses the account: `connection()` then logs on
-    /// as this account instead of anonymously.
     login: Option<crate::services::steam_account::Account>,
-    /// Branch a download with the account reads from (`None` = public).
     branch: Option<String>,
-    /// What Steam answered when it gave the account no key for a depot.
     key_errors: std::sync::Mutex<std::collections::HashMap<String, String>>,
 }
 
-/// Why a logon with the stored account failed.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AccountLogonError {
-    /// Steam no longer accepts the token (expired, revoked, password
-    /// changed). The user has to sign in again.
     Rejected(String),
     Other(String),
 }
@@ -79,9 +69,6 @@ impl SteamSession {
         }
     }
 
-    /// A session for one download with the user's account: every Steam call
-    /// of that download (PICS, manifest request codes, CDN tokens) goes
-    /// through the account, and request codes ask for `branch`.
     pub fn for_account(
         account: crate::services::steam_account::Account,
         branch: Option<String>,
@@ -95,14 +82,12 @@ impl SteamSession {
         }
     }
 
-    /// Notes that Steam gave the account no key for `depot`, and why.
     pub fn note_key_error(&self, depot: &str, reason: String) {
         if let Ok(mut map) = self.key_errors.lock() {
             map.insert(depot.to_string(), reason);
         }
     }
 
-    /// Why Steam gave the account no key for `depot`, if it refused.
     pub fn key_error(&self, depot: &str) -> Option<String> {
         self.key_errors.lock().ok()?.get(depot).cloned()
     }
@@ -111,13 +96,10 @@ impl SteamSession {
         self.login.is_some()
     }
 
-    /// Non-public branch this session downloads from.
     pub fn branch(&self) -> Option<&str> {
         self.branch.as_deref()
     }
 
-    /// A connection logged on as `account`, reused while it stays the same
-    /// account.
     pub async fn account_connection(
         &self,
         account: &crate::services::steam_account::Account,
@@ -144,8 +126,6 @@ impl SteamSession {
                     continue;
                 }
             };
-            // steam-vent sends the token as the logon access token; Steam
-            // takes the refresh token there, as the crate's own login does.
             match Connection::access(
                 &server_list,
                 &account.account_name,
@@ -171,7 +151,6 @@ impl SteamSession {
         Err(last.unwrap_or_else(|| AccountLogonError::Other("Steam logon failed".into())))
     }
 
-    /// Drops the account connection (sign-out, or after it broke).
     pub async fn reset_account(&self) {
         *self.account.lock().await = None;
     }
@@ -330,7 +309,6 @@ pub async fn fetch_manifest_request_code(
                     app_id: Some(app_id),
                     depot_id: Some(depot_id),
                     manifest_id: Some(manifest_id),
-                    // Manifests of a non-public branch are only handed out with it.
                     app_branch: branch,
                     ..Default::default()
                 };

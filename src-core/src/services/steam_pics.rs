@@ -84,7 +84,6 @@ fn public_gids(app: &Table) -> HashMap<String, String> {
     branch_gids(app, "public")
 }
 
-/// Manifest gid per depot on `branch`, as far as this app info shows them.
 pub fn branch_gids(app: &Table, branch: &str) -> HashMap<String, String> {
     let Some(depots) = app.get("depots").and_then(as_table) else {
         return HashMap::new();
@@ -103,7 +102,6 @@ pub fn branch_gids(app: &Table, branch: &str) -> HashMap<String, String> {
         .collect()
 }
 
-/// Depots that take their manifests from another app (`depotfromapp`).
 pub fn depots_from_other_apps(app: &Table) -> Vec<(String, u32)> {
     let Some(depots) = app.get("depots").and_then(as_table) else {
         return Vec::new();
@@ -405,9 +403,6 @@ fn capitalise(s: &str) -> String {
     }
 }
 
-/// PICS access tokens for `app_ids`. Only a connection logged on as an
-/// account gets any; Steam hands them out for apps the account may see in
-/// full (owned games, playtests, granted branches).
 pub(crate) async fn pics_access_tokens(conn: &Connection, app_ids: &[u32]) -> HashMap<u32, u64> {
     use steam_vent_proto::steammessages_clientserver_appinfo::{
         CMsgClientPICSAccessTokenRequest, CMsgClientPICSAccessTokenResponse,
@@ -501,12 +496,8 @@ async fn pics_product_info_vdf(
     Ok(out)
 }
 
-/// Marks app info Steam only gave out in its public form, because the
-/// connection had no access token for the app.
 const MISSING_TOKEN_KEY: &str = "_smd_missing_token";
 
-/// Error for app info without a depots section: Steam hides the depots of
-/// some apps from everyone who has no access to them.
 fn no_depots_error(app: &Table, app_id: u32) -> String {
     if app.get(MISSING_TOKEN_KEY).is_some() {
         format!(

@@ -4,11 +4,6 @@ use std::sync::OnceLock;
 
 const SEAN_WHO_XOR_KEY: &[u8] = b"Scalping dogs, I'll fuck you";
 
-// Matches a depot block of the form:
-//     "1995891"
-//     {
-//         "DecryptionKey" "hexvalue"
-//     }
 fn depot_block_pattern() -> &'static Regex {
     static PATTERN: OnceLock<Regex> = OnceLock::new();
     PATTERN.get_or_init(|| {
@@ -17,7 +12,6 @@ fn depot_block_pattern() -> &'static Regex {
     })
 }
 
-// `repo` only matters for sean-who, whose keys are XOR-obfuscated with SEAN_WHO_XOR_KEY.
 pub fn parse_key_vdf(vdf_content: &str, repo: Option<&str>) -> HashMap<String, String> {
     let mut result = HashMap::new();
 

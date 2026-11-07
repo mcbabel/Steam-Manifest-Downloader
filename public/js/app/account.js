@@ -1,7 +1,3 @@
-// Steam account (QR sign-in only) and branches.
-// The refresh token never reaches this page: the backend only hands out the
-// account name, where the sign-in is kept, QR codes and branch lists.
-
 const accountUi = {
   info: null,
   pollTimer: null,
@@ -53,12 +49,9 @@ function renderAccountSettings() {
   }
 }
 
-// ---- QR sign-in -------------------------------------------------------------
-
 function setAccountQr(qr) {
   const box = accountEl('account-qr');
   if (!box) return;
-  // The SVG comes from the backend's QR encoder and only holds the code.
   box.innerHTML = qr && qr.svg ? qr.svg : '';
   box.classList.toggle('account-qr--empty', !(qr && qr.svg));
 }
@@ -178,8 +171,6 @@ async function accountLogout() {
   showToast(window.i18n.t('account.signedOutToast', { name: name || '' }), 'success');
 }
 
-// ---- branches in the depot selection --------------------------------------------
-
 function selectedBranch() {
   return accountUi.branch || 'public';
 }
@@ -193,7 +184,6 @@ function isPublicBranch(name) {
   return !name || name.toLowerCase() === 'public';
 }
 
-// Fields the download config needs for branches and the account.
 function accountDownloadFields() {
   const branch = selectedBranch();
   const toggle = accountEl('use-account-toggle');
@@ -207,7 +197,6 @@ function accountDownloadFields() {
   return fields;
 }
 
-// Blocks the start when the chosen branch cannot work as configured.
 function branchStartProblem() {
   const branch = selectedBranch();
   if (isPublicBranch(branch)) return null;
@@ -391,8 +380,6 @@ function initBranchSection() {
   renderBranchSection();
   refreshBranchSection();
 }
-
-// ---- search: load straight from the account ---------------------------------------
 
 async function loadFromAccount(appId) {
   if (!accountUi.info) {

@@ -31,7 +31,6 @@ async function addToQueue() {
     showToast(window.i18n.t(branchProblem), 'error', 6000);
     return;
   }
-  // The branch password is never stored, so a queued download could not use it.
   if (accountDownloadFields().branchPassword) {
     showToast(window.i18n.t('branch.noQueueWithPassword'), 'error', 6000);
     return;
@@ -172,7 +171,6 @@ async function runNextQueued() {
   state.updateAppId = next.config.updateDir ? String(next.app_id) : null;
   state.repairManifests = null;
   state.repairRunning = !!next.config.repair;
-  // The key is not stored with queued items; use the current one.
   if (!next.config.manifestHubApiKey) {
     next.config.manifestHubApiKey = localStorage.getItem(MH_APIKEY_STORAGE_KEY) || null;
   }

@@ -457,7 +457,6 @@ fn extract_depot_sizes(json: &serde_json::Value) -> HashMap<(String, String), u6
                 .and_then(|s| s.parse::<u64>().ok())
                 .unwrap_or(0);
 
-            // size == 7 is the upstream placeholder for "unknown"
             if size > 100 {
                 sizes.insert((depot_id.clone(), gid), size);
             }

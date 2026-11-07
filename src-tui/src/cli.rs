@@ -366,9 +366,6 @@ impl DownloadArgs {
     }
 }
 
-/// Plan straight from the signed-in account: the app's depots and the
-/// manifests on the chosen branch. Keys come from the account during the
-/// download.
 async fn plan_from_account(
     core: &AppState,
     dir: &std::path::Path,
@@ -581,7 +578,6 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
                     &meta,
                     &candidates,
                     |id| {
-                        // With the account, keys come from Steam for owned depots.
                         from_account
                             || plan.depots.iter().any(|(d, _, key, _)| d == id && key.is_some())
                             || plan.key_vdf.as_ref().is_some_and(|k| k.contains_key(id))
@@ -1314,14 +1310,9 @@ fn status_label(e: &HistoryEntry) -> String {
     }
 }
 
-
-// ---- Steam account --------------------------------------------------------
-
 fn print_qr(url: &str) {
     use std::io::IsTerminal;
     let tty = std::io::stdout().is_terminal();
-    // On a terminal: black on white, so it scans on light and dark themes.
-    // Without colors (logs): light blocks, which reads right on dark logs.
     match smd_core::services::steam_auth::qr_text(url, !tty) {
         Ok(lines) => {
             for line in lines {
@@ -1394,8 +1385,6 @@ pub async fn login(dir: PathBuf, args: LoginArgs) -> i32 {
                 println!("{}", tf("tui.cli.loginDone", &[("name", &info.account_name)]));
                 println!("{}", storage_line(&info, &dir));
                 if info.storage == smd_core::services::steam_account::Storage::Session {
-                    // A CLI run ends right here, so an unsaved sign-in would
-                    // only linger at Steam. Revoke it.
                     account::logout(&core, &dir).await;
                     return 1;
                 }

@@ -5,8 +5,8 @@ const state = {
   currentStep: 1,
   updateDir: null,
   updateAppId: null,
-  mode: 'upload', // 'upload' or 'search'
-  accountMode: false, // depots were read from the user's own Steam account
+  mode: 'upload',
+  accountMode: false,
   parsedData: null,
   selectedDepots: new Set(),
   jobId: null,
@@ -39,7 +39,7 @@ const state = {
   pendingHistoryEntry: null,
   notificationsEnabled: false,
   notificationSoundEnabled: true,
-  depotManifests: {}, // depotId -> { originalName, storedPath }
+  depotManifests: {},
   searchRepos: [],
   selectedRepo: null,
   searchAppId: null,
@@ -80,7 +80,7 @@ const ICONS = {
 const MH_APIKEY_STORAGE_KEY = 'manifestHubApiKey';
 let autoRedownloadPending = false;
 let autoSelectAllOnStep2 = false;
-let autoSelectDepotIds = null; // specific depot IDs to re-select, or null for all
+let autoSelectDepotIds = null;
 let defaultDownloadDir = '';
 
 const $ = (sel) => document.querySelector(sel);

@@ -40,7 +40,6 @@ impl App {
         let Some((config, _, _)) = self.build_download() else {
             return;
         };
-        // The branch password is never stored, so a queued download could not use it.
         if config.branch_password.is_some() {
             self.toast(Tone::Error, crate::i18n::t("branch.noQueueWithPassword"));
             return;
@@ -140,7 +139,6 @@ impl App {
             self.queue_next_at = Some(Instant::now());
             return;
         };
-        // The key is not stored with queued items; use the current one.
         if config.manifest_hub_api_key.is_none() && !self.prefs.mh_api_key.is_empty() {
             config.manifest_hub_api_key = Some(self.prefs.mh_api_key.clone());
         }

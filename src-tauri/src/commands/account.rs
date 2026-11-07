@@ -1,6 +1,3 @@
-//! Steam account (QR sign-in) and branches. The token never reaches the
-//! webview: these commands only return `AccountInfo`, QR codes and status.
-
 use smd_core::ops::account::{self, AccountDepot, BranchList, QrStatus, QrView};
 use smd_core::services::steam_account::AccountInfo;
 use smd_core::services::AppState;
@@ -36,8 +33,6 @@ pub async fn account_login_start(state: tauri::State<'_, AppState>) -> Result<Qr
     account::start_qr(&state).await
 }
 
-/// The desktop app never falls back to the unencrypted file: without a
-/// keychain the sign-in lasts until the app closes.
 #[command]
 pub async fn account_login_poll(
     app: AppHandle,

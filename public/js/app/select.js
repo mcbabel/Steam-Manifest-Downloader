@@ -48,7 +48,6 @@ async function browseDownloadDir() {
 function goBackToSelect() {
   cleanupProgressListener();
   state.jobId = null;
-  // Go back to Step 2 (select) — parsedData and selectedDepots are still intact
   goToStep(2);
 }
 
@@ -94,7 +93,6 @@ function showSelectionStep() {
   els.appIdDisplay.textContent = data.mainAppId;
   els.depotCount.textContent = window.i18n.t('select.depotsFound', { count: data.depots.length });
 
-  // Fetch game info from Steam (async, non-blocking) — only if not already fetched by search
   if (state.mode !== 'search' || !state.gameName) {
     fetchGameInfo(data.mainAppId);
   } else {
@@ -453,7 +451,6 @@ async function lookForSteamKeys() {
 
 function depotHasKey(depot) {
   if (depot.depotKey) return true;
-  // Loaded from the account: Steam hands out the keys of owned depots.
   if (state.accountMode) return true;
   const keys = state.mode === 'search' ? state.searchKeyVdfKeys : null;
   return !!(keys && keys[String(depot.depotId)]);
@@ -808,7 +805,6 @@ function downloadContext(downloadConfig, depots, fromQueue) {
     keyless: countBucket(depots.filter(d => !d.depotKey && !keys[String(d.depotId)]).length),
     custom_manifest: depots.some(d => !!d.customManifestId),
     account: !!downloadConfig.useAccount,
-    // Only the kind of branch, never its name.
     branch: !downloadConfig.branch ? 'public' : downloadConfig.branchPassword ? 'password' : 'other',
   };
 }

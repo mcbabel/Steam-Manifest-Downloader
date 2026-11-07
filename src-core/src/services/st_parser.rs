@@ -3,12 +3,6 @@ use std::io::Read;
 
 use crate::services::lua_parser::{parse_lua_file, LuaParseResult};
 
-// .st wire format:
-//   [0..4]   xorkey_raw (u32 LE) → xor_key = (raw ^ 0xFFFEA4C8) & 0xFF
-//   [4..8]   size       (u32 LE)
-//   [8..12]  xor_key_verify (ignored)
-//   [12..12+size]  payload, each byte xor'd with xor_key
-//   zlib-inflate payload, skip first 512 bytes, remainder is lua-like text.
 pub fn parse_st_file(buffer: &[u8]) -> Result<LuaParseResult, String> {
     if buffer.len() < 12 {
         return Err(format!(

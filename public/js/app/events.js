@@ -347,21 +347,15 @@ function initTauri() {
   document.getElementById('btn-maximize').addEventListener('click', () => invoke('maximize_window'));
   document.getElementById('btn-close').addEventListener('click', () => invoke('close_window'));
 
-  // data-tauri-drag-region and -webkit-app-region:drag do NOT work
-  // reliably on Linux/WebKitGTK. This manual mousedown handler ensures
-  // window dragging works on all platforms by directly calling startDragging().
   const titleBar = document.getElementById('title-bar');
   if (titleBar) {
     titleBar.addEventListener('mousedown', (e) => {
       if (e.button !== 0) return;
       if (e.target.closest('.title-bar__controls')) return;
 
-      // Reserve the top edge for resize; without this the drag eats the resize handle.
       const resizeThreshold = 5;
       if (e.clientY <= resizeThreshold) return;
 
-      // Fire-and-forget. Under Wayland the compositor rejects drag requests that
-      // arrive after the event tick, so we can't await here.
       window.__TAURI__.window.getCurrentWindow().startDragging();
     });
 

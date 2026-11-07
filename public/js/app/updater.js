@@ -15,7 +15,6 @@ async function checkForUpdates() {
     }
     if (!result.available) return;
 
-    // Check if user has skipped this version
     const skipped = localStorage.getItem(SKIPPED_VERSION_KEY);
     if (skipped === result.version) return;
 
@@ -324,7 +323,6 @@ function skipUpdateVersion() {
   hideUpdateModal();
 }
 
-// DEV: Test function — call window.testUpdateModal() in browser console
 window.testUpdateModal = function() {
   showUpdateModal({
     available: true,

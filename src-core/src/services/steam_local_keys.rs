@@ -1,5 +1,3 @@
-//! Depot keys from the installed Steam's config/config.vdf. Read only, never stored or sent.
-
 use std::collections::HashMap;
 use std::path::PathBuf;
 

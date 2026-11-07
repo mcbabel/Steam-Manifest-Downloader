@@ -9,7 +9,6 @@ pub struct DepotKeysResult {
     pub depot_count: usize,
 }
 
-// Writes `{depotId};{hexKey}\n` lines to {base_dir}/{folder_name}/steam.keys.
 pub async fn generate_depot_keys(
     app_id: u64,
     depots: &[DepotInfo],

@@ -324,7 +324,6 @@ impl App {
             }
         };
         config.resume_mode = Some(resume_mode.to_string());
-        // The key is not stored with the entry; resume with the current one.
         if config.manifest_hub_api_key.is_none() && !self.prefs.mh_api_key.is_empty() {
             config.manifest_hub_api_key = Some(self.prefs.mh_api_key.clone());
         }

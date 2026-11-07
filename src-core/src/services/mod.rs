@@ -97,8 +97,6 @@ impl AppState {
     }
 
     pub fn has_active_downloads(&self) -> bool {
-        // try_lock so this stays callable from the UI thread; treat contention
-        // as "active" because the mutex is only held during job mutation.
         if let Ok(jobs) = self.active_jobs.try_lock() {
             jobs.values().any(|j| j.status == "downloading" || j.status == "running")
         } else {

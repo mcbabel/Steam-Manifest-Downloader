@@ -53,13 +53,11 @@ async function cancelDownload() {
     await invoke('cancel_download', { jobId: state.jobId });
   } catch (error) {
     const errStr = String(error);
-    // If job is not running, the download already finished or errored — show Start Over
     if (errStr.toLowerCase().includes('not found') || errStr.toLowerCase().includes('not running')) {
       appendTerminalLine(window.i18n.t('progress.noLongerRunning'), 'info');
       showCompletion(false, window.i18n.t('progress.ended'));
     } else {
       appendTerminalLine(window.i18n.t('progress.cancelFailed', { message: window.i18n.localizeError(errStr) }), 'error');
-      // Still show Next so user isn't stuck
       if (els.btnNextStep) els.btnNextStep.classList.remove('hidden');
       els.btnCancel.classList.add('hidden');
     }
@@ -94,7 +92,7 @@ function requestNotificationPermission() {
 function showBrowserNotification(title, body, icon) {
   if (!('Notification' in window)) return;
   if (Notification.permission !== 'granted') return;
-  if (!document.hidden) return; // Only show when tab is not focused
+  if (!document.hidden) return;
 
   try {
     new Notification(title, {
@@ -102,7 +100,6 @@ function showBrowserNotification(title, body, icon) {
       icon: icon || undefined
     });
   } catch (e) {
-    // Fallback: ignore errors (e.g. service worker requirement)
   }
 }
 
@@ -320,7 +317,6 @@ async function checkDotNet() {
       return;
     }
 
-    // Skip if user already dismissed the warning this session
     if (sessionStorage.getItem('dotnetWarningDismissed') === 'true') return;
 
     const result = await invoke('check_dotnet');
@@ -342,7 +338,6 @@ function showDotNetWarning() {
   if (dismissBtn) {
     dismissBtn.addEventListener('click', () => {
       banner.classList.add('hidden');
-      // Remember dismissal for this session
       sessionStorage.setItem('dotnetWarningDismissed', 'true');
     });
   }
@@ -354,7 +349,6 @@ function showDotNetWarning() {
       try {
         window.__TAURI__.shell.open('https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.16-windows-x64-installer');
       } catch {
-        // Fallback: just let the link work normally
         window.open('https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.16-windows-x64-installer', '_blank');
       }
     });

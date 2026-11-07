@@ -19,7 +19,6 @@ pub struct LuaParseResult {
     pub all_app_ids: Vec<u64>,
 }
 
-// Matches `addappid(id)` (main app) or `addappid(id, 0, "hexKey")` (depot with key).
 fn add_app_id_pattern() -> &'static Regex {
     static PATTERN: OnceLock<Regex> = OnceLock::new();
     PATTERN.get_or_init(|| {
@@ -28,8 +27,6 @@ fn add_app_id_pattern() -> &'static Regex {
     })
 }
 
-// Matches `setManifestid(depotId, "manifestId")` and the Hubcap variant
-// `setManifestid(depotId, "manifestId", sizeBytes)`.
 fn set_manifest_pattern() -> &'static Regex {
     static PATTERN: OnceLock<Regex> = OnceLock::new();
     PATTERN.get_or_init(|| {
@@ -38,10 +35,6 @@ fn set_manifest_pattern() -> &'static Regex {
     })
 }
 
-/// Parse `.lua` file content, extracting `addappid()` and `setManifestid()` calls.
-///
-/// Returns `Err` when no app id and no depot entries were found. In that case the
-/// file is either not in the expected format or its contents are corrupted.
 pub fn parse_lua_file(content: &str) -> Result<LuaParseResult, String> {
     let mut result = LuaParseResult {
         main_app_id: None,
@@ -106,7 +99,6 @@ pub fn parse_lua_file(content: &str) -> Result<LuaParseResult, String> {
 
     result.depots = depot_map.into_values().collect();
 
-    // Fallback: if the script has no explicit main app id, use the smallest depot id.
     if result.main_app_id.is_none() && !result.depots.is_empty() {
         result.main_app_id = result.depots.iter().map(|d| d.depot_id).min();
     }

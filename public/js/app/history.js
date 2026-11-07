@@ -465,7 +465,6 @@ function renderHistoryEntries(entries) {
         state.dlStage = 'starting';
         state.dlDepotCount = resumeDepots;
         state.dlSourceCount = Array.isArray(settings.depot_sources) ? settings.depot_sources.length : null;
-        // The key is not stored with the entry; resume with the current one.
         const resumeConfig = {
           ...entry.resume_payload,
           manifestHubApiKey: entry.resume_payload.manifestHubApiKey || localStorage.getItem(MH_APIKEY_STORAGE_KEY) || null,

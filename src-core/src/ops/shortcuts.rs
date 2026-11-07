@@ -35,7 +35,6 @@ pub async fn detect_executables(download_dir: &str) -> Result<Vec<DetectedExecut
         return Ok(Vec::new());
     }
 
-    // Folder names look like "220 - Half-Life 2"; pull the name half as a hint.
     let folder_name = dir_path
         .file_name()
         .unwrap_or_default()
@@ -337,8 +336,6 @@ pub async fn create_shortcuts(
     }
 }
 
-// User-derived values go via env vars, not string-interpolated into the script,
-// so nothing the caller supplies can be parsed as PowerShell.
 #[cfg(target_os = "windows")]
 fn create_lnk_shortcut(
     safe_name: &str,

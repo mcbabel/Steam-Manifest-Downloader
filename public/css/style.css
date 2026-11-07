@@ -1,4 +1,3 @@
-/* Local Inter Font (bundled, no external CDN) */
 @font-face {
   font-family: 'Inter';
   font-style: normal;
@@ -16,7 +15,6 @@
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
-/* Dark Theme (Default) */
 :root {
   --bg-primary: #0d1117;
   --bg-secondary: #161b22;
@@ -52,7 +50,6 @@
   --font-mono: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
 }
 
-/* Light Theme */
 [data-theme="light"] {
   --bg-primary: #f6f8fa;
   --bg-secondary: #ffffff;
@@ -140,7 +137,6 @@
   display: none;
 }
 
-/* Reset & Base */
 *, *::before, *::after {
   margin: 0;
   padding: 0;
@@ -208,7 +204,6 @@ button:disabled,
   cursor: not-allowed;
 }
 
-/* App shell – renders the visible rounded window on all platforms */
 .app-shell {
   position: relative;
   display: flex;
@@ -219,7 +214,6 @@ button:disabled,
   overflow: hidden;
 }
 
-/* Custom Title Bar */
 .title-bar {
   display: flex;
   justify-content: space-between;
@@ -287,7 +281,6 @@ button:disabled,
   color: white;
 }
 
-/* Scroll Wrapper + Background Glow */
 .scroll-wrapper {
   flex: 1;
   overflow-y: auto;
@@ -330,7 +323,6 @@ button:disabled,
   background: rgba(88, 166, 255, 0.25);
 }
 
-/* App Container */
 .app {
   max-width: 800px;
   margin: 0 auto;
@@ -340,7 +332,6 @@ button:disabled,
   z-index: 1;
 }
 
-/* Header */
 .header {
   text-align: center;
   margin-bottom: 2rem;
@@ -367,7 +358,6 @@ button:disabled,
   font-size: 0.95rem;
 }
 
-/* Gradient Text Utility */
 .gradient-text {
   background: var(--gradient);
   -webkit-background-clip: text;
@@ -379,7 +369,6 @@ button:disabled,
   color: var(--accent);
 }
 
-/* Step Indicator */
 .steps {
   display: flex;
   align-items: center;
@@ -448,7 +437,6 @@ button:disabled,
   background: var(--border);
 }
 
-/* Card (Glassmorphism) */
 .card {
   background: var(--bg-card);
   backdrop-filter: blur(16px);
@@ -469,7 +457,6 @@ button:disabled,
   border-top: 1px solid var(--border);
 }
 
-/* Sections / Steps */
 .step {
   display: none;
 }
@@ -482,7 +469,6 @@ button:disabled,
   display: none !important;
 }
 
-/* Drop Zone */
 .drop-zone {
   border: 2px dashed var(--border);
   border-radius: var(--radius);
@@ -543,7 +529,6 @@ button:disabled,
   color: var(--text-muted);
 }
 
-/* File Info */
 .file-info {
   display: flex;
   align-items: center;
@@ -584,7 +569,6 @@ button:disabled,
   color: var(--error);
 }
 
-/* Loading */
 .loading {
   display: flex;
   align-items: center;
@@ -604,7 +588,6 @@ button:disabled,
   animation: spin 0.8s linear infinite;
 }
 
-/* Error Message */
 .error-message {
   background: var(--error-bg);
   border: 1px solid var(--error);
@@ -615,7 +598,6 @@ button:disabled,
   margin-top: 1rem;
 }
 
-/* Settings Sections */
 .settings-section {
   margin-top: 1.5rem;
   padding-top: 1.5rem;
@@ -652,7 +634,6 @@ button:disabled,
   text-decoration: underline;
 }
 
-/* Depot Item Header (depot id + tags inline) */
 .depot-item__header {
   display: flex;
   align-items: center;
@@ -661,7 +642,6 @@ button:disabled,
   row-gap: 0.15rem;
 }
 
-/* Manifest Action Row (input + fetch + upload, icon-only buttons) */
 .depot-item__manifest-row {
   display: flex;
   align-items: stretch;
@@ -728,7 +708,6 @@ button:disabled,
   to { transform: rotate(360deg); }
 }
 
-/* DepotDownloader Path */
 .depot-downloader-path {
   margin-top: 1.5rem;
   padding-top: 1.5rem;
@@ -811,7 +790,6 @@ button:disabled,
   margin: 0 0 1rem;
 }
 
-/* Game Info Banner */
 .game-info-banner {
   display: flex;
   gap: 1.25rem;
@@ -857,7 +835,6 @@ button:disabled,
   overflow: hidden;
 }
 
-/* Select Header */
 .select-header {
   display: flex;
   justify-content: space-between;
@@ -892,7 +869,6 @@ button:disabled,
   white-space: nowrap;
 }
 
-/* Depot List */
 .depot-list {
   display: flex;
   flex-direction: column;
@@ -1059,7 +1035,6 @@ button:disabled,
   border-color: rgba(46, 213, 115, 0.4);
 }
 
-/* Buttons */
 .btn {
   padding: 0.6rem 1.25rem;
   border-radius: var(--radius-sm);
@@ -1131,7 +1106,6 @@ button:disabled,
   height: 16px;
 }
 
-/* Progress */
 .progress-header h2 {
   font-size: 1.25rem;
   margin-bottom: 1rem;
@@ -1205,7 +1179,6 @@ button:disabled,
   height: 16px;
 }
 
-/* Depot Progress List */
 .depot-progress-list {
   display: flex;
   flex-direction: column;
@@ -1261,7 +1234,6 @@ button:disabled,
   font-family: var(--font-mono);
 }
 
-/* Terminal */
 .terminal {
   background: #0d1117;
   border: 1px solid rgba(88, 166, 255, 0.08);
@@ -1337,7 +1309,6 @@ button:disabled,
   color: var(--success);
 }
 
-/* Completion */
 .completion-message {
   padding: 1.25rem;
   border-radius: var(--radius-sm);
@@ -1412,7 +1383,6 @@ button:disabled,
   margin-top: 0.25rem;
 }
 
-/* Step 4: Shortcut Creation */
 .shortcut-header {
   font-size: 1.15rem;
   font-weight: 600;
@@ -2169,7 +2139,6 @@ button:disabled,
   border-radius: 3px;
 }
 
-/* Animations */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
@@ -2190,7 +2159,6 @@ button:disabled,
   100% { background-position: 0% 50%; }
 }
 
-/* Danger Button */
 .btn--danger {
   background: var(--error);
   border-color: var(--error);
@@ -2206,7 +2174,6 @@ button:disabled,
   box-shadow: 0 4px 16px var(--shadow-error-strong);
 }
 
-/* Modal (Glass) */
 .modal {
   position: absolute;
   inset: 0;
@@ -2288,7 +2255,6 @@ button:disabled,
   color: var(--success);
 }
 
-/* Language picker / chooser */
 .language-picker-content {
   max-width: 460px;
 }
@@ -2696,7 +2662,6 @@ button:disabled,
   margin-right: auto;
 }
 
-/* Depot Search/Filter */
 .depot-filters {
   display: flex;
   gap: 1rem;
@@ -2744,7 +2709,6 @@ button:disabled,
   accent-color: var(--accent);
 }
 
-/* Disk Space Info */
 .native-alpha-banner {
   padding: 0.7rem 0.95rem;
   margin-bottom: 1rem;
@@ -2852,7 +2816,6 @@ button:disabled,
   font-style: italic;
 }
 
-/* Depot Download Progress Bar */
 .depot-download-progress {
   display: flex;
   align-items: center;
@@ -2899,7 +2862,6 @@ button:disabled,
   text-align: right;
 }
 
-/* Download Speed / ETA Info */
 .download-speed-info {
   display: flex;
   align-items: center;
@@ -2922,7 +2884,6 @@ button:disabled,
   opacity: 0.5;
 }
 
-/* Card Footer Helpers */
 .card__footer-right {
   display: flex;
   gap: 0.5rem;
@@ -2935,7 +2896,6 @@ button:disabled,
   align-items: center;
 }
 
-/* Header Actions */
 .header__actions {
   display: flex;
   justify-content: center;
@@ -2967,7 +2927,6 @@ button:disabled,
   color: #b8c5d6;
 }
 
-/* Tab Bar */
 .tab-bar {
   display: flex;
   border-bottom: 2px solid var(--border);
@@ -3004,7 +2963,6 @@ button:disabled,
   border-bottom-color: var(--accent);
 }
 
-/* Tab Content */
 .tab-content {
   display: none;
 }
@@ -3014,7 +2972,6 @@ button:disabled,
   animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Search Input */
 .search-input-row {
   display: flex;
   gap: 0.75rem;
@@ -3050,7 +3007,6 @@ button:disabled,
   color: var(--text-muted);
 }
 
-/* Search Input Wrapper (for autocomplete positioning) */
 .search-input-wrapper {
   position: relative;
   flex: 1;
@@ -3060,7 +3016,6 @@ button:disabled,
   width: 100%;
 }
 
-/* Search Autocomplete Dropdown */
 .search-autocomplete {
   position: absolute;
   top: 100%;
@@ -3137,7 +3092,6 @@ button:disabled,
   text-align: center;
 }
 
-/* Search Results */
 .search-results {
   margin-top: 1rem;
 }
@@ -3160,7 +3114,6 @@ button:disabled,
   border-radius: 3px;
 }
 
-/* Repo Card */
 .repo-card {
   display: flex;
   align-items: center;
@@ -3254,14 +3207,12 @@ button:disabled,
   color: var(--accent);
 }
 
-/* Search Next Row */
 .search-next-row {
   display: flex;
   justify-content: flex-end;
   margin-top: 1rem;
 }
 
-/* Settings Modal */
 .settings-modal-content {
   text-align: left;
   max-height: calc(85vh - 2rem);
@@ -3763,7 +3714,6 @@ textarea.bug-report__input {
   line-height: 1;
 }
 
-/* Toggle Switch */
 .settings-field__toggle-wrap {
   display: flex;
   align-items: center;
@@ -3916,7 +3866,6 @@ textarea.bug-report__input {
   background: #fff;
 }
 
-/* Advanced Settings */
 .settings-advanced {
   margin-top: 16px;
   margin-bottom: 20px;
@@ -3971,7 +3920,6 @@ textarea.bug-report__input {
   margin-bottom: 0;
 }
 
-/* Telemetry Consent Modal */
 .telemetry-modal-content {
   max-width: 520px;
   text-align: left;
@@ -4068,7 +4016,6 @@ textarea.bug-report__input {
   border-radius: 3px;
 }
 
-/* Manifest sources */
 .sources-empty {
   margin: 1rem 0 1.5rem;
   padding: 18px 22px;
@@ -4176,7 +4123,6 @@ textarea.bug-report__input {
   flex: 1;
 }
 
-/* Debug / Build Info */
 .build-info {
   display: flex;
   flex-direction: column;
@@ -4248,7 +4194,6 @@ textarea.bug-report__input {
   padding: 6px 12px;
 }
 
-/* Update Modal */
 .update-modal-content {
   display: flex;
   flex-direction: column;
@@ -4573,7 +4518,6 @@ textarea.bug-report__input {
   100% { background-position: -200% 0; }
 }
 
-/* Responsive */
 @media (max-width: 600px) {
   .app {
     padding: 1rem;
@@ -4611,7 +4555,6 @@ textarea.bug-report__input {
   }
 }
 
-/* .NET Runtime Warning Banner */
 .dotnet-warning {
   background: linear-gradient(135deg, #f39c12, #e67e22);
   color: #1a1a2e;
@@ -4689,7 +4632,6 @@ textarea.bug-report__input {
   opacity: 1;
 }
 
-/* History Modal */
 .history-modal-content {
   text-align: left;
   max-width: 720px;
@@ -5650,7 +5592,6 @@ textarea.bug-report__input {
   color: var(--text-secondary);
 }
 
-/* ---- Steam account and branches ---- */
 .account-actions {
   display: flex;
   gap: 8px;
@@ -5662,7 +5603,6 @@ textarea.bug-report__input {
   text-align: center;
 }
 
-/* QR codes need dark modules on white, in both themes. */
 .account-qr {
   width: 232px;
   height: 232px;

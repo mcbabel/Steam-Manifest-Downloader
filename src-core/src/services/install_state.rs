@@ -13,9 +13,6 @@ pub struct DepotInstall {
     pub files: Vec<String>,
 }
 
-/// Remembers which Steam branch an install came from, so the update check
-/// does not compare a beta build against the public one. No file means the
-/// public branch.
 pub fn save_branch(work_dir: &Path, branch: Option<&str>) {
     let path = work_dir.join(".smd-branch.json");
     match branch.filter(|b| !crate::services::steam_branches::is_public(b)) {
@@ -28,7 +25,6 @@ pub fn save_branch(work_dir: &Path, branch: Option<&str>) {
     }
 }
 
-/// The non-public branch an install came from, if any.
 pub fn branch(work_dir: &Path) -> Option<String> {
     let bytes = std::fs::read(work_dir.join(".smd-branch.json")).ok()?;
     let v: serde_json::Value = serde_json::from_slice(&bytes).ok()?;

@@ -36,10 +36,6 @@ on:
       - 'Dockerfile'
       - '.dockerignore'
 
-# One group per PR (or per push to dev): a run only replaces an older run of
-# the same PR. A shared group let one Dependabot PR cancel the builds of
-# the others, which left their required checks "cancelled" and blocked the
-# merge. Only the release below is shared, so dev-latest stays one build.
 concurrency:
   group: dev-build-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true

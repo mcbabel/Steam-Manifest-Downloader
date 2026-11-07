@@ -40,7 +40,6 @@ pub async fn load_history(app_data_dir: &Path) -> History {
         Ok(content) => serde_json::from_str(&content).unwrap_or_default(),
         Err(_) => return History::default(),
     };
-    // Older versions stored the ManifestHub key in the resume payload.
     let mut scrubbed = false;
     for entry in &mut history.entries {
         if let Some(payload) = entry.resume_payload.as_mut() {

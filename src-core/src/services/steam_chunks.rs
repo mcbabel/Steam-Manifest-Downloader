@@ -22,7 +22,6 @@ pub fn decode_chunk(
 }
 
 fn decompress_vz(input: &[u8]) -> Result<Vec<u8>, String> {
-    // Older depots (Spacewar 481 among them) still ship plain PKZip chunks.
     if input.starts_with(b"PK\x03\x04") {
         return unzip_first_entry(input, "chunk");
     }

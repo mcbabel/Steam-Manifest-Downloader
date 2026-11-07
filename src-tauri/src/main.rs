@@ -33,12 +33,10 @@ fn main() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            // File operations
             commands::parse_lua_file,
             commands::parse_lua_content,
             commands::key_file_apps,
             commands::read_key_file,
-            // Search
             commands::search_repos,
             commands::get_repo_manifests,
             commands::search_steam_games,
@@ -47,17 +45,13 @@ fn main() {
             commands::fetch_depot_metadata_steam,
             commands::recommend_depots,
             commands::fetch_latest_manifest_id,
-            // Steam
             commands::get_steam_app_info,
-            // Download
             commands::start_download,
             commands::cancel_download,
             commands::pause_download,
-            // Settings
             commands::get_settings,
             commands::save_settings,
             commands::test_proxy,
-            // System
             commands::check_dotnet,
             commands::get_disk_space,
             commands::check_free_space,
@@ -76,17 +70,14 @@ fn main() {
             commands::power_off_system,
             commands::get_build_info,
             commands::get_debug_log_path,
-            // Window
             commands::minimize_window,
             commands::maximize_window,
             commands::close_window,
             commands::restart_app,
-            // Updater
             commands::check_for_updates,
             commands::get_whats_new,
             commands::install_update,
             commands::get_auto_update_enabled,
-            // History
             commands::get_history,
             commands::remove_history_entry,
             commands::clear_history,
@@ -95,17 +86,14 @@ fn main() {
             commands::get_pending_followup,
             commands::clear_pending_followup,
             commands::open_folder,
-            // Shortcuts
             commands::is_shortcut_supported,
             commands::detect_executables,
             commands::create_shortcuts,
-            // Telemetry
             commands::get_telemetry_status,
             commands::set_telemetry_consent,
             commands::set_behavior_consent,
             commands::emit_telemetry_event,
             commands::set_telemetry_focus,
-            // Emulator (gbe_fork)
             commands::emu_release_info,
             commands::emu_ensure_cached,
             commands::emu_scan_game_dir,
@@ -116,21 +104,16 @@ fn main() {
             commands::emu_revert_replacement,
             commands::emu_read_emu_settings,
             commands::emu_write_emu_settings,
-            // Steam library (non-Steam shortcut + grid art)
             commands::steam_library_detect,
             commands::local_steam_depot_keys,
             commands::steam_library_check_dir,
             commands::steam_library_add,
-            // Steamless (DRM detection + removal)
             commands::steamless_scan,
             commands::steamless_unpack,
-            // Steam API Check Bypass (version.dll DLL-hijack)
             commands::steam_api_bypass_apply,
             commands::steam_api_bypass_revert,
             commands::steam_api_bypass_status,
-            // Native (pure-Rust) downloader — experimental, side-by-side with DepotDownloaderMod
             commands::native_download_depot,
-            // Steam account (QR sign-in) and branches
             commands::account_status,
             commands::account_check,
             commands::account_login_start,

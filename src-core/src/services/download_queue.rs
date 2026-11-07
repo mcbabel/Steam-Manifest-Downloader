@@ -30,7 +30,6 @@ pub async fn load(app_data_dir: &Path) -> Vec<QueuedDownload> {
         .ok()
         .and_then(|b| serde_json::from_slice(&b).ok())
         .unwrap_or_default();
-    // Older versions stored the ManifestHub key with each item.
     let mut scrubbed = false;
     for item in &mut queue {
         scrubbed |= crate::services::config_secrets::strip(&mut item.config);

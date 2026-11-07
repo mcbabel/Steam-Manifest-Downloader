@@ -244,7 +244,6 @@ impl App {
             prefs.include_dlc = dlc;
         }
         let key_vdf = self.wiz.search_key_vdf.as_ref().filter(|_| self.wiz.from_search);
-        // Depots from the account get their keys from Steam.
         let from_account = self.acct.from_account;
         let choice = depot_select::recommend_keyed(
             &meta,

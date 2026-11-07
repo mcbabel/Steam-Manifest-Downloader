@@ -1,7 +1,3 @@
-// Lightweight i18n for the Tauri webview. Loads a single JSON locale file,
-// resolves dotted keys (e.g. "modals.cancel.title"), and walks the DOM to
-// apply translations via data-i18n* attributes.
-
 const AVAILABLE_LOCALES = [
   { code: 'en', label: 'English' },
   { code: 'de', label: 'Deutsch' },

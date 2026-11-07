@@ -12,9 +12,6 @@ pub fn cache_dir(app_data_dir: &Path, app_id: &str) -> PathBuf {
     app_data_dir.join("ryuu_cache").join(app_id)
 }
 
-/// Download the zip for `app_id` from Ryuu, extract `.lua` and `.manifest`
-/// files into the per-app cache dir, and return the resulting AppArchiveData
-/// parsed from the lua file.
 pub async fn fetch_app_data(
     client: &Client,
     api_key: &str,
@@ -45,14 +42,11 @@ pub async fn fetch_app_data(
 
     let out_dir = cache_dir(app_data_dir, app_id);
 
-    // Wipe any stale cache so we don't mix manifests from different downloads.
     let _ = tokio::fs::remove_dir_all(&out_dir).await;
     tokio::fs::create_dir_all(&out_dir)
         .await
         .map_err(|e| format!("Failed to create Ryuu cache dir: {}", e))?;
 
-    // Extract everything synchronously into memory first so the non-Send
-    // ZipFile reader is fully dropped before any await point.
     let extracted: Vec<(String, Vec<u8>)> = {
         let reader = Cursor::new(bytes.to_vec());
         let mut zip = zip::ZipArchive::new(reader)
@@ -127,8 +121,6 @@ pub async fn fetch_app_data(
     })
 }
 
-/// Copy a cached manifest file from the Ryuu cache into `output_dir`.
-/// Returns the destination path on success.
 pub async fn copy_cached_manifest(
     app_data_dir: &Path,
     app_id: &str,

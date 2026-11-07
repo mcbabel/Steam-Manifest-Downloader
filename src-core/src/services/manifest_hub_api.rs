@@ -58,7 +58,6 @@ pub async fn download_from_manifest_hub(
         .await
         .map_err(|e| format!("Failed to read ManifestHub response body: {}", e))?;
 
-    // 200 OK + JSON body is the API's way of reporting per-request failure.
     if content_type.contains("application/json") {
         if let Ok(json) = serde_json::from_slice::<serde_json::Value>(&bytes) {
             let error_msg = json

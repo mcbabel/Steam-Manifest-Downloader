@@ -219,7 +219,6 @@ jobs:
           OUT="$RUNNER_TEMP/games"
           "$SMD" search "$APP_ID" --manifests 0
           "$SMD" branches "$APP_ID"
-          # A non-public branch without a sign-in must stop with a clear error.
           if "$SMD" download "$APP_ID" --branch smd-ci-check --list 2> "$RUNNER_TEMP/branch.err"; then
             echo "::error::A non-public branch was accepted without a sign-in"
             exit 1
@@ -230,8 +229,6 @@ jobs:
           tail -n 25 "$RUNNER_TEMP/events.jsonl"
           find "$OUT" -type f | head -n 20
           du -sh "$OUT"
-          # Files alone prove nothing (the manifest and half written files land
-          # there too): every depot has to be reported as downloaded.
           python3 - "$RUNNER_TEMP/events.jsonl" <<'PY'
           import json, sys
           done = None

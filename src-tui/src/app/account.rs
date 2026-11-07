@@ -1,7 +1,3 @@
-//! Steam account (QR sign-in only) and branches in the terminal UI.
-//! The token never leaves smd-core: this only sees AccountInfo, QR codes and
-//! branch lists.
-
 use std::time::Duration;
 
 use ratatui::style::{Color, Style};
@@ -33,7 +29,6 @@ pub struct AccountUi {
     pub branch: String,
     pub branch_password: TextInput,
     pub use_account: bool,
-    /// The depots of the current selection were read from the account.
     pub from_account: bool,
     pub loading_depots: bool,
 }
@@ -73,7 +68,6 @@ impl AccountUi {
             .find(|b| b.name == self.branch)
     }
 
-    /// The selected branch needs a password the user has not typed yet.
     pub fn needs_password(&self) -> bool {
         self.non_public()
             && self
@@ -184,9 +178,6 @@ impl App {
         let wait = Duration::from_secs_f32(self.acct.interval);
         self.spawn(async move {
             tokio::time::sleep(wait).await;
-            // The terminal UI is interactive like the desktop app: without a
-            // keychain the sign-in lasts for the session (smd login
-            // --store-file is the explicit file option).
             let r = account_ops::poll_qr(&core, &dir, false).await;
             apply(move |app| {
                 if !app.acct.login_running {
@@ -274,8 +265,6 @@ impl App {
         });
     }
 
-    /// Loads the branches of the app in the selection (again after a
-    /// sign-in or sign-out).
     pub(super) fn branch_load(&mut self) {
         let Some(app_id) = self.wiz.parsed.as_ref().map(|p| p.main_app_id.clone()) else {
             return;
@@ -305,7 +294,6 @@ impl App {
         });
     }
 
-    /// Resets the branch choice for a new selection.
     pub(super) fn branch_reset(&mut self, from_account: bool) {
         self.acct.branch = steam_branches::PUBLIC.to_string();
         self.acct.branch_password.clear();
@@ -335,7 +323,6 @@ impl App {
         self.acct.branch_password.clear();
     }
 
-    /// Message key when the branch choice blocks the start.
     pub(super) fn branch_problem(&self) -> Option<&'static str> {
         if !self.acct.non_public() {
             return None;
@@ -349,7 +336,6 @@ impl App {
         None
     }
 
-    /// Branch, password and account flag for the download config.
     pub(super) fn branch_fields(&self) -> (Option<String>, Option<String>, bool) {
         let branch = self.acct.non_public().then(|| self.acct.branch.clone());
         let password = branch
@@ -404,8 +390,6 @@ impl App {
             })
         });
     }
-
-    // ---- rendering ----------------------------------------------------------
 
     pub(super) fn render_account_tab(&mut self, sv: &mut ScrollView, ctx: &mut Ctx, w: u16) {
         let r = sv.next(1);
@@ -470,7 +454,6 @@ impl App {
             let r = sv.next(h);
             hint(&mut sv.buf, r, &intro);
             sv.gap(1);
-            // Black on white whatever the terminal theme, so phones can read it.
             let style = Style::default().fg(Color::Black).bg(Color::White);
             for l in lines {
                 let r = sv.next(1);
@@ -484,7 +467,6 @@ impl App {
         }
     }
 
-    /// Branch row, password and the account toggle in the selection panel.
     pub(super) fn render_branch_options(&mut self, sv: &mut ScrollView, ctx: &mut Ctx, w: u16) {
         let others = self
             .acct

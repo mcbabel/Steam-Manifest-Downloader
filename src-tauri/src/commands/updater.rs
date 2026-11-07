@@ -73,7 +73,6 @@ pub async fn install_update(
             .map_err(|e| format!("Failed to launch installer: {}", e))?;
     }
 
-    // Exit so the NSIS installer can replace the running binary.
     app.exit(0);
     Ok(())
 }

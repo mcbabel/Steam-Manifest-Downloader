@@ -1,15 +1,3 @@
-//! The signed-in Steam account: where its refresh token is kept.
-//!
-//! In order of preference:
-//! 1. the system keychain (Windows Credential Manager, macOS Keychain, the
-//!    Secret Service on Linux),
-//! 2. a file readable only by the user, but only when the user asked for it
-//!    (`smd login --store-file`, for servers and Docker); it is not encrypted,
-//! 3. memory only: the sign-in lasts until the app closes.
-//!
-//! The token never goes into settings.json, the history, events or telemetry.
-//! Frontends only ever get an [`AccountInfo`].
-
 use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
@@ -38,7 +26,6 @@ pub struct Account {
     pub storage: Storage,
 }
 
-/// What frontends may see about the account. No token.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AccountInfo {
@@ -63,7 +50,6 @@ impl Account {
     }
 }
 
-/// How a stored login looks on disk / in the keychain.
 #[derive(Serialize, Deserialize)]
 struct Stored {
     account_name: String,
@@ -93,8 +79,6 @@ fn to_stored(account: &Account) -> String {
 fn file_path(data_dir: &Path) -> PathBuf {
     data_dir.join(FILE_NAME)
 }
-
-// ---- keychain -------------------------------------------------------------
 
 #[cfg(any(target_os = "windows", target_os = "macos", target_os = "linux"))]
 mod keychain {
@@ -137,13 +121,9 @@ mod keychain {
     }
 }
 
-/// Keychain calls can block (D-Bus, a password prompt), so they run off the
-/// async threads.
 async fn blocking<T: Send + 'static>(f: impl FnOnce() -> T + Send + 'static) -> Option<T> {
     tokio::task::spawn_blocking(f).await.ok()
 }
-
-// ---- file -----------------------------------------------------------------
 
 async fn write_private(path: &Path, content: &str) -> Result<(), String> {
     if let Some(dir) = path.parent() {
@@ -181,10 +161,6 @@ async fn write_private(path: &Path, content: &str) -> Result<(), String> {
         .map_err(|e| e.to_string())
 }
 
-// ---- store ----------------------------------------------------------------
-
-/// The account of this app instance. Holds the session copy so a login
-/// without a keychain survives until the app closes.
 pub struct AccountStore {
     current: Mutex<Option<Option<Account>>>,
 }
@@ -202,8 +178,6 @@ impl AccountStore {
         }
     }
 
-    /// The signed-in account, loading it from the keychain or the file the
-    /// first time.
     pub async fn get(&self, data_dir: &Path) -> Option<Account> {
         let mut guard = self.current.lock().await;
         if let Some(cached) = guard.as_ref() {
@@ -214,8 +188,6 @@ impl AccountStore {
         loaded
     }
 
-    /// Saves a fresh login. `allow_file` is the user's explicit choice to
-    /// use the unencrypted file when there is no keychain.
     pub async fn set(
         &self,
         data_dir: &Path,
@@ -254,7 +226,6 @@ impl AccountStore {
         Ok(account)
     }
 
-    /// Forgets the login everywhere it might be stored.
     pub async fn clear(&self, data_dir: &Path) {
         let _ = blocking(keychain::delete).await;
         let _ = tokio::fs::remove_file(file_path(data_dir)).await;

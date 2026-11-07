@@ -445,7 +445,6 @@ mod tests {
         "mode" "dpad"
         "inputs"
         {
-            // menu navigation
             "dpad_north" { "activators" { "Full_Press" { "bindings" { "binding" "game_action Menu Up," } } } }
         }
     }

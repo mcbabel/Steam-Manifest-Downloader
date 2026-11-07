@@ -16,8 +16,6 @@ use std::os::windows::process::CommandExt;
 
 use crate::services::AppState;
 
-// Raw FFI so we don't pin a specific windows-sys feature set. The job object
-// guarantees the whole child-process tree is torn down on cancel.
 #[cfg(target_os = "windows")]
 pub mod win_job {
     use std::ffi::c_void;
@@ -228,8 +226,6 @@ impl ProgressEvent {
     }
 }
 
-/// DepotDownloader flags whose value is a secret. Extra arguments come from
-/// the user, so the shown command (terminal, bug report logs) hides them.
 const SECRET_FLAGS: &[&str] = &[
     "-password",
     "-betapassword",
@@ -409,7 +405,6 @@ pub async fn run_depot_downloader(
     #[cfg(target_os = "windows")]
     cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
 
-    // Own process group so SIGKILL reaches every descendant on cancel.
     #[cfg(unix)]
     {
         cmd.process_group(0);
@@ -605,7 +600,6 @@ pub async fn kill_job(state: &AppState, job_id: &str) -> bool {
 
     let mut killed = false;
 
-    // Escalation order: job object → taskkill by pid → taskkill by image name.
     #[cfg(target_os = "windows")]
     {
         if let Some(jo) = job_object_opt {
@@ -634,7 +628,6 @@ pub async fn kill_job(state: &AppState, job_id: &str) -> bool {
         }
     }
 
-    // Negative pid → whole group SIGKILL (spawn used process_group(0)).
     #[cfg(unix)]
     {
         if let Some(child_pid) = pid {
@@ -668,7 +661,6 @@ pub async fn get_exe_path_async() -> Result<std::path::PathBuf, String> {
     #[cfg(not(target_os = "windows"))]
     const EXE_NAME: &str = "DepotDownloaderMod";
 
-    // Embedded extraction works for both installer and portable builds.
     match crate::services::embedded_tools::ensure_extracted().await {
         Ok(path) => {
             eprintln!("[DepotRunner] Using embedded DepotDownloaderMod: {:?}", path);

@@ -104,7 +104,6 @@ pub async fn get_game_info(
     Ok(Some(info))
 }
 
-// Strips chars forbidden in Windows folder names and collapses whitespace.
 pub fn sanitize_game_name(name: &str) -> String {
     let cleaned: String = name
         .chars()

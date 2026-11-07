@@ -36,7 +36,7 @@ pub struct DownloadConfig {
     pub game_name: Option<String>,
     #[serde(rename = "selectedDepots", alias = "depots")]
     pub depots: Vec<DepotConfig>,
-    #[allow(dead_code)] // Deserialized from frontend JSON but not read directly by backend
+    #[allow(dead_code)]
     pub mode: Option<String>,
     #[serde(rename = "keyVdfKeys", alias = "key_vdf_keys")]
     pub key_vdf_keys: Option<HashMap<String, String>>,
@@ -62,21 +62,14 @@ pub struct DownloadConfig {
     pub all_app_ids: Option<Vec<String>>,
     #[serde(rename = "includeDlc", alias = "include_dlc", default)]
     pub include_dlc: Option<bool>,
-    /// Steam branch to download (`None` or "public" = the public branch).
-    /// A non-public branch needs the user's account.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub branch: Option<String>,
-    /// Password of a password branch. Sent to Steam only, never stored
-    /// (see `config_secrets`).
     #[serde(rename = "branchPassword", default, skip_serializing_if = "Option::is_none")]
     pub branch_password: Option<String>,
-    /// Use the signed-in account for this download (own games, playtests).
-    /// Implied by a non-public branch.
     #[serde(rename = "useAccount", alias = "use_account", default)]
     pub use_account: bool,
 }
 
-/// Telemetry label for the branch: never the branch name itself.
 pub fn branch_kind(config: &DownloadConfig) -> &'static str {
     match config.branch.as_deref() {
         Some(b) if !crate::services::steam_branches::is_public(b) => {
@@ -124,7 +117,6 @@ pub struct DepotConfig {
     pub display_name: Option<String>,
 }
 
-// Trust-boundary validation: pipeline assumes all IDs parse cleanly.
 fn validate_download_ids(config: &DownloadConfig) -> Result<(), String> {
     config.app_id.parse::<u64>().map_err(|_| {
         format!(
@@ -373,8 +365,6 @@ pub async fn start_download(
     Ok(response)
 }
 
-/// Error text of a failure that was already reported to the frontend with
-/// its own event, so the task does not add an "Unexpected error" on top.
 const ALREADY_REPORTED: &str = "\u{0}already-reported";
 
 #[allow(clippy::too_many_arguments)]
@@ -437,9 +427,6 @@ async fn run_download_pipeline(
     r
 }
 
-/// For a download with the user's account: logs on as the account, takes
-/// the manifests of the chosen branch and asks Steam for the depot keys the
-/// account owns. Returns the session the rest of the download uses.
 async fn prepare_account_download(
     sink: &Sink,
     state: &AppState,
@@ -516,7 +503,6 @@ async fn prepare_account_download(
         match steam_branches::depot_key(session.clone(), app_id, depot_id).await {
             Ok(key) => depot.depot_key = Some(hex::encode(key)),
             Err(reason) => {
-                // The depot's error later says what Steam answered.
                 crate::dlog!("account", "no key for depot {}: {}", depot.depot_id, reason);
                 session.note_key_error(&depot.depot_id, reason);
             }
@@ -546,8 +532,6 @@ async fn run_download_pipeline_inner(
     let work_dir = base_dir.join(folder_name);
     let loaded_settings = settings_service::load_settings(app_data_dir).await;
     let depot_sources_list = loaded_settings.depot_sources.clone();
-    // Downloads with the account run on the built-in engine; DepotDownloaderMod
-    // would need its own (unencrypted) login.
     let use_native = loaded_settings.use_native_downloader || config.uses_account();
     let merged = install_state::use_merged_layout(
         &work_dir,
@@ -929,7 +913,7 @@ async fn run_download_pipeline_inner(
                     if !is_rate_limited || attempt == 2 {
                         break;
                     }
-                    let backoff_ms = 4000u64 << attempt; // 4s, 8s
+                    let backoff_ms = 4000u64 << attempt;
                     let mut event = ProgressEvent::new("status", job_id);
                     event.step = Some("manifest_hub_rate_limited".to_string());
                     event.depot_id = Some(depot.depot_id.clone());
@@ -1660,8 +1644,6 @@ async fn run_native_pipeline(
         let (depot_id_u, manifest_id_u, depot_key) = match prepare_native_depot(depot, depot_infos) {
             Ok(prepared) => prepared,
             Err(e) => {
-                // With the account, say what Steam answered instead of
-                // pointing at the depot sources.
                 let e = match session.key_error(&depot.depot_id) {
                     Some(reason) => account_key_error(&depot.depot_id, &reason),
                     None => e,

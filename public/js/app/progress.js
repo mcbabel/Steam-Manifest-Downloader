@@ -397,7 +397,7 @@ function updateSpeedAndEta(percent) {
 
   const oldest = tracker.samples[0];
   const newest = tracker.samples[tracker.samples.length - 1];
-  const timeDelta = (newest.time - oldest.time) / 1000; // seconds
+  const timeDelta = (newest.time - oldest.time) / 1000;
   const percentDelta = newest.percent - oldest.percent;
 
   if (timeDelta <= 0 || percentDelta <= 0) return;
@@ -448,7 +448,7 @@ function formatEta(seconds) {
 }
 
 function startStaleTimer() {
-  if (state.speedTracker.staleTimer) return; // Already running
+  if (state.speedTracker.staleTimer) return;
 
   state.speedTracker.staleTimer = setInterval(() => {
     const now = Date.now();
@@ -587,7 +587,6 @@ function handleError(msg) {
   const errorText = eventText(msg);
   appendTerminalLine(window.i18n.t('progress.errorLine', { message: errorText }), 'error');
 
-  // If it's a fatal error (no depotId = pipeline-level error), show Start Over and notify
   if (!msg.depotId) {
     clearInterval(state.speedTracker.staleTimer);
     state.speedTracker.staleTimer = null;
