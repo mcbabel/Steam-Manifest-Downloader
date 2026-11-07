@@ -239,6 +239,16 @@ jobs:
             artifacts/tui-macos/*
             artifacts/package-managers/*
 
+  aur:
+    name: AUR packages
+    needs: release
+    if: ${{ !inputs.draft && !inputs.prerelease }}
+    uses: ./.github/workflows/aur.yml
+    with:
+      tag: ${{ inputs.tag || github.ref_name }}
+    secrets:
+      AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+
   docker:
     name: Docker image
     needs: release

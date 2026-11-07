@@ -1,0 +1,80 @@
+name: AUR
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+    secrets:
+      AUR_SSH_PRIVATE_KEY:
+        required: true
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to publish to the AUR (e.g. v1.6.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: ${{ matrix.package }}
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - steam-manifest-downloader-bin
+          - steam-manifest-downloader
+          - steam-manifest-downloader-terminal-bin
+    steps:
+      - name: Install tools
+        run: pacman -Syu --noconfirm --needed git openssh pacman-contrib
+
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: SSH key for the AUR
+        env:
+          AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+        run: |
+          if [ -z "$AUR_SSH_PRIVATE_KEY" ]; then
+            echo "::error::The AUR_SSH_PRIVATE_KEY secret is not set."
+            exit 1
+          fi
+          install -dm700 ~/.ssh
+          printf '%s\n' "$AUR_SSH_PRIVATE_KEY" > ~/.ssh/aur
+          chmod 600 ~/.ssh/aur
+          ssh-keyscan -t ed25519,rsa aur.archlinux.org > ~/.ssh/known_hosts 2>/dev/null
+          printf 'Host aur.archlinux.org\n  User aur\n  IdentityFile ~/.ssh/aur\n  IdentitiesOnly yes\n' > ~/.ssh/config
+
+      - name: Update the package
+        env:
+          TAG: ${{ inputs.tag }}
+          PKG: ${{ matrix.package }}
+        run: |
+          VERSION="${TAG#v}"
+          case "$VERSION" in
+            *[!0-9.]*|'') echo "::error::$TAG is not a release version"; exit 1 ;;
+          esac
+          git clone "ssh://aur@aur.archlinux.org/$PKG.git" aur
+          cp "packaging/aur/$PKG/PKGBUILD" aur/PKGBUILD
+          sed -i -e "s/^pkgver=.*/pkgver=$VERSION/" -e "s/^pkgrel=.*/pkgrel=1/" aur/PKGBUILD
+          useradd -m builder
+          chown -R builder aur
+          su builder -c "cd aur && updpkgsums && makepkg --printsrcinfo > .SRCINFO"
+          cd aur
+          git config --global --add safe.directory "$PWD"
+          git config user.name "MCbabel"
+          git config user.email "84173858+mcbabel@users.noreply.github.com"
+          git add PKGBUILD .SRCINFO
+          if git diff --cached --quiet; then
+            echo "$PKG is already at $VERSION"
+            exit 0
+          fi
+          git commit -m "Update to $VERSION"
+          git push origin HEAD:master
