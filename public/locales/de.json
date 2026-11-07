@@ -698,7 +698,10 @@
     "fetchingLatest": "Hole neueste Manifest-ID…",
     "fetchLatestError": "Fehlgeschlagen: {message}",
     "fetchSourceSteam": "von Steam",
-    "fetchSourceFallback": "aus Cache-Mirror"
+    "fetchSourceFallback": "aus Cache-Mirror",
+    "roleRedist": "Redistributable",
+    "roleRedistHint": "Visual-C++- und DirectX-Installer aus Steamworks Common Redistributables. Spiele bringen sie meist selbst mit oder das System hat sie schon, und sie brauchen keinen Schlüssel.",
+    "role_redistributable": "Redistributable"
   },
   "settings": {
     "title": "Einstellungen",
@@ -860,7 +863,10 @@
       "hubcap": "Steam direkt fehlgeschlagen ({error}). Versuche den Hubcap-Cache.",
       "depotSource": "Steam direkt fehlgeschlagen ({error}). Weiche auf eine Depot-Quelle aus.",
       "noKey": "Alle Quellen fehlgeschlagen ({error}). Kein ManifestHub-API-Key gesetzt – trag einen ein und versuch es nochmal.",
-      "manifestHub": "Vorherige Quellen fehlgeschlagen ({error}). Weiche auf ManifestHub aus."
+      "manifestHub": "Vorherige Quellen fehlgeschlagen ({error}). Weiche auf ManifestHub aus.",
+      "hubcapFirst": "Nutze das Manifest aus dem Hubcap-Cache",
+      "depotSourceFirst": "Lade das Manifest aus der Depot-Quelle",
+      "steamAfterSource": "Die Quelle hat kein Manifest {manifest} ({error}). Lade es direkt von Steam."
     },
     "depotRetry": "Verbindungsproblem bei Depot {depot}, neuer Versuch ({attempt}/{max}) …",
     "depotRetryDdm": "Depot {depot} ist fehlgeschlagen, neuer Versuch ({attempt}/{max}) …",

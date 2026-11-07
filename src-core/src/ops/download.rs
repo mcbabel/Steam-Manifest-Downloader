@@ -1156,6 +1156,10 @@ async fn run_download_pipeline_inner(
             config.manifest_hub_api_key.as_deref(),
             &depot_sources_list,
             is_hubcap,
+            is_hubcap
+                || (config.mode.as_deref() == Some("search")
+                    && config.source_type.as_deref() != Some("ryuu")
+                    && !depot_sources_list.is_empty()),
             app_data_dir,
             settings.native_chunk_concurrency,
             config.update_target().is_some(),
@@ -1585,6 +1589,7 @@ async fn run_native_pipeline(
     mh_api_key: Option<&str>,
     depot_sources_list: &[String],
     is_hubcap: bool,
+    source_first: bool,
     app_data_dir: &Path,
     chunk_concurrency: u32,
     update_mode: bool,
@@ -1814,33 +1819,81 @@ async fn run_native_pipeline(
                 Err(e) => Err(format!("read cached manifest failed: {}", e)),
             }
         } else {
-            sources_tried.push(diag::SourceKind::SteamDirect.as_str());
-            emit_manifest_source(
-                sink,
-                job_id,
-                &depot.depot_id,
-                "steam",
-                "Fetching manifest directly from Steam CDN",
-                "events.src.steam",
-                serde_json::json!({}),
-            );
-            let mut steam_result = download_depot_native(
-                state.http_client.clone(),
-                session.clone(),
-                app_id_u,
-                depot_id_u,
-                manifest_id_u,
-                depot_key,
-                depot_out.clone(),
-                cancel_flag.clone(),
-                pause_flag.clone(),
-                progress_cb.clone(),
-                chunk_concurrency,
-                resume_opts.clone(),
-            )
-            .await;
+            let mut first_result = None;
+            if source_first {
+                let path = work_dir.join(format!("{}_{}.manifest", depot.depot_id, depot.manifest_id));
+                let fetched = if is_hubcap {
+                    sources_tried.push(diag::SourceKind::Hubcap.as_str());
+                    emit_manifest_source(sink, job_id, &depot.depot_id, "hubcap_fallback", "Using the manifest from the Hubcap cache", "events.src.hubcapFirst", serde_json::json!({}));
+                    hubcap_api::copy_cached_manifest(app_data_dir, app_id, &depot.depot_id, &depot.manifest_id, work_dir)
+                        .await
+                        .map(|_| path)
+                } else {
+                    sources_tried.push(diag::SourceKind::DepotSource.as_str());
+                    emit_manifest_source(sink, job_id, &depot.depot_id, "depot_source_fallback", "Loading the manifest from the depot source", "events.src.depotSourceFirst", serde_json::json!({}));
+                    depot_sources::download_manifest_file(&state.http_client, depot_sources_list, app_id, &depot.depot_id, &depot.manifest_id, work_dir).await
+                };
+                match fetched.and_then(|p| std::fs::read(&p).map_err(|e| format!("read manifest from disk failed: {}", e))) {
+                    Ok(bytes) => {
+                        let r = download_depot_from_local_manifest(
+                            state.http_client.clone(),
+                            session.clone(),
+                            app_id_u,
+                            depot_id_u,
+                            depot_key,
+                            bytes,
+                            depot_out.clone(),
+                            cancel_flag.clone(),
+                            pause_flag.clone(),
+                            progress_cb.clone(),
+                            chunk_concurrency,
+                            resume_opts.clone(),
+                        )
+                        .await;
+                        let decided = r.is_ok() || matches!(diag::classify_pipeline_error(r.as_ref().err().map(String::as_str).unwrap_or("")).0, diag::Stage::Chunk);
+                        if decided {
+                            first_result = Some(r);
+                        } else if let Err(e) = r {
+                            emit_manifest_source(sink, job_id, &depot.depot_id, "steam", &format!("The source manifest did not work ({}). Fetching it directly from Steam.", e), "events.src.steamAfterSource", serde_json::json!({ "manifest": depot.manifest_id, "error": e }));
+                        }
+                    }
+                    Err(e) => {
+                        emit_manifest_source(sink, job_id, &depot.depot_id, "steam", &format!("The source has no manifest {} ({}). Fetching it directly from Steam.", depot.manifest_id, e), "events.src.steamAfterSource", serde_json::json!({ "manifest": depot.manifest_id, "error": e }));
+                    }
+                }
+            }
+            let mut steam_result = match first_result {
+                Some(r) => r,
+                None => {
+                    sources_tried.push(diag::SourceKind::SteamDirect.as_str());
+                    emit_manifest_source(
+                        sink,
+                        job_id,
+                        &depot.depot_id,
+                        "steam",
+                        "Fetching manifest directly from Steam CDN",
+                        "events.src.steam",
+                        serde_json::json!({}),
+                    );
+                    download_depot_native(
+                        state.http_client.clone(),
+                        session.clone(),
+                        app_id_u,
+                        depot_id_u,
+                        manifest_id_u,
+                        depot_key,
+                        depot_out.clone(),
+                        cancel_flag.clone(),
+                        pause_flag.clone(),
+                        progress_cb.clone(),
+                        chunk_concurrency,
+                        resume_opts.clone(),
+                    )
+                    .await
+                }
+            };
 
-            if let Some(steam_err) = steam_result.as_ref().err().cloned() {
+            if let Some(steam_err) = steam_result.as_ref().err().cloned().filter(|_| !source_first) {
                 let mut source_attempt: Option<Result<std::path::PathBuf, String>> = None;
 
                 if is_hubcap {

@@ -432,6 +432,7 @@ pub fn role_name(role: DepotRole) -> &'static str {
         DepotRole::SharedContent => "shared_content",
         DepotRole::Dlc => "dlc",
         DepotRole::Language => "language",
+        DepotRole::Redistributable => "redistributable",
         DepotRole::Other => "other",
     }
 }
@@ -465,6 +466,7 @@ fn sort_key(info: Option<&DepotMetadata>) -> u32 {
         DepotRole::Language => 50,
         DepotRole::Dlc => 60,
         DepotRole::Other => 80,
+        DepotRole::Redistributable => 90,
     }
 }
 

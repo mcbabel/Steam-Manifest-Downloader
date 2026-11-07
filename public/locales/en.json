@@ -698,7 +698,10 @@
     "fetchingLatest": "Fetching latest manifest…",
     "fetchLatestError": "Failed: {message}",
     "fetchSourceSteam": "from Steam",
-    "fetchSourceFallback": "from cached mirror"
+    "fetchSourceFallback": "from cached mirror",
+    "roleRedist": "Redistributable",
+    "roleRedistHint": "Visual C++ and DirectX installers from Steamworks Common Redistributables. Games usually bring them along or the system already has them, and they need no key.",
+    "role_redistributable": "Redistributable"
   },
   "settings": {
     "title": "Settings",
@@ -860,7 +863,10 @@
       "hubcap": "Steam direct failed ({error}). Trying the Hubcap cache.",
       "depotSource": "Steam direct failed ({error}). Falling back to a depot source.",
       "noKey": "All sources failed ({error}). No ManifestHub API key set — add one and try again.",
-      "manifestHub": "Previous sources failed ({error}). Falling back to ManifestHub."
+      "manifestHub": "Previous sources failed ({error}). Falling back to ManifestHub.",
+      "hubcapFirst": "Using the manifest from the Hubcap cache",
+      "depotSourceFirst": "Loading the manifest from the depot source",
+      "steamAfterSource": "The source has no manifest {manifest} ({error}). Fetching it directly from Steam."
     },
     "depotRetry": "Connection problem with depot {depot}, trying again ({attempt}/{max})…",
     "depotRetryDdm": "Depot {depot} failed, trying again ({attempt}/{max})…",

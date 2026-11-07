@@ -5293,6 +5293,7 @@ textarea.bug-report__input {
   color: var(--warning);
 }
 
+.depot-tag--redistributable,
 .depot-tag--skipped {
   background: var(--bg-hover);
   color: var(--text-muted);

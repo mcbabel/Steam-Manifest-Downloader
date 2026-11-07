@@ -614,6 +614,7 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
     } else {
         "default"
     };
+    let mut redist_ids: Vec<String> = Vec::new();
     if wanted.is_empty() && args.update.is_none() && like_steam {
         let meta = match plan.app_id.parse::<u32>() {
             Ok(n) => tokio::select! {
@@ -624,6 +625,11 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
         };
         match meta {
             Ok(meta) if !meta.is_empty() => {
+                redist_ids = meta
+                    .iter()
+                    .filter(|m| m.role == smd_core::services::steam_pics::DepotRole::Redistributable)
+                    .map(|m| m.depot_id.clone())
+                    .collect();
                 let mut prefs_settings = settings.clone();
                 if let Some(p) = &args.platform {
                     prefs_settings.target_platform = p.clone();
@@ -695,6 +701,7 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
     let keyless: Vec<String> = chosen
         .iter()
         .filter(|(id, _, key, _)| key.is_none() && !plan.key_vdf.as_ref().is_some_and(|k| k.contains_key(id)))
+        .filter(|(id, ..)| !redist_ids.contains(id))
         .map(|(id, ..)| id.clone())
         .collect();
     if args.steam_keys && !keyless.is_empty() {

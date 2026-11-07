@@ -27,6 +27,7 @@ impl App {
                 p.depots
                     .iter()
                     .filter(|d| d.depot_key.is_none() && !key_vdf.is_some_and(|k| k.contains_key(&d.depot_id)))
+                    .filter(|d| !self.wiz.depot_pics.get(&d.depot_id).is_some_and(|m| m.role == DepotRole::Redistributable))
                     .map(|d| d.depot_id.clone())
                     .collect()
             })
@@ -1057,7 +1058,10 @@ impl App {
                     theme::dim(),
                 ));
             }
-            if d.depot_key.is_none() && !self.acct.from_account {
+            if d.depot_key.is_none()
+                && !self.acct.from_account
+                && !pics.is_some_and(|p| p.role == DepotRole::Redistributable)
+            {
                 info.push(Span::styled(
                     format!("   {}", t("tui.select.noKey")),
                     theme::warning(),
@@ -1306,6 +1310,7 @@ fn role_badge(role: DepotRole, language: Option<&str>) -> Option<(String, ratatu
         ),
         DepotRole::SharedContent => (t("depots.roleContent"), th.success),
         DepotRole::Platform => (t("depots.rolePlatform"), th.accent),
+        DepotRole::Redistributable => (t("depots.roleRedist"), th.text_dim),
         DepotRole::Other => return None,
     })
 }

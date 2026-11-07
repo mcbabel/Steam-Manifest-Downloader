@@ -49,6 +49,7 @@ pub enum DepotRole {
     SharedContent,
     Dlc,
     Language,
+    Redistributable,
     Other,
 }
 
@@ -203,7 +204,11 @@ pub async fn fetch_depots_with_names(
                 .and_then(as_str)
                 .and_then(|s| s.parse::<u64>().ok());
 
-            let role = classify_role(dlc_app_id, &oslist, &language);
+            let role = if shared_install {
+                DepotRole::Redistributable
+            } else {
+                classify_role(dlc_app_id, &oslist, &language)
+            };
 
             depots.push(DepotMetadata {
                 depot_id: key.clone(),
@@ -376,6 +381,7 @@ fn synthesise_name(depot: &DepotMetadata, parent_game_name: Option<&str>) -> Opt
             .unwrap_or_else(|| "Language".to_string()),
         DepotRole::SharedContent => "Content".to_string(),
         DepotRole::Dlc => "DLC".to_string(),
+        DepotRole::Redistributable => "Redistributables".to_string(),
         DepotRole::Other => "Depot".to_string(),
     };
     Some(format!("{} - {}", game, qualifier))

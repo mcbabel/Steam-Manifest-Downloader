@@ -319,8 +319,9 @@ pub fn recommend_keyed(
     has_key: impl Fn(&str) -> bool,
     prefs: &Prefs,
 ) -> Selection {
+    let redist = |id: &str| meta.iter().any(|m| m.depot_id == id && m.shared_install);
     let (keyed, keyless): (Vec<String>, Vec<String>) =
-        candidates.iter().cloned().partition(|id| has_key(id));
+        candidates.iter().cloned().partition(|id| has_key(id) || redist(id));
     if keyed.is_empty() || keyless.is_empty() {
         return recommend(meta, candidates, prefs);
     }
@@ -525,6 +526,17 @@ mod tests {
         let sel = recommend(&meta, &ids(&["5", "6"]), &prefs("windows", "german"));
         assert_eq!(sel.language, "english");
         assert_eq!(sel.selected, ids(&["5"]));
+    }
+
+    #[test]
+    fn a_redistributable_without_key_is_not_counted_as_missing_key() {
+        let mut redist = depot("3", DepotRole::Redistributable);
+        redist.shared_install = true;
+        let meta = vec![depot("1", DepotRole::SharedContent), redist];
+        let all = ids(&["1", "3"]);
+        let sel = recommend_keyed(&meta, &all, |id| id == "1", &prefs("windows", "english"));
+        assert_eq!(sel.selected, ids(&["1"]));
+        assert_eq!(reason(&sel, "3"), Some(SkipReason::Redistributable));
     }
 
     #[test]

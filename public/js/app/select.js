@@ -269,8 +269,13 @@ async function fetchDepotNamesFromSteam(appId) {
         depotIdContainer.appendChild(badge);
       }
       markEmptyManifest(d);
+      if (d.role === 'redistributable') {
+        const noKey = document.querySelector(`.depot-item[data-depot-id="${CSS.escape(String(d.depotId))}"] .depot-tag--nokey`);
+        if (noKey) noKey.remove();
+      }
     });
     reorderDepotCards();
+    if (!document.getElementById('steam-keys-offer')?.classList.contains('hidden')) offerSteamKeys();
     state.depotPicsList = depots;
     if (els.btnAutoSelect) els.btnAutoSelect.disabled = depots.length === 0;
     syncDlcButton();
@@ -424,9 +429,14 @@ function depotKnownKey(depot) {
   return !!(keys && keys[String(depot.depotId)]);
 }
 
+function isRedistDepot(depotId) {
+  const info = state.depotPicsInfo && state.depotPicsInfo[String(depotId)];
+  return !!(info && info.role === 'redistributable');
+}
+
 function depotsWithoutKey() {
   const data = state.parsedData;
-  return data ? data.depots.filter(d => !depotKnownKey(d)) : [];
+  return data ? data.depots.filter(d => !depotKnownKey(d) && !isRedistDepot(d.depotId)) : [];
 }
 
 function setSteamKeysOffer(html, tone) {
@@ -670,6 +680,8 @@ function depotRoleSortKey(depotId, hostOs) {
       return 50;
     case 'dlc':
       return 60;
+    case 'redistributable':
+      return 90;
     default:
       return 80;
   }
@@ -698,6 +710,10 @@ function depotRoleBadge(d) {
       break;
     case 'platform':
       tag.textContent = window.i18n.t('depots.rolePlatform');
+      break;
+    case 'redistributable':
+      tag.textContent = window.i18n.t('depots.roleRedist');
+      tag.title = window.i18n.t('depots.roleRedistHint');
       break;
     default:
       return null;
@@ -823,6 +839,7 @@ function buildDownloadConfig(data, depots, mhApiKey, repairManifests) {
     repair: !!repairManifests,
     allAppIds: Array.isArray(data.allAppIds) ? data.allAppIds.map(String) : [],
     includeDlc: typeof state.depotIncludeDlc === 'boolean' ? state.depotIncludeDlc : null,
+    mode: state.mode === 'search' ? 'search' : 'upload',
     ...accountDownloadFields()
   };
   if (state.mode === 'search') {

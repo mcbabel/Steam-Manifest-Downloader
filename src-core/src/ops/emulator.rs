@@ -155,6 +155,7 @@ pub async fn scan_for_dlc_merge(
                 crate::services::steam_pics::DepotRole::SharedContent => "shared_content",
                 crate::services::steam_pics::DepotRole::Dlc => "dlc",
                 crate::services::steam_pics::DepotRole::Language => "language",
+                crate::services::steam_pics::DepotRole::Redistributable => "redistributable",
                 crate::services::steam_pics::DepotRole::Other => "other",
             }
             .to_string();
@@ -177,6 +178,7 @@ pub async fn scan_for_dlc_merge(
                         .unwrap_or(true),
                     crate::services::steam_pics::DepotRole::Language => true,
                     crate::services::steam_pics::DepotRole::Platform => same_platform_as_main,
+                    crate::services::steam_pics::DepotRole::Redistributable => false,
                     crate::services::steam_pics::DepotRole::Other => true,
                 }
             };
