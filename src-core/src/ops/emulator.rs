@@ -628,6 +628,35 @@ pub async fn generate_game_data(
     .await
 }
 
+pub async fn controller_info(
+    state: &AppState,
+    app_id: String,
+) -> Result<crate::services::game_data::controller::ControllerInfo, String> {
+    let app_num: u32 = app_id
+        .trim()
+        .parse()
+        .map_err(|_| format!("Invalid app id '{}'", app_id.trim()))?;
+    crate::services::game_data::controller::info(state.steam_session.clone(), app_num).await
+}
+
+pub async fn write_controller(
+    state: &AppState,
+    app_data_dir: &Path,
+    targets: Vec<String>,
+    app_id: String,
+    layout_file: Option<String>,
+) -> Result<crate::services::game_data::controller::ControllerResult, String> {
+    crate::services::game_data::controller::write(
+        &state.http_client,
+        state.steam_session.clone(),
+        &targets,
+        &app_id,
+        layout_file.as_deref(),
+        &emulator::cache_root(app_data_dir),
+    )
+    .await
+}
+
 pub async fn revert_replacement(targets: Vec<String>) -> Result<Vec<ReplaceResult>, String> {
     let mut results = Vec::with_capacity(targets.len());
     for target in targets {

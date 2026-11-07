@@ -658,6 +658,11 @@
               <span class="emu-nav__label" data-i18n="emulator.tabs.gameData">Game data</span>
               <span class="emu-nav__badge hidden" data-badge="gamedata"></span>
             </button>
+            <button type="button" class="emu-nav__tab" role="tab" id="emu-tab-controller" data-section="controller" aria-controls="emu-panel-controller" aria-selected="false">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="12" x2="10" y2="12"></line><line x1="8" y1="10" x2="8" y2="14"></line><line x1="15" y1="13" x2="15.01" y2="13"></line><line x1="18" y1="11" x2="18.01" y2="11"></line><path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59l-.885 7.97A3 3 0 0 0 4.8 20c1.1 0 2.1-.6 2.6-1.6L8.5 16h7l1.1 2.4c.5 1 1.5 1.6 2.6 1.6a3 3 0 0 0 2.983-3.44l-.885-7.97A4 4 0 0 0 17.32 5z"></path></svg>
+              <span class="emu-nav__label" data-i18n="emulator.tabs.controller">Controller</span>
+              <span class="emu-nav__badge hidden" data-badge="controller"></span>
+            </button>
             <button type="button" class="emu-nav__tab" role="tab" id="emu-tab-emulator" data-section="emulator" aria-controls="emu-panel-emulator" aria-selected="false">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
               <span class="emu-nav__label" data-i18n="emulator.tabs.emulator">Emulator</span>
@@ -733,7 +738,7 @@
               <div class="emu-bypass-row">
                 <div class="emu-bypass-row__text">
                   <span class="emu-bypass-row__label" data-i18n="emulator.gameData.label">Game data for gbe_fork</span>
-                  <p class="emu-bypass-row__hint" data-i18n-html="emulator.gameData.hint">Writes what gbe_fork needs into <code>steam_settings</code>: languages, depots, branches, achievements with icons, leaderboards, inventory items, the controller layout and cloud save folders. With a Steam Web API key also the stats and all achievements.</p>
+                  <p class="emu-bypass-row__hint" data-i18n-html="emulator.gameData.hint">Writes what gbe_fork needs into <code>steam_settings</code>: languages, depots, branches, achievements with icons, leaderboards, inventory items and cloud save folders. With a Steam Web API key also the stats and all achievements. The controller layout has its own tab.</p>
                 </div>
                 <label class="toggle-switch">
                   <input type="checkbox" id="emu-gamedata-toggle" checked>
@@ -764,6 +769,55 @@
             </div>
 
             <p class="dd-path__hint emu-achievement-hint" data-i18n-html="emulator.achievementWatcherHint">Tip: <a href="https://github.com/Shirowwww/Achievement-Watcher-Next" target="_blank" rel="noopener" class="link">Achievement Watcher Next</a> shows a notification when you unlock an achievement in an emulated game (Windows and Linux). It continues the original Achievement Watcher, which is no longer developed.</p>
+          </section>
+
+          <section id="emu-panel-controller" class="emu-panel" data-section="controller" role="tabpanel" aria-labelledby="emu-tab-controller">
+            <h3 class="emu-panel__title" data-i18n="emulator.controller.title">Controller (Steam Input)</h3>
+            <div id="emu-controller-section" class="emu-section emu-gamedata-section">
+              <div class="emu-bypass-row">
+                <div class="emu-bypass-row__text">
+                  <span class="emu-bypass-row__label" data-i18n="emulator.controller.label">Controller support</span>
+                  <p class="emu-bypass-row__hint" data-i18n-html="emulator.controller.hint">Writes the game's Steam Input layout into <code>steam_settings/controller</code>, with button icons, so games that read the controller through Steam get input. This happens automatically when you patch or save, there is nothing else to press.</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="emu-controller-toggle" checked="">
+                  <span class="toggle-switch__slider"></span>
+                </label>
+              </div>
+              <p id="emu-controller-status" class="dd-path__hint" role="status"></p>
+              <p id="emu-controller-build" class="dd-path__hint hidden"></p>
+              <div class="emu-gamedata__key">
+                <span class="emu-gamedata__key-label" data-i18n="emulator.controller.layoutFile">Layout file</span>
+                <div class="dd-path__input-wrap dd-path__input-wrap--with-btn">
+                  <input type="text" id="emu-controller-file" class="dd-path__input" readonly="" data-i18n-attr="placeholder=emulator.controller.noFile">
+                  <button type="button" id="btn-emu-controller-file" class="btn btn--small btn--outline" data-i18n="emulator.controller.chooseFile">Choose file…</button>
+                  <button type="button" id="btn-emu-controller-clear" class="btn btn--small btn--outline hidden" data-i18n="emulator.controller.clearFile">Remove</button>
+                </div>
+                <p class="emu-bypass-row__hint" data-i18n-html="emulator.controller.layoutFileHint">Optional. A Steam Input layout (.vdf) that replaces the one from Steam, for example from your Steam folder under <code>steamapps/workshop/content/241100</code>.</p>
+              </div>
+              <div class="emu-gamedata__key">
+                <label for="emu-controller-type" class="emu-gamedata__key-label" data-i18n="emulator.fields.controllerType">Controller type</label>
+                <select id="emu-controller-type" class="emu-field__input emu-field__select" data-emu-key="controller_type">
+                  <option value="" data-i18n="emulator.fields.controllerDefault">gbe_fork default (Xbox 360)</option>
+                  <option value="XBOX360">Xbox 360</option>
+                  <option value="XBOXONE">Xbox One</option>
+                  <option value="PS3">PlayStation 3</option>
+                  <option value="PS4">PlayStation 4</option>
+                  <option value="PS5">PlayStation 5</option>
+                  <option value="SWITCH">Nintendo Switch</option>
+                </select>
+                <p class="emu-bypass-row__hint" data-i18n="emulator.fields.controllerTypeHint">Which controller gbe_fork reports to the game. Games show matching button icons.</p>
+              </div>
+              <p class="dd-path__hint emu-controller__xinput" data-i18n="emulator.controller.xinputHint">gbe_fork only understands Xbox (XInput) controllers. Other controllers need Steam Input through Steam (below) or a tool like DS4Windows.</p>
+              <div class="emu-field emu-field--toggle">
+                <div class="emu-field__label-block">
+                  <span class="emu-field__label" data-i18n="emulator.controller.steamInput">Steam Input through Steam</span>
+                  <p class="emu-field__hint" data-i18n="emulator.controller.steamInputHint">Only for PlayStation, Switch and other non-Xbox controllers, leave it off with an Xbox controller. It adds to the layout above, it does not replace it: Steam turns your controller into an Xbox controller, and gbe_fork uses the layout. For this, add the game to Steam in step 4 and start it from there.</p>
+                </div>
+                <label class="toggle-switch"><input type="checkbox" data-emu-key="disable_steamoverlaygameid_env_var"><span class="toggle-switch__slider"></span></label>
+              </div>
+              <p id="emu-controller-result" class="dd-path__hint hidden" role="status"></p>
+            </div>
           </section>
 
           <section id="emu-panel-emulator" class="emu-panel" data-section="emulator" role="tabpanel" aria-labelledby="emu-tab-emulator">

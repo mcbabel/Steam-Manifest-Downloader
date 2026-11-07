@@ -1,15 +1,40 @@
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
+
+use serde::{Deserialize, Serialize};
 
 use steam_vent::ConnectionTrait;
 use steam_vent_proto::steammessages_publishedfile_steamclient::CPublishedFile_GetDetails_Request;
 
 use super::{safe_file_name, API};
-use crate::services::steam_pics::ControllerConfig;
+use crate::services::steam_pics::{self, ControllerConfig};
 use crate::services::steam_session::{call_with_retry, SteamSession};
 
 const CM_TIMEOUT: Duration = Duration::from_secs(15);
 const MAX_VDF_BYTES: usize = 4 * 1024 * 1024;
+const MAX_GLYPH_BYTES: usize = 512 * 1024;
+const MAX_GLYPHS: usize = 512;
+const GLYPHS_API: &str = "https://api.github.com/repos/Detanup01/gbe_fork/contents/post_build/steam_settings.EXAMPLE/controller.EXAMPLE/glyphs";
+const GLYPHS_REF: &str = "dev";
+const GLYPH_CACHE: &str = "controller_glyphs";
+const CONTROLLER_DIR: &str = "controller";
+const GLYPH_DIR: &str = "glyphs";
+const USER_AGENT: &str = "SteamManifestDownloader";
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct ControllerInfo {
+    pub layout: bool,
+    pub support: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct ControllerResult {
+    pub source: String,
+    pub sets: usize,
+    pub glyphs: usize,
+    pub notes: Vec<String>,
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Node {
@@ -387,17 +412,228 @@ pub async fn fetch(
             continue;
         };
         let Some(vdf) = parse_vdf(&text) else { continue };
-        let files: Vec<(String, String)> = convert(&vdf)
-            .into_iter()
-            .filter(|(_, b)| !b.is_empty())
-            .filter_map(|(name, b)| Some((safe_file_name(&format!("{}.txt", name))?, render(&b))))
-            .collect();
+        let files = sets_from_vdf(&vdf);
         if !files.is_empty() {
             return files;
         }
     }
     notes.push("gameData.controllerFailed".into());
     Vec::new()
+}
+
+fn sets_from_vdf(vdf: &Node) -> Vec<(String, String)> {
+    convert(vdf)
+        .into_iter()
+        .filter(|(_, b)| !b.is_empty())
+        .filter_map(|(name, b)| Some((safe_file_name(&format!("{}.txt", name))?, render(&b))))
+        .collect()
+}
+
+pub fn sets_from_file(text: &str) -> Result<Vec<(String, String)>, String> {
+    let not_layout = || "This file is not a Steam Input layout".to_string();
+    let vdf = parse_vdf(text).ok_or_else(not_layout)?;
+    if vdf.get("controller_mappings").is_none() {
+        return Err(not_layout());
+    }
+    let sets = sets_from_vdf(&vdf);
+    if sets.is_empty() {
+        return Err(not_layout());
+    }
+    Ok(sets)
+}
+
+pub async fn info(session: Arc<SteamSession>, app_id: u32) -> Result<ControllerInfo, String> {
+    let app = steam_pics::fetch_app_info(session, app_id).await?;
+    let support = steam_pics::common_value(&app, "controller_support")
+        .map(|s| s.trim().to_ascii_lowercase())
+        .filter(|s| !s.is_empty() && s != "none");
+    Ok(ControllerInfo {
+        layout: !steam_pics::controller_configs(&app).is_empty(),
+        support,
+    })
+}
+
+fn glyph_files(dir: &Path) -> Vec<PathBuf> {
+    let Ok(entries) = std::fs::read_dir(dir) else { return Vec::new() };
+    let mut files: Vec<PathBuf> = entries
+        .flatten()
+        .map(|e| e.path())
+        .filter(|p| p.is_file())
+        .collect();
+    files.sort();
+    files
+}
+
+fn find_release_glyphs(root: &Path, depth: usize) -> Option<PathBuf> {
+    if depth == 0 {
+        return None;
+    }
+    let entries = std::fs::read_dir(root).ok()?;
+    let mut dirs: Vec<PathBuf> = entries.flatten().map(|e| e.path()).filter(|p| p.is_dir()).collect();
+    dirs.sort();
+    dirs.reverse();
+    for dir in dirs {
+        let candidate = dir.join("controller.EXAMPLE").join(GLYPH_DIR);
+        if dir.file_name().is_some_and(|n| n == "steam_settings.EXAMPLE") && !glyph_files(&candidate).is_empty() {
+            return Some(candidate);
+        }
+        if let Some(found) = find_release_glyphs(&dir, depth - 1) {
+            return Some(found);
+        }
+    }
+    None
+}
+
+async fn download_glyphs(http: &reqwest::Client, into: &Path) -> Result<usize, String> {
+    let list: serde_json::Value = http
+        .get(GLYPHS_API)
+        .query(&[("ref", GLYPHS_REF)])
+        .header("Accept", "application/vnd.github+json")
+        .header("User-Agent", USER_AGENT)
+        .send()
+        .await
+        .map_err(|e| e.without_url().to_string())?
+        .error_for_status()
+        .map_err(|e| e.without_url().to_string())?
+        .json()
+        .await
+        .map_err(|e| e.without_url().to_string())?;
+    let items = list.as_array().ok_or("unexpected glyph listing")?;
+    let tmp = into.with_extension("part");
+    let _ = tokio::fs::remove_dir_all(&tmp).await;
+    tokio::fs::create_dir_all(&tmp).await.map_err(|e| e.to_string())?;
+    let mut count = 0;
+    for item in items.iter().take(MAX_GLYPHS) {
+        if item.get("type").and_then(|t| t.as_str()) != Some("file") {
+            continue;
+        }
+        let (Some(name), Some(url)) = (
+            item.get("name").and_then(|n| n.as_str()).and_then(safe_file_name),
+            item.get("download_url").and_then(|u| u.as_str()),
+        ) else {
+            continue;
+        };
+        let Ok(resp) = http.get(url).header("User-Agent", USER_AGENT).send().await else { continue };
+        let Ok(resp) = resp.error_for_status() else { continue };
+        let Ok(bytes) = resp.bytes().await else { continue };
+        if bytes.len() > MAX_GLYPH_BYTES {
+            continue;
+        }
+        if tokio::fs::write(tmp.join(&name), &bytes).await.is_ok() {
+            count += 1;
+        }
+    }
+    if count == 0 {
+        let _ = tokio::fs::remove_dir_all(&tmp).await;
+        return Err("no glyphs downloaded".into());
+    }
+    let _ = tokio::fs::remove_dir_all(into).await;
+    tokio::fs::rename(&tmp, into).await.map_err(|e| e.to_string())?;
+    Ok(count)
+}
+
+pub async fn glyph_source(http: &reqwest::Client, gbe_cache: &Path) -> Option<PathBuf> {
+    if let Some(dir) = find_release_glyphs(gbe_cache, 5) {
+        return Some(dir);
+    }
+    let cached = gbe_cache.join(GLYPH_CACHE);
+    if !glyph_files(&cached).is_empty() {
+        return Some(cached);
+    }
+    download_glyphs(http, &cached).await.ok().map(|_| cached)
+}
+
+pub async fn write(
+    http: &reqwest::Client,
+    session: Arc<SteamSession>,
+    targets: &[String],
+    app_id: &str,
+    layout_file: Option<&str>,
+    gbe_cache: &Path,
+) -> Result<ControllerResult, String> {
+    let dirs = super::settings_dirs(targets);
+    if dirs.is_empty() {
+        return Err("no patched library to write game data next to".into());
+    }
+    let mut result = ControllerResult { source: "none".into(), ..Default::default() };
+    let sets = match layout_file.map(str::trim).filter(|f| !f.is_empty()) {
+        Some(file) => {
+            let bytes = tokio::fs::read(file).await.map_err(|e| format!("read layout file: {}", e))?;
+            if bytes.len() > MAX_VDF_BYTES {
+                return Err("This file is not a Steam Input layout".into());
+            }
+            result.source = "file".into();
+            sets_from_file(&String::from_utf8_lossy(&bytes))?
+        }
+        None => {
+            let app_num: u32 = app_id.trim().parse().map_err(|_| format!("Invalid app id '{}'", app_id.trim()))?;
+            match steam_pics::fetch_app_info(session.clone(), app_num).await {
+                Ok(app) => {
+                    let configs = steam_pics::controller_configs(&app);
+                    if configs.is_empty() {
+                        result.notes.push("controller.noLayout".into());
+                        Vec::new()
+                    } else {
+                        result.source = "steam".into();
+                        fetch(http, &session, &configs, &mut result.notes).await
+                    }
+                }
+                Err(_) => {
+                    result.notes.push("controller.appInfoFailed".into());
+                    Vec::new()
+                }
+            }
+        }
+    };
+    if sets.is_empty() {
+        return Ok(result);
+    }
+    let glyphs = match glyph_source(http, gbe_cache).await {
+        Some(dir) => glyph_files(&dir),
+        None => {
+            result.notes.push("controller.glyphsMissing".into());
+            Vec::new()
+        }
+    };
+    let mut copied_ok = true;
+    for dir in &dirs {
+        let cdir = dir.join(CONTROLLER_DIR);
+        tokio::fs::create_dir_all(&cdir)
+            .await
+            .map_err(|e| format!("create controller folder: {}", e))?;
+        for old in glyph_files(&cdir) {
+            if old.extension().is_some_and(|e| e.eq_ignore_ascii_case("txt")) {
+                let _ = tokio::fs::remove_file(old).await;
+            }
+        }
+        for (name, text) in &sets {
+            tokio::fs::write(cdir.join(name), text)
+                .await
+                .map_err(|e| format!("write {}: {}", name, e))?;
+        }
+        if glyphs.is_empty() {
+            continue;
+        }
+        let gdir = cdir.join(GLYPH_DIR);
+        let _ = tokio::fs::create_dir_all(&gdir).await;
+        let mut copied = 0;
+        for g in &glyphs {
+            if let Some(name) = g.file_name() {
+                if tokio::fs::copy(g, gdir.join(name)).await.is_ok() {
+                    copied += 1;
+                }
+            }
+        }
+        if copied < glyphs.len() {
+            copied_ok = false;
+        }
+        result.glyphs = result.glyphs.max(copied);
+    }
+    if !copied_ok {
+        result.notes.push("controller.glyphsFailed".into());
+    }
+    result.sets = sets.len();
+    Ok(result)
 }
 
 #[cfg(test)]
@@ -481,6 +717,25 @@ mod tests {
         );
         assert_eq!(sets[1].0, "Menu");
         assert_eq!(render(&sets[1].1), "Up=DRJOYUP\n");
+    }
+
+    #[test]
+    fn a_layout_file_must_be_a_steam_input_layout() {
+        assert_eq!(sets_from_file(SAMPLE).unwrap().len(), 2);
+        assert!(sets_from_file("\"a\" { \"k\" \"1\" }").is_err());
+        assert!(sets_from_file("not a vdf {").is_err());
+    }
+
+    #[test]
+    fn finds_the_glyphs_of_a_cached_release() {
+        let root = std::env::temp_dir().join(format!("smd-glyphs-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let glyphs = root.join("release-1").join("release").join("steam_settings.EXAMPLE").join("controller.EXAMPLE").join("glyphs");
+        std::fs::create_dir_all(&glyphs).unwrap();
+        assert_eq!(find_release_glyphs(&root, 5), None);
+        std::fs::write(glyphs.join("button_a.png"), b"png").unwrap();
+        assert_eq!(find_release_glyphs(&root, 5), Some(glyphs));
+        let _ = std::fs::remove_dir_all(&root);
     }
 
     #[test]

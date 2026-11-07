@@ -1,6 +1,6 @@
 mod achievements;
 mod cloud;
-mod controller;
+pub mod controller;
 mod inventory;
 mod leaderboards;
 mod media;
@@ -19,7 +19,6 @@ use crate::services::steam_session::SteamSession;
 
 const API: &str = "https://api.steampowered.com";
 const COMMUNITY_IMAGES: &str = "https://cdn.akamai.steamstatic.com/steamcommunity/public/images/apps";
-const CONTROLLER_DIR: &str = "controller";
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct GameDataResult {
@@ -32,7 +31,6 @@ pub struct GameDataResult {
     pub icons: usize,
     pub leaderboards: usize,
     pub items: usize,
-    pub controller_sets: usize,
     pub cloud_dirs: usize,
     pub watcher_schemas: usize,
     pub media_files: usize,
@@ -189,10 +187,6 @@ pub async fn generate(
 
     let boards = leaderboards::fetch(http, app_id, &mut result.notes).await;
     let inv = inventory::fetch(http, &session, app_num, key, &mut result.notes).await;
-    let controller_files = match app.as_ref().map(steam_pics::controller_configs) {
-        Some(configs) => controller::fetch(http, &session, &configs, &mut result.notes).await,
-        None => Vec::new(),
-    };
 
     let first = dirs[0].clone();
     for dir in &dirs {
@@ -220,15 +214,6 @@ pub async fn generate(
         if let Some(inv) = &inv {
             write_text(dir.join("items.json"), pretty(&inv.items), "items.json").await?;
             write_text(dir.join("default_items.json"), pretty(&inv.defaults), "default_items.json").await?;
-        }
-        if !controller_files.is_empty() {
-            let cdir = dir.join(CONTROLLER_DIR);
-            tokio::fs::create_dir_all(&cdir)
-                .await
-                .map_err(|e| format!("create controller folder: {}", e))?;
-            for (name, text) in &controller_files {
-                write_text(cdir.join(name), text.clone(), name).await?;
-            }
         }
         let ini_path = dir.join("configs.app.ini");
         let existing = tokio::fs::read_to_string(&ini_path).await.unwrap_or_default();
@@ -274,7 +259,6 @@ pub async fn generate(
     result.stats = stats.len();
     result.leaderboards = boards.len();
     result.items = inv.as_ref().map(|i| i.count).unwrap_or(0);
-    result.controller_sets = controller_files.len();
     result.cloud_dirs = win_dirs.len() + linux_dirs.len();
     result.source = fetched.source.into();
     Ok(result)

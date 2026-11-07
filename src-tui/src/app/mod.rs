@@ -766,6 +766,7 @@ impl App {
             InputId::SteamName => &mut w.steam_name,
             InputId::SteamLaunch => &mut w.steam_launch,
             InputId::EmuField(i) => self.emu.as_mut()?.fields.get_mut(i)?,
+            InputId::EmuControllerFile => &mut self.emu.as_mut()?.controller_file,
             InputId::Setting(i) => self.set.inputs.get_mut(i)?,
             InputId::SettingsSourceAdd => &mut self.set.source_add,
             InputId::HistoryFilter => &mut self.hist.filter,

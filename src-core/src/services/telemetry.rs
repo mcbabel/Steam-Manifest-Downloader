@@ -463,6 +463,7 @@ const ALLOWED_EVENT_KINDS: &[&str] = &[
     "playtest_opened",
     "steam_keys_used",
     "key_file_used",
+    "controller_applied",
     "behavior_consent",
     "ui_screen",
 ];

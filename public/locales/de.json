@@ -448,7 +448,8 @@
       "saves": "Spielstände",
       "network": "Netzwerk & Kompatibilität",
       "stats": "Statistik & Erfolge",
-      "overlay": "Overlay"
+      "overlay": "Overlay",
+      "controller": "Controller"
     },
     "fields": {
       "accountName": "Anzeigename",
@@ -494,7 +495,10 @@
       "keyCombo": "Overlay-Tastenkürzel",
       "keyComboHint": "Tastenkombi zum Umschalten des Overlays (z. B. ShiftTab, CtrlShiftO).",
       "fontSize": "Schriftgröße",
-      "fontSizeHint": "Overlay-Schriftgröße in Punkt."
+      "fontSizeHint": "Overlay-Schriftgröße in Punkt.",
+      "controllerType": "Controller-Typ",
+      "controllerTypeHint": "Welchen Controller gbe_fork dem Spiel meldet. Spiele zeigen dann passende Tastensymbole.",
+      "controllerDefault": "gbe_fork-Standard (Xbox 360)"
     },
     "editTitle": "Emulator-Einstellungen bearbeiten",
     "editDescription": "Ändere die gbe_fork-Emulator-Einstellungen für ein bereits gepatchtes Spiel. Beim Speichern werden die steam_settings-Dateien direkt aktualisiert.",
@@ -552,7 +556,7 @@
     "dlcNone": "Für diesen Download wurden keine DLCs gewählt, gbe_fork meldet deshalb keine als vorhanden.",
     "gameData": {
       "label": "Spieldaten für gbe_fork",
-      "hint": "Schreibt alles, was gbe_fork braucht, nach <code>steam_settings</code>: Sprachen, Depots, Branches, Achievements mit Icons, Bestenlisten, Inventar-Items, die Controller-Belegung und die Ordner für Cloud-Spielstände. Mit einem Steam-Web-API-Key auch die Stats und alle Achievements.",
+      "hint": "Schreibt alles, was gbe_fork braucht, nach <code>steam_settings</code>: Sprachen, Depots, Branches, Achievements mit Icons, Bestenlisten, Inventar-Items und die Ordner für Cloud-Spielstände. Mit einem Steam-Web-API-Key auch die Stats und alle Achievements. Die Controller-Belegung hat einen eigenen Tab.",
       "saveKey": "Key speichern",
       "keySaved": "Steam-Web-API-Key gespeichert",
       "generate": "Spieldaten jetzt schreiben",
@@ -571,7 +575,6 @@
       "achievementLanguages": "{count} Achievements in {languages} Sprachen ({icons} Icons)",
       "leaderboards": "{count} Bestenlisten",
       "items": "{count} Inventar-Items",
-      "controller": "Controller-Belegung ({count} Action-Sets)",
       "cloud": "{count} Cloud-Spielstand-Ordner",
       "watcher": "Achievement-Watcher-Schemas in {count} Sprachen",
       "mediaFiles": "{count} Mediendateien",
@@ -580,16 +583,16 @@
       "mediaImages": "Bilder",
       "mediaAll": "Bilder und Video",
       "mediaHint": "Artworks, Screenshots und Inventar-Icons landen im Ordner <code>steam_media</code> im Spielordner. Das Spiel braucht sie nicht.",
-      "appInfoFailed": "Steam hat die App-Infos nicht geliefert, deshalb fehlen Sprachen, Branches, Controller-Belegung und Cloud-Spielstand-Ordner.",
+      "appInfoFailed": "Steam hat die App-Infos nicht geliefert, deshalb fehlen Sprachen, Branches und Cloud-Spielstand-Ordner.",
       "inventoryFailed": "Die Inventar-Liste konnte nicht geladen werden.",
       "leaderboardsFailed": "Die Bestenlisten konnten nicht aus der Steam Community geladen werden.",
       "controllerFailed": "Das Spiel hat eine Steam-Input-Belegung, die aber nicht geladen werden konnte.",
-      "controllerBuild": "Die Controller-Belegung funktioniert nur mit dem Experimental-Build unter Windows oder unter Linux.",
       "mediaFailed": "Es konnten keine Medien geladen werden."
     },
     "tabs": {
       "files": "Dateien",
       "gameData": "Spieldaten",
+      "controller": "Controller",
       "emulator": "Emulator",
       "emulatorTitle": "Emulator-Einstellungen",
       "extras": "Extras"
@@ -598,7 +601,39 @@
       "on": "An",
       "off": "Aus",
       "files": "{selected} von {total} Dateien",
-      "custom": "Eigene Einstellungen: {count}"
+      "custom": "Eigene Einstellungen: {count}",
+      "controller": "Controller"
+    },
+    "controller": {
+      "title": "Controller (Steam Input)",
+      "label": "Controller-Unterstützung",
+      "hint": "Schreibt die Steam-Input-Belegung des Spiels nach <code>steam_settings/controller</code>, mit Tastensymbolen, damit Spiele, die den Controller über Steam lesen, Eingaben bekommen. Das passiert automatisch beim Patchen und Speichern, du musst nichts weiter drücken.",
+      "checking": "Prüfe, ob das Spiel Steam Input nutzt…",
+      "statusLayout": "Dieses Spiel nutzt Steam Input und hat eine offizielle Belegung. SMD schreibt sie beim Patchen und Speichern automatisch.",
+      "statusSupport": "Steam nennt Controller-Unterstützung für dieses Spiel, aber keine Steam-Input-Belegung. Solche Spiele lesen den Controller meist selbst. Kommt trotzdem keine Eingabe an, lade eine Belegungsdatei.",
+      "statusNone": "Steam nennt für dieses Spiel keine Controller-Unterstützung. Nutzt es trotzdem Steam Input, lade eine Belegungsdatei.",
+      "statusUnknown": "Steam hat nicht geantwortet, daher ist unklar, ob das Spiel Steam Input nutzt. SMD versucht beim Patchen, die Belegung zu laden.",
+      "experimentalNote": "Unter Windows liest gbe_fork Controller nur mit dem Experimental-Build, deshalb ist er unter Dateien ausgewählt.",
+      "regularWarning": "Unter Dateien ist der Regular-Build ausgewählt. Unter Windows ignoriert er die Controller-Belegung, das Spiel bekommt dann keine Controller-Eingaben.",
+      "layoutFile": "Belegungsdatei",
+      "layoutFileHint": "Optional. Eine Steam-Input-Belegung (.vdf), die die von Steam ersetzt, zum Beispiel aus deinem Steam-Ordner unter <code>steamapps/workshop/content/241100</code>.",
+      "chooseFile": "Datei wählen…",
+      "clearFile": "Entfernen",
+      "noFile": "Keine Datei, die Belegung kommt von Steam.",
+      "filterName": "Steam-Input-Belegung",
+      "steamInput": "Steam Input über Steam",
+      "steamInputHint": "Nur für PlayStation-, Switch- und andere Nicht-Xbox-Controller, mit einem Xbox-Controller aus lassen. Es ergänzt die Belegung oben und ersetzt sie nicht: Steam macht aus deinem Controller einen Xbox-Controller, gbe_fork nutzt die Belegung. Dafür das Spiel in Schritt 4 zu Steam hinzufügen und von dort starten.",
+      "xinputHint": "gbe_fork versteht nur Xbox-Controller (XInput). Andere Controller brauchen Steam Input über Steam (unten) oder ein Programm wie DS4Windows.",
+      "busy": "Schreibe Controller-Belegung…",
+      "written": "Controller-Belegung: {count} Aktionssets, {glyphs} Tastensymbole.",
+      "writtenNoGlyphs": "Controller-Belegung: {count} Aktionssets.",
+      "writtenFile": "Controller-Belegung aus deiner Datei: {count} Aktionssets.",
+      "nothing": "Es wurde keine Controller-Belegung geschrieben.",
+      "noLayout": "Das Spiel hat auf Steam keine Steam-Input-Belegung. Lade eine Belegungsdatei, falls das Spiel eine braucht.",
+      "glyphsMissing": "Die Tastensymbole konnten nicht von GitHub geladen werden. Die Belegung funktioniert trotzdem, nur die Symbole in den Menüs des Spiels fehlen.",
+      "glyphsFailed": "Die Tastensymbole konnten nicht kopiert werden.",
+      "failed": "Controller-Belegung konnte nicht geschrieben werden: {message}",
+      "appInfoFailed": "Steam hat die App-Infos nicht geliefert, deshalb konnte die Controller-Belegung nicht geladen werden."
     }
   },
   "steamLibrary": {

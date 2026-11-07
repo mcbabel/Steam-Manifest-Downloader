@@ -84,6 +84,25 @@ pub async fn emu_generate_game_data(
 }
 
 #[command]
+pub async fn emu_controller_info(
+    state: tauri::State<'_, AppState>,
+    app_id: String,
+) -> Result<smd_core::services::game_data::controller::ControllerInfo, String> {
+    emu_ops::controller_info(&state, app_id).await
+}
+
+#[command]
+pub async fn emu_write_controller(
+    state: tauri::State<'_, AppState>,
+    app: AppHandle,
+    targets: Vec<String>,
+    app_id: String,
+    layout_file: Option<String>,
+) -> Result<smd_core::services::game_data::controller::ControllerResult, String> {
+    emu_ops::write_controller(&state, &app_data_dir(&app), targets, app_id, layout_file).await
+}
+
+#[command]
 pub async fn emu_read_emu_settings(target_path: String) -> Result<EmuSettings, String> {
     emu_ops::read_emu_settings(&target_path)
 }

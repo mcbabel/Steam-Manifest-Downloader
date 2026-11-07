@@ -487,6 +487,12 @@ pub struct EmuState {
     pub section: usize,
     pub fields: Vec<TextInput>,
     pub bools: HashMap<&'static str, bool>,
+    pub controller: bool,
+    pub controller_info: Option<smd_core::services::game_data::controller::ControllerInfo>,
+    pub controller_checking: bool,
+    pub controller_variant_set: bool,
+    pub controller_file: TextInput,
+    pub controller_type: String,
     pub release: Option<Result<ReleaseInfo, String>>,
     pub merge_plan: Option<DlcMergePlan>,
     pub merge_status: Option<(Tone, String)>,
@@ -524,6 +530,12 @@ impl EmuState {
                 .map(|_| TextInput::default())
                 .collect(),
             bools: HashMap::new(),
+            controller: true,
+            controller_info: None,
+            controller_checking: false,
+            controller_variant_set: false,
+            controller_file: TextInput::default(),
+            controller_type: String::new(),
             release: None,
             merge_plan: None,
             merge_status: None,
@@ -557,6 +569,7 @@ impl EmuState {
                 self.bools.insert(f.key, true);
             }
         }
+        self.controller_type = s.controller_type.clone().unwrap_or_default();
     }
 
     pub fn gather(&self) -> Option<EmuSettings> {
@@ -579,6 +592,9 @@ impl EmuState {
                 map.insert(f.key.into(), serde_json::Value::Bool(true));
             }
         }
+        if !self.controller_type.is_empty() {
+            map.insert("controller_type".into(), serde_json::Value::String(self.controller_type.clone()));
+        }
         if map.is_empty() {
             return None;
         }
@@ -594,6 +610,26 @@ impl EmuState {
             .filter(|f| self.selected.contains(&f.path))
             .cloned()
             .collect()
+    }
+
+    pub fn has_windows_targets(&self) -> bool {
+        self.scan.iter().any(|f| f.path.to_ascii_lowercase().ends_with(".dll"))
+    }
+
+    pub fn controller_needs_experimental(&self) -> bool {
+        if !self.controller || !self.has_windows_targets() {
+            return false;
+        }
+        !self.controller_file.trimmed().is_empty()
+            || self.controller_info.as_ref().is_none_or(|i| i.layout)
+    }
+
+    pub fn pick_experimental_for_controller(&mut self) {
+        if self.controller_variant_set || self.controller_checking || !self.controller_needs_experimental() {
+            return;
+        }
+        self.experimental = true;
+        self.controller_variant_set = true;
     }
 
     pub fn refresh_patched(&mut self, scan: Vec<ScannedFile>) {

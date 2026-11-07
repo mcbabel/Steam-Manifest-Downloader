@@ -94,9 +94,15 @@ When telemetry is enabled, the app sends small events describing:
     where the achievements came from (`web_api`, `keyless` or `none`), how
     many languages, depots, branches, achievements, achievement languages,
     stats, leaderboards, inventory items and cloud save folders it found, as
-    ranges, whether a controller layout and Achievement Watcher schemas were
-    written, the media choice (`off`, `images` or `all`) and which hints were
-    shown, by name (for example `needsKey` or `inventoryFailed`)
+    ranges, whether Achievement Watcher schemas were written, the media choice
+    (`off`, `images` or `all`) and which hints were shown, by name (for
+    example `needsKey` or `inventoryFailed`)
+  - `controller_applied` — the emulator step wrote a controller layout, whether
+    it came from Steam or from your own file (`steam`, `file` or `none`, never
+    the file name), how many action sets as a range, whether button icons were
+    copied, the gbe_fork build (`regular` or `experimental`), whether Steam
+    Input through Steam is on and which hints were shown, by name (for example
+    `noLayout` or `glyphsMissing`)
   - `manifest_tool` — the newest manifest ID was fetched for one depot or for
     all at once (from the button, the setting or an update, with how many
     depots changed as a range), or a manifest file was picked for a depot.

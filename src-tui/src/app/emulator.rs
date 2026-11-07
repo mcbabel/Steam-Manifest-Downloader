@@ -28,13 +28,51 @@ pub struct BoolField {
     pub section: usize,
 }
 
-pub const SECTIONS: [&str; 5] = [
+pub const SECTIONS: [&str; 6] = [
     "emulator.sections.account",
     "emulator.sections.saves",
     "emulator.sections.network",
     "emulator.sections.stats",
     "emulator.sections.overlay",
+    "emulator.sections.controller",
 ];
+
+pub const CONTROLLER_SECTION: usize = 5;
+
+const CONTROLLER_TYPES: [(&str, &str); 7] = [
+    ("", "@emulator.fields.controllerDefault"),
+    ("XBOX360", "Xbox 360"),
+    ("XBOXONE", "Xbox One"),
+    ("PS3", "PlayStation 3"),
+    ("PS4", "PlayStation 4"),
+    ("PS5", "PlayStation 5"),
+    ("SWITCH", "Nintendo Switch"),
+];
+
+fn field_text(label: &str) -> String {
+    if label.contains('.') {
+        format!("emulator.{}", label)
+    } else {
+        format!("emulator.fields.{}", label)
+    }
+}
+
+fn controller_summary(r: &smd_core::services::game_data::controller::ControllerResult) -> String {
+    let line = if r.sets == 0 {
+        t("emulator.controller.nothing")
+    } else if r.source == "file" {
+        tf("emulator.controller.writtenFile", &[("count", &r.sets)])
+    } else if r.glyphs > 0 {
+        tf("emulator.controller.written", &[("count", &r.sets), ("glyphs", &r.glyphs)])
+    } else {
+        tf("emulator.controller.writtenNoGlyphs", &[("count", &r.sets)])
+    };
+    let mut lines = vec![line];
+    for note in &r.notes {
+        lines.push(t(&format!("emulator.{}", note)));
+    }
+    lines.join("\n")
+}
 
 pub const TEXT_FIELDS: &[TextField] = &[
     TextField {
@@ -161,6 +199,11 @@ pub const BOOL_FIELDS: &[BoolField] = &[
         label: "overlayAlwaysShowPlaytime",
         section: 4,
     },
+    BoolField {
+        key: "disable_steamoverlaygameid_env_var",
+        label: "controller.steamInput",
+        section: CONTROLLER_SECTION,
+    },
 ];
 
 fn placeholder(p: &str) -> String {
@@ -234,7 +277,7 @@ fn outcome(success: usize, total: usize) -> &'static str {
     }
 }
 
-fn game_data_summary(r: &smd_core::services::game_data::GameDataResult, controller_note: bool) -> String {
+fn game_data_summary(r: &smd_core::services::game_data::GameDataResult) -> String {
     let mut parts = Vec::new();
     let mut add = |n: usize, key: &str| {
         if n > 0 {
@@ -262,7 +305,6 @@ fn game_data_summary(r: &smd_core::services::game_data::GameDataResult, controll
     add(r.stats, "stats");
     add(r.leaderboards, "leaderboards");
     add(r.items, "items");
-    add(r.controller_sets, "controller");
     add(r.cloud_dirs, "cloud");
     add(r.watcher_schemas, "watcher");
     add(r.media_files, "mediaFiles");
@@ -273,9 +315,6 @@ fn game_data_summary(r: &smd_core::services::game_data::GameDataResult, controll
     }];
     for note in &r.notes {
         lines.push(t(&format!("emulator.{}", note)));
-    }
-    if controller_note && r.controller_sets > 0 {
-        lines.push(t("emulator.gameData.controllerBuild"));
     }
     lines.join("\n")
 }
@@ -345,7 +384,74 @@ impl App {
         });
     }
 
+    fn load_controller_info(&mut self) {
+        let Some(e) = self.emu.as_mut() else { return };
+        e.controller_info = None;
+        e.controller_variant_set = false;
+        if e.app_id.trim().is_empty() {
+            return;
+        }
+        e.controller_checking = true;
+        let app_id = e.app_id.clone();
+        let core = self.core.clone();
+        self.spawn(async move {
+            let r = smd_core::ops::emulator::controller_info(&core, app_id.clone()).await;
+            apply(move |app| {
+                let Some(e) = app.emu.as_mut() else { return };
+                if e.app_id != app_id {
+                    return;
+                }
+                e.controller_checking = false;
+                e.controller_info = r.ok();
+                e.pick_experimental_for_controller();
+            })
+        });
+    }
+
+    fn emu_write_controller(&mut self, paths: Vec<String>) {
+        let Some(e) = self.emu.as_ref() else { return };
+        if !e.controller || paths.is_empty() || e.app_id.is_empty() {
+            return;
+        }
+        let app_id = e.app_id.clone();
+        let file = Some(e.controller_file.trimmed()).filter(|f| !f.is_empty());
+        let variant = if e.experimental { "experimental" } else { "regular" };
+        let steam_input = e.bools.get("disable_steamoverlaygameid_env_var").copied().unwrap_or(false);
+        let core = self.core.clone();
+        let data = self.data_dir.clone();
+        self.spawn(async move {
+            let r = smd_core::ops::emulator::write_controller(&core, &data, paths, app_id, file).await;
+            apply(move |app| {
+                let (tone, line) = match &r {
+                    Ok(res) => {
+                        app.emit("controller_applied", Some(serde_json::json!({
+                            "source": res.source,
+                            "sets": count_bucket(res.sets),
+                            "glyphs": res.glyphs > 0,
+                            "variant": variant,
+                            "steam_input": steam_input,
+                            "notes": if res.notes.is_empty() { vec!["none".to_string()] } else { res.notes.iter().map(|n| n.split('.').next_back().unwrap_or(n).to_string()).collect::<Vec<_>>() },
+                        })));
+                        (Tone::Success, controller_summary(res))
+                    }
+                    Err(err) => (
+                        Tone::Error,
+                        tf("emulator.controller.failed", &[("message", &crate::i18n::localize_error(err))]),
+                    ),
+                };
+                match app.emu.as_mut().and_then(|e| e.status.as_mut()) {
+                    Some((t, msg)) if *t != Tone::Busy => {
+                        msg.push_str("\n\n");
+                        msg.push_str(&line);
+                    }
+                    _ => app.toast(tone, line),
+                }
+            })
+        });
+    }
+
     fn emu_side_scans(&mut self) {
+        self.load_controller_info();
         let Some(emu) = &self.emu else { return };
         let dir = emu.game_dir.clone();
         let app_id = emu.app_id.clone();
@@ -564,6 +670,17 @@ impl App {
                     e.bools.insert(f.key, !v);
                 }
             }
+            Action::EmuToggleController => {
+                if let Some(e) = self.emu.as_mut() {
+                    e.controller = !e.controller;
+                    e.pick_experimental_for_controller();
+                }
+            }
+            Action::EmuControllerType(i) => {
+                if let (Some(e), Some((value, _))) = (self.emu.as_mut(), CONTROLLER_TYPES.get(*i)) {
+                    e.controller_type = value.to_string();
+                }
+            }
             Action::EmuApply => self.emu_apply(),
             Action::EmuDownloadConfirmed => {
                 self.close_modal();
@@ -761,8 +878,9 @@ impl App {
                             app.focus = Some(Fid::new("emu.apply"));
                         }
                         if !app.prefs.emu_game_data_off {
-                            app.emu_write_game_data(game_paths, app_id, game_language);
+                            app.emu_write_game_data(game_paths.clone(), app_id, game_language);
                         }
+                        app.emu_write_controller(game_paths);
                     });
                 } else {
                     let details = results
@@ -890,8 +1008,6 @@ impl App {
         if paths.is_empty() || app_id.is_empty() {
             return;
         }
-        let controller_note = !self.emu.as_ref().is_some_and(|e| e.experimental)
-            && paths.iter().any(|p| p.to_ascii_lowercase().ends_with(".dll"));
         let core = self.core.clone();
         let data = self.data_dir.clone();
         self.spawn(async move {
@@ -909,14 +1025,13 @@ impl App {
                             "branches": count_bucket(res.branches),
                             "leaderboards": count_bucket(res.leaderboards),
                             "items": count_bucket(res.items),
-                            "controller": res.controller_sets > 0,
                             "cloud_dirs": count_bucket(res.cloud_dirs),
                             "watcher": res.watcher_schemas > 0,
                             "media": smd_core::services::game_data::MediaLevel::parse(&app.settings.game_data_media).as_str(),
                             "icons": if res.achievements > 0 { Some(res.icons >= res.achievements) } else { None },
                             "notes": if res.notes.is_empty() { vec!["none"] } else { res.notes.iter().map(|n| n.trim_start_matches("gameData.")).collect::<Vec<_>>() },
                         })));
-                        game_data_summary(res, controller_note)
+                        game_data_summary(res)
                     }
                     Err(err) => {
                         let key = crate::i18n::error_key(err).unwrap_or_else(|| "unmatched".to_string());
@@ -1046,6 +1161,7 @@ impl App {
             }
         }
         let targets = e.edit_targets.clone();
+        let controller_paths: Vec<String> = targets.iter().map(|t| t.path.clone()).collect();
         let entry = self.emu_entry();
         self.emit(
             "patch_settings_saved",
@@ -1069,6 +1185,7 @@ impl App {
             return;
         }
         self.sync_bypass(targets, move |app, extra| {
+            app.emu_write_controller(controller_paths);
             let Some(e) = app.emu.as_mut() else { return };
             e.busy = false;
             if !e.standalone {
@@ -1827,7 +1944,7 @@ impl App {
                 continue;
             }
             let r = col.next(3);
-            let label = t(&format!("emulator.fields.{}", f.label));
+            let label = t(&field_text(f.label));
             widgets::input(
                 &mut sv.buf,
                 ctx,
@@ -1841,10 +1958,96 @@ impl App {
                     error: false,
                 },
             );
-            let hk = t(&format!("emulator.fields.{}Hint", f.label));
+            let hk = t(&format!("{}Hint", field_text(f.label)));
             let h = widgets::wrap_height(&hk, col.w);
             let r = col.next(h);
             hint(&mut sv.buf, r, &hk);
+        }
+        if e.section == CONTROLLER_SECTION {
+            let r = col.next(1);
+            widgets::checkbox(
+                &mut sv.buf,
+                ctx,
+                r,
+                e.controller,
+                &t("emulator.controller.label"),
+                Fid::new("emu.controller"),
+                Action::EmuToggleController,
+                true,
+            );
+            let ch = crate::i18n::strip_html(&t("emulator.controller.hint"));
+            let h = widgets::wrap_height(&ch, col.w.saturating_sub(4));
+            let r = col.next(h);
+            hint(&mut sv.buf, Rect::new(r.x + 4, r.y, r.width.saturating_sub(4), r.height), &ch);
+            col.gap(1);
+            let status_key = if e.controller_checking {
+                "checking"
+            } else {
+                match &e.controller_info {
+                    Some(i) if i.layout => "statusLayout",
+                    Some(i) if matches!(i.support.as_deref(), Some("full") | Some("partial")) => "statusSupport",
+                    Some(_) => "statusNone",
+                    None => "statusUnknown",
+                }
+            };
+            let st = t(&format!("emulator.controller.{}", status_key));
+            let h = widgets::wrap_height(&st, col.w);
+            let r = col.next(h);
+            hint(&mut sv.buf, r, &st);
+            if e.controller_needs_experimental() {
+                let (text, style) = if e.experimental {
+                    (t("emulator.controller.experimentalNote"), theme::dim())
+                } else {
+                    (t("emulator.controller.regularWarning"), theme::warning())
+                };
+                let h = widgets::wrap_height(&text, col.w);
+                let r = col.next(h);
+                widgets::paragraph(&mut sv.buf, r, &text, style);
+            }
+            col.gap(1);
+            let r = col.next(3);
+            let label = t("emulator.controller.layoutFile");
+            widgets::input(
+                &mut sv.buf,
+                ctx,
+                r,
+                &mut e.controller_file,
+                InputSpec {
+                    label: &label,
+                    placeholder: &t("emulator.controller.noFile"),
+                    fid: Fid::new("emu.controllerFile"),
+                    id: InputId::EmuControllerFile,
+                    error: false,
+                },
+            );
+            let lh = crate::i18n::strip_html(&t("emulator.controller.layoutFileHint"));
+            let h = widgets::wrap_height(&lh, col.w);
+            let r = col.next(h);
+            hint(&mut sv.buf, r, &lh);
+            col.gap(1);
+            let r = col.next(1);
+            widgets::paragraph(&mut sv.buf, r, &t("emulator.fields.controllerType"), theme::text());
+            for (i, (value, name)) in CONTROLLER_TYPES.iter().enumerate() {
+                let r = col.next(1);
+                widgets::radio(
+                    &mut sv.buf,
+                    ctx,
+                    r,
+                    e.controller_type.eq_ignore_ascii_case(value),
+                    &placeholder(name),
+                    Fid::idx("emu.controllerType", i),
+                    Action::EmuControllerType(i),
+                );
+            }
+            let th = t("emulator.fields.controllerTypeHint");
+            let h = widgets::wrap_height(&th, col.w);
+            let r = col.next(h);
+            hint(&mut sv.buf, r, &th);
+            let xh = t("emulator.controller.xinputHint");
+            let h = widgets::wrap_height(&xh, col.w);
+            let r = col.next(h);
+            hint(&mut sv.buf, r, &xh);
+            col.gap(1);
         }
         for (i, f) in BOOL_FIELDS.iter().enumerate() {
             if f.section != e.section {
@@ -1857,12 +2060,12 @@ impl App {
                 ctx,
                 r,
                 on,
-                &t(&format!("emulator.fields.{}", f.label)),
+                &t(&field_text(f.label)),
                 Fid::idx("emu.bool", i),
                 Action::EmuToggleField(i),
                 true,
             );
-            let hk = t(&format!("emulator.fields.{}Hint", f.label));
+            let hk = t(&format!("{}Hint", field_text(f.label)));
             let h = widgets::wrap_height(&hk, col.w.saturating_sub(4));
             let r = col.next(h);
             hint(

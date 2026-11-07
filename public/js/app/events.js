@@ -259,6 +259,7 @@ function initEvents() {
   if (els.btnEmuApply) {
     els.btnEmuApply.addEventListener('click', applyEmuReplacement);
     initEmuGameData();
+    initEmuController();
     initEmuNav();
   }
   if (els.btnEmuSaveSettings) {

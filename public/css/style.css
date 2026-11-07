@@ -3571,6 +3571,10 @@ label.settings-row:hover {
   opacity: 0.5;
 }
 
+.emu-controller__xinput {
+  margin-top: 0.9rem;
+}
+
 .bug-report {
   width: min(640px, 94vw);
   max-width: none;

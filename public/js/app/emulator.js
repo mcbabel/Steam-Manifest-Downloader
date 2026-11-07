@@ -50,6 +50,7 @@ async function goToEmulatorStep(opts = {}) {
   applyBypassAvailability();
   scanForDlcMergeAsync();
   scanForDrmAsync();
+  loadEmuControllerInfo();
   await loadEmuReleaseInfo();
 }
 
@@ -481,6 +482,7 @@ function updateEmuOverview() {
 
   setEmuBadge('files', drmShown ? '!' : (total ? `${selected}/${total}` : ''), drmShown ? 'warn' : null);
   setEmuBadge('gamedata', t(gameDataOn ? 'emulator.summary.on' : 'emulator.summary.off'), gameDataOn ? 'on' : null);
+  setEmuBadge('controller', t(emuControllerOn() ? 'emulator.summary.on' : 'emulator.summary.off'), emuControllerOn() ? 'on' : null);
   setEmuBadge('emulator', custom ? String(custom) : '', null);
   setEmuBadge('extras', mergeShown ? '!' : (bypassOn ? t('emulator.summary.on') : ''), mergeShown ? 'warn' : (bypassOn ? 'on' : null));
 
@@ -490,6 +492,7 @@ function updateEmuOverview() {
   if (total) chip(escapeHtml(t('emulator.summary.files', { selected, total })));
   chip(escapeHtml(t(variant === 'experimental' ? 'emulator.variantExperimental' : 'emulator.variantRegular')));
   chip(escapeHtml(t('emulator.tabs.gameData')), gameDataOn ? 'on' : 'off');
+  chip(escapeHtml(t('emulator.summary.controller')), emuControllerOn() ? 'on' : 'off');
   if (bypassOn) chip(escapeHtml(t('emulator.bypassLabel')), 'on');
   if (custom) chip(escapeHtml(t('emulator.summary.custom', { count: custom })));
   if (drmShown) chip(escapeHtml(t('emulator.drmTitle')), 'warn');
@@ -724,14 +727,11 @@ function gameDataSummary(r, targets) {
   if (r.stats) parts.push(t('stats', { count: r.stats }));
   if (r.leaderboards) parts.push(t('leaderboards', { count: r.leaderboards }));
   if (r.items) parts.push(t('items', { count: r.items }));
-  if (r.controller_sets) parts.push(t('controller', { count: r.controller_sets }));
   if (r.cloud_dirs) parts.push(t('cloud', { count: r.cloud_dirs }));
   if (r.watcher_schemas) parts.push(t('watcher', { count: r.watcher_schemas }));
   if (r.media_files) parts.push(t('mediaFiles', { count: r.media_files }));
   const lines = [parts.length ? t('written', { list: parts.join(', ') }) : t('nothing')];
   (r.notes || []).forEach(note => lines.push(window.i18n.t(`emulator.${note}`)));
-  const windowsDll = (targets || []).some(x => /\.dll$/i.test(x.path || ''));
-  if (r.controller_sets && windowsDll && selectedEmuVariant() !== 'experimental') lines.push(t('controllerBuild'));
   return lines.join('\n');
 }
 
@@ -751,7 +751,6 @@ async function writeEmuGameData(targets, appId, language) {
       branches: countBucket(r.branches),
       leaderboards: countBucket(r.leaderboards),
       items: countBucket(r.items),
-      controller: r.controller_sets > 0,
       cloud_dirs: countBucket(r.cloud_dirs),
       watcher: r.watcher_schemas > 0,
       media: currentEmuGameMedia(),
@@ -842,6 +841,166 @@ function initEmuGameData() {
   }
 }
 
+function emuHasWindowsTargets() {
+  return (state.emulatorScan || []).some(f => /\.dll$/i.test(f.path || ''));
+}
+
+function emuControllerOn() {
+  const toggle = document.getElementById('emu-controller-toggle');
+  return !!(toggle && toggle.checked);
+}
+
+function emuControllerNeedsExperimental() {
+  if (!emuControllerOn() || !emuHasWindowsTargets()) return false;
+  const info = state.emuControllerInfo;
+  return !!state.emuControllerFile || !info || info.layout;
+}
+
+function renderEmuControllerState() {
+  const t = (key, params) => window.i18n.t(`emulator.controller.${key}`, params);
+  const section = document.getElementById('emu-controller-section');
+  const status = document.getElementById('emu-controller-status');
+  const build = document.getElementById('emu-controller-build');
+  const file = document.getElementById('emu-controller-file');
+  const clear = document.getElementById('btn-emu-controller-clear');
+  if (section) section.classList.toggle('is-off', !emuControllerOn());
+  if (status) {
+    const info = state.emuControllerInfo;
+    let key = 'statusUnknown';
+    if (state.emuControllerChecking) key = 'checking';
+    else if (info && info.layout) key = 'statusLayout';
+    else if (info && (info.support === 'full' || info.support === 'partial')) key = 'statusSupport';
+    else if (info) key = 'statusNone';
+    status.textContent = t(key);
+  }
+  if (build) {
+    let text = '';
+    if (emuControllerNeedsExperimental()) {
+      text = selectedEmuVariant() === 'experimental' ? t('experimentalNote') : t('regularWarning');
+    }
+    build.textContent = text;
+    build.classList.toggle('hidden', !text);
+    build.classList.toggle('dd-path__hint--error', text === t('regularWarning'));
+  }
+  if (file) file.value = state.emuControllerFile || '';
+  if (clear) clear.classList.toggle('hidden', !state.emuControllerFile);
+}
+
+function pickEmuExperimentalIfNeeded() {
+  if (!emuControllerNeedsExperimental() || state.emuControllerVariantSet) return;
+  const radio = document.querySelector('input[name="emu-variant"][value="experimental"]');
+  if (radio && !radio.checked) {
+    radio.checked = true;
+    radio.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  state.emuControllerVariantSet = true;
+}
+
+async function loadEmuControllerInfo() {
+  state.emuControllerInfo = null;
+  state.emuControllerVariantSet = false;
+  const appId = currentAppIdForEmu();
+  if (!appId) {
+    renderEmuControllerState();
+    return;
+  }
+  state.emuControllerChecking = true;
+  renderEmuControllerState();
+  try {
+    const info = await invoke('emu_controller_info', { appId });
+    if (currentAppIdForEmu() === appId) state.emuControllerInfo = info;
+  } catch (e) {
+    console.error('emu_controller_info failed:', e);
+  }
+  state.emuControllerChecking = false;
+  pickEmuExperimentalIfNeeded();
+  renderEmuControllerState();
+}
+
+function setEmuControllerResult(kind, text) {
+  const el = document.getElementById('emu-controller-result');
+  if (!el) return;
+  el.classList.toggle('hidden', !text);
+  el.classList.toggle('dd-path__hint--error', kind === 'error');
+  el.textContent = text || '';
+}
+
+function controllerSummary(r) {
+  const t = (key, params) => window.i18n.t(`emulator.controller.${key}`, params);
+  let line;
+  if (!r.sets) line = t('nothing');
+  else if (r.source === 'file') line = t('writtenFile', { count: r.sets });
+  else if (r.glyphs) line = t('written', { count: r.sets, glyphs: r.glyphs });
+  else line = t('writtenNoGlyphs', { count: r.sets });
+  const lines = [line];
+  (r.notes || []).forEach(note => lines.push(window.i18n.t(`emulator.${note}`)));
+  return lines.join('\n');
+}
+
+async function writeEmuController(targets) {
+  const paths = (targets || []).map(t => t.path).filter(Boolean);
+  const appId = currentAppIdForEmu();
+  if (!paths.length || !appId) return '';
+  setEmuControllerResult('busy', window.i18n.t('emulator.controller.busy'));
+  try {
+    const r = await invoke('emu_write_controller', {
+      targets: paths,
+      appId: String(appId),
+      layoutFile: state.emuControllerFile || null,
+    });
+    const steamInput = document.querySelector('#step-emulator [data-emu-key="disable_steamoverlaygameid_env_var"]');
+    emitEvent('controller_applied', {
+      source: r.source,
+      sets: countBucket(r.sets),
+      glyphs: r.glyphs > 0,
+      variant: selectedEmuVariant(),
+      steam_input: !!(steamInput && steamInput.checked),
+      notes: (r.notes || []).length ? r.notes.map(n => n.replace(/^[a-zA-Z]+\./, '')) : ['none'],
+    });
+    const text = controllerSummary(r);
+    setEmuControllerResult('success', text);
+    return text;
+  } catch (e) {
+    const text = window.i18n.t('emulator.controller.failed', { message: window.i18n.localizeError(String(e)) });
+    setEmuControllerResult('error', text);
+    return text;
+  }
+}
+
+function initEmuController() {
+  const toggle = document.getElementById('emu-controller-toggle');
+  if (!toggle) return;
+  toggle.addEventListener('change', () => {
+    if (toggle.checked) pickEmuExperimentalIfNeeded();
+    renderEmuControllerState();
+  });
+  document.querySelectorAll('input[name="emu-variant"]').forEach(radio => {
+    radio.addEventListener('change', () => renderEmuControllerState());
+  });
+  const choose = document.getElementById('btn-emu-controller-file');
+  if (choose) {
+    choose.addEventListener('click', async () => {
+      const path = await window.__TAURI__.dialog.open({
+        multiple: false,
+        filters: [{ name: window.i18n.t('emulator.controller.filterName'), extensions: ['vdf', 'txt'] }],
+      });
+      if (!path) return;
+      state.emuControllerFile = String(path);
+      state.emuControllerVariantSet = false;
+      pickEmuExperimentalIfNeeded();
+      renderEmuControllerState();
+    });
+  }
+  const clear = document.getElementById('btn-emu-controller-clear');
+  if (clear) {
+    clear.addEventListener('click', () => {
+      state.emuControllerFile = null;
+      renderEmuControllerState();
+    });
+  }
+  renderEmuControllerState();
+}
+
 function collectInstalledAppIds(mainAppId) {
   const list = (state.parsedData && Array.isArray(state.parsedData.allAppIds))
     ? state.parsedData.allAppIds.slice()
@@ -910,7 +1069,10 @@ async function applyEmuReplacement() {
       const gameNote = toggle && toggle.checked
         ? '\n\n' + await writeEmuGameData(selectedTargets, appId, gathered && gathered.language)
         : '';
-      setEmuApplyStatus('success', window.i18n.t('emulator.applySuccess', { count: success, total }) + dlcNote + extra + gameNote);
+      const controllerNote = emuControllerOn()
+        ? '\n\n' + await writeEmuController(selectedTargets)
+        : '';
+      setEmuApplyStatus('success', window.i18n.t('emulator.applySuccess', { count: success, total }) + dlcNote + extra + gameNote + controllerNote);
       saveLastEmuSettings(gathered);
       if (state.emuStandalone) {
         await refreshEmuScanInPlace();
@@ -1038,13 +1200,16 @@ async function saveEmuSettings() {
   }
 
   const bypassMessage = await syncEmuBypass(state.emuEditTargets);
+  const controllerNote = emuControllerOn() && currentAppIdForEmu()
+    ? await writeEmuController(state.emuEditTargets)
+    : '';
   setEmuBusy(false);
 
   if (!state.emuStandalone) {
     resetApp();
     return;
   }
-  const extra = bypassMessage ? '\n\n' + bypassMessage : '';
+  const extra = [bypassMessage, controllerNote].filter(Boolean).map(m => '\n\n' + m).join('');
   setEmuApplyStatus('success', window.i18n.t('emulator.saveSuccess', { count: success }) + extra);
 }
 
@@ -1332,6 +1497,7 @@ async function openEmuEditFromHistory(entry) {
   goToStep(5);
   if (els.emuApplyStatus) els.emuApplyStatus.classList.add('hidden');
   await hydrateEmuPatchedContext();
+  loadEmuControllerInfo();
 }
 
 function setEmuApplyStatus(kind, text, details) {
@@ -1356,6 +1522,7 @@ const EMU_BOOL_KEYS = new Set([
   'enable_steam_preowned_ids', 'free_weekend',
   'enable_experimental_overlay', 'disable_achievement_notification',
   'overlay_always_show_fps', 'overlay_always_show_playtime',
+  'disable_steamoverlaygameid_env_var',
 ]);
 const EMU_FLOAT_KEYS = new Set(['font_size']);
 
