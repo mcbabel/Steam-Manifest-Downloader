@@ -144,6 +144,7 @@ async function fetchSearchGameInfo(appId) {
 
     if (info) {
       const { name, headerImage, shortDescription } = info;
+      state.gameDenuvo = !!info.denuvo;
 
       if (headerImage) {
         els.searchGameImage.src = headerImage;

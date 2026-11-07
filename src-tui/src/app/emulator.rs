@@ -735,8 +735,35 @@ impl App {
         });
     }
 
+    fn load_emu_denuvo(&mut self) {
+        let Some(e) = self.emu.as_ref() else { return };
+        let app_id = e.app_id.clone();
+        if app_id.is_empty() {
+            return;
+        }
+        let core = self.core.clone();
+        self.spawn(async move {
+            let info = smd_core::services::steam_store_api::get_game_info(&core.http_client, &core.steam_cache, &app_id)
+                .await
+                .ok()
+                .flatten();
+            apply(move |app| {
+                let denuvo = info.is_some_and(|i| i.denuvo);
+                let Some(e) = app.emu.as_mut() else { return };
+                if e.app_id != app_id {
+                    return;
+                }
+                e.denuvo = denuvo;
+                if denuvo {
+                    app.report_denuvo("emulator", &app_id);
+                }
+            })
+        });
+    }
+
     fn emu_side_scans(&mut self) {
         self.load_controller_info();
+        self.load_emu_denuvo();
         self.load_cold_exes();
         let Some(emu) = &self.emu else { return };
         let dir = emu.game_dir.clone();
@@ -1961,6 +1988,13 @@ impl App {
             w: lw,
             y: top,
         };
+        if e.denuvo {
+            let msg = format!("{}: {}", t("select.denuvoTitle"), t("emulator.denuvoNote"));
+            let h = widgets::wrap_height(&msg, lw);
+            let r = col.next(h);
+            widgets::paragraph(&mut sv.buf, r, &msg, theme::warning());
+            col.gap(1);
+        }
         if let Some(info) = e.patch_info.as_ref() {
             let variant = match info.variant.as_deref() {
                 Some("experimental") => format!(" ({})", t("emulator.variantExperimental")),

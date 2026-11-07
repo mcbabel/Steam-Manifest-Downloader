@@ -60,6 +60,8 @@ async function fetchGameInfo(appId) {
 
     if (info) {
       const { name, headerImage, shortDescription } = info;
+      state.gameDenuvo = !!info.denuvo;
+      renderDenuvoNote(appId);
 
       if (headerImage) {
         els.gameHeaderImage.src = headerImage;
@@ -86,9 +88,26 @@ async function fetchGameInfo(appId) {
   els.gameInfoLoading.classList.add('hidden');
 }
 
+const reportedDenuvo = new Set();
+
+function reportDenuvo(where, appId) {
+  const key = `${where}:${appId}`;
+  if (reportedDenuvo.has(key)) return;
+  reportedDenuvo.add(key);
+  emitEvent('denuvo_notice', { where });
+}
+
+function renderDenuvoNote(appId) {
+  const note = document.getElementById('denuvo-note');
+  if (!note) return;
+  note.classList.toggle('hidden', !state.gameDenuvo);
+  if (state.gameDenuvo) reportDenuvo('select', appId);
+}
+
 function showSelectionStep() {
   const data = state.parsedData;
   if (!data) return;
+  renderDenuvoNote(data.mainAppId);
 
   els.appIdDisplay.textContent = data.mainAppId;
   els.depotCount.textContent = window.i18n.t('select.depotsFound', { count: data.depots.length });

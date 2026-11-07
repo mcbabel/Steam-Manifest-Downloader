@@ -147,6 +147,7 @@ impl App {
                         app.wiz.search_repo = None;
                         app.wiz.search_key_vdf = None;
                         app.wiz.game_name = None;
+                        app.wiz.game_denuvo = false;
                         app.wiz.header_image = None;
                         app.wiz.short_description = None;
                         app.show_selection_step();
@@ -193,6 +194,7 @@ impl App {
         self.wiz.search_app_id = Some(app_id.clone());
         self.wiz.search_loading = true;
         self.wiz.game_name = None;
+        self.wiz.game_denuvo = false;
         self.wiz.header_image = None;
         self.wiz.short_description = None;
         self.wiz.playtests.clear();
@@ -282,6 +284,10 @@ impl App {
                     return;
                 }
                 if let Ok(Some(info)) = r {
+                    app.wiz.game_denuvo = info.denuvo;
+                    if info.denuvo {
+                        app.report_denuvo("select", &app_id);
+                    }
                     if info.name.is_some() {
                         app.wiz.game_name = info.name;
                     }

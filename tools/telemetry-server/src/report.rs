@@ -538,6 +538,7 @@ const FEATURES: &[(&str, &str, &str)] = &[
     ("Emulator settings saved", "patch_settings_saved", ""),
     ("Steamless", "steamless_used", "outcome"),
     ("Steam DRM restored", "drm_restored", "where"),
+    ("Denuvo warning shown", "denuvo_notice", "where"),
     ("gbe_fork updated in place", "emu_gbe_updated", "from"),
     ("Emulator saves", "emu_saves", "action"),
     ("Emulator achievements", "emu_achievements", "action"),

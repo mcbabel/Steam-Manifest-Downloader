@@ -165,7 +165,9 @@
     "latestAllHint": "Set every depot to its newest manifest from Steam",
     "latestApplied": "{count} depot(s) set to the newest manifest. When the source has no file for it, SMD gets it straight from Steam, which can need a manifest request code.",
     "latestAppliedShort": "{count} depot(s) set to the newest manifest",
-    "latestNone": "The depot source already has the newest manifests, there is nothing to change."
+    "latestNone": "The depot source already has the newest manifests, there is nothing to change.",
+    "denuvoTitle": "Denuvo Anti-Tamper",
+    "denuvoText": "Steam lists Denuvo for this game. The download works, but Denuvo checks the license on its own, so the game will not start with the gbe_fork emulator or without a license of your own. SMD does not remove Denuvo."
   },
   "progress": {
     "diskSpaceLoading": "Checking disk space…",
@@ -813,7 +815,8 @@
     },
     "releaseNewer": "gbe_fork {tag} is available. On this PC: {local}.",
     "drmDoneTitle": "Steam DRM removed",
-    "drmDoneDescription": "These executables now run with the emulator. The originals stay next to them as .drm.bak."
+    "drmDoneDescription": "These executables now run with the emulator. The originals stay next to them as .drm.bak.",
+    "denuvoNote": "Steam lists Denuvo for this game. Denuvo checks the license on its own, so the game will most likely not start with gbe_fork, even after patching."
   },
   "steamLibrary": {
     "title": "Add to Steam Library",

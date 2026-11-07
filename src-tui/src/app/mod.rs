@@ -320,6 +320,12 @@ impl App {
         self.load_remote();
     }
 
+    pub(super) fn report_denuvo(&mut self, place: &str, app_id: &str) {
+        if self.reported_errors.len() < 200 && self.reported_errors.insert(format!("denuvo:{}:{}", place, app_id)) {
+            self.emit("denuvo_notice", Some(serde_json::json!({ "where": place })));
+        }
+    }
+
     fn load_remote(&mut self) {
         let core = self.core.clone();
         let dir = self.data_dir.clone();

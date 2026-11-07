@@ -824,6 +824,7 @@ function resetApp() {
   state.selectedDepots.clear();
   state.jobId = null;
   state.gameName = null;
+  state.gameDenuvo = false;
   state.headerImage = null;
   state.downloadDir = null;
   state.depotManifests = {};

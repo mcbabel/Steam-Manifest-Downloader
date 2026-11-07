@@ -690,6 +690,12 @@ impl App {
         if let Some(d) = &self.wiz.short_description {
             widgets::text(buf, take_top(&mut rest, 1), d, theme::dim());
         }
+        if self.wiz.game_denuvo {
+            let msg = format!("{}: {}", t("select.denuvoTitle"), t("select.denuvoText"));
+            let h = widgets::wrap_height(&msg, rest.width).min(4);
+            let r = take_top(&mut rest, h);
+            widgets::paragraph(buf, r, &msg, theme::warning());
+        }
         if self.wiz.depot_choice.as_ref().is_some_and(|c| c.known) {
             let row = take_top(&mut rest, 1);
             self.render_auto_note(buf, row, ctx);

@@ -90,6 +90,8 @@ When telemetry is enabled, the app sends small events describing:
     range
   - `steamless_used`, `api_bypass`, `dlc_merged` — the DRM removal, the Steam
     API check bypass or the DLC depot merge ran, and whether it worked
+  - `denuvo_notice` — the warning that Steam lists Denuvo for a game was shown,
+    and where (`select`, `emulator` or `cli`). Never which game
   - `drm_restored` — an original program file with Steam DRM was put back,
     one by one (`single`) or while reverting the patch (`revert`)
   - `emu_saves` — saves were backed up or restored (`backup`, `restore`) and

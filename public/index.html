@@ -310,6 +310,10 @@
           <div class="spinner"></div>
           <span data-i18n="select.gameInfoLoading">Fetching game info...</span>
         </div>
+        <div id="denuvo-note" class="denuvo-note hidden" role="note">
+          <strong data-i18n="select.denuvoTitle">Denuvo Anti-Tamper</strong>
+          <span data-i18n="select.denuvoText">Steam lists Denuvo for this game. The download works, but Denuvo checks the license on its own, so the game will not start with the gbe_fork emulator or without a license of your own. SMD does not remove Denuvo.</span>
+        </div>
 
         <div class="select-header">
           <div class="select-header__info">
@@ -701,6 +705,10 @@
           <div class="emu-panels">
           <section id="emu-panel-files" class="emu-panel is-active" data-section="files" role="tabpanel" aria-labelledby="emu-tab-files">
             <h3 class="emu-panel__title" data-i18n="emulator.detectedLabel">Detected Steam API files</h3>
+            <div id="emu-denuvo-note" class="denuvo-note hidden" role="note">
+              <strong data-i18n="select.denuvoTitle">Denuvo Anti-Tamper</strong>
+              <span data-i18n="emulator.denuvoNote">Steam lists Denuvo for this game. Denuvo checks the license on its own, so the game will most likely not start with gbe_fork, even after patching.</span>
+            </div>
             <div id="emu-drm-section" class="emu-drm-section hidden">
               <div class="emu-drm-header">
                 <svg class="emu-drm-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

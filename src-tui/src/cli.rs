@@ -648,6 +648,16 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
         }
     };
     let meta_session = account_session.unwrap_or_else(|| core.steam_session.clone());
+    if !args.json {
+        let info = smd_core::services::steam_store_api::get_game_info(&core.http_client, &core.steam_cache, &plan.app_id)
+            .await
+            .ok()
+            .flatten();
+        if info.is_some_and(|i| i.denuvo) {
+            cli_emit("denuvo_notice", serde_json::json!({ "where": "cli" })).await;
+            errln!("! {}: {}", t("select.denuvoTitle"), t("select.denuvoText"));
+        }
+    }
     if plan.game_name.is_none() {
         let info = tokio::select! {
             r = smd_core::services::steam_store_api::get_game_info(

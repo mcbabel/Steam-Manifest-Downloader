@@ -12,6 +12,7 @@ const state = {
   jobId: null,
   unlistenProgress: null,
   gameName: null,
+  gameDenuvo: false,
   headerImage: null,
   downloadDir: null,
   shortcutSupported: false,

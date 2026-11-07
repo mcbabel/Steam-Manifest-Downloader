@@ -14,6 +14,14 @@ pub struct GameInfo {
     pub app_type: Option<String>,
     #[serde(default)]
     pub dlc: Vec<u32>,
+    #[serde(rename = "drmNotice", default, skip_serializing_if = "Option::is_none")]
+    pub drm_notice: Option<String>,
+    #[serde(default)]
+    pub denuvo: bool,
+}
+
+pub fn mentions_denuvo(drm_notice: &str) -> bool {
+    drm_notice.to_ascii_lowercase().contains("denuvo")
 }
 
 const MAX_CACHE_SIZE: usize = 500;
@@ -92,6 +100,15 @@ pub async fn get_game_info(
             .and_then(|v| v.as_array())
             .map(|ids| ids.iter().filter_map(|id| id.as_u64()).map(|id| id as u32).collect())
             .unwrap_or_default(),
+        drm_notice: app_data
+            .get("drm_notice")
+            .and_then(|v| v.as_str())
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty()),
+        denuvo: app_data
+            .get("drm_notice")
+            .and_then(|v| v.as_str())
+            .is_some_and(mentions_denuvo),
     };
 
     {
@@ -160,5 +177,19 @@ mod tests {
         assert_eq!(game_folder_name("220", Some("A: B  C"), "underscore"), "220_A_B_C");
         assert_eq!(game_folder_name("220", None, "dash"), "220");
         assert_eq!(game_folder_name("220", Some("???"), ""), "220");
+    }
+}
+
+#[cfg(test)]
+mod denuvo_tests {
+    use super::*;
+
+    #[test]
+    fn the_drm_notice_names_denuvo() {
+        assert!(mentions_denuvo("Denuvo Anti-tamper"));
+        assert!(mentions_denuvo("Incorporates 3rd-party DRM: DENUVO"));
+        assert!(!mentions_denuvo("Requires 3rd-Party Account: EA app"));
+        let info: GameInfo = serde_json::from_value(serde_json::json!({ "name": "x" })).unwrap();
+        assert!(!info.denuvo && info.drm_notice.is_none());
     }
 }

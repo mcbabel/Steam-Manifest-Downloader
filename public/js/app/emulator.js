@@ -54,6 +54,7 @@ async function goToEmulatorStep(opts = {}) {
   scanForDrmAsync();
   loadEmuControllerInfo();
   refreshEmuDrmRestore();
+  refreshEmuDenuvo();
   await loadEmuReleaseInfo();
 }
 
@@ -1610,6 +1611,22 @@ function applyEmuStartOverVisibility() {
   els.btnEmuStartOver.classList.toggle('hidden', state.emuEditMode || state.emuStandalone);
 }
 
+async function refreshEmuDenuvo() {
+  const note = document.getElementById('emu-denuvo-note');
+  if (!note) return;
+  note.classList.add('hidden');
+  const appId = currentAppIdForEmu();
+  if (!appId) return;
+  let denuvo = false;
+  try {
+    const info = await invoke('get_steam_app_info', { appId: String(appId) });
+    denuvo = !!(info && info.denuvo);
+  } catch (_) {}
+  if (currentAppIdForEmu() !== appId) return;
+  note.classList.toggle('hidden', !denuvo);
+  if (denuvo) reportDenuvo('emulator', appId);
+}
+
 function setEmuEditMode(on) {
   state.emuEditMode = !!on;
   document.body.classList.toggle('emu-edit-mode', state.emuEditMode);
@@ -1676,6 +1693,7 @@ async function openEmuEditFromHistory(entry) {
   refreshEmuDrmRestore();
   resetEmuExtrasView();
   refreshEmuMethod();
+  refreshEmuDenuvo();
   loadEmuReleaseInfo();
 }
 
