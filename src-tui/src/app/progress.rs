@@ -543,8 +543,15 @@ impl App {
             .unwrap_or_default();
         let message = crate::i18n::event_text(msg);
         if let Some(p) = self.wiz.progress.as_mut() {
-            p.overall = 1.0;
-            p.depot_ratio = 1.0;
+            if all_ok || results.is_empty() {
+                if all_ok {
+                    p.overall = 1.0;
+                    p.depot_ratio = 1.0;
+                }
+            } else {
+                let ok = results.iter().filter(|r| r.get("success").and_then(|v| v.as_bool()).unwrap_or(false)).count();
+                p.overall = ok as f64 / results.len() as f64;
+            }
             p.speed = None;
             p.eta = None;
             p.status = match outcome.as_str() {

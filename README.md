@@ -274,7 +274,8 @@ checkboxes — and the mouse wheel scrolls. Keyboard works just as well:
 Dragging a `.lua` / `.st` or key file onto the terminal window loads it right away
 (most terminals paste the path). The UI uses true color where the terminal
 supports it, falls back to the 16 terminal colors otherwise, and respects
-`NO_COLOR`.
+`NO_COLOR`. In the classic Windows console window symbols like ✓ are replaced by plain ones;
+`SMD_GLYPHS=ascii` or `SMD_GLYPHS=unicode` forces one or the other.
 
 ### Headless commands
 

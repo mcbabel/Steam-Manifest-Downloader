@@ -1,4 +1,5 @@
 pub mod file_browser;
+pub mod glyphs;
 pub mod input;
 pub mod widgets;
 

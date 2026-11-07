@@ -183,7 +183,16 @@ pub struct HistoryArgs {
 
 macro_rules! errln {
     ($($arg:tt)*) => {
-        crate::term::write_original_stderr(&format!("{}\n", format!($($arg)*)))
+        crate::term::write_original_stderr(&format!("{}\n", crate::ui::glyphs::text(&format!($($arg)*))))
+    };
+}
+
+macro_rules! outln {
+    () => {
+        println!()
+    };
+    ($($arg:tt)*) => {
+        println!("{}", crate::ui::glyphs::text(&format!($($arg)*)))
     };
 }
 
@@ -247,7 +256,7 @@ pub async fn telemetry(dir: PathBuf, args: TelemetryArgs) -> i32 {
                 errln!("{}", tf("tui.cli.error", &[("message", &e)]));
                 return 1;
             }
-            println!("{}", t(if accept { "tui.cli.telemetryOn" } else { "tui.cli.telemetryOff" }));
+            outln!("{}", t(if accept { "tui.cli.telemetryOn" } else { "tui.cli.telemetryOff" }));
             0
         }
         _ => {
@@ -255,16 +264,16 @@ pub async fn telemetry(dir: PathBuf, args: TelemetryArgs) -> i32 {
             let saved = settings.telemetry_consent == settings_service::TelemetryConsent::Accepted;
             let env = smd_core::services::telemetry::env_consent();
             let on = env.unwrap_or(saved);
-            println!("{}", t(if on { "tui.cli.telemetryStatusOn" } else { "tui.cli.telemetryStatusOff" }));
+            outln!("{}", t(if on { "tui.cli.telemetryStatusOn" } else { "tui.cli.telemetryStatusOff" }));
             if let Some(v) = env {
-                println!("{}", tf("tui.cli.telemetryEnv", &[("value", &if v { "on" } else { "off" })]));
+                outln!("{}", tf("tui.cli.telemetryEnv", &[("value", &if v { "on" } else { "off" })]));
             }
             if on {
                 let behavior = settings.telemetry_behavior == settings_service::TelemetryConsent::Accepted;
-                println!("{}", t(if behavior { "tui.cli.behaviorOn" } else { "tui.cli.behaviorOff" }));
+                outln!("{}", t(if behavior { "tui.cli.behaviorOn" } else { "tui.cli.behaviorOff" }));
             }
             if on && !settings.installation_id.is_empty() {
-                println!(
+                outln!(
                     "{}",
                     tf(
                         "tui.cli.telemetryId",
@@ -609,7 +618,7 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
                 );
                 if choice.known {
                     if !args.json {
-                        println!("{}", auto_choice_line(&choice, candidates.len()));
+                        outln!("{}", auto_choice_line(&choice, candidates.len()));
                     }
                     wanted = choice.selected.clone();
                 }
@@ -704,7 +713,7 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
             })
         );
     } else {
-        println!(
+        outln!(
             "{}",
             tf(
                 "tui.cli.plan",
@@ -717,7 +726,7 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
         );
     }
     for (id, manifest, key, size) in chosen.iter().filter(|_| !args.json) {
-        println!(
+        outln!(
             "  {:>10}  {} {}{}{}",
             id,
             t("tui.cli.manifest"),
@@ -872,7 +881,7 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
             serde_json::json!({ "type": "started", "jobId": job, "downloadDir": work_dir })
         );
     } else {
-        println!("→ {}", work_dir);
+        outln!("→ {}", work_dir);
     }
 
     let tty = std::io::stdout().is_terminal() && !args.json;
@@ -1046,7 +1055,7 @@ impl Printer {
 
     fn line(&mut self, s: &str) {
         self.clear();
-        println!("{}", s);
+        outln!("{}", s);
     }
 
     fn event(&mut self, ev: &Value) {
@@ -1147,12 +1156,12 @@ impl Printer {
                         speed
                     );
                     if self.tty {
-                        print!("\r\x1b[2K{}", text);
+                        print!("\r\x1b[2K{}", crate::ui::glyphs::text(&text));
                         let _ = std::io::stdout().flush();
                         self.live = true;
                     } else if self.last_line.elapsed() > Duration::from_secs(5) {
                         self.last_line = Instant::now();
-                        println!("{}", text);
+                        outln!("{}", text);
                     }
                 } else if let Some(out) = ev["output"].as_str() {
                     for l in out.lines() {
@@ -1194,10 +1203,10 @@ pub async fn search(dir: PathBuf, args: SearchArgs) -> i32 {
                         serde_json::to_string_pretty(&hits).unwrap_or_default()
                     );
                 } else if hits.is_empty() {
-                    println!("{}", t("tui.cli.noGames"));
+                    outln!("{}", t("tui.cli.noGames"));
                 } else {
                     for h in hits {
-                        println!("{:>10}  {}", h.app_id, h.name);
+                        outln!("{:>10}  {}", h.app_id, h.name);
                     }
                 }
                 0
@@ -1226,15 +1235,15 @@ pub async fn search(dir: PathBuf, args: SearchArgs) -> i32 {
     if !args.json {
         if let Ok(id) = args.query.parse::<u32>() {
             for p in smd_core::ops::search::find_playtests(&core, id).await {
-                println!("{}", tf("search.playtestFound", &[("name", &p.name), ("appId", &p.app_id)]));
+                outln!("{}", tf("search.playtestFound", &[("name", &p.name), ("appId", &p.app_id)]));
             }
         }
         if res.repos.is_empty() {
-            println!("{}", tf("tui.cli.appNotFound", &[("app", &args.query)]));
+            outln!("{}", tf("tui.cli.appNotFound", &[("app", &args.query)]));
             return 1;
         }
         for (i, r) in res.repos.iter().enumerate() {
-            println!(
+            outln!(
                 "#{}  {}  [{}]  {}",
                 i,
                 r.repo,
@@ -1268,7 +1277,7 @@ pub async fn search(dir: PathBuf, args: SearchArgs) -> i32 {
                     println!("{}", serde_json::to_string_pretty(&m).unwrap_or_default());
                 } else {
                     for d in m.manifests {
-                        println!(
+                        outln!(
                             "  {:>10}  {} {}{}{}",
                             d.depot_id,
                             t("tui.cli.manifest"),
@@ -1304,10 +1313,10 @@ pub async fn history(dir: PathBuf, args: HistoryArgs) -> i32 {
         return 0;
     }
     if h.entries.is_empty() {
-        println!("{}", t("tui.cli.noDownloads"));
+        outln!("{}", t("tui.cli.noDownloads"));
     }
     for e in h.entries {
-        println!(
+        outln!(
             "{:<20} {:>10}  {:<20} {}/{}  {}",
             e.completed_at
                 .as_deref()
@@ -1322,7 +1331,7 @@ pub async fn history(dir: PathBuf, args: HistoryArgs) -> i32 {
             e.depot_count,
             e.game_name.unwrap_or_default()
         );
-        println!("{:>32} {}", "", e.download_dir);
+        outln!("{:>32} {}", "", e.download_dir);
     }
     0
 }
@@ -1344,15 +1353,15 @@ fn print_qr(url: &str) {
         Ok(lines) => {
             for line in lines {
                 if tty {
-                    println!("  \x1b[30;47m{}\x1b[0m", line);
+                    outln!("  \x1b[30;47m{}\x1b[0m", line);
                 } else {
-                    println!("  {}", line);
+                    outln!("  {}", line);
                 }
             }
         }
         Err(e) => errln!("{}", tf("tui.cli.error", &[("message", &e)])),
     }
-    println!("  {}", url);
+    outln!("  {}", url);
 }
 
 fn storage_line(info: &smd_core::services::steam_account::AccountInfo, dir: &std::path::Path) -> String {
@@ -1372,11 +1381,11 @@ pub async fn login(dir: PathBuf, args: LoginArgs) -> i32 {
     let _ = tokio::fs::create_dir_all(&dir).await;
     let core = AppState::new();
     if let Some(info) = account::status(&core, &dir).await {
-        println!("{}", tf("tui.cli.loginReplacing", &[("name", &info.account_name)]));
+        outln!("{}", tf("tui.cli.loginReplacing", &[("name", &info.account_name)]));
     }
-    println!("{}", t("tui.cli.loginIntro"));
-    println!("{}", t("tui.cli.loginRisk"));
-    println!();
+    outln!("{}", t("tui.cli.loginIntro"));
+    outln!("{}", t("tui.cli.loginRisk"));
+    outln!();
     let mut restarts = 0;
     let qr = match account::start_qr(&core).await {
         Ok(q) => q,
@@ -1400,17 +1409,17 @@ pub async fn login(dir: PathBuf, args: LoginArgs) -> i32 {
             Ok(QrStatus::Waiting { scanned, qr }) => {
                 if scanned && !told_scanned {
                     told_scanned = true;
-                    println!("{}", t("tui.cli.loginScanned"));
+                    outln!("{}", t("tui.cli.loginScanned"));
                 }
                 if let Some(q) = qr {
-                    println!("{}", t("tui.cli.loginNewCode"));
+                    outln!("{}", t("tui.cli.loginNewCode"));
                     print_qr(&q.challenge_url);
                     interval = q.interval_secs;
                 }
             }
             Ok(QrStatus::Done { account: info }) => {
-                println!("{}", tf("tui.cli.loginDone", &[("name", &info.account_name)]));
-                println!("{}", storage_line(&info, &dir));
+                outln!("{}", tf("tui.cli.loginDone", &[("name", &info.account_name)]));
+                outln!("{}", storage_line(&info, &dir));
                 if info.storage == smd_core::services::steam_account::Storage::Session {
                     account::logout(&core, &dir).await;
                     return 1;
@@ -1421,7 +1430,7 @@ pub async fn login(dir: PathBuf, args: LoginArgs) -> i32 {
                 restarts += 1;
                 match account::start_qr(&core).await {
                     Ok(q) => {
-                        println!("{}", t("tui.cli.loginNewCode"));
+                        outln!("{}", t("tui.cli.loginNewCode"));
                         print_qr(&q.challenge_url);
                         interval = q.interval_secs;
                         told_scanned = false;
@@ -1450,9 +1459,9 @@ pub async fn logout(dir: PathBuf) -> i32 {
     match smd_core::ops::account::status(&core, &dir).await {
         Some(info) => {
             smd_core::ops::account::logout(&core, &dir).await;
-            println!("{}", tf("tui.cli.logoutDone", &[("name", &info.account_name)]));
+            outln!("{}", tf("tui.cli.logoutDone", &[("name", &info.account_name)]));
         }
-        None => println!("{}", t("tui.cli.accountNone")),
+        None => outln!("{}", t("tui.cli.accountNone")),
     }
     0
 }
@@ -1470,18 +1479,18 @@ pub async fn account(dir: PathBuf, args: AccountArgs) -> i32 {
             0
         }
         Ok(Some(info)) => {
-            println!("{}", tf("tui.cli.accountSignedIn", &[("name", &info.account_name), ("id", &info.steam_id)]));
-            println!("{}", storage_line(&info, &dir));
+            outln!("{}", tf("tui.cli.accountSignedIn", &[("name", &info.account_name), ("id", &info.steam_id)]));
+            outln!("{}", storage_line(&info, &dir));
             if let Some(exp) = info.expires_at.and_then(|e| chrono::DateTime::from_timestamp(e, 0)) {
-                println!("{}", tf("tui.cli.accountExpires", &[("date", &exp.format("%Y-%m-%d"))]));
+                outln!("{}", tf("tui.cli.accountExpires", &[("date", &exp.format("%Y-%m-%d"))]));
             }
             if args.check {
-                println!("{}", t("tui.cli.accountCheckOk"));
+                outln!("{}", t("tui.cli.accountCheckOk"));
             }
             0
         }
         Ok(None) => {
-            println!("{}", t("tui.cli.accountNone"));
+            outln!("{}", t("tui.cli.accountNone"));
             0
         }
         Err(e) => {
@@ -1504,7 +1513,7 @@ pub async fn branches(dir: PathBuf, args: BranchesArgs) -> i32 {
         println!("{}", serde_json::json!({ "appId": args.app_id, "signedIn": signed_in, "branches": list }));
         return 0;
     }
-    println!("{}", tf("tui.cli.branchesTitle", &[("app", &args.app_id)]));
+    outln!("{}", tf("tui.cli.branchesTitle", &[("app", &args.app_id)]));
     for b in &list {
         let mut tags = Vec::new();
         if b.password_required {
@@ -1514,7 +1523,7 @@ pub async fn branches(dir: PathBuf, args: BranchesArgs) -> i32 {
         let updated = chrono::DateTime::from_timestamp(b.time_updated as i64, 0)
             .map(|d| d.format("%Y-%m-%d").to_string())
             .unwrap_or_default();
-        println!(
+        outln!(
             "  {:<24} {:>10}  {}  [{}]{}",
             b.name,
             b.build_id,
@@ -1524,7 +1533,7 @@ pub async fn branches(dir: PathBuf, args: BranchesArgs) -> i32 {
         );
     }
     if !signed_in {
-        println!("{}", t("tui.cli.branchesHintLogin"));
+        outln!("{}", t("tui.cli.branchesHintLogin"));
     }
     0
 }

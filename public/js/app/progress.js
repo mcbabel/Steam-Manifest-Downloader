@@ -534,11 +534,17 @@ function handleComplete(msg) {
   const outcome = (msg.diag && msg.diag.outcome) || 'complete';
   const allOk = outcome === 'complete';
 
-  els.progressBarFill.style.width = '100%';
+  const doneResults = Array.isArray(msg.results) ? msg.results : [];
+  if (allOk || !doneResults.length) {
+    if (allOk) els.progressBarFill.style.width = '100%';
+  } else {
+    const ok = doneResults.filter(r => r.success).length;
+    els.progressBarFill.style.width = `${Math.round((ok / doneResults.length) * 100)}%`;
+  }
   els.progressStatus.innerHTML = allOk
     ? `<span class="status-success">${ICONS.checkCircle} ${escapeHtml(window.i18n.t('progress.statusComplete'))}</span>`
     : `<span class="status-warning">${ICONS.alertTriangle} ${escapeHtml(window.i18n.t('progress.statusIncomplete'))}</span>`;
-  updateDepotDownloadProgress(100);
+  if (allOk) updateDepotDownloadProgress(100);
   if (els.downloadSpeedInfo) els.downloadSpeedInfo.classList.add('hidden');
   emitEvent('download_completed', Object.assign({ success: allOk }, jobContext(), msg.diag || {}));
   buildPendingHistoryEntry(msg);

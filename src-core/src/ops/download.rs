@@ -1950,8 +1950,12 @@ async fn run_native_pipeline(
             }
 
             if let Err(ref steam_err) = steam_result {
-                let key_opt = mh_api_key.filter(|k| !k.is_empty());
-                if key_opt.is_none() {
+                let chunk_failed = matches!(diag::classify_pipeline_error(steam_err).0, diag::Stage::Chunk);
+                if chunk_failed {
+                    crate::dlog!("download", "depot {} failed at the chunks, the manifest was fine: no ManifestHub fallback", depot.depot_id);
+                }
+                let key_opt = mh_api_key.filter(|k| !k.is_empty() && !chunk_failed);
+                if key_opt.is_none() && !chunk_failed {
                     emit_manifest_source(
                         sink,
                         job_id,

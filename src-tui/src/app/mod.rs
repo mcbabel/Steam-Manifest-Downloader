@@ -1083,6 +1083,7 @@ impl App {
                 let mut ctx = Ctx::new(self.focus, self.hover);
                 ctx.follow_focus = !self.manual_scroll;
                 self.render(f.buffer_mut(), area, &mut ctx);
+                crate::ui::glyphs::apply(f.buffer_mut());
                 cursor = ctx.cursor;
                 self.ctx = ctx;
                 if let Some(c) = cursor {
