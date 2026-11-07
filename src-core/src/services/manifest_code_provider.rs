@@ -30,24 +30,32 @@ pub async fn fetch_manifest_request_code_external(
 ) -> Result<ManifestCodeResolved, String> {
     let mut errors: Vec<String> = Vec::new();
 
-    match fetch_steamrun(http, manifest_gid).await {
-        Ok(code) => {
-            return Ok(ManifestCodeResolved {
-                request_code: code,
-                source: ManifestCodeSource::SteamRun,
-            });
+    if !crate::services::remote::provider_enabled("steam.run") {
+        errors.push("steam.run: switched off in the remote file".into());
+    } else {
+        match fetch_steamrun(http, manifest_gid).await {
+            Ok(code) => {
+                return Ok(ManifestCodeResolved {
+                    request_code: code,
+                    source: ManifestCodeSource::SteamRun,
+                });
+            }
+            Err(e) => errors.push(format!("steam.run: {}", e)),
         }
-        Err(e) => errors.push(format!("steam.run: {}", e)),
     }
 
-    match fetch_wudrm(http, manifest_gid).await {
-        Ok(code) => {
-            return Ok(ManifestCodeResolved {
-                request_code: code,
-                source: ManifestCodeSource::WuDrm,
-            });
+    if !crate::services::remote::provider_enabled("wudrm") {
+        errors.push("wudrm: switched off in the remote file".into());
+    } else {
+        match fetch_wudrm(http, manifest_gid).await {
+            Ok(code) => {
+                return Ok(ManifestCodeResolved {
+                    request_code: code,
+                    source: ManifestCodeSource::WuDrm,
+                });
+            }
+            Err(e) => errors.push(format!("wudrm: {}", e)),
         }
-        Err(e) => errors.push(format!("wudrm: {}", e)),
     }
 
     Err(format!(

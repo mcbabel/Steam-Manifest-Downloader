@@ -316,6 +316,52 @@ impl App {
         if self.settings.auto_update {
             self.check_updates(false);
         }
+        self.load_remote();
+    }
+
+    fn load_remote(&mut self) {
+        let core = self.core.clone();
+        let dir = self.data_dir.clone();
+        self.spawn(async move {
+            let online = smd_core::ops::system::connectivity_check(&core).await;
+            let view = if online {
+                Some(smd_core::ops::system::remote_refresh(&core, &dir, VERSION, "tui").await)
+            } else {
+                None
+            };
+            apply(move |app| {
+                let Some(view) = view else {
+                    app.emit("offline_notice", None);
+                    app.toast(Tone::Warning, i18n::t("remote.offline"));
+                    return;
+                };
+                let lang = i18n::language();
+                for n in view.notices {
+                    if app.prefs.dismissed_notices.contains(&n.id) {
+                        continue;
+                    }
+                    let Some(text) = n.text.get(lang).or_else(|| n.text.get("en")).or_else(|| n.text.values().next()).cloned() else {
+                        continue;
+                    };
+                    let level = if n.level == "warning" { "warning" } else { "info" };
+                    app.emit("remote_notice", Some(serde_json::json!({ "action": "shown", "id": n.id, "level": level })));
+                    let body = if n.url.is_empty() { text } else { format!("{}\n\n{}", text, n.url) };
+                    let title = if level == "warning" { i18n::t("tui.remote.warning") } else { i18n::t("tui.remote.info") };
+                    let mut m = Modal::confirm(
+                        title,
+                        body,
+                        i18n::t("remote.dismiss"),
+                        i18n::t("common.close"),
+                        false,
+                        Action::RemoteNoticeDismiss(n.id.clone(), level.to_string()),
+                    );
+                    if let Modal::Confirm(c) = &mut m {
+                        c.on_no = Some(Action::CloseModal);
+                    }
+                    app.queue_modal(m);
+                }
+            })
+        });
     }
 
     pub fn check_updates(&mut self, manual: bool) {
@@ -1034,6 +1080,14 @@ impl App {
             }
             Action::Help => self.queue_modal(Modal::Help),
             Action::CloseModal => self.close_modal(),
+            Action::RemoteNoticeDismiss(id, level) => {
+                self.close_modal();
+                if !self.prefs.dismissed_notices.contains(&id) {
+                    self.prefs.dismissed_notices.push(id.clone());
+                    self.save_prefs();
+                }
+                self.emit("remote_notice", Some(serde_json::json!({ "action": "dismissed", "id": id, "level": level })));
+            }
             Action::Nav(page) => self.navigate(page),
             Action::ListSelect(id, idx) => self.list_select(id, idx),
             Action::ListActivate(id, idx) => self.list_activate(id, idx),

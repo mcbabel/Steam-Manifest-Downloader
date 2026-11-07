@@ -74,6 +74,8 @@ pub struct Settings {
     pub folder_style: String,
     #[serde(default)]
     pub latest_manifests: bool,
+    #[serde(default = "default_auto_update")]
+    pub remote_updates: bool,
     #[serde(default)]
     pub steam_path: String,
     #[serde(default)]
@@ -164,6 +166,7 @@ impl Default for Settings {
             target_platform: String::new(),
             folder_style: String::new(),
             latest_manifests: false,
+            remote_updates: true,
             steam_path: String::new(),
             last_seen_version: String::new(),
             feedback_prompt_done: false,

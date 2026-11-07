@@ -58,6 +58,8 @@ enum Command {
     Account(cli::AccountArgs),
     #[command(about = i18n::t("tui.cli.cmdBranches"))]
     Branches(cli::BranchesArgs),
+    #[command(about = "Sign the remote file with notes and links (for maintainers)", hide = true)]
+    RemoteSign(cli::RemoteSignArgs),
 }
 
 fn main() {
@@ -110,6 +112,9 @@ fn main() {
                 if let Command::Telemetry(a) = cmd {
                     return cli::telemetry(data_dir, a).await;
                 }
+                if let Command::RemoteSign(a) = cmd {
+                    return cli::remote_sign(a);
+                }
                 let (name, props) = match &cmd {
                     Command::Download(a) => (
                         "download",
@@ -153,7 +158,7 @@ fn main() {
                         code = cli::branches(data_dir, a) => code,
                         _ = cli::stopped() => 130,
                     },
-                    Command::Tui | Command::Telemetry(_) => unreachable!(),
+                    Command::Tui | Command::Telemetry(_) | Command::RemoteSign(_) => unreachable!(),
                 };
                 cli::telemetry_finish().await;
                 code

@@ -66,3 +66,6 @@ RELEASE_NOTES.md
 # ---- Tauri signing keys ----
 src-tauri/tauri-signing-key.key
 src-tauri/tauri-signing-key.key.pub
+# ---- Remote file signing key ----
+*.key
+smd-remote.key*

@@ -110,6 +110,10 @@ When telemetry is enabled, the app sends small events describing:
   - `emu_section_viewed` — a section of the emulator step was opened
     (`files`, `gamedata`, `controller`, `emulator` or `extras`), once per
     section per app start
+  - `remote_notice` — a note from the remote file was shown, its link opened
+    or it was dismissed, with the note's ID and level (`info` or `warning`)
+  - `offline_notice` — the app showed that there is no internet connection,
+    once per app start
   - `emu_settings_view` — the emulator settings were searched or filtered to
     the changed ones (`search` or `changed_only`), and for a search how many
     settings matched, as a range. The search text itself is never sent
@@ -149,7 +153,7 @@ When telemetry is enabled, the app sends small events describing:
 `app_start` carries which options are switched on, so the maintainer knows
 which settings matter. Only on/off values and fixed labels are sent, never a
 value you typed: the engine (`native` / `ddm`), whether Like Steam, auto start,
-always fetching the newest manifests,
+always fetching the newest manifests, notes and links online,
 DLC, the speed limit, auto update and keep-files-on-cancel are on, how the
 game folder is named (`default`, `underscore` or `dash`), the proxy
 type, how many manifest sources are configured (as a range) and whether they
@@ -298,6 +302,19 @@ Writing game data talks to Steam only: the Steam network for app info,
 inventory and the Steam Input layout, `api.steampowered.com`,
 `steamcommunity.com` for leaderboards and the Steam CDNs for icons. With media
 on, also `store.steampowered.com` and the Steam image and video CDNs.
+
+## Notes and links online
+
+At start the app loads a small signed file with current links and notes from
+`smd.mcbabel.de` (`/remote/smd-remote.json` and its `.sig`). Nothing is sent
+but the request itself, no ID and no settings. The file is only used when its
+signature matches the key built into the app. Switch it off under Settings,
+Privacy, Notes and links online; the built-in links stay then. Dismissed notes
+are remembered on your PC only.
+
+To tell you when there is no internet connection, the desktop app asks
+`api.steampowered.com` for the Steam server time at start, and every 20
+seconds while it is offline. Nothing else is sent.
 
 ## Steam account
 

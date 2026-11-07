@@ -102,6 +102,8 @@ fn main() {
             commands::emu_merge_dlc_depots,
             commands::emu_apply_replacement,
             commands::emu_generate_game_data,
+            commands::remote_refresh,
+            commands::connectivity_check,
             commands::emu_controller_info,
             commands::emu_write_controller,
             commands::emu_revert_replacement,

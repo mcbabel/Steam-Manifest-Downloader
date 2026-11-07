@@ -927,6 +927,10 @@ setManifestid(1392863, "4398981003384795747", 13789896785)</code></pre>
                 <li><strong>Test</strong> next to the field connects to Steam through the proxy you entered and shows how long Steam took to answer, or why it failed, for example a wrong port, a proxy that wants a password or an antivirus that intercepts HTTPS. With an empty field it tests the direct connection</li>
               </ul>
 
+              <h4 id="remote-notes">Notes and links online <a class="alink" href="#remote-notes" aria-label="Permalink to Notes and links online">#</a></h4>
+              <p>At start SMD loads a small file from <code>smd.mcbabel.de</code> with current links and notes, for example a warning when a service SMD uses is down. It is signed, and SMD only uses it when the signature matches the key built into the app, otherwise it keeps the last good copy or its built-in links. A note shows as a banner at the top of the desktop app, as a message in the terminal version and on stderr in the CLI, and stays hidden once you dismiss it. Nothing but the request itself is sent. Switch it off under <strong>Settings, Privacy, Notes and links online</strong>.</p>
+              <p>When there is no internet connection, the desktop app says so in a banner at the top, checks again every 20 seconds and hides the banner as soon as the connection is back. Searching and downloading need the connection, patching a game does not. The terminal version shows the same message once at start.</p>
+
               <h4 id="settings-manifest-sources">Manifest sources <a class="alink" href="#settings-manifest-sources" aria-label="Permalink to Manifest sources">#</a></h4>
               <p>The list of depot sources searched in step 2. Add a URL, with the format auto detected as a GitHub repo, an archive.org item or a plain HTTPS folder, and click <strong>Add</strong>. Remove one with its close button. Sources installed by the app are tracked separately, so removing a default source triggers a confirmation modal warning that Search by App ID will stop working. Adding the same URL again clears that warning.</p>
 

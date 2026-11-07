@@ -313,6 +313,10 @@
       "branchesLocked": "braucht Zugriff",
       "branchesHintLogin": "Ohne Konto ist nur der öffentliche Branch offen. Mit smd login siehst du die Branches, auf die dein Konto Zugriff hat.",
       "argAppId": "Steam-App-ID"
+    },
+    "remote": {
+      "info": "Hinweis",
+      "warning": "Warnung"
     }
   }
 }

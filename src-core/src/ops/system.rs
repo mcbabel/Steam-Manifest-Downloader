@@ -145,3 +145,24 @@ pub fn power_off() -> Result<(), String> {
         Err("Shutting down is not supported on this system".to_string())
     }
 }
+
+pub async fn remote_refresh(
+    state: &crate::services::AppState,
+    app_data_dir: &std::path::Path,
+    app_version: &str,
+    frontend: &str,
+) -> crate::services::remote::RemoteView {
+    let settings = crate::services::settings::load_settings(app_data_dir).await;
+    crate::services::remote::refresh(
+        &state.http_client,
+        app_data_dir,
+        settings.remote_updates,
+        app_version,
+        frontend,
+    )
+    .await
+}
+
+pub async fn connectivity_check(state: &crate::services::AppState) -> bool {
+    crate::services::remote::connectivity_check(&state.http_client).await
+}

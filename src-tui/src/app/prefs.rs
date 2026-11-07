@@ -15,6 +15,7 @@ pub struct Prefs {
     pub mh_api_key: String,
     pub last_emu_settings: Option<EmuSettings>,
     pub emu_game_data_off: bool,
+    pub dismissed_notices: Vec<String>,
 }
 
 impl Prefs {

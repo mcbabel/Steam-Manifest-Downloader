@@ -50,6 +50,7 @@ Upload `.lua` / `.st` files or depot key exports (`.json`, `.csv`), or search by
 | 🔑 | **Automatic depot keys** generation |
 | ⚡ | **Built-in Rust download engine** — anonymous login, manifests and chunks straight from Steam's CDN, no .NET needed; DepotDownloaderMod is still there as an option |
 | 📊 | **Real-time progress** with per-depot speed + ETA, also on the taskbar and in the window title |
+| 📣 | **Notes and links online** — a signed file from smd.mcbabel.de brings current notes and links, plus a notice when you are offline; can be switched off |
 | 🧭 | **Like Steam mode** (optional) — picks the base game depots for your system and language, puts them into one game folder like Steam, and adds DLC on request, marked as owned for gbe_fork |
 | 📋 | **Download queue** — line up several games, kept across restarts, run one after another |
 | 🔄 | **Update downloaded games** — from the history, only changed files are downloaded and files removed from the game are deleted; an *Update available* badge shows when Steam has a newer version |

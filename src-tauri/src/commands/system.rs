@@ -139,3 +139,18 @@ pub async fn get_disk_space(path: String) -> Result<serde_json::Value, String> {
         }
     }
 }
+
+#[command]
+pub async fn remote_refresh(
+    state: tauri::State<'_, smd_core::services::AppState>,
+    app: tauri::AppHandle,
+) -> Result<smd_core::services::remote::RemoteView, String> {
+    use tauri::Manager;
+    let dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    Ok(smd_core::ops::system::remote_refresh(&state, &dir, env!("CARGO_PKG_VERSION"), "gui").await)
+}
+
+#[command]
+pub async fn connectivity_check(state: tauri::State<'_, smd_core::services::AppState>) -> Result<bool, String> {
+    Ok(smd_core::ops::system::connectivity_check(&state).await)
+}

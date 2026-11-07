@@ -897,7 +897,9 @@
     "telemetryBehavior": "Usage Behaviour",
     "telemetryBehaviorHint": "Which screens you open and what you click, so we see where the app gets stuck. Never what you type.",
     "latestManifests": "Always the newest manifests",
-    "latestManifestsHint": "Every depot is set to its newest manifest from Steam, not the one the source has. Updates from the history always do this."
+    "latestManifestsHint": "Every depot is set to its newest manifest from Steam, not the one the source has. Updates from the history always do this.",
+    "remoteUpdates": "Notes and links online",
+    "remoteUpdatesHint": "Loads a signed file with current links and notes from smd.mcbabel.de at start. Nothing is sent but the request itself. Off: the built-in values stay."
   },
   "errors": {
     "noManifests": "No manifests found for this App ID in any configured depot source. Add or enable more sources in Settings.",
@@ -1292,5 +1294,10 @@
     "needsLogin": "This branch needs your Steam account. Sign in under Settings → Steam.",
     "needsPassword": "Enter the branch password first.",
     "noQueueWithPassword": "Downloads from password branches cannot go into the queue, because the password is never saved. Start it directly."
+  },
+  "remote": {
+    "offline": "No internet connection. Searching and downloading do not work right now, patching does.",
+    "more": "More",
+    "dismiss": "Dismiss"
   }
 }

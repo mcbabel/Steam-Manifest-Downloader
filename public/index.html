@@ -69,6 +69,10 @@
 
       </div>
     </header>
+    <div id="offline-banner" class="app-banner app-banner--warning hidden" role="status">
+      <span data-i18n="remote.offline">No internet connection. Searching and downloading do not work right now, patching does.</span>
+    </div>
+    <div id="remote-notices" class="app-notices" aria-live="polite"></div>
 
     <div id="dotnet-warning" class="dotnet-warning hidden">
       <div class="dotnet-warning__content">
@@ -1579,6 +1583,16 @@
                   <span class="toggle-switch__slider"></span>
                 </span>
               </label>
+              <label class="settings-row" for="remote-updates-toggle">
+                <span class="settings-row__text">
+                  <span class="settings-row__label" data-i18n="settings.remoteUpdates">Notes and links online</span>
+                  <span class="settings-row__hint" data-i18n="settings.remoteUpdatesHint">Loads a signed file with current links and notes from smd.mcbabel.de at start. Nothing is sent but the request itself. Off: the built-in values stay.</span>
+                </span>
+                <span class="toggle-switch">
+                  <input type="checkbox" id="remote-updates-toggle" checked="">
+                  <span class="toggle-switch__slider"></span>
+                </span>
+              </label>
               <label class="settings-row" for="behavior-toggle" id="behavior-row">
                 <span class="settings-row__text">
                   <span class="settings-row__label" data-i18n="settings.telemetryBehavior">Usage behaviour</span>
@@ -1924,6 +1938,7 @@
   <script src="js/app/updater.js"></script>
   <script src="js/app/bug-report.js"></script>
   <script src="js/app/onboarding.js"></script>
+  <script src="js/app/remote.js"></script>
   <script src="js/app/events.js"></script>
   <script src="js/app/main.js"></script>
 </body>

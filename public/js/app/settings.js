@@ -27,6 +27,7 @@ async function openSettings(target) {
     if (els.cancelKeepFilesToggle) els.cancelKeepFilesToggle.checked = !!settings.cancel_keep_files;
     populateDepotSelectionSettings(settings);
     els.notificationSoundToggle.checked = settings.notification_sound !== false;
+    if (els.remoteUpdatesToggle) els.remoteUpdatesToggle.checked = settings.remote_updates !== false;
     els.telemetryToggle.checked = settings.telemetry_consent === 'accepted';
     state.savedTelemetry = settings.telemetry_consent === 'accepted';
     const behavior = document.getElementById('behavior-toggle');
@@ -139,6 +140,7 @@ async function saveSettings() {
       currentSettings.game_language = state.gameLanguage || '';
     }
     currentSettings.notification_sound = els.notificationSoundToggle.checked;
+    if (els.remoteUpdatesToggle) currentSettings.remote_updates = els.remoteUpdatesToggle.checked;
     if (state.pendingSources) currentSettings.depot_sources = state.pendingSources.slice();
     const languageChanged = state.settingsLanguage && state.settingsLanguage !== i18n.getCurrentLocale();
     if (languageChanged) currentSettings.language = state.settingsLanguage;

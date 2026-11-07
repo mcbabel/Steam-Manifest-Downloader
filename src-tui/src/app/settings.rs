@@ -162,6 +162,7 @@ impl App {
                     }
                     SettingToggle::IncludeDlc => d.include_dlc = !d.include_dlc,
                     SettingToggle::LatestManifests => d.latest_manifests = !d.latest_manifests,
+                    SettingToggle::RemoteUpdates => d.remote_updates = !d.remote_updates,
                     SettingToggle::Behavior => {
                         if self.settings.telemetry_consent != TelemetryConsent::Accepted {
                             self.toast(Tone::Info, t("tui.settings.behaviorNeedsTelemetry"));
@@ -656,6 +657,17 @@ impl App {
             &t("settings.telemetryBehaviorHint"),
             Fid::new("settings.behavior"),
             Action::SettingsToggle(SettingToggle::Behavior),
+        );
+        let remote = self.set.draft.remote_updates;
+        self.toggle_row(
+            sv,
+            ctx,
+            w,
+            remote,
+            &t("settings.remoteUpdates"),
+            &t("settings.remoteUpdatesHint"),
+            Fid::new("settings.remoteUpdates"),
+            Action::SettingsToggle(SettingToggle::RemoteUpdates),
         );
     }
 

@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "links": {
+    "website": "https://smd.mcbabel.de/",
+    "docs_issues": "https://smd.mcbabel.de/documentation/issues",
+    "issues": "https://github.com/MCbabel/Steam-Manifest-Downloader/issues",
+    "releases": "https://github.com/MCbabel/Steam-Manifest-Downloader/releases",
+    "achievement_watcher": "https://github.com/Shirowwww/Achievement-Watcher-Next"
+  },
+  "notices": [],
+  "disabled_providers": []
+}

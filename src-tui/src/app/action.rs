@@ -95,10 +95,12 @@ pub enum SettingToggle {
     AutoStartDownload,
     IncludeDlc,
     LatestManifests,
+    RemoteUpdates,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Action {
+    RemoteNoticeDismiss(String, String),
     Nav(Page),
     Quit,
 

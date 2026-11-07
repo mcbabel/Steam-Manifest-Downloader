@@ -244,6 +244,93 @@ fn merged(base: &serde_json::Map<String, Value>, extra: Value) -> Value {
 }
 
 #[derive(clap::Args, Debug)]
+pub struct RemoteSignArgs {
+    #[arg(value_parser = ["keygen", "sign", "verify"], help = "keygen, sign or verify")]
+    pub action: String,
+    #[arg(long, help = "keygen: where to write the secret key. sign: the secret key file")]
+    pub key: Option<PathBuf>,
+    #[arg(help = "sign and verify: the remote JSON file")]
+    pub file: Option<PathBuf>,
+}
+
+pub fn remote_sign(args: RemoteSignArgs) -> i32 {
+    use smd_core::services::remote;
+    let fail = |msg: String| {
+        println!("{}", msg);
+        1
+    };
+    match args.action.as_str() {
+        "keygen" => {
+            let Some(path) = args.key else { return fail("--key is required".into()) };
+            if path.exists() {
+                return fail(format!("{} already exists", path.display()));
+            }
+            let (secret, public) = remote::keygen();
+            if let Err(e) = std::fs::write(&path, format!("{}\n", secret)) {
+                return fail(format!("write {}: {}", path.display(), e));
+            }
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                let _ = std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600));
+            }
+            println!("secret key: {}", path.display());
+            println!("public key: {}", public);
+            0
+        }
+        "sign" => {
+            let (Some(key), Some(file)) = (args.key, args.file) else {
+                return fail("sign needs --key and the file".into());
+            };
+            let secret = match std::fs::read_to_string(&key) {
+                Ok(s) => s,
+                Err(e) => return fail(format!("read {}: {}", key.display(), e)),
+            };
+            let body = match std::fs::read(&file) {
+                Ok(b) => b,
+                Err(e) => return fail(format!("read {}: {}", file.display(), e)),
+            };
+            if let Err(e) = serde_json::from_slice::<remote::RemoteFile>(&body) {
+                return fail(format!("{}: {}", file.display(), e));
+            }
+            let (sig, public) = match remote::sign(&secret, &body) {
+                Ok(v) => v,
+                Err(e) => return fail(e),
+            };
+            let sig_path = PathBuf::from(format!("{}.sig", file.display()));
+            if let Err(e) = std::fs::write(&sig_path, format!("{}\n", sig)) {
+                return fail(format!("write {}: {}", sig_path.display(), e));
+            }
+            println!("signed: {}", sig_path.display());
+            if public != remote::PUBLIC_KEY {
+                println!("note: this key is not the one built into the app ({})", public);
+            }
+            0
+        }
+        _ => {
+            let Some(file) = args.file else { return fail("verify needs the file".into()) };
+            let body = match std::fs::read(&file) {
+                Ok(b) => b,
+                Err(e) => return fail(format!("read {}: {}", file.display(), e)),
+            };
+            let sig_path = PathBuf::from(format!("{}.sig", file.display()));
+            let sig = match std::fs::read_to_string(&sig_path) {
+                Ok(s) => s,
+                Err(e) => return fail(format!("read {}: {}", sig_path.display(), e)),
+            };
+            match remote::verify(&body, &sig) {
+                Ok(f) => {
+                    println!("ok: version {}, {} notices", f.version, f.notices.len());
+                    0
+                }
+                Err(e) if e == "invalid signature" => fail("signature does not match".into()),
+                Err(e) => fail(e),
+            }
+        }
+    }
+}
+
+#[derive(clap::Args, Debug)]
 pub struct TelemetryArgs {
     #[arg(value_parser = ["on", "off", "status"], default_value = "status")]
     pub action: String,
@@ -513,10 +600,29 @@ pub async fn stopped() {
     notified.await;
 }
 
+async fn print_notices(core: &AppState, dir: &std::path::Path) {
+    let view = tokio::time::timeout(
+        std::time::Duration::from_secs(4),
+        smd_core::ops::system::remote_refresh(core, dir, crate::app::VERSION, "cli"),
+    )
+    .await;
+    let Ok(view) = view else { return };
+    let lang = crate::i18n::language();
+    for n in view.notices {
+        let Some(text) = n.text.get(lang).or_else(|| n.text.get("en")).or_else(|| n.text.values().next()) else {
+            continue;
+        };
+        errln!("! {}{}", text, if n.url.is_empty() { String::new() } else { format!(" ({})", n.url) });
+    }
+}
+
 pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
     let _ = tokio::fs::create_dir_all(&dir).await;
     let settings = settings_service::seed_defaults_if_needed(&dir).await;
     let core = AppState::new();
+    if !args.json {
+        print_notices(&core, &dir).await;
+    }
     let from_account = args.uses_account() && is_numeric(&args.source);
     let planned = tokio::select! {
         r = async {
@@ -1232,6 +1338,9 @@ pub async fn search(dir: PathBuf, args: SearchArgs) -> i32 {
     let _ = tokio::fs::create_dir_all(&dir).await;
     settings_service::seed_defaults_if_needed(&dir).await;
     let core = AppState::new();
+    if !args.json {
+        print_notices(&core, &dir).await;
+    }
     if !is_numeric(&args.query) {
         return match smd_core::ops::search::search_steam_games(&core.http_client, &args.query).await
         {

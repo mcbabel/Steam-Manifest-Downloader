@@ -5864,6 +5864,65 @@ textarea.bug-report__input {
   }
 }
 
+.app-notices {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.app-notices:empty {
+  display: none;
+}
+
+.app-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0 auto 0.75rem;
+  max-width: 760px;
+  width: 100%;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.app-banner > span {
+  flex: 1;
+}
+
+.app-banner--warning {
+  border-color: rgba(210, 153, 34, 0.45);
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+
+.app-banner--info {
+  border-color: rgba(88, 166, 255, 0.35);
+  background: rgba(88, 166, 255, 0.08);
+}
+
+.app-banner__link {
+  white-space: nowrap;
+}
+
+.app-banner__close {
+  border: none;
+  background: none;
+  color: inherit;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.app-banner__close:hover {
+  opacity: 1;
+}
+
 .select-picker {
   width: 100%;
 }

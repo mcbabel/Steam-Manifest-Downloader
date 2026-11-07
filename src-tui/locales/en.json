@@ -313,6 +313,10 @@
       "branchesLocked": "needs access",
       "branchesHintLogin": "Only the public branch is open without an account. smd login shows the branches your account can access.",
       "argAppId": "Steam App ID"
+    },
+    "remote": {
+      "info": "Note",
+      "warning": "Warning"
     }
   }
 }

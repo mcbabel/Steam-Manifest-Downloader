@@ -216,6 +216,7 @@ const els = {
   hubcapApiKeyInput: $('#hubcap-apikey-input'),
   ryuuApiKeyInput: $('#ryuu-apikey-input'),
   notificationSoundToggle: $('#notification-sound-toggle'),
+  remoteUpdatesToggle: $('#remote-updates-toggle'),
   nativeDownloaderToggle: $('#native-downloader-toggle'),
   cancelKeepFilesToggle: $('#cancel-keep-files-toggle'),
   telemetryModal: $('#telemetry-modal'),

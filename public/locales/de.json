@@ -897,7 +897,9 @@
     "telemetryBehavior": "Nutzungsverhalten",
     "telemetryBehaviorHint": "Welche Bildschirme du öffnest und was du klickst, damit wir sehen, wo die App hakt. Nie, was du eintippst.",
     "latestManifests": "Immer die neuesten Manifeste",
-    "latestManifestsHint": "Jedes Depot bekommt sein neuestes Manifest von Steam statt dem der Quelle. Updates aus dem Verlauf machen das immer."
+    "latestManifestsHint": "Jedes Depot bekommt sein neuestes Manifest von Steam statt dem der Quelle. Updates aus dem Verlauf machen das immer.",
+    "remoteUpdates": "Hinweise und Links online",
+    "remoteUpdatesHint": "Lädt beim Start eine signierte Datei mit aktuellen Links und Hinweisen von smd.mcbabel.de. Gesendet wird dabei nur die Anfrage selbst. Aus: Es bleiben die eingebauten Werte."
   },
   "errors": {
     "noManifests": "Für diese App-ID wurden in keiner konfigurierten Depot-Quelle Manifests gefunden. Füge weitere Quellen in den Einstellungen hinzu oder aktiviere sie.",
@@ -1292,5 +1294,10 @@
     "needsLogin": "Dieser Branch braucht dein Steam-Konto. Melde dich unter Einstellungen → Steam an.",
     "needsPassword": "Gib zuerst das Branch-Passwort ein.",
     "noQueueWithPassword": "Downloads aus Passwort-Branches können nicht in die Warteschlange, weil das Passwort nie gespeichert wird. Starte sie direkt."
+  },
+  "remote": {
+    "offline": "Keine Internetverbindung. Suchen und Herunterladen gehen gerade nicht, Patchen schon.",
+    "more": "Mehr",
+    "dismiss": "Ausblenden"
   }
 }

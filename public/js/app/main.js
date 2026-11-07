@@ -20,4 +20,5 @@ document.addEventListener('DOMContentLoaded', async () => {
   await showWhatsNewIfNeeded(hasStored);
   await showPendingFollowupIfAny();
   setTimeout(checkForUpdates, 1500);
+  initRemote();
 });
