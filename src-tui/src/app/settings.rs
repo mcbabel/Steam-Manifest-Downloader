@@ -197,7 +197,15 @@ impl App {
             }
             Action::SettingsLanguage(code) => self.set_language(code),
             Action::SettingsPlatform(p) => {
-                self.set.draft.target_platform = p.to_string();
+                let mut list = depot_select::parse_platforms(&self.set.draft.target_platform);
+                if p.is_empty() {
+                    list.clear();
+                } else if let Some(i) = list.iter().position(|x| x == p) {
+                    list.remove(i);
+                } else {
+                    list.push(p.to_string());
+                }
+                self.set.draft.target_platform = depot_select::parse_platforms(&list.join(",")).join(",");
                 self.set.dirty = true;
             }
             Action::SettingsFolderStyle(style) => {
@@ -883,18 +891,32 @@ impl App {
             ("linux", "Linux".into()),
             ("macos", "macOS".into()),
         ];
+        let chosen = depot_select::parse_platforms(&d.target_platform);
         for (i, (value, name)) in options.iter().enumerate() {
             let room = r.right().saturating_sub(x);
             let cell = Rect::new(x, r.y, room, 1);
-            x += widgets::radio(
-                &mut sv.buf,
-                ctx,
-                cell,
-                d.target_platform == *value,
-                name,
-                Fid::idx("settings.platform", i),
-                Action::SettingsPlatform(value),
-            ) + 2;
+            x += if value.is_empty() {
+                widgets::radio(
+                    &mut sv.buf,
+                    ctx,
+                    cell,
+                    chosen.is_empty(),
+                    name,
+                    Fid::idx("settings.platform", i),
+                    Action::SettingsPlatform(value),
+                )
+            } else {
+                widgets::checkbox(
+                    &mut sv.buf,
+                    ctx,
+                    cell,
+                    chosen.iter().any(|c| c == value),
+                    name,
+                    Fid::idx("settings.platform", i),
+                    Action::SettingsPlatform(value),
+                    true,
+                )
+            } + 2;
         }
         let r = sv.next(1);
         let label = format!("{}: ", t("settings.gameLanguage"));

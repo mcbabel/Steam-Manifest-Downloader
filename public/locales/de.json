@@ -142,6 +142,7 @@
     "autoSelect": "Wie Steam wählen",
     "autoSelectTitle": "Wie Steam gewählt: {count} von {total} Depots",
     "autoSelectSkipped": "übersprungen: {list}",
+    "platformFallback": "für keine der gewählten Plattformen gibt es eine Version, deshalb {platform}",
     "autoStartIn": "Start in {seconds} s · Abbrechen",
     "noKeyHint": "Für dieses Depot gibt es in der Datei oder Quelle keinen Schlüssel, deshalb kann es nicht geladen werden.",
     "skipReason": {
@@ -766,7 +767,7 @@
     "autoStartDownload": "Download danach sofort starten",
     "includeDlc": "DLCs immer mitladen",
     "targetPlatform": "Plattform",
-    "targetPlatformHint": "Auto nimmt dieses System. Ohne Linux-Version wird die Windows-Version gewählt, sie läuft mit Proton.",
+    "targetPlatformHint": "Auto nimmt dieses System. Mehrere wählen lädt sie zusammen, z. B. Windows und Linux. Gibt es für keine davon eine Version, wird die Windows-Version gewählt und läuft mit Proton.",
     "auto": "Auto",
     "gameLanguage": "Spielsprache",
     "gameLanguageAuto": "Automatisch (App-Sprache)",

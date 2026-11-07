@@ -890,7 +890,7 @@ fn settings_snapshot(s: &settings_service::Settings) -> serde_json::Value {
         "chunk_concurrency": s.native_chunk_concurrency.min(64),
         "keep_files_on_cancel": s.cancel_keep_files,
         "game_language": game_language_label(&s.game_language),
-        "target_platform": if crate::services::depot_select::PLATFORMS.contains(&s.target_platform.as_str()) { s.target_platform.as_str() } else { "auto" },
+        "target_platform": crate::services::depot_select::platform_label(&crate::services::depot_select::parse_platforms(&s.target_platform)),
     })
 }
 

@@ -1555,11 +1555,11 @@
                     <span class="settings-row__label" data-i18n="settings.targetPlatform">Platform</span>
                     <span class="settings-row__hint" data-i18n="settings.targetPlatformHint">Auto uses this system. Without a Linux build the Windows version is picked and runs with Proton.</span>
                   </span>
-                  <div id="target-platform-options" class="segmented" role="radiogroup" data-i18n-attr="aria-label=settings.targetPlatform">
-                    <button type="button" class="segmented__option is-active" data-value="" role="radio" aria-checked="true" data-i18n="settings.auto">Auto</button>
-                    <button type="button" class="segmented__option" data-value="windows" role="radio" aria-checked="false">Windows</button>
-                    <button type="button" class="segmented__option" data-value="linux" role="radio" aria-checked="false">Linux</button>
-                    <button type="button" class="segmented__option" data-value="macos" role="radio" aria-checked="false">macOS</button>
+                  <div id="target-platform-options" class="segmented" role="group" data-i18n-attr="aria-label=settings.targetPlatform">
+                    <button type="button" class="segmented__option is-active" data-value="" aria-pressed="true" data-i18n="settings.auto">Auto</button>
+                    <button type="button" class="segmented__option" data-value="windows" aria-pressed="false">Windows</button>
+                    <button type="button" class="segmented__option" data-value="linux" aria-pressed="false">Linux</button>
+                    <button type="button" class="segmented__option" data-value="macos" aria-pressed="false">macOS</button>
                   </div>
                 </div>
                 <div class="settings-row">

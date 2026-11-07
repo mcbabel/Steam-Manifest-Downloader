@@ -312,6 +312,9 @@ impl App {
             platform_name(&choice.platform),
             steam_language_name(&choice.language)
         );
+        if choice.fallback {
+            detail.push_str(&format!(" — {}", tf("select.platformFallback", &[("platform", &platform_name(&choice.platform))])));
+        }
         if !counts.is_empty() {
             let list = counts
                 .iter()
@@ -1258,12 +1261,17 @@ fn steam_language_name(code: &str) -> String {
 }
 
 fn platform_name(platform: &str) -> String {
-    match platform {
-        "windows" => "Windows".into(),
-        "linux" => "Linux".into(),
-        "macos" => "macOS".into(),
-        other => other.to_string(),
-    }
+    platform
+        .split(',')
+        .filter(|p| !p.is_empty())
+        .map(|p| match p {
+            "windows" => "Windows".to_string(),
+            "linux" => "Linux".to_string(),
+            "macos" => "macOS".to_string(),
+            other => other.to_string(),
+        })
+        .collect::<Vec<_>>()
+        .join(" + ")
 }
 
 fn role_badge(role: DepotRole, language: Option<&str>) -> Option<(String, ratatui::style::Color)> {

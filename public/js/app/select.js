@@ -500,7 +500,7 @@ function steamLanguageName(code) {
 
 function platformName(platform) {
   const names = { windows: 'Windows', linux: 'Linux', macos: 'macOS' };
-  return names[platform] || platform;
+  return String(platform || '').split(',').filter(Boolean).map(p => names[p] || p).join(' + ');
 }
 
 function renderAutoSelectNote(selection, total) {
@@ -519,6 +519,7 @@ function renderAutoSelectNote(selection, total) {
   const skipped = Object.entries(counts)
     .map(([reason, count]) => `${count}× ${window.i18n.t(`select.skipReason.${reason}`)}`);
   if (skipped.length) parts.push(window.i18n.t('select.autoSelectSkipped', { list: skipped.join(', ') }));
+  if (selection.fallback) parts.push(window.i18n.t('select.platformFallback', { platform: platformName(selection.platform) }));
   els.autoSelectDetail.textContent = parts.join(' — ');
   els.btnAutoStartCancel.classList.add('hidden');
   els.autoSelectNote.classList.remove('hidden');

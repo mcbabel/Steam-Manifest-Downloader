@@ -17,6 +17,22 @@ use smd_core::services::AppState;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 use tokio::sync::Notify;
 
+fn parse_platform_arg(raw: &str) -> Result<String, String> {
+    let bad: Vec<&str> = raw
+        .split(',')
+        .map(str::trim)
+        .filter(|p| !p.is_empty() && smd_core::services::depot_select::parse_platforms(p).is_empty())
+        .collect();
+    if !bad.is_empty() {
+        return Err(format!("unknown platform: {} (use windows, linux, macos)", bad.join(", ")));
+    }
+    let list = smd_core::services::depot_select::parse_platforms(raw);
+    if list.is_empty() {
+        return Err("no platform given (use windows, linux, macos)".into());
+    }
+    Ok(list.join(","))
+}
+
 #[derive(Args, Debug)]
 pub struct DownloadArgs {
     #[arg(
@@ -87,8 +103,8 @@ pub struct DownloadArgs {
     pub like_steam: bool,
     #[arg(
         long,
-        value_name = "OS",
-        value_parser = ["windows", "linux", "macos"],
+        value_name = "OS[,OS]",
+        value_parser = parse_platform_arg,
         help = t("tui.cli.argPlatform")
     )]
     pub platform: Option<String>,

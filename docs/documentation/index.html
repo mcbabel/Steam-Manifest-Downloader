@@ -563,7 +563,7 @@ paru -S steam-manifest-downloader</code></pre>
               <ul>
                 <li><strong>Add DLC</strong> in the depot list adds the DLC depots, and <strong>Remove DLC</strong> takes them out again. DLC you download is marked as owned for gbe_fork in step 5</li>
                 <li><strong>Include DLC</strong> selects the DLC every time</li>
-                <li><strong>Platform</strong> is Auto, Windows, Linux or macOS. Auto uses the system SMD runs on, and when a game has no Linux build the Windows version is picked, which runs with Proton</li>
+                <li><strong>Platform</strong> is Auto or one or more of Windows, Linux and macOS. Auto uses the system SMD runs on. Picking several downloads them together, each with its own 64-bit choice. When the game has a build for none of them, the Windows version is picked, which runs with Proton, and the depot list says so</li>
                 <li><strong>Game language</strong> follows the app language unless you pick another one</li>
                 <li><strong>Start the download right away</strong> starts it as soon as the depots are picked, unless you change the selection first</li>
               </ul>
@@ -1106,7 +1106,7 @@ smd logout                          <span class="cm"># sign out and revoke the s
                 <li><span class="rows__k rows__k--literal">--all-depots</span><span class="rows__v">Every depot into separate subfolders, even when "Like Steam" is enabled in the settings</span></li>
                 <li><span class="rows__k rows__k--literal">--dlc</span><span class="rows__v">With <code>--like-steam</code>: also downloads the DLC in the file. The emulator step later marks them as owned for gbe_fork</span></li>
                 <li><span class="rows__k rows__k--literal">--folder-style</span><span class="rows__v"><code>default</code>, <code>underscore</code> or <code>dash</code>, how the game folder is named</span></li>
-                <li><span class="rows__k rows__k--literal">--platform</span><span class="rows__v">With <code>--like-steam</code>: <code>windows</code>, <code>linux</code> or <code>macos</code>. In Docker the default is Linux, so use <code>--platform windows</code> for the Windows version</span></li>
+                <li><span class="rows__k rows__k--literal">--platform</span><span class="rows__v">With <code>--like-steam</code>: <code>windows</code>, <code>linux</code> or <code>macos</code>, several separated by commas such as <code>windows,linux</code>. In Docker the default is Linux, so use <code>--platform windows</code> for the Windows version</span></li>
                 <li><span class="rows__k rows__k--literal">--language</span><span class="rows__v">With <code>--like-steam</code>: game language as Steam names it, for example <code>german</code> or <code>english</code>. Defaults to the app language</span></li>
                 <li><span class="rows__k rows__k--literal">--keys</span><span class="rows__v">Depot keys from a key file (<code>.json</code>, <code>.csv</code>, <code>.vdf</code>, <code>.txt</code>) for depots that have none, repeatable. See <a href="#format-keys">Depot key files</a></span></li>
                 <li><span class="rows__k rows__k--literal">--app</span><span class="rows__v">Which game to take from a key file that lists several</span></li>

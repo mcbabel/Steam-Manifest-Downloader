@@ -40,7 +40,7 @@ pub const PLATFORMS: &[&str] = &["windows", "linux", "macos"];
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Prefs {
-    pub platform: String,
+    pub platforms: Vec<String>,
     pub language: String,
     pub include_dlc: bool,
 }
@@ -87,6 +87,8 @@ pub struct Selection {
     pub platform: String,
     pub language: String,
     pub known: bool,
+    #[serde(default)]
+    pub fallback: bool,
 }
 
 pub fn host_platform() -> &'static str {
@@ -123,11 +125,34 @@ pub fn steam_language(code: &str) -> &'static str {
     }
 }
 
+pub fn parse_platforms(raw: &str) -> Vec<String> {
+    let wanted: Vec<String> = raw
+        .split(',')
+        .map(|p| match p.trim().to_ascii_lowercase().as_str() {
+            "mac" | "osx" => "macos".to_string(),
+            other => other.to_string(),
+        })
+        .collect();
+    PLATFORMS
+        .iter()
+        .filter(|p| wanted.iter().any(|w| w == *p))
+        .map(|p| p.to_string())
+        .collect()
+}
+
+pub fn platform_label(platforms: &[String]) -> String {
+    if platforms.is_empty() {
+        "auto".to_string()
+    } else {
+        platforms.join(",")
+    }
+}
+
 pub fn prefs_from_settings(settings: &Settings, ui_language: &str) -> Prefs {
-    let platform = match settings.target_platform.as_str() {
-        p if PLATFORMS.contains(&p) => p.to_string(),
-        _ => host_platform().to_string(),
-    };
+    let mut platforms = parse_platforms(&settings.target_platform);
+    if platforms.is_empty() {
+        platforms.push(host_platform().to_string());
+    }
     let language = if settings.game_language.trim().is_empty() {
         let ui = if settings.language.is_empty() {
             ui_language
@@ -139,7 +164,7 @@ pub fn prefs_from_settings(settings: &Settings, ui_language: &str) -> Prefs {
         steam_language(&settings.game_language).to_string()
     };
     Prefs {
-        platform,
+        platforms,
         language,
         include_dlc: settings.include_dlc,
     }
@@ -162,11 +187,6 @@ fn os_list(meta: &DepotMetadata) -> Vec<String> {
         .collect()
 }
 
-fn runs_on(meta: &DepotMetadata, platform: &str) -> bool {
-    let list = os_list(meta);
-    list.is_empty() || list.iter().any(|o| o == platform)
-}
-
 fn language_of(meta: &DepotMetadata) -> Option<String> {
     meta.language
         .as_deref()
@@ -181,27 +201,51 @@ pub fn recommend(meta: &[DepotMetadata], candidates: &[String], prefs: &Prefs) -
         .filter_map(|id| find(id).map(|m| (id, m)))
         .collect();
 
-    let platform = if known
+    let available: Vec<String> = PLATFORMS
         .iter()
-        .any(|(_, m)| os_list(m).contains(&prefs.platform))
-    {
-        prefs.platform.clone()
-    } else if known
-        .iter()
-        .any(|(_, m)| os_list(m).iter().any(|o| o == "windows"))
-    {
-        "windows".to_string()
-    } else {
-        known
-            .iter()
-            .find_map(|(_, m)| os_list(m).into_iter().next())
-            .unwrap_or_else(|| prefs.platform.clone())
-    };
+        .filter(|p| known.iter().any(|(_, m)| os_list(m).iter().any(|o| o == *p)))
+        .map(|p| p.to_string())
+        .collect();
+    let mut chosen: Vec<String> = prefs.platforms.iter().filter(|p| available.contains(p)).cloned().collect();
+    let fallback = chosen.is_empty() && !available.is_empty();
+    if chosen.is_empty() {
+        let pick = if available.iter().any(|p| p == "windows") {
+            "windows".to_string()
+        } else {
+            available
+                .first()
+                .cloned()
+                .or_else(|| prefs.platforms.first().cloned())
+                .unwrap_or_else(|| host_platform().to_string())
+        };
+        chosen.push(pick);
+    }
+    let platform = chosen.join(",");
 
-    let on_platform = |m: &DepotMetadata| runs_on(m, &platform);
-    let has_64 = known
-        .iter()
-        .any(|(_, m)| on_platform(m) && m.osarch.as_deref() == Some("64"));
+    let on_platform = |m: &DepotMetadata| {
+        let list = os_list(m);
+        list.is_empty() || list.iter().any(|o| chosen.contains(o))
+    };
+    let has_64 = |p: &str| {
+        known.iter().any(|(_, m)| {
+            m.osarch.as_deref() == Some("64") && {
+                let list = os_list(m);
+                list.is_empty() || list.iter().any(|o| o == p)
+            }
+        })
+    };
+    let only_32_where_64 = |m: &DepotMetadata| {
+        if m.osarch.as_deref() != Some("32") {
+            return false;
+        }
+        let list = os_list(m);
+        let covered: Vec<&String> = if list.is_empty() {
+            chosen.iter().collect()
+        } else {
+            chosen.iter().filter(|p| list.contains(p)).collect()
+        };
+        !covered.is_empty() && covered.iter().all(|p| has_64(p))
+    };
     let languages: Vec<String> = known
         .iter()
         .filter(|(_, m)| on_platform(m))
@@ -226,7 +270,7 @@ pub fn recommend(meta: &[DepotMetadata], candidates: &[String], prefs: &Prefs) -
             Some(SkipReason::Redistributable)
         } else if !on_platform(m) {
             Some(SkipReason::OtherPlatform)
-        } else if has_64 && m.osarch.as_deref() == Some("32") {
+        } else if only_32_where_64(m) {
             Some(SkipReason::Arch32)
         } else if language_of(m).is_some_and(|l| l != language) {
             Some(SkipReason::OtherLanguage)
@@ -255,6 +299,7 @@ pub fn recommend(meta: &[DepotMetadata], candidates: &[String], prefs: &Prefs) -
             platform,
             language,
             known: false,
+            fallback,
         };
     }
 
@@ -264,6 +309,7 @@ pub fn recommend(meta: &[DepotMetadata], candidates: &[String], prefs: &Prefs) -
         platform,
         language,
         known: !known.is_empty(),
+        fallback,
     }
 }
 
@@ -358,7 +404,7 @@ mod tests {
 
     fn prefs(platform: &str, language: &str) -> Prefs {
         Prefs {
-            platform: platform.to_string(),
+            platforms: parse_platforms(platform),
             language: language.to_string(),
             include_dlc: true,
         }
@@ -396,6 +442,34 @@ mod tests {
         assert_eq!(reason(&sel, "16"), Some(SkipReason::OtherLanguage));
         assert_eq!(sel.platform, "windows");
         assert_eq!(sel.language, "german");
+    }
+
+    #[test]
+    fn several_platforms_keep_the_right_arch_on_each() {
+        let meta = vec![
+            depot("11", DepotRole::SharedContent),
+            platform("12", "windows", Some("64")),
+            platform("13", "windows", Some("32")),
+            platform("14", "linux", Some("32")),
+            platform("15", "macos", None),
+        ];
+        let sel = recommend(&meta, &ids(&["11", "12", "13", "14", "15"]), &prefs("windows,linux", "english"));
+        assert_eq!(sel.selected, ids(&["11", "12", "14"]));
+        assert_eq!(reason(&sel, "13"), Some(SkipReason::Arch32));
+        assert_eq!(reason(&sel, "15"), Some(SkipReason::OtherPlatform));
+        assert_eq!(sel.platform, "windows,linux");
+        assert!(!sel.fallback);
+    }
+
+    #[test]
+    fn falls_back_when_no_wanted_platform_exists() {
+        let meta = vec![platform("2", "windows", None), platform("3", "macos", None)];
+        let sel = recommend(&meta, &ids(&["2", "3"]), &prefs("linux", "english"));
+        assert_eq!(sel.selected, ids(&["2"]));
+        assert_eq!(sel.platform, "windows");
+        assert!(sel.fallback);
+        assert_eq!(parse_platforms(" Linux, mac ,bogus,windows"), ids(&["windows", "linux", "macos"]));
+        assert_eq!(platform_label(&[]), "auto");
     }
 
     #[test]

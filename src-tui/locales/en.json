@@ -258,7 +258,7 @@
       "noSpace": "not enough disk space: the download needs about {needed}, but only {free} is free at {path} (use --ignore-space to start anyway)",
       "argRepair": "With --update: check every file against the installed version and download only damaged or missing parts, without updating.",
       "argAllDepots": "Download every depot in the file into separate subfolders, even when \"Like Steam\" is on in the settings.",
-      "argPlatform": "With --like-steam: platform to pick depots for. Default: this system, or Windows when the game has no build for it.",
+      "argPlatform": "With --like-steam: platforms to pick depots for, comma separated (e.g. windows,linux). Default: this system, or Windows when the game has no build for it.",
       "argLanguage": "With --like-steam: game language as Steam names it (for example german, english, french). Default: the app language.",
       "argFolderStyle": "Name of the game folder: default (\"220 - Half-Life 2\"), underscore (\"220_Half-Life_2\") or dash (\"220-Half-Life-2\"). Default: the setting.",
       "autoSelectFailed": "Could not read the depot list from Steam, so every depot is downloaded: {message}",

@@ -142,6 +142,7 @@
     "autoSelect": "Pick like Steam",
     "autoSelectTitle": "Picked like Steam would: {count} of {total} depots",
     "autoSelectSkipped": "skipped: {list}",
+    "platformFallback": "none of the chosen platforms has a build, so {platform} is used",
     "autoStartIn": "Starting in {seconds} s · Cancel",
     "noKeyHint": "This depot has no decryption key in the file or source, so it cannot be downloaded.",
     "skipReason": {
@@ -766,7 +767,7 @@
     "autoStartDownload": "Start the download right away",
     "includeDlc": "Always include DLC",
     "targetPlatform": "Platform",
-    "targetPlatformHint": "Auto uses this system. Without a Linux build the Windows version is picked and runs with Proton.",
+    "targetPlatformHint": "Auto uses this system. Pick several to get them together, e.g. Windows and Linux. Without a build for any of them the Windows version is picked and runs with Proton.",
     "auto": "Auto",
     "gameLanguage": "Game language",
     "gameLanguageAuto": "Auto (app language)",

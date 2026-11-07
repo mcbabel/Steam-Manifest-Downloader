@@ -144,8 +144,8 @@ differ from the defaults, whether a Hubcap or Ryuu key and a Steam folder are
 set (true or false, never the key or the path), whether a Steam Web API key
 is set (true or false), the media choice for game data (`off`, `images` or
 `all`), the retry and chunk counts,
-and the game language and platform picked for Like Steam (`auto` or a fixed
-label like `german` or `linux`).
+and the game language and platforms picked for Like Steam (`auto`, a fixed
+label like `german`, or a platform list like `windows,linux`).
 
 ### How a download was started
 

@@ -262,13 +262,27 @@ function setFolderStyle(value) {
   });
 }
 
+const TARGET_PLATFORMS = ['windows', 'linux', 'macos'];
+
 function setTargetPlatform(value) {
-  state.targetPlatform = value;
+  const wanted = String(value || '').split(',').map(s => s.trim());
+  const list = TARGET_PLATFORMS.filter(p => wanted.includes(p));
+  state.targetPlatform = list.join(',');
   els.targetPlatformOptions.querySelectorAll('.segmented__option').forEach(btn => {
-    const on = btn.dataset.value === value;
+    const on = btn.dataset.value ? list.includes(btn.dataset.value) : list.length === 0;
     btn.classList.toggle('is-active', on);
-    btn.setAttribute('aria-checked', on ? 'true' : 'false');
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
   });
+}
+
+function toggleTargetPlatform(value) {
+  if (!value) {
+    setTargetPlatform('');
+    return;
+  }
+  const list = String(state.targetPlatform || '').split(',').filter(Boolean);
+  const next = list.includes(value) ? list.filter(p => p !== value) : list.concat(value);
+  setTargetPlatform(next.join(','));
 }
 
 function gameLanguageOptions() {
@@ -322,7 +336,7 @@ function bindDepotSelectionSettings() {
   setGameLanguage('');
   els.autoSelectDepotsToggle.addEventListener('change', syncAutoSelectOptions);
   els.targetPlatformOptions.querySelectorAll('.segmented__option').forEach(btn => {
-    btn.addEventListener('click', () => setTargetPlatform(btn.dataset.value));
+    btn.addEventListener('click', () => toggleTargetPlatform(btn.dataset.value));
   });
   document.querySelectorAll('#folder-style-options .segmented__option').forEach(btn => {
     btn.addEventListener('click', () => setFolderStyle(btn.dataset.value));
