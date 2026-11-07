@@ -97,8 +97,10 @@ When telemetry is enabled, the app sends small events describing:
     ranges, whether a controller layout and Achievement Watcher schemas were
     written, the media choice (`off`, `images` or `all`) and which hints were
     shown, by name (for example `needsKey` or `inventoryFailed`)
-  - `manifest_tool` — the newest manifest ID was fetched or a manifest file
-    was picked for a depot. Never the ID or the file
+  - `manifest_tool` — the newest manifest ID was fetched for one depot or for
+    all at once (from the button, the setting or an update, with how many
+    depots changed as a range), or a manifest file was picked for a depot.
+    Never the ID or the file
   - `emu_section_viewed` — a section of the emulator step was opened
     (`files`, `gamedata`, `emulator` or `extras`), once per section per app start
   - `welcome_shown` / `welcome_choice` — the welcome after the first start was
@@ -137,6 +139,7 @@ When telemetry is enabled, the app sends small events describing:
 `app_start` carries which options are switched on, so the maintainer knows
 which settings matter. Only on/off values and fixed labels are sent, never a
 value you typed: the engine (`native` / `ddm`), whether Like Steam, auto start,
+always fetching the newest manifests,
 DLC, the speed limit, auto update and keep-files-on-cancel are on, how the
 game folder is named (`default`, `underscore` or `dash`), the proxy
 type, how many manifest sources are configured (as a range) and whether they

@@ -160,7 +160,12 @@
     "keysFromFile": "Aus einer Schlüssel-Datei",
     "keyFilesFilter": "Depot-Schlüssel-Dateien",
     "keyFileFound": "Die Schlüssel-Datei hatte einen Schlüssel für {found} von {count} Depot(s).",
-    "keyFileNone": "Die Schlüssel-Datei hat keine Schlüssel für diese Depots."
+    "keyFileNone": "Die Schlüssel-Datei hat keine Schlüssel für diese Depots.",
+    "latestAll": "Neueste Manifeste",
+    "latestAllHint": "Jedes Depot auf sein neuestes Manifest von Steam setzen",
+    "latestApplied": "{count} Depot(s) auf das neueste Manifest gesetzt. Hat die Quelle dafür keine Datei, holt SMD sie direkt von Steam, dafür kann ein Manifest-Request-Code nötig sein.",
+    "latestAppliedShort": "{count} Depot(s) auf das neueste Manifest gesetzt",
+    "latestNone": "Die Depot-Quelle hat schon die neuesten Manifeste, es gibt nichts zu ändern."
   },
   "progress": {
     "diskSpaceLoading": "Speicherplatz wird geprüft…",
@@ -802,7 +807,9 @@
     "steamWebApiKeyPlaceholder": "Steam-Web-API-Key einfügen…",
     "steamWebApiKeyHint": "Optional, für Achievements und Stats im Emulator-Schritt. Einen kostenlosen Key gibt es auf <a href=\"https://steamcommunity.com/dev/apikey\" target=\"_blank\" rel=\"noopener\" class=\"link\">steamcommunity.com/dev/apikey</a>. Er bleibt auf diesem PC und geht nur an Steam.",
     "telemetryBehavior": "Nutzungsverhalten",
-    "telemetryBehaviorHint": "Welche Bildschirme du öffnest und was du klickst, damit wir sehen, wo die App hakt. Nie, was du eintippst."
+    "telemetryBehaviorHint": "Welche Bildschirme du öffnest und was du klickst, damit wir sehen, wo die App hakt. Nie, was du eintippst.",
+    "latestManifests": "Immer die neuesten Manifeste",
+    "latestManifestsHint": "Jedes Depot bekommt sein neuestes Manifest von Steam statt dem der Quelle. Updates aus dem Verlauf machen das immer."
   },
   "errors": {
     "noManifests": "Für diese App-ID wurden in keiner konfigurierten Depot-Quelle Manifests gefunden. Füge weitere Quellen in den Einstellungen hinzu oder aktiviere sie.",

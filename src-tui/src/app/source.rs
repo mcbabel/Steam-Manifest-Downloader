@@ -627,6 +627,7 @@ impl App {
                     if app.wiz.main_app_id().as_deref() == Some(app_id.as_str()) {
                         app.wiz.depot_pics =
                             list.into_iter().map(|d| (d.depot_id.clone(), d)).collect();
+                        app.maybe_fill_latest();
                         app.apply_auto_selection(false);
                     }
                 }

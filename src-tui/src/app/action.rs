@@ -92,6 +92,7 @@ pub enum SettingToggle {
     AutoSelectDepots,
     AutoStartDownload,
     IncludeDlc,
+    LatestManifests,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -130,6 +131,7 @@ pub enum Action {
     ToggleDepot(usize),
     AutoSelectDepots,
     ToggleDlcSelection,
+    FetchLatestManifests,
     CancelAutoStart,
     SelectAll,
     DeselectAll,

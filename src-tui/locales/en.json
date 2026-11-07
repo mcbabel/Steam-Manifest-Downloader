@@ -216,6 +216,7 @@
       "argSpeedLimit": "Limit the download speed, e.g. 10MB/s or 75Mbit/s (built-in downloader only). Default: the speed limit from the settings, 0 for unlimited.",
       "argShutdown": "Shut down the computer when the download has finished. Waits 60 seconds first, Ctrl+C aborts. Not done when the download is interrupted.",
       "argList": "Only print the depots that would be downloaded.",
+      "argLatest": "Use the newest manifest from Steam for every depot instead of the one the source lists (default: the setting; updates with --update always do this).",
       "argJson": "Print progress events as JSON lines (stdout contains only JSON).",
       "argQuery": "Steam App ID, or a game name to look up the App ID.",
       "argManifests": "Also list the depots of this search result.",

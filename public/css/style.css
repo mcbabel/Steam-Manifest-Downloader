@@ -5765,3 +5765,7 @@ textarea.bug-report__input {
   font-size: 0.75rem;
   color: var(--warning);
 }
+
+.latest-manifests-note {
+  margin: 0.25rem 0 0.75rem;
+}

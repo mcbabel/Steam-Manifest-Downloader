@@ -27,6 +27,7 @@ pub struct DepotRow {
     pub uploaded_manifest: Option<PathBuf>,
     pub status: Option<(Tone, String)>,
     pub fetching: bool,
+    pub latest: Option<String>,
 }
 
 impl DepotRow {
@@ -45,6 +46,7 @@ impl DepotRow {
             uploaded_manifest: None,
             status: None,
             fetching: false,
+            latest: None,
         }
     }
 }
@@ -245,6 +247,9 @@ pub struct Wizard {
     pub update_dir: Option<String>,
     pub update_app_id: Option<String>,
     pub repair_manifests: Option<HashMap<String, String>>,
+    pub latest_on_select: bool,
+    pub latest_note: Option<String>,
+    pub latest_busy: bool,
 
     pub job_id: Option<String>,
     pub result_dir: Option<String>,
@@ -344,6 +349,9 @@ impl Wizard {
             update_dir: None,
             update_app_id: None,
             repair_manifests: None,
+            latest_on_select: false,
+            latest_note: None,
+            latest_busy: false,
             job_id: None,
             result_dir: None,
             progress: None,

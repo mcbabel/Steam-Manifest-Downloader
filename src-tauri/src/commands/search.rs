@@ -117,3 +117,12 @@ pub async fn search_steam_games(
     let results = search::search_steam_games(&state.http_client, &query).await?;
     serde_json::to_value(&results).map_err(|e| format!("[SteamSearch] Failed to serialize: {}", e))
 }
+
+#[command]
+pub async fn fetch_latest_manifest_ids(
+    app: AppHandle,
+    state: tauri::State<'_, AppState>,
+    app_id: String,
+) -> Result<search::LatestManifests, String> {
+    search::fetch_latest_manifest_ids(&state, &app_data_dir(&app), &app_id).await
+}

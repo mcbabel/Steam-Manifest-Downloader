@@ -143,6 +143,7 @@ const els = {
   btnAutoStartCancel: $('#btn-auto-start-cancel'),
   autoSelectDepotsToggle: $('#auto-select-depots-toggle'),
   autoStartDownloadToggle: $('#auto-start-download-toggle'),
+  latestManifestsToggle: $('#latest-manifests-toggle'),
   includeDlcToggle: $('#include-dlc-toggle'),
   autoSelectOptions: $('#auto-select-options'),
   targetPlatformOptions: $('#target-platform-options'),

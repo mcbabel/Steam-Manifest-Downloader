@@ -93,6 +93,8 @@ pub struct DownloadArgs {
     pub shutdown: bool,
     #[arg(long, help = t("tui.cli.argList"))]
     pub list: bool,
+    #[arg(long, help = t("tui.cli.argLatest"))]
+    pub latest: bool,
     #[arg(long, help = t("tui.cli.argIgnoreSpace"))]
     pub ignore_space: bool,
     #[arg(long, help = t("tui.cli.argAllDepots"))]
@@ -571,6 +573,37 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
         }
         for d in installed {
             pins.entry(d.depot_id).or_insert(d.manifest_id);
+        }
+    }
+    if !args.repair && (args.latest || settings.latest_manifests || args.update.is_some()) {
+        let latest = tokio::select! {
+            r = smd_core::ops::search::fetch_latest_manifest_ids(&core, &dir, &plan.app_id) => r,
+            _ = stopped() => return 130,
+        };
+        match latest {
+            Ok(l) => {
+                let current: Vec<(String, String)> = plan
+                    .depots
+                    .iter()
+                    .map(|(id, manifest, ..)| (id.clone(), manifest.clone().unwrap_or_default()))
+                    .collect();
+                let newer = smd_core::ops::search::newer_manifests(&current, &l.manifests);
+                let mut changed = 0;
+                for (depot, gid) in newer {
+                    if !pins.contains_key(&depot) {
+                        pins.insert(depot, gid);
+                        changed += 1;
+                    }
+                }
+                if !args.json {
+                    errln!("{}", if changed > 0 { tf("select.latestApplied", &[("count", &changed)]) } else { t("select.latestNone") });
+                }
+            }
+            Err(e) => {
+                if args.latest {
+                    errln!("{}", tf("depots.fetchLatestError", &[("message", &e)]));
+                }
+            }
         }
     }
     let like_steam = args.like_steam || (settings.auto_select_depots && !args.all_depots);

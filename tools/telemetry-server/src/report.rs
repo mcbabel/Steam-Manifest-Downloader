@@ -551,6 +551,8 @@ const FEATURES: &[(&str, &str, &str)] = &[
     ("Game data: problems", "game_data_written", "notes"),
     ("Emulator step sections", "emu_section_viewed", "section"),
     ("Manifest tools", "manifest_tool", "action"),
+    ("Newest manifests: started from", "manifest_tool", "origin"),
+    ("Newest manifests: depots changed", "manifest_tool", "changed"),
     ("Search", "search_performed", "found"),
     ("Lua upload", "lua_parsed", ""),
     ("Upload file format", "lua_parsed", "format"),

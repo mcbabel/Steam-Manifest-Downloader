@@ -115,6 +115,8 @@ function showSelectionStep() {
   }
 
   els.depotList.innerHTML = '';
+  const latestNote = document.getElementById('latest-manifests-note');
+  if (latestNote) latestNote.classList.add('hidden');
   state.selectedDepots.clear();
   initBranchSection();
   cancelAutoStart();
@@ -167,7 +169,8 @@ function showSelectionStep() {
 
     const customInput = item.querySelector('.custom-manifest-input');
     if (customInput) {
-      customInput.addEventListener('input', () => {
+      customInput.addEventListener('input', (e) => {
+        if (e.isTrusted) delete customInput.dataset.latest;
         const note = item.querySelector('.depot-empty-note');
         if (note && note.textContent) note.classList.toggle('hidden', !!customInput.value.trim());
       });
@@ -271,6 +274,7 @@ async function fetchDepotNamesFromSteam(appId) {
     state.depotPicsList = depots;
     if (els.btnAutoSelect) els.btnAutoSelect.disabled = depots.length === 0;
     syncDlcButton();
+    await maybeFillLatestManifests(depots);
     await maybeAutoSelectDepots(depots);
   } catch (e) {
     state.depotAutoPending = false;
@@ -287,6 +291,78 @@ function markEmptyManifest(meta) {
   note.textContent = window.i18n.t('select.emptyManifest');
   const input = document.querySelector(`.custom-manifest-input[data-depot-id="${CSS.escape(String(meta.depotId))}"]`);
   note.classList.toggle('hidden', !!(input && input.value.trim()));
+}
+
+function latestFromPics(depots) {
+  const map = {};
+  (depots || []).forEach(d => {
+    if (d && d.depotId && d.manifestGid) map[String(d.depotId)] = String(d.manifestGid);
+  });
+  return map;
+}
+
+function applyLatestManifests(latest, origin) {
+  const data = state.parsedData;
+  if (!data) return 0;
+  let changed = 0;
+  data.depots.forEach(depot => {
+    const id = String(depot.depotId);
+    const gid = latest[id];
+    if (!gid || state.depotManifests[id]) return;
+    const input = document.querySelector(`.custom-manifest-input[data-depot-id="${CSS.escape(id)}"]`);
+    if (!input || (input.value.trim() && !input.dataset.latest)) return;
+    if (gid === String(depot.manifestId)) {
+      if (input.dataset.latest) input.value = '';
+      return;
+    }
+    input.value = gid;
+    input.dataset.latest = '1';
+    input.dispatchEvent(new Event('input'));
+    changed += 1;
+  });
+  const note = document.getElementById('latest-manifests-note');
+  if (note) {
+    note.textContent = changed
+      ? window.i18n.t('select.latestApplied', { count: changed })
+      : window.i18n.t('select.latestNone');
+    note.classList.remove('hidden');
+  }
+  if (origin === 'button') {
+    showToast(changed
+      ? window.i18n.t('select.latestAppliedShort', { count: changed })
+      : window.i18n.t('select.latestNone'), changed ? 'success' : 'info');
+  }
+  emitEvent('manifest_tool', { action: 'fetch_latest_all', ok: true, origin, changed: countBucket(changed) });
+  return changed;
+}
+
+async function maybeFillLatestManifests(depots) {
+  let settings = {};
+  try { settings = (await invoke('get_settings')) || {}; } catch (_) {}
+  const wanted = state.latestOnSelect || !!settings.latest_manifests;
+  const origin = state.latestOnSelect ? 'update' : 'setting';
+  state.latestOnSelect = false;
+  if (wanted) applyLatestManifests(latestFromPics(depots), origin);
+}
+
+async function fetchLatestManifestsForAll() {
+  const data = state.parsedData;
+  const btn = document.getElementById('btn-latest-manifests');
+  if (!data || !btn) return;
+  btn.disabled = true;
+  try {
+    const result = await invoke('fetch_latest_manifest_ids', { appId: String(data.mainAppId) });
+    applyLatestManifests((result && result.manifests) || {}, 'button');
+  } catch (e) {
+    const note = document.getElementById('latest-manifests-note');
+    if (note) {
+      note.textContent = window.i18n.t('depots.fetchLatestError', { message: window.i18n.localizeError(e) });
+      note.classList.remove('hidden');
+    }
+    emitEvent('manifest_tool', { action: 'fetch_latest_all', ok: false, key: window.i18n.errorKey(String(e)) || 'unmatched' });
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 async function maybeAutoSelectDepots(depots) {

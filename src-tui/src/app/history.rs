@@ -387,6 +387,7 @@ impl App {
         self.history_redownload(pos);
         self.wiz.update_dir = Some(dir);
         self.wiz.update_app_id = Some(app_id);
+        self.wiz.latest_on_select = true;
     }
 
     fn history_play(&mut self, pos: usize) {

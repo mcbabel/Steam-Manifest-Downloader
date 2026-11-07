@@ -91,6 +91,8 @@ function initEvents() {
   }
 
   els.btnSelectAll.addEventListener('click', () => { markDepotSelectionTouched(); selectAll(); });
+  const btnLatest = document.getElementById('btn-latest-manifests');
+  if (btnLatest) btnLatest.addEventListener('click', fetchLatestManifestsForAll);
   els.btnDeselectAll.addEventListener('click', () => { markDepotSelectionTouched(); deselectAll(); });
   els.btnAutoSelect.addEventListener('click', () => {
     markDepotSelectionTouched();

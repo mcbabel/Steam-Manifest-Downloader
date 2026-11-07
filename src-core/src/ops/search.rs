@@ -175,3 +175,62 @@ pub async fn fetch_latest_manifest_id(
         source: "steamcmd".to_string(),
     })
 }
+
+#[derive(Debug, Clone, Default, serde::Serialize)]
+pub struct LatestManifests {
+    pub manifests: std::collections::HashMap<String, String>,
+    pub source: String,
+}
+
+pub async fn fetch_latest_manifest_ids(
+    state: &AppState,
+    app_data_dir: &Path,
+    app_id: &str,
+) -> Result<LatestManifests, String> {
+    let app_id_u: u32 = app_id
+        .parse()
+        .map_err(|_| format!("Invalid app id '{}'", app_id))?;
+    match crate::services::steam_pics::fetch_public_manifests(state.steam_session.clone(), &[app_id_u]).await {
+        Ok(mut all) => {
+            if let Some(manifests) = all.remove(&app_id_u).filter(|m| !m.is_empty()) {
+                return Ok(LatestManifests { manifests, source: "steam".to_string() });
+            }
+        }
+        Err(e) => crate::dlog!("search", "PICS manifests for {} failed ({}), trying api.steamcmd.net", app_id, e),
+    }
+    let depots = depot_info::fetch_depot_info_fresh(&state.http_client, app_data_dir, app_id).await?;
+    let manifests: std::collections::HashMap<String, String> = depots
+        .into_iter()
+        .filter_map(|d| d.manifest_gid.map(|g| (d.depot_id, g)))
+        .collect();
+    if manifests.is_empty() {
+        return Err(format!("no public manifests listed for app {}", app_id));
+    }
+    Ok(LatestManifests { manifests, source: "steamcmd".to_string() })
+}
+
+pub fn newer_manifests(
+    current: &[(String, String)],
+    latest: &std::collections::HashMap<String, String>,
+) -> Vec<(String, String)> {
+    current
+        .iter()
+        .filter_map(|(depot, manifest)| {
+            let gid = latest.get(depot)?;
+            (gid != manifest).then(|| (depot.clone(), gid.clone()))
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod latest_tests {
+    use super::*;
+
+    #[test]
+    fn only_depots_with_a_different_manifest_change() {
+        let latest: std::collections::HashMap<String, String> =
+            [("1".to_string(), "10".to_string()), ("2".to_string(), "20".to_string())].into_iter().collect();
+        let current = vec![("1".to_string(), "10".to_string()), ("2".to_string(), "19".to_string()), ("3".to_string(), "30".to_string())];
+        assert_eq!(newer_manifests(&current, &latest), vec![("2".to_string(), "20".to_string())]);
+    }
+}

@@ -166,6 +166,7 @@ impl App {
                 self.apply_auto_selection(true);
             }
             Action::CancelAutoStart => self.wiz.auto_start_at = None,
+            Action::FetchLatestManifests => self.fetch_latest_all(),
             Action::ToggleDlcSelection => {
                 self.touch_depot_selection();
                 let on = self.wiz.depot_include_dlc.unwrap_or(self.settings.include_dlc);
@@ -822,6 +823,20 @@ impl App {
             row.y,
             row.right().saturating_sub(x),
             &ButtonSpec::new(
+                t("select.latestAll"),
+                Fid::new("select.latest"),
+                Action::FetchLatestManifests,
+                Btn::Secondary,
+            )
+            .enabled(!self.wiz.latest_busy),
+        ) + 1;
+        x += widgets::button(
+            buf,
+            ctx,
+            x,
+            row.y,
+            row.right().saturating_sub(x),
+            &ButtonSpec::new(
                 t("select.selectAll"),
                 Fid::new("select.all"),
                 Action::SelectAll,
@@ -851,6 +866,10 @@ impl App {
             Action::ToggleShowSelected,
             true,
         );
+        if let Some(note) = self.wiz.latest_note.clone() {
+            let r = take_top(&mut rest, 1);
+            widgets::text(buf, r, &widgets::truncate(&note, r.width), theme::dim());
+        }
         let _ = take_top(&mut rest, 1);
 
         let list_fid = Fid::new("select.depots");
@@ -1324,5 +1343,91 @@ mod tests {
         );
         assert_eq!(manifest_id_from_filename("foo.manifest"), None);
         assert_eq!(manifest_id_from_filename("228990_12a.manifest"), None);
+    }
+}
+
+impl App {
+    pub(super) fn apply_latest(&mut self, latest: &std::collections::HashMap<String, String>, origin: &str) -> usize {
+        let mut changed = 0;
+        if let Some(parsed) = self.wiz.parsed.as_mut() {
+            for d in parsed.depots.iter_mut() {
+                let Some(gid) = latest.get(&d.depot_id) else { continue };
+                let ours = d.latest.as_deref().is_some_and(|v| v == d.custom_manifest.trimmed());
+                if d.uploaded_manifest.is_some() || (!d.custom_manifest.is_empty() && !ours) {
+                    continue;
+                }
+                if *gid == d.manifest_id {
+                    if ours {
+                        d.custom_manifest.set(String::new());
+                    }
+                    d.latest = None;
+                    continue;
+                }
+                d.custom_manifest.set(gid.clone());
+                d.latest = Some(gid.clone());
+                changed += 1;
+            }
+        }
+        let note = if changed > 0 { tf("select.latestApplied", &[("count", &changed)]) } else { t("select.latestNone") };
+        self.wiz.latest_note = Some(note);
+        if origin == "button" {
+            if changed > 0 {
+                self.toast(Tone::Success, tf("select.latestAppliedShort", &[("count", &changed)]));
+            } else {
+                self.toast(Tone::Info, t("select.latestNone"));
+            }
+        }
+        self.emit(
+            "manifest_tool",
+            Some(serde_json::json!({
+                "action": "fetch_latest_all",
+                "ok": true,
+                "origin": origin,
+                "changed": smd_core::services::diag::count_bucket(changed),
+            })),
+        );
+        changed
+    }
+
+    pub(super) fn maybe_fill_latest(&mut self) {
+        let wanted = self.wiz.latest_on_select || self.settings.latest_manifests;
+        let origin = if self.wiz.latest_on_select { "update" } else { "setting" };
+        self.wiz.latest_on_select = false;
+        if !wanted {
+            return;
+        }
+        let latest: std::collections::HashMap<String, String> = self
+            .wiz
+            .depot_pics
+            .values()
+            .filter_map(|d| d.manifest_gid.clone().map(|g| (d.depot_id.clone(), g)))
+            .collect();
+        self.apply_latest(&latest, origin);
+    }
+
+    pub(super) fn fetch_latest_all(&mut self) {
+        let Some(app_id) = self.wiz.main_app_id() else { return };
+        if self.wiz.latest_busy {
+            return;
+        }
+        self.wiz.latest_busy = true;
+        let core = self.core.clone();
+        let dir = self.data_dir.clone();
+        self.spawn(async move {
+            let r = smd_core::ops::search::fetch_latest_manifest_ids(&core, &dir, &app_id).await;
+            apply(move |app| {
+                app.wiz.latest_busy = false;
+                match r {
+                    Ok(res) => {
+                        app.apply_latest(&res.manifests, "button");
+                    }
+                    Err(e) => {
+                        let key = i18n::error_key(&e).unwrap_or_else(|| "unmatched".into());
+                        app.wiz.latest_note = Some(tf("depots.fetchLatestError", &[("message", &i18n::localize_error(&e))]));
+                        app.emit("manifest_tool", Some(serde_json::json!({ "action": "fetch_latest_all", "ok": false, "key": key })));
+                    }
+                }
+            })
+        });
     }
 }

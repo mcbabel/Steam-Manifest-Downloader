@@ -123,6 +123,7 @@ function startHistoryRedownload(appId, depotIds, target) {
   state.updateDir = target ? target.dir : null;
   state.updateAppId = target ? String(appId) : null;
   state.repairManifests = target && target.manifests ? target.manifests : null;
+  state.latestOnSelect = !!(target && !target.manifests);
   closeHistory();
   state.emuStandalone = false;
   setEmuEditMode(false);

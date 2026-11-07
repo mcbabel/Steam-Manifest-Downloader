@@ -548,6 +548,7 @@ paru -S steam-manifest-downloader</code></pre>
               <ul>
                 <li><strong>Select and deselect</strong> individual depots using the checkboxes</li>
                 <li>Use <strong>Select all</strong> or <strong>Deselect all</strong> for bulk actions</li>
+                <li>Press <strong>Newest manifests</strong> to set every depot to its newest manifest from Steam in one go. One request covers all depots, a depot that already has the newest one stays as it is, and a manifest you entered or uploaded yourself is never replaced. <strong>Settings → Depot selection → Always the newest manifests</strong> does this whenever a game is loaded, and updates from the history always do it</li>
                 <li><strong>Search and filter</strong> depots by ID or name using the search bar</li>
                 <li>View <strong>app details</strong> fetched from the Steam Store API, such as the game name and icon</li>
               </ul>
@@ -1116,6 +1117,7 @@ smd logout                          <span class="cm"># sign out and revoke the s
                 <li><span class="rows__k rows__k--literal">--branch</span><span class="rows__v">Downloads this Steam branch instead of <code>public</code>. Needs <code>smd login</code> with an account that has access, see <a href="#steam-account">Steam account and branches</a></span></li>
                 <li><span class="rows__k rows__k--literal">--branch-password</span><span class="rows__v">Password of a password branch, also <code>SMD_BRANCH_PASSWORD</code>. Only sent to Steam, never stored</span></li>
                 <li><span class="rows__k rows__k--literal">--account</span><span class="rows__v">Uses your signed-in account for this download, for own games and playtests. With an App ID the depots come from your account instead of the depot sources</span></li>
+                <li><span class="rows__k rows__k--literal">--latest</span><span class="rows__v">Uses the newest manifest from Steam for every depot instead of the one the source lists. Also on with the setting, and always with <code>--update</code></span></li>
                 <li><span class="rows__k rows__k--literal">--list</span><span class="rows__v">Shows the depots that would be downloaded and stops</span></li>
                 <li><span class="rows__k rows__k--literal">--ignore-space</span><span class="rows__v">Starts even when the download does not fit on the disk. Without it, <code>smd download</code> stops with an error in that case</span></li>
                 <li><span class="rows__k rows__k--literal">--speed-limit</span><span class="rows__v">Caps the speed, for example <code>10MB/s</code> or <code>100Mbit/s</code>, also <code>SMD_SPEED_LIMIT</code>. <code>0</code> means unlimited, and the setting is the default</span></li>

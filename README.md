@@ -317,6 +317,7 @@ smd logout                          # sign out and revoke the sign-in
 | `--branch NAME` | Download this Steam branch instead of `public`. Needs `smd login` with an account that has access |
 | `--branch-password` / `SMD_BRANCH_PASSWORD` | Password of a password branch. Only sent to Steam, never stored |
 | `--account` | Use your signed-in account for this download (own games, playtests). With an App ID the depots come from your account instead of the depot sources |
+| `--latest` | Use the newest manifest from Steam for every depot instead of the one the source lists. Also on with the setting, and always with `--update` |
 | `--list` | Show the depots that would be downloaded and stop |
 | `--ignore-space` | Start even when the download does not fit on the disk |
 | `--shutdown` | Shut down the computer when the download has finished (60 s countdown, Ctrl+C aborts) |

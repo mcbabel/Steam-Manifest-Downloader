@@ -160,7 +160,12 @@
     "keysFromFile": "From a key file",
     "keyFilesFilter": "Depot key files",
     "keyFileFound": "The key file had a key for {found} of {count} depot(s).",
-    "keyFileNone": "The key file has no keys for these depots."
+    "keyFileNone": "The key file has no keys for these depots.",
+    "latestAll": "Newest manifests",
+    "latestAllHint": "Set every depot to its newest manifest from Steam",
+    "latestApplied": "{count} depot(s) set to the newest manifest. When the source has no file for it, SMD gets it straight from Steam, which can need a manifest request code.",
+    "latestAppliedShort": "{count} depot(s) set to the newest manifest",
+    "latestNone": "The depot source already has the newest manifests, there is nothing to change."
   },
   "progress": {
     "diskSpaceLoading": "Checking disk space…",
@@ -802,7 +807,9 @@
     "steamWebApiKeyPlaceholder": "Paste your Steam Web API key…",
     "steamWebApiKeyHint": "Optional, for achievements and stats in the emulator step. Get a free key at <a href=\"https://steamcommunity.com/dev/apikey\" target=\"_blank\" rel=\"noopener\" class=\"link\">steamcommunity.com/dev/apikey</a>. It stays on this PC and is only sent to Steam.",
     "telemetryBehavior": "Usage Behaviour",
-    "telemetryBehaviorHint": "Which screens you open and what you click, so we see where the app gets stuck. Never what you type."
+    "telemetryBehaviorHint": "Which screens you open and what you click, so we see where the app gets stuck. Never what you type.",
+    "latestManifests": "Always the newest manifests",
+    "latestManifestsHint": "Every depot is set to its newest manifest from Steam, not the one the source has. Updates from the history always do this."
   },
   "errors": {
     "noManifests": "No manifests found for this App ID in any configured depot source. Add or enable more sources in Settings.",

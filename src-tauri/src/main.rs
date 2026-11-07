@@ -45,6 +45,7 @@ fn main() {
             commands::fetch_depot_metadata_steam,
             commands::recommend_depots,
             commands::fetch_latest_manifest_id,
+            commands::fetch_latest_manifest_ids,
             commands::get_steam_app_info,
             commands::start_download,
             commands::cancel_download,

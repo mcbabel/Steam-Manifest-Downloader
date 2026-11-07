@@ -132,6 +132,7 @@ async function saveSettings() {
     if (els.autoSelectDepotsToggle) {
       currentSettings.auto_select_depots = els.autoSelectDepotsToggle.checked;
       currentSettings.auto_start_download = els.autoStartDownloadToggle.checked;
+      if (els.latestManifestsToggle) currentSettings.latest_manifests = els.latestManifestsToggle.checked;
       currentSettings.folder_style = state.folderStyle || '';
       currentSettings.include_dlc = els.includeDlcToggle.checked;
       currentSettings.target_platform = state.targetPlatform || '';
@@ -242,6 +243,7 @@ function populateDepotSelectionSettings(settings) {
   if (!els.autoSelectDepotsToggle) return;
   els.autoSelectDepotsToggle.checked = !!settings.auto_select_depots;
   els.autoStartDownloadToggle.checked = !!settings.auto_start_download;
+  if (els.latestManifestsToggle) els.latestManifestsToggle.checked = !!settings.latest_manifests;
   setFolderStyle(settings.folder_style || '');
   els.includeDlcToggle.checked = !!settings.include_dlc;
   setTargetPlatform(settings.target_platform || '');

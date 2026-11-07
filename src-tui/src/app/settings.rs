@@ -161,6 +161,7 @@ impl App {
                         d.auto_start_download = !d.auto_start_download
                     }
                     SettingToggle::IncludeDlc => d.include_dlc = !d.include_dlc,
+                    SettingToggle::LatestManifests => d.latest_manifests = !d.latest_manifests,
                     SettingToggle::Behavior => {
                         if self.settings.telemetry_consent != TelemetryConsent::Accepted {
                             self.toast(Tone::Info, t("tui.settings.behaviorNeedsTelemetry"));
@@ -427,6 +428,7 @@ impl App {
             s.folder_style = draft.folder_style.clone();
             s.auto_select_depots = draft.auto_select_depots;
             s.auto_start_download = draft.auto_start_download;
+            s.latest_manifests = draft.latest_manifests;
             s.include_dlc = draft.include_dlc;
             s.target_platform = draft.target_platform.clone();
             s.game_language = draft.game_language.clone();
@@ -881,6 +883,16 @@ impl App {
             d.auto_select_depots,
         );
         sv.gap(1);
+        self.toggle_row(
+            sv,
+            ctx,
+            w,
+            d.latest_manifests,
+            &t("settings.latestManifests"),
+            &t("settings.latestManifestsHint"),
+            Fid::new("settings.latestManifests"),
+            Action::SettingsToggle(SettingToggle::LatestManifests),
+        );
         let r = sv.next(1);
         let label = format!("{}: ", t("settings.targetPlatform"));
         widgets::text(&mut sv.buf, r, &label, theme::text());

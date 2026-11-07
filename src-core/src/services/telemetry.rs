@@ -876,6 +876,7 @@ fn settings_snapshot(s: &settings_service::Settings) -> serde_json::Value {
         "auto_start": s.auto_start_download,
         "folder_style": match s.folder_style.as_str() { "underscore" | "dash" => s.folder_style.as_str(), _ => "default" },
         "include_dlc": s.include_dlc,
+        "latest_manifests": s.latest_manifests,
         "proxy": proxy_kind(&s.proxy),
         "speed_limit": !limit.is_empty() && limit != "0",
         "sources": crate::services::diag::count_bucket(s.depot_sources.len()),
