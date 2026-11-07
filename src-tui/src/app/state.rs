@@ -493,6 +493,10 @@ pub struct EmuState {
     pub controller_variant_set: bool,
     pub controller_file: TextInput,
     pub controller_type: String,
+    pub hardware_type: String,
+    pub settings_search: TextInput,
+    pub settings_changed_only: bool,
+    pub search_changed_at: Option<Instant>,
     pub release: Option<Result<ReleaseInfo, String>>,
     pub merge_plan: Option<DlcMergePlan>,
     pub merge_status: Option<(Tone, String)>,
@@ -536,6 +540,10 @@ impl EmuState {
             controller_variant_set: false,
             controller_file: TextInput::default(),
             controller_type: String::new(),
+            hardware_type: String::new(),
+            settings_search: TextInput::default(),
+            settings_changed_only: false,
+            search_changed_at: None,
             release: None,
             merge_plan: None,
             merge_status: None,
@@ -565,11 +573,16 @@ impl EmuState {
         }
         self.bools.clear();
         for f in super::emulator::BOOL_FIELDS {
-            if value.get(f.key).and_then(|v| v.as_bool()) == Some(true) {
+            if value.get(f.key).and_then(|v| v.as_bool()) == Some(!f.invert) {
                 self.bools.insert(f.key, true);
             }
         }
         self.controller_type = s.controller_type.clone().unwrap_or_default();
+        self.hardware_type = match (s.steam_hardware_type, s.steam_deck) {
+            (Some(n), _) => n.to_string(),
+            (None, Some(true)) => "1".to_string(),
+            _ => String::new(),
+        };
     }
 
     pub fn gather(&self) -> Option<EmuSettings> {
@@ -579,18 +592,29 @@ impl EmuState {
             if raw.is_empty() {
                 continue;
             }
-            if f.float {
-                if let Ok(n) = raw.parse::<f64>() {
-                    map.insert(f.key.into(), serde_json::json!(n));
+            match f.kind {
+                super::emulator::NumKind::Float => {
+                    if let Ok(n) = raw.parse::<f64>() {
+                        map.insert(f.key.into(), serde_json::json!(n));
+                    }
                 }
-            } else {
-                map.insert(f.key.into(), serde_json::Value::String(raw));
+                super::emulator::NumKind::Int => {
+                    if let Ok(n) = raw.parse::<u32>() {
+                        map.insert(f.key.into(), serde_json::json!(n));
+                    }
+                }
+                super::emulator::NumKind::Text => {
+                    map.insert(f.key.into(), serde_json::Value::String(raw));
+                }
             }
         }
         for f in super::emulator::BOOL_FIELDS {
             if self.bools.get(f.key).copied().unwrap_or(false) {
-                map.insert(f.key.into(), serde_json::Value::Bool(true));
+                map.insert(f.key.into(), serde_json::Value::Bool(!f.invert));
             }
+        }
+        if let Ok(n) = self.hardware_type.parse::<u32>() {
+            map.insert("steam_hardware_type".into(), serde_json::json!(n));
         }
         if !self.controller_type.is_empty() {
             map.insert("controller_type".into(), serde_json::Value::String(self.controller_type.clone()));
@@ -610,6 +634,59 @@ impl EmuState {
             .filter(|f| self.selected.contains(&f.path))
             .cloned()
             .collect()
+    }
+
+    pub fn setting_visible(&self, section: usize, key: &str, label: &str, changed: bool, query: &str) -> bool {
+        if !query.is_empty() {
+            let text = crate::i18n::t(&super::emulator::field_text(label)).to_lowercase();
+            let hint = crate::i18n::t(&format!("{}Hint", super::emulator::field_text(label))).to_lowercase();
+            let hit = text.contains(query) || hint.contains(query) || key.contains(query);
+            return hit && (!self.settings_changed_only || changed);
+        }
+        if self.settings_changed_only {
+            return changed;
+        }
+        section == self.section
+    }
+
+    fn setting_states(&self) -> Vec<(usize, &'static str, &'static str, bool)> {
+        let mut out: Vec<(usize, &'static str, &'static str, bool)> = super::emulator::TEXT_FIELDS
+            .iter()
+            .enumerate()
+            .map(|(i, f)| (f.section, f.key, f.label, !self.fields[i].trimmed().is_empty()))
+            .collect();
+        out.extend(
+            super::emulator::BOOL_FIELDS
+                .iter()
+                .map(|f| (f.section, f.key, f.label, self.bools.get(f.key).copied().unwrap_or(false))),
+        );
+        out.push((
+            super::emulator::SYSTEM_SECTION,
+            "steam_hardware_type",
+            "steamHardwareType",
+            !self.hardware_type.is_empty(),
+        ));
+        out
+    }
+
+    pub fn changed_in_section(&self, section: usize) -> usize {
+        self.setting_states().iter().filter(|(s, _, _, c)| *s == section && *c).count()
+    }
+
+    pub fn matching_settings(&self, query: &str) -> usize {
+        self.setting_states()
+            .iter()
+            .filter(|(s, k, l, c)| self.setting_visible(*s, k, l, *c, query))
+            .count()
+    }
+
+    pub fn reset_settings(&mut self) {
+        for f in self.fields.iter_mut() {
+            f.set(String::new());
+        }
+        self.bools.clear();
+        self.hardware_type.clear();
+        self.controller_type.clear();
     }
 
     pub fn has_windows_targets(&self) -> bool {

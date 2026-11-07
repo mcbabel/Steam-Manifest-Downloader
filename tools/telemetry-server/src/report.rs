@@ -555,6 +555,8 @@ const FEATURES: &[(&str, &str, &str)] = &[
     ("Controller: Steam Input through Steam", "controller_applied", "steam_input"),
     ("Controller: problems", "controller_applied", "notes"),
     ("Emulator step sections", "emu_section_viewed", "section"),
+    ("Emulator settings: search and filter", "emu_settings_view", "action"),
+    ("Emulator settings: search results", "emu_settings_view", "results"),
     ("Manifest tools", "manifest_tool", "action"),
     ("Newest manifests: started from", "manifest_tool", "origin"),
     ("Newest manifests: depots changed", "manifest_tool", "changed"),

@@ -154,8 +154,119 @@ pub struct EmuSettings {
     pub overlay_always_show_playtime: Option<bool>,
     pub key_combo: Option<String>,
     pub font_size: Option<f32>,
+    pub steam_hardware_type: Option<u32>,
+    pub is_under_proton: Option<bool>,
+    pub enable_account_avatar: Option<bool>,
+    pub new_app_ticket: Option<bool>,
+    pub pause_total_when_unfocused: Option<bool>,
+    pub pause_session_when_unfocused: Option<bool>,
+    pub allow_unknown_stats: Option<bool>,
+    pub listen_port: Option<u32>,
+    pub disable_lobby_creation: Option<bool>,
+    pub share_leaderboards_over_network: Option<bool>,
+    pub hook_delay_sec: Option<u32>,
+    pub screenshot_combo: Option<String>,
+    pub disable_friend_notification: Option<bool>,
+    pub disable_achievement_progress: Option<bool>,
+    pub disable_warning_any: Option<bool>,
+    pub overlay_always_show_frametime: Option<bool>,
+    pub overlay_always_show_user_info: Option<bool>,
+    pub enable_screenshot: Option<bool>,
+    pub notification_duration_achievement: Option<f32>,
     pub controller_type: Option<String>,
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum IniFile {
+    User,
+    Main,
+    Overlay,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum IniKind {
+    Text,
+    Bool,
+    Int,
+    Float,
+}
+
+impl IniKind {
+    fn render(self, v: &serde_json::Value) -> Option<String> {
+        match self {
+            IniKind::Text => v.as_str().map(|s| s.replace(['\n', '\r'], " ").trim().to_string()).filter(|s| !s.is_empty()),
+            IniKind::Bool => v.as_bool().map(|b| bool_to_ini(b).to_string()),
+            IniKind::Int => v.as_u64().map(|n| n.to_string()),
+            IniKind::Float => v.as_f64().map(|n| format!("{}", n as f32)),
+        }
+    }
+
+    fn parse(self, raw: &str) -> Option<serde_json::Value> {
+        let raw = raw.trim();
+        match self {
+            IniKind::Text => Some(serde_json::Value::String(raw.to_string())).filter(|_| !raw.is_empty()),
+            IniKind::Bool => ini_from_bool(raw).map(serde_json::Value::Bool),
+            IniKind::Int => raw.parse::<u32>().ok().map(|n| serde_json::json!(n)),
+            IniKind::Float => raw.parse::<f32>().ok().filter(|n| n.is_finite()).map(|n| serde_json::json!(n)),
+        }
+    }
+}
+
+struct IniField {
+    key: &'static str,
+    file: IniFile,
+    section: &'static str,
+    ini: &'static str,
+    kind: IniKind,
+}
+
+const fn field(key: &'static str, file: IniFile, section: &'static str, ini: &'static str, kind: IniKind) -> IniField {
+    IniField { key, file, section, ini, kind }
+}
+
+const INI_FIELDS: &[IniField] = &[
+    field("account_name", IniFile::User, "user::general", "account_name", IniKind::Text),
+    field("account_steamid", IniFile::User, "user::general", "account_steamid", IniKind::Text),
+    field("language", IniFile::User, "user::general", "language", IniKind::Text),
+    field("ip_country", IniFile::User, "user::general", "ip_country", IniKind::Text),
+    field("local_save_path", IniFile::User, "user::saves", "local_save_path", IniKind::Text),
+    field("saves_folder_name", IniFile::User, "user::saves", "saves_folder_name", IniKind::Text),
+    field("offline", IniFile::Main, "main::general", "offline", IniKind::Bool),
+    field("steam_deck", IniFile::Main, "main::general", "steam_deck", IniKind::Bool),
+    field("steam_hardware_type", IniFile::Main, "main::general", "steam_hardware_type", IniKind::Int),
+    field("is_under_proton", IniFile::Main, "main::general", "is_under_proton", IniKind::Bool),
+    field("enable_account_avatar", IniFile::Main, "main::general", "enable_account_avatar", IniKind::Bool),
+    field("new_app_ticket", IniFile::Main, "main::general", "new_app_ticket", IniKind::Bool),
+    field("disable_networking", IniFile::Main, "main::connectivity", "disable_networking", IniKind::Bool),
+    field("disable_lan_only", IniFile::Main, "main::connectivity", "disable_lan_only", IniKind::Bool),
+    field("listen_port", IniFile::Main, "main::connectivity", "listen_port", IniKind::Int),
+    field("disable_lobby_creation", IniFile::Main, "main::connectivity", "disable_lobby_creation", IniKind::Bool),
+    field("share_leaderboards_over_network", IniFile::Main, "main::connectivity", "share_leaderboards_over_network", IniKind::Bool),
+    field("record_playtime", IniFile::Main, "main::stats", "record_playtime", IniKind::Bool),
+    field("pause_total_when_unfocused", IniFile::Main, "main::stats", "pause_total_when_unfocused", IniKind::Bool),
+    field("pause_session_when_unfocused", IniFile::Main, "main::stats", "pause_session_when_unfocused", IniKind::Bool),
+    field("allow_unknown_stats", IniFile::Main, "main::stats", "allow_unknown_stats", IniKind::Bool),
+    field("achievements_bypass", IniFile::Main, "main::misc", "achievements_bypass", IniKind::Bool),
+    field("force_steamhttp_success", IniFile::Main, "main::misc", "force_steamhttp_success", IniKind::Bool),
+    field("enable_steam_preowned_ids", IniFile::Main, "main::misc", "enable_steam_preowned_ids", IniKind::Bool),
+    field("free_weekend", IniFile::Main, "main::misc", "free_weekend", IniKind::Bool),
+    field("disable_steamoverlaygameid_env_var", IniFile::Main, "main::misc", "disable_steamoverlaygameid_env_var", IniKind::Bool),
+    field("enable_experimental_overlay", IniFile::Overlay, "overlay::general", "enable_experimental_overlay", IniKind::Bool),
+    field("hook_delay_sec", IniFile::Overlay, "overlay::general", "hook_delay_sec", IniKind::Int),
+    field("disable_achievement_notification", IniFile::Overlay, "overlay::general", "disable_achievement_notification", IniKind::Bool),
+    field("disable_friend_notification", IniFile::Overlay, "overlay::general", "disable_friend_notification", IniKind::Bool),
+    field("disable_achievement_progress", IniFile::Overlay, "overlay::general", "disable_achievement_progress", IniKind::Bool),
+    field("disable_warning_any", IniFile::Overlay, "overlay::general", "disable_warning_any", IniKind::Bool),
+    field("enable_screenshot", IniFile::Overlay, "overlay::general", "enable_screenshot", IniKind::Bool),
+    field("overlay_always_show_fps", IniFile::Overlay, "overlay::general", "overlay_always_show_fps", IniKind::Bool),
+    field("overlay_always_show_frametime", IniFile::Overlay, "overlay::general", "overlay_always_show_frametime", IniKind::Bool),
+    field("overlay_always_show_playtime", IniFile::Overlay, "overlay::general", "overlay_always_show_playtime", IniKind::Bool),
+    field("overlay_always_show_user_info", IniFile::Overlay, "overlay::general", "overlay_always_show_user_info", IniKind::Bool),
+    field("key_combo", IniFile::Overlay, "overlay::hotkeys", "key_combo", IniKind::Text),
+    field("screenshot_combo", IniFile::Overlay, "overlay::hotkeys", "screenshot_combo", IniKind::Text),
+    field("font_size", IniFile::Overlay, "overlay::appearance", "Font_Size", IniKind::Float),
+    field("notification_duration_achievement", IniFile::Overlay, "overlay::appearance", "Notification_Duration_Achievement", IniKind::Float),
+];
 
 pub const CONTROLLER_TYPES: [&str; 6] = ["XBOX360", "XBOXONE", "PS3", "PS4", "PS5", "SWITCH"];
 const APP_CONTROLLER_SECTION: &str = "app::controller";
@@ -228,71 +339,39 @@ fn parse_ini_sections(text: &str) -> std::collections::HashMap<String, std::coll
 }
 
 impl EmuSettings {
-    pub fn render_user_ini(&self) -> String {
+    fn value_map(&self) -> serde_json::Map<String, serde_json::Value> {
+        match serde_json::to_value(self) {
+            Ok(serde_json::Value::Object(m)) => m,
+            _ => serde_json::Map::new(),
+        }
+    }
+
+    fn render_file(&self, file: IniFile) -> String {
+        let values = self.value_map();
         let mut sections: Vec<(String, Vec<(String, String)>)> = Vec::new();
-
-        let mut general = Vec::new();
-        if let Some(v) = &self.account_name { general.push(("account_name".into(), v.clone())); }
-        if let Some(v) = &self.account_steamid { general.push(("account_steamid".into(), v.clone())); }
-        if let Some(v) = &self.language { general.push(("language".into(), v.clone())); }
-        if let Some(v) = &self.ip_country { general.push(("ip_country".into(), v.clone())); }
-        if !general.is_empty() { sections.push(("user::general".into(), general)); }
-
-        let mut saves = Vec::new();
-        if let Some(v) = &self.local_save_path { saves.push(("local_save_path".into(), v.clone())); }
-        if let Some(v) = &self.saves_folder_name { saves.push(("saves_folder_name".into(), v.clone())); }
-        if !saves.is_empty() { sections.push(("user::saves".into(), saves)); }
-
+        for f in INI_FIELDS.iter().filter(|f| f.file == file) {
+            if f.key == "steam_deck" && values.get("steam_hardware_type").is_some_and(|v| !v.is_null()) {
+                continue;
+            }
+            let Some(text) = values.get(f.key).and_then(|v| f.kind.render(v)) else { continue };
+            match sections.iter_mut().find(|(name, _)| name == f.section) {
+                Some((_, kvs)) => kvs.push((f.ini.to_string(), text)),
+                None => sections.push((f.section.to_string(), vec![(f.ini.to_string(), text)])),
+            }
+        }
         render_sections(&sections)
+    }
+
+    pub fn render_user_ini(&self) -> String {
+        self.render_file(IniFile::User)
     }
 
     pub fn render_main_ini(&self) -> String {
-        let mut sections: Vec<(String, Vec<(String, String)>)> = Vec::new();
-
-        let mut general = Vec::new();
-        if let Some(v) = self.offline { general.push(("offline".into(), bool_to_ini(v).into())); }
-        if let Some(v) = self.steam_deck { general.push(("steam_deck".into(), bool_to_ini(v).into())); }
-        if !general.is_empty() { sections.push(("main::general".into(), general)); }
-
-        let mut conn = Vec::new();
-        if let Some(v) = self.disable_networking { conn.push(("disable_networking".into(), bool_to_ini(v).into())); }
-        if let Some(v) = self.disable_lan_only { conn.push(("disable_lan_only".into(), bool_to_ini(v).into())); }
-        if !conn.is_empty() { sections.push(("main::connectivity".into(), conn)); }
-
-        let mut stats = Vec::new();
-        if let Some(v) = self.record_playtime { stats.push(("record_playtime".into(), bool_to_ini(v).into())); }
-        if !stats.is_empty() { sections.push(("main::stats".into(), stats)); }
-
-        let mut misc = Vec::new();
-        if let Some(v) = self.achievements_bypass { misc.push(("achievements_bypass".into(), bool_to_ini(v).into())); }
-        if let Some(v) = self.force_steamhttp_success { misc.push(("force_steamhttp_success".into(), bool_to_ini(v).into())); }
-        if let Some(v) = self.enable_steam_preowned_ids { misc.push(("enable_steam_preowned_ids".into(), bool_to_ini(v).into())); }
-        if let Some(v) = self.free_weekend { misc.push(("free_weekend".into(), bool_to_ini(v).into())); }
-        if let Some(v) = self.disable_steamoverlaygameid_env_var { misc.push(("disable_steamoverlaygameid_env_var".into(), bool_to_ini(v).into())); }
-        if !misc.is_empty() { sections.push(("main::misc".into(), misc)); }
-
-        render_sections(&sections)
+        self.render_file(IniFile::Main)
     }
 
     pub fn render_overlay_ini(&self) -> String {
-        let mut sections: Vec<(String, Vec<(String, String)>)> = Vec::new();
-
-        let mut general = Vec::new();
-        if let Some(v) = self.enable_experimental_overlay { general.push(("enable_experimental_overlay".into(), bool_to_ini(v).into())); }
-        if let Some(v) = self.disable_achievement_notification { general.push(("disable_achievement_notification".into(), bool_to_ini(v).into())); }
-        if let Some(v) = self.overlay_always_show_fps { general.push(("overlay_always_show_fps".into(), bool_to_ini(v).into())); }
-        if let Some(v) = self.overlay_always_show_playtime { general.push(("overlay_always_show_playtime".into(), bool_to_ini(v).into())); }
-        if !general.is_empty() { sections.push(("overlay::general".into(), general)); }
-
-        let mut hotkeys = Vec::new();
-        if let Some(v) = &self.key_combo { hotkeys.push(("key_combo".into(), v.clone())); }
-        if !hotkeys.is_empty() { sections.push(("overlay::hotkeys".into(), hotkeys)); }
-
-        let mut appearance = Vec::new();
-        if let Some(v) = self.font_size { appearance.push(("Font_Size".into(), format!("{}", v))); }
-        if !appearance.is_empty() { sections.push(("overlay::appearance".into(), appearance)); }
-
-        render_sections(&sections)
+        self.render_file(IniFile::Overlay)
     }
 
     pub fn write_to_dir(&self, dir: &Path) -> Result<(), String> {
@@ -332,16 +411,24 @@ impl EmuSettings {
     }
 
     pub fn read_from_dir(dir: &Path) -> EmuSettings {
-        let mut s = EmuSettings::default();
-        if let Ok(text) = fs::read_to_string(dir.join("configs.user.ini")) {
-            s.absorb_user(&text);
+        let mut values = serde_json::Map::new();
+        for (file, name) in [
+            (IniFile::User, "configs.user.ini"),
+            (IniFile::Main, "configs.main.ini"),
+            (IniFile::Overlay, "configs.overlay.ini"),
+        ] {
+            let Ok(text) = fs::read_to_string(dir.join(name)) else { continue };
+            let parsed = parse_ini_sections(&text);
+            for f in INI_FIELDS.iter().filter(|f| f.file == file) {
+                let raw = parsed
+                    .get(f.section)
+                    .and_then(|sec| sec.iter().find(|(k, _)| k.eq_ignore_ascii_case(f.ini)).map(|(_, v)| v));
+                if let Some(v) = raw.and_then(|r| f.kind.parse(r)) {
+                    values.insert(f.key.to_string(), v);
+                }
+            }
         }
-        if let Ok(text) = fs::read_to_string(dir.join("configs.main.ini")) {
-            s.absorb_main(&text);
-        }
-        if let Ok(text) = fs::read_to_string(dir.join("configs.overlay.ini")) {
-            s.absorb_overlay(&text);
-        }
+        let mut s: EmuSettings = serde_json::from_value(serde_json::Value::Object(values)).unwrap_or_default();
         if let Ok(text) = fs::read_to_string(dir.join("configs.app.ini")) {
             let parsed = parse_ini_sections(&text);
             s.controller_type = parsed
@@ -351,60 +438,6 @@ impl EmuSettings {
                 .filter(|t| CONTROLLER_TYPES.contains(&t.as_str()));
         }
         s
-    }
-
-    fn absorb_user(&mut self, text: &str) {
-        let parsed = parse_ini_sections(text);
-        if let Some(sec) = parsed.get("user::general") {
-            if let Some(v) = sec.get("account_name") { self.account_name = Some(v.clone()); }
-            if let Some(v) = sec.get("account_steamid") { self.account_steamid = Some(v.clone()); }
-            if let Some(v) = sec.get("language") { self.language = Some(v.clone()); }
-            if let Some(v) = sec.get("ip_country") { self.ip_country = Some(v.clone()); }
-        }
-        if let Some(sec) = parsed.get("user::saves") {
-            if let Some(v) = sec.get("local_save_path") { self.local_save_path = Some(v.clone()); }
-            if let Some(v) = sec.get("saves_folder_name") { self.saves_folder_name = Some(v.clone()); }
-        }
-    }
-
-    fn absorb_main(&mut self, text: &str) {
-        let parsed = parse_ini_sections(text);
-        if let Some(sec) = parsed.get("main::general") {
-            if let Some(v) = sec.get("offline") { self.offline = ini_from_bool(v); }
-            if let Some(v) = sec.get("steam_deck") { self.steam_deck = ini_from_bool(v); }
-        }
-        if let Some(sec) = parsed.get("main::connectivity") {
-            if let Some(v) = sec.get("disable_networking") { self.disable_networking = ini_from_bool(v); }
-            if let Some(v) = sec.get("disable_lan_only") { self.disable_lan_only = ini_from_bool(v); }
-        }
-        if let Some(sec) = parsed.get("main::stats") {
-            if let Some(v) = sec.get("record_playtime") { self.record_playtime = ini_from_bool(v); }
-        }
-        if let Some(sec) = parsed.get("main::misc") {
-            if let Some(v) = sec.get("achievements_bypass") { self.achievements_bypass = ini_from_bool(v); }
-            if let Some(v) = sec.get("force_steamhttp_success") { self.force_steamhttp_success = ini_from_bool(v); }
-            if let Some(v) = sec.get("enable_steam_preowned_ids") { self.enable_steam_preowned_ids = ini_from_bool(v); }
-            if let Some(v) = sec.get("free_weekend") { self.free_weekend = ini_from_bool(v); }
-            if let Some(v) = sec.get("disable_steamoverlaygameid_env_var") { self.disable_steamoverlaygameid_env_var = ini_from_bool(v); }
-        }
-    }
-
-    fn absorb_overlay(&mut self, text: &str) {
-        let parsed = parse_ini_sections(text);
-        if let Some(sec) = parsed.get("overlay::general") {
-            if let Some(v) = sec.get("enable_experimental_overlay") { self.enable_experimental_overlay = ini_from_bool(v); }
-            if let Some(v) = sec.get("disable_achievement_notification") { self.disable_achievement_notification = ini_from_bool(v); }
-            if let Some(v) = sec.get("overlay_always_show_fps") { self.overlay_always_show_fps = ini_from_bool(v); }
-            if let Some(v) = sec.get("overlay_always_show_playtime") { self.overlay_always_show_playtime = ini_from_bool(v); }
-        }
-        if let Some(sec) = parsed.get("overlay::hotkeys") {
-            if let Some(v) = sec.get("key_combo") { self.key_combo = Some(v.clone()); }
-        }
-        if let Some(sec) = parsed.get("overlay::appearance") {
-            if let Some(v) = sec.get("Font_Size") {
-                if let Ok(n) = v.parse::<f32>() { self.font_size = Some(n); }
-            }
-        }
     }
 }
 
@@ -1681,6 +1714,48 @@ mod controller_settings_tests {
         let app = fs::read_to_string(dir.join("configs.app.ini")).unwrap();
         assert!(app.contains("10=Soundtrack"));
         assert!(!app.contains("app::controller"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+}
+
+#[cfg(test)]
+mod ini_field_tests {
+    use super::*;
+
+    #[test]
+    fn every_setting_survives_a_write_and_read() {
+        let dir = std::env::temp_dir().join(format!("smd-inifields-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        let mut values = serde_json::Map::new();
+        for f in INI_FIELDS.iter().filter(|f| f.key != "steam_deck") {
+            let v = match f.kind {
+                IniKind::Text => serde_json::json!("x y"),
+                IniKind::Bool => serde_json::json!(f.key.len() % 2 == 0),
+                IniKind::Int => serde_json::json!(7),
+                IniKind::Float => serde_json::json!(2.5),
+            };
+            values.insert(f.key.to_string(), v);
+        }
+        let settings: EmuSettings = serde_json::from_value(serde_json::Value::Object(values.clone())).unwrap();
+        settings.write_to_dir(&dir).unwrap();
+        let back = EmuSettings::read_from_dir(&dir).value_map();
+        for (k, v) in &values {
+            assert_eq!(back.get(k), Some(v), "{}", k);
+        }
+        let main = fs::read_to_string(dir.join("configs.main.ini")).unwrap();
+        assert!(main.contains("[main::general]") && !main.contains("steam_deck="));
+        let overlay = fs::read_to_string(dir.join("configs.overlay.ini")).unwrap();
+        assert!(overlay.contains("Notification_Duration_Achievement=2.5"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn the_old_steam_deck_flag_is_still_read() {
+        let dir = std::env::temp_dir().join(format!("smd-deck-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(dir.join("configs.main.ini"), "[main::general]\nsteam_deck=1\n").unwrap();
+        assert_eq!(EmuSettings::read_from_dir(&dir).steam_deck, Some(true));
         let _ = fs::remove_dir_all(&dir);
     }
 }

@@ -825,182 +825,18 @@
             <div class="emu-section">
               <p id="emu-settings-hint" class="emu-settings-hint" data-i18n="emulator.settingsHint">Unset values keep the gbe_fork defaults. You can change these later from the History tab.</p>
 
-              <div class="emu-accordion">
-                <div class="emu-accordion__item">
-                  <button type="button" class="emu-accordion__toggle" data-target="emu-section-account" aria-expanded="false">
-                    <span class="emu-accordion__arrow">&#9654;</span>
-                    <span class="emu-accordion__title" data-i18n="emulator.sections.account">Account</span>
-                  </button>
-                  <div id="emu-section-account" class="emu-accordion__content hidden">
-                    <div class="emu-field">
-                      <label class="emu-field__label" for="emu-account-name" data-i18n="emulator.fields.accountName">Display name</label>
-                      <input id="emu-account-name" class="emu-field__input" type="text" data-emu-key="account_name" data-i18n-attr="placeholder=emulator.fields.accountNamePlaceholder" autocomplete="off">
-                      <p class="emu-field__hint" data-i18n="emulator.fields.accountNameHint">Name the game sees from the Steam API.</p>
-                    </div>
-                    <div class="emu-field">
-                      <label class="emu-field__label" for="emu-account-steamid" data-i18n="emulator.fields.accountSteamId">Steam ID</label>
-                      <input id="emu-account-steamid" class="emu-field__input" type="text" data-emu-key="account_steamid" placeholder="76561198000000000" autocomplete="off" pattern="[0-9]*" inputmode="numeric">
-                      <p class="emu-field__hint" data-i18n="emulator.fields.accountSteamIdHint">64-bit Steam ID. Leave empty for the gbe_fork default.</p>
-                    </div>
-                    <div class="emu-field">
-                      <label class="emu-field__label" for="emu-language" data-i18n="emulator.fields.language">Game language</label>
-                      <input id="emu-language" class="emu-field__input" type="text" data-emu-key="language" placeholder="english" autocomplete="off">
-                      <p class="emu-field__hint" data-i18n="emulator.fields.languageHint">Steam language code, e.g. english, german, french.</p>
-                    </div>
-                    <div class="emu-field">
-                      <label class="emu-field__label" for="emu-ip-country" data-i18n="emulator.fields.ipCountry">IP country</label>
-                      <input id="emu-ip-country" class="emu-field__input" type="text" data-emu-key="ip_country" placeholder="US" maxlength="2" autocomplete="off">
-                      <p class="emu-field__hint" data-i18n="emulator.fields.ipCountryHint">ISO 3166-1 alpha-2 code (e.g. US, DE, FR).</p>
-                    </div>
-                  </div>
+              <div class="emu-settings">
+                <div class="emu-settings__bar">
+                  <input type="search" id="emu-settings-search" class="emu-field__input emu-settings__search" autocomplete="off" spellcheck="false" data-i18n-attr="placeholder=emulator.settingsSearch,aria-label=emulator.settingsSearch">
+                  <label class="emu-settings__only">
+                    <input type="checkbox" id="emu-settings-changed">
+                    <span data-i18n="emulator.settingsOnlyChanged">Only changed</span>
+                  </label>
+                  <button type="button" id="btn-emu-settings-reset" class="btn btn--small btn--outline" data-i18n="emulator.settingsReset">Reset all</button>
                 </div>
-
-                <div class="emu-accordion__item">
-                  <button type="button" class="emu-accordion__toggle" data-target="emu-section-saves" aria-expanded="false">
-                    <span class="emu-accordion__arrow">&#9654;</span>
-                    <span class="emu-accordion__title" data-i18n="emulator.sections.saves">Saves</span>
-                  </button>
-                  <div id="emu-section-saves" class="emu-accordion__content hidden">
-                    <div class="emu-field">
-                      <label class="emu-field__label" for="emu-local-save-path" data-i18n="emulator.fields.localSavePath">Local save path</label>
-                      <input id="emu-local-save-path" class="emu-field__input" type="text" data-emu-key="local_save_path" data-i18n-attr="placeholder=emulator.fields.localSavePathPlaceholder" autocomplete="off">
-                      <p class="emu-field__hint" data-i18n="emulator.fields.localSavePathHint">Override where the emulator stores save data. Empty = gbe_fork default.</p>
-                    </div>
-                    <div class="emu-field">
-                      <label class="emu-field__label" for="emu-saves-folder-name" data-i18n="emulator.fields.savesFolderName">Saves folder name</label>
-                      <input id="emu-saves-folder-name" class="emu-field__input" type="text" data-emu-key="saves_folder_name" autocomplete="off">
-                      <p class="emu-field__hint" data-i18n="emulator.fields.savesFolderNameHint">Per-game subfolder name for save data.</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="emu-accordion__item">
-                  <button type="button" class="emu-accordion__toggle" data-target="emu-section-network" aria-expanded="false">
-                    <span class="emu-accordion__arrow">&#9654;</span>
-                    <span class="emu-accordion__title" data-i18n="emulator.sections.network">Network &amp; Compatibility</span>
-                  </button>
-                  <div id="emu-section-network" class="emu-accordion__content hidden">
-                    <div class="emu-field emu-field--toggle">
-                      <div class="emu-field__label-block">
-                        <span class="emu-field__label" data-i18n="emulator.fields.offline">Offline mode</span>
-                        <p class="emu-field__hint" data-i18n="emulator.fields.offlineHint">Force the emulator to act as if Steam is offline.</p>
-                      </div>
-                      <label class="toggle-switch"><input type="checkbox" data-emu-key="offline"><span class="toggle-switch__slider"></span></label>
-                    </div>
-                    <div class="emu-field emu-field--toggle">
-                      <div class="emu-field__label-block">
-                        <span class="emu-field__label" data-i18n="emulator.fields.steamDeck">Steam Deck mode</span>
-                        <p class="emu-field__hint" data-i18n="emulator.fields.steamDeckHint">Pretend the game runs on a Steam Deck.</p>
-                      </div>
-                      <label class="toggle-switch"><input type="checkbox" data-emu-key="steam_deck"><span class="toggle-switch__slider"></span></label>
-                    </div>
-                    <div class="emu-field emu-field--toggle">
-                      <div class="emu-field__label-block">
-                        <span class="emu-field__label" data-i18n="emulator.fields.disableNetworking">Disable networking</span>
-                        <p class="emu-field__hint" data-i18n="emulator.fields.disableNetworkingHint">Block all network features (matchmaking, friends, P2P).</p>
-                      </div>
-                      <label class="toggle-switch"><input type="checkbox" data-emu-key="disable_networking"><span class="toggle-switch__slider"></span></label>
-                    </div>
-                    <div class="emu-field emu-field--toggle">
-                      <div class="emu-field__label-block">
-                        <span class="emu-field__label" data-i18n="emulator.fields.disableLanOnly">Disable LAN-only mode</span>
-                        <p class="emu-field__hint" data-i18n="emulator.fields.disableLanOnlyHint">Allow connections beyond the local network.</p>
-                      </div>
-                      <label class="toggle-switch"><input type="checkbox" data-emu-key="disable_lan_only"><span class="toggle-switch__slider"></span></label>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="emu-accordion__item">
-                  <button type="button" class="emu-accordion__toggle" data-target="emu-section-stats" aria-expanded="false">
-                    <span class="emu-accordion__arrow">&#9654;</span>
-                    <span class="emu-accordion__title" data-i18n="emulator.sections.stats">Stats &amp; Achievements</span>
-                  </button>
-                  <div id="emu-section-stats" class="emu-accordion__content hidden">
-                    <div class="emu-field emu-field--toggle">
-                      <div class="emu-field__label-block">
-                        <span class="emu-field__label" data-i18n="emulator.fields.recordPlaytime">Record playtime</span>
-                        <p class="emu-field__hint" data-i18n="emulator.fields.recordPlaytimeHint">Have the emulator track in-game playtime.</p>
-                      </div>
-                      <label class="toggle-switch"><input type="checkbox" data-emu-key="record_playtime"><span class="toggle-switch__slider"></span></label>
-                    </div>
-                    <div class="emu-field emu-field--toggle">
-                      <div class="emu-field__label-block">
-                        <span class="emu-field__label" data-i18n="emulator.fields.achievementsBypass">Achievements bypass</span>
-                        <p class="emu-field__hint" data-i18n="emulator.fields.achievementsBypassHint">Auto-unlock achievements as the game requests them.</p>
-                      </div>
-                      <label class="toggle-switch"><input type="checkbox" data-emu-key="achievements_bypass"><span class="toggle-switch__slider"></span></label>
-                    </div>
-                    <div class="emu-field emu-field--toggle">
-                      <div class="emu-field__label-block">
-                        <span class="emu-field__label" data-i18n="emulator.fields.forceSteamhttpSuccess">Force SteamHTTP success</span>
-                        <p class="emu-field__hint" data-i18n="emulator.fields.forceSteamhttpSuccessHint">Make all Steam HTTP requests appear to succeed.</p>
-                      </div>
-                      <label class="toggle-switch"><input type="checkbox" data-emu-key="force_steamhttp_success"><span class="toggle-switch__slider"></span></label>
-                    </div>
-                    <div class="emu-field emu-field--toggle">
-                      <div class="emu-field__label-block">
-                        <span class="emu-field__label" data-i18n="emulator.fields.enableSteamPreownedIds">Enable Steam pre-owned IDs</span>
-                        <p class="emu-field__hint" data-i18n="emulator.fields.enableSteamPreownedIdsHint">Claim ownership of pre-existing entitlements.</p>
-                      </div>
-                      <label class="toggle-switch"><input type="checkbox" data-emu-key="enable_steam_preowned_ids"><span class="toggle-switch__slider"></span></label>
-                    </div>
-                    <div class="emu-field emu-field--toggle">
-                      <div class="emu-field__label-block">
-                        <span class="emu-field__label" data-i18n="emulator.fields.freeWeekend">Free weekend flag</span>
-                        <p class="emu-field__hint" data-i18n="emulator.fields.freeWeekendHint">Tell the game it is running during a free weekend.</p>
-                      </div>
-                      <label class="toggle-switch"><input type="checkbox" data-emu-key="free_weekend"><span class="toggle-switch__slider"></span></label>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="emu-accordion__item">
-                  <button type="button" class="emu-accordion__toggle" data-target="emu-section-overlay" aria-expanded="false">
-                    <span class="emu-accordion__arrow">&#9654;</span>
-                    <span class="emu-accordion__title" data-i18n="emulator.sections.overlay">Overlay</span>
-                  </button>
-                  <div id="emu-section-overlay" class="emu-accordion__content hidden">
-                    <div class="emu-field emu-field--toggle">
-                      <div class="emu-field__label-block">
-                        <span class="emu-field__label" data-i18n="emulator.fields.enableExperimentalOverlay">Enable experimental overlay</span>
-                        <p class="emu-field__hint" data-i18n="emulator.fields.enableExperimentalOverlayHint">In-game ImGui overlay with achievement popups.</p>
-                      </div>
-                      <label class="toggle-switch"><input type="checkbox" data-emu-key="enable_experimental_overlay"><span class="toggle-switch__slider"></span></label>
-                    </div>
-                    <div class="emu-field emu-field--toggle">
-                      <div class="emu-field__label-block">
-                        <span class="emu-field__label" data-i18n="emulator.fields.disableAchievementNotification">Hide achievement popups</span>
-                        <p class="emu-field__hint" data-i18n="emulator.fields.disableAchievementNotificationHint">Suppress on-screen achievement toasts.</p>
-                      </div>
-                      <label class="toggle-switch"><input type="checkbox" data-emu-key="disable_achievement_notification"><span class="toggle-switch__slider"></span></label>
-                    </div>
-                    <div class="emu-field emu-field--toggle">
-                      <div class="emu-field__label-block">
-                        <span class="emu-field__label" data-i18n="emulator.fields.overlayAlwaysShowFps">Always show FPS</span>
-                        <p class="emu-field__hint" data-i18n="emulator.fields.overlayAlwaysShowFpsHint">Pin the FPS counter to the overlay.</p>
-                      </div>
-                      <label class="toggle-switch"><input type="checkbox" data-emu-key="overlay_always_show_fps"><span class="toggle-switch__slider"></span></label>
-                    </div>
-                    <div class="emu-field emu-field--toggle">
-                      <div class="emu-field__label-block">
-                        <span class="emu-field__label" data-i18n="emulator.fields.overlayAlwaysShowPlaytime">Always show playtime</span>
-                        <p class="emu-field__hint" data-i18n="emulator.fields.overlayAlwaysShowPlaytimeHint">Pin the session timer to the overlay.</p>
-                      </div>
-                      <label class="toggle-switch"><input type="checkbox" data-emu-key="overlay_always_show_playtime"><span class="toggle-switch__slider"></span></label>
-                    </div>
-                    <div class="emu-field">
-                      <label class="emu-field__label" for="emu-key-combo" data-i18n="emulator.fields.keyCombo">Overlay hotkey</label>
-                      <input id="emu-key-combo" class="emu-field__input" type="text" data-emu-key="key_combo" placeholder="ShiftTab" autocomplete="off">
-                      <p class="emu-field__hint" data-i18n="emulator.fields.keyComboHint">Key combination to toggle the overlay (e.g. ShiftTab, CtrlShiftO).</p>
-                    </div>
-                    <div class="emu-field">
-                      <label class="emu-field__label" for="emu-font-size" data-i18n="emulator.fields.fontSize">Font size</label>
-                      <input id="emu-font-size" class="emu-field__input emu-field__input--narrow" type="number" data-emu-key="font_size" placeholder="16" min="8" max="48" step="0.5" autocomplete="off">
-                      <p class="emu-field__hint" data-i18n="emulator.fields.fontSizeHint">Overlay font size in points.</p>
-                    </div>
-                  </div>
-                </div>
+                <div id="emu-settings-groups" class="emu-settings__groups" role="tablist"></div>
+                <div id="emu-settings-fields" class="emu-settings__fields"></div>
+                <p id="emu-settings-empty" class="dd-path__hint hidden" data-i18n="emulator.settingsNoMatch">No setting matches.</p>
               </div>
             </div>
           </section>
@@ -2081,6 +1917,7 @@
   <script src="js/app/download-control.js"></script>
   <script src="js/app/history.js"></script>
   <script src="js/app/shortcuts.js"></script>
+  <script src="js/app/select-picker.js"></script>
   <script src="js/app/emulator.js"></script>
   <script src="js/app/settings.js"></script>
   <script src="js/app/account.js"></script>

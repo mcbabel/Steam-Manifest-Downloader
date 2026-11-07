@@ -108,7 +108,11 @@ When telemetry is enabled, the app sends small events describing:
     depots changed as a range), or a manifest file was picked for a depot.
     Never the ID or the file
   - `emu_section_viewed` — a section of the emulator step was opened
-    (`files`, `gamedata`, `emulator` or `extras`), once per section per app start
+    (`files`, `gamedata`, `controller`, `emulator` or `extras`), once per
+    section per app start
+  - `emu_settings_view` — the emulator settings were searched or filtered to
+    the changed ones (`search` or `changed_only`), and for a search how many
+    settings matched, as a range. The search text itself is never sent
   - `welcome_shown` / `welcome_choice` — the welcome after the first start was
     shown, and which way to start was picked (`upload`, `search`, `patch`,
     `location` or `closed`)

@@ -5779,6 +5779,112 @@ textarea.bug-report__input {
   color: var(--warning);
 }
 
+.emu-settings__bar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+.emu-settings__search {
+  flex: 1;
+  min-width: 0;
+}
+
+.emu-settings__only {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.emu-settings__groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.85rem 0 0.4rem;
+}
+
+.emu-settings__group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.emu-settings__group:hover {
+  color: var(--text-primary);
+  border-color: var(--accent);
+}
+
+.emu-settings__group.is-active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(88, 166, 255, 0.12);
+}
+
+.emu-settings__count {
+  min-width: 1.1rem;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--bg-card-solid);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.emu-settings__fields .emu-field {
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.emu-settings__fields .emu-field:last-child {
+  border-bottom: none;
+}
+
+.emu-field__select {
+  cursor: pointer;
+}
+
+@media (max-width: 600px) {
+  .emu-settings__bar {
+    flex-wrap: wrap;
+  }
+}
+
+.select-picker {
+  width: 100%;
+}
+
+.select-picker__button {
+  width: 100%;
+  min-height: 38px;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.select-picker__menu {
+  left: 0;
+  right: auto;
+}
+
+.select-picker__native {
+  display: none;
+}
+
 .latest-manifests-note {
   margin: 0.25rem 0 0.75rem;
 }

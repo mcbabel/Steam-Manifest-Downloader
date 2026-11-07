@@ -451,6 +451,7 @@ const ALLOWED_EVENT_KINDS: &[&str] = &[
     "session_end",
     "game_data_written",
     "emu_section_viewed",
+    "emu_settings_view",
     "welcome_shown",
     "welcome_choice",
     "advice_shown",

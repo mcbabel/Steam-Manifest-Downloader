@@ -521,6 +521,7 @@ impl App {
         self.shutdown_tick();
         self.queue_tick();
         self.auto_start_tick();
+        self.emu_search_tick();
     }
 
     fn on_event(&mut self, ev: Event) {
@@ -767,6 +768,7 @@ impl App {
             InputId::SteamLaunch => &mut w.steam_launch,
             InputId::EmuField(i) => self.emu.as_mut()?.fields.get_mut(i)?,
             InputId::EmuControllerFile => &mut self.emu.as_mut()?.controller_file,
+            InputId::EmuSettingsSearch => &mut self.emu.as_mut()?.settings_search,
             InputId::Setting(i) => self.set.inputs.get_mut(i)?,
             InputId::SettingsSourceAdd => &mut self.set.source_add,
             InputId::HistoryFilter => &mut self.hist.filter,
@@ -791,6 +793,11 @@ impl App {
                 self.hist.offset = 0;
             }
             InputId::Setting(_) => self.set.dirty = true,
+            InputId::EmuSettingsSearch => {
+                if let Some(e) = self.emu.as_mut() {
+                    e.search_changed_at = Some(Instant::now());
+                }
+            }
             _ => {}
         }
     }

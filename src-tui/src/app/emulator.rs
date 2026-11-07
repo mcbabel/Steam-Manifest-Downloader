@@ -14,30 +14,49 @@ use crate::theme;
 use crate::ui::widgets::{self, Btn, ButtonSpec, InputSpec, Tone};
 use crate::ui::{take_bottom, Ctx, Fid, ScrollView};
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum NumKind {
+    Text,
+    Int,
+    Float,
+}
+
 pub struct TextField {
     pub key: &'static str,
     pub label: &'static str,
     pub placeholder: &'static str,
     pub section: usize,
-    pub float: bool,
+    pub kind: NumKind,
 }
 
 pub struct BoolField {
     pub key: &'static str,
     pub label: &'static str,
     pub section: usize,
+    pub invert: bool,
 }
 
-pub const SECTIONS: [&str; 6] = [
+pub const SECTIONS: [&str; 8] = [
     "emulator.sections.account",
     "emulator.sections.saves",
+    "emulator.sections.system",
     "emulator.sections.network",
     "emulator.sections.stats",
     "emulator.sections.overlay",
+    "emulator.sections.compat",
     "emulator.sections.controller",
 ];
 
-pub const CONTROLLER_SECTION: usize = 5;
+pub const SYSTEM_SECTION: usize = 2;
+pub const CONTROLLER_SECTION: usize = 7;
+
+pub const HARDWARE_TYPES: [(&str, &str); 5] = [
+    ("", "hwDefault"),
+    ("0", "hwNone"),
+    ("1", "hwDeck"),
+    ("2", "hwMachine"),
+    ("3", "hwFrame"),
+];
 
 const CONTROLLER_TYPES: [(&str, &str); 7] = [
     ("", "@emulator.fields.controllerDefault"),
@@ -49,7 +68,259 @@ const CONTROLLER_TYPES: [(&str, &str); 7] = [
     ("SWITCH", "Nintendo Switch"),
 ];
 
-fn field_text(label: &str) -> String {
+pub const TEXT_FIELDS: &[TextField] = &[
+    TextField {
+        key: "account_name",
+        label: "accountName",
+        placeholder: "@emulator.fields.accountNamePlaceholder",
+        section: 0,
+        kind: NumKind::Text,
+    },
+    TextField {
+        key: "account_steamid",
+        label: "accountSteamId",
+        placeholder: "76561198000000000",
+        section: 0,
+        kind: NumKind::Text,
+    },
+    TextField {
+        key: "language",
+        label: "language",
+        placeholder: "english",
+        section: 0,
+        kind: NumKind::Text,
+    },
+    TextField {
+        key: "ip_country",
+        label: "ipCountry",
+        placeholder: "US",
+        section: 0,
+        kind: NumKind::Text,
+    },
+    TextField {
+        key: "local_save_path",
+        label: "localSavePath",
+        placeholder: "@emulator.fields.localSavePathPlaceholder",
+        section: 1,
+        kind: NumKind::Text,
+    },
+    TextField {
+        key: "saves_folder_name",
+        label: "savesFolderName",
+        placeholder: "GSE Saves",
+        section: 1,
+        kind: NumKind::Text,
+    },
+    TextField {
+        key: "listen_port",
+        label: "listenPort",
+        placeholder: "47584",
+        section: 3,
+        kind: NumKind::Int,
+    },
+    TextField {
+        key: "hook_delay_sec",
+        label: "hookDelay",
+        placeholder: "0",
+        section: 5,
+        kind: NumKind::Int,
+    },
+    TextField {
+        key: "key_combo",
+        label: "keyCombo",
+        placeholder: "shift + tab",
+        section: 5,
+        kind: NumKind::Text,
+    },
+    TextField {
+        key: "screenshot_combo",
+        label: "screenshotCombo",
+        placeholder: "f12",
+        section: 5,
+        kind: NumKind::Text,
+    },
+    TextField {
+        key: "font_size",
+        label: "fontSize",
+        placeholder: "16",
+        section: 5,
+        kind: NumKind::Float,
+    },
+    TextField {
+        key: "notification_duration_achievement",
+        label: "notificationDuration",
+        placeholder: "7",
+        section: 5,
+        kind: NumKind::Float,
+    },
+];
+
+pub const BOOL_FIELDS: &[BoolField] = &[
+    BoolField {
+        key: "is_under_proton",
+        label: "isUnderProton",
+        section: 2,
+        invert: false,
+    },
+    BoolField {
+        key: "offline",
+        label: "offline",
+        section: 2,
+        invert: false,
+    },
+    BoolField {
+        key: "enable_account_avatar",
+        label: "enableAccountAvatar",
+        section: 2,
+        invert: false,
+    },
+    BoolField {
+        key: "new_app_ticket",
+        label: "oldAppTicket",
+        section: 2,
+        invert: true,
+    },
+    BoolField {
+        key: "disable_networking",
+        label: "disableNetworking",
+        section: 3,
+        invert: false,
+    },
+    BoolField {
+        key: "disable_lan_only",
+        label: "disableLanOnly",
+        section: 3,
+        invert: false,
+    },
+    BoolField {
+        key: "disable_lobby_creation",
+        label: "disableLobbyCreation",
+        section: 3,
+        invert: false,
+    },
+    BoolField {
+        key: "share_leaderboards_over_network",
+        label: "shareLeaderboards",
+        section: 3,
+        invert: false,
+    },
+    BoolField {
+        key: "record_playtime",
+        label: "recordPlaytime",
+        section: 4,
+        invert: false,
+    },
+    BoolField {
+        key: "pause_total_when_unfocused",
+        label: "pauseTotal",
+        section: 4,
+        invert: false,
+    },
+    BoolField {
+        key: "pause_session_when_unfocused",
+        label: "pauseSession",
+        section: 4,
+        invert: false,
+    },
+    BoolField {
+        key: "achievements_bypass",
+        label: "achievementsBypass",
+        section: 4,
+        invert: false,
+    },
+    BoolField {
+        key: "allow_unknown_stats",
+        label: "allowUnknownStats",
+        section: 4,
+        invert: false,
+    },
+    BoolField {
+        key: "enable_experimental_overlay",
+        label: "enableExperimentalOverlay",
+        section: 5,
+        invert: false,
+    },
+    BoolField {
+        key: "enable_screenshot",
+        label: "disableScreenshot",
+        section: 5,
+        invert: true,
+    },
+    BoolField {
+        key: "overlay_always_show_fps",
+        label: "overlayAlwaysShowFps",
+        section: 5,
+        invert: false,
+    },
+    BoolField {
+        key: "overlay_always_show_frametime",
+        label: "overlayAlwaysShowFrametime",
+        section: 5,
+        invert: false,
+    },
+    BoolField {
+        key: "overlay_always_show_playtime",
+        label: "overlayAlwaysShowPlaytime",
+        section: 5,
+        invert: false,
+    },
+    BoolField {
+        key: "overlay_always_show_user_info",
+        label: "overlayAlwaysShowUserInfo",
+        section: 5,
+        invert: false,
+    },
+    BoolField {
+        key: "disable_achievement_notification",
+        label: "disableAchievementNotification",
+        section: 5,
+        invert: false,
+    },
+    BoolField {
+        key: "disable_achievement_progress",
+        label: "showAchievementProgress",
+        section: 5,
+        invert: true,
+    },
+    BoolField {
+        key: "disable_friend_notification",
+        label: "disableFriendNotification",
+        section: 5,
+        invert: false,
+    },
+    BoolField {
+        key: "disable_warning_any",
+        label: "disableWarnings",
+        section: 5,
+        invert: false,
+    },
+    BoolField {
+        key: "force_steamhttp_success",
+        label: "forceSteamhttpSuccess",
+        section: 6,
+        invert: false,
+    },
+    BoolField {
+        key: "enable_steam_preowned_ids",
+        label: "enableSteamPreownedIds",
+        section: 6,
+        invert: false,
+    },
+    BoolField {
+        key: "free_weekend",
+        label: "freeWeekend",
+        section: 6,
+        invert: false,
+    },
+    BoolField {
+        key: "disable_steamoverlaygameid_env_var",
+        label: "controller.steamInput",
+        section: CONTROLLER_SECTION,
+        invert: false,
+    },
+];
+
+pub fn field_text(label: &str) -> String {
     if label.contains('.') {
         format!("emulator.{}", label)
     } else {
@@ -73,138 +344,6 @@ fn controller_summary(r: &smd_core::services::game_data::controller::ControllerR
     }
     lines.join("\n")
 }
-
-pub const TEXT_FIELDS: &[TextField] = &[
-    TextField {
-        key: "account_name",
-        label: "accountName",
-        placeholder: "@emulator.fields.accountNamePlaceholder",
-        section: 0,
-        float: false,
-    },
-    TextField {
-        key: "account_steamid",
-        label: "accountSteamId",
-        placeholder: "76561198000000000",
-        section: 0,
-        float: false,
-    },
-    TextField {
-        key: "language",
-        label: "language",
-        placeholder: "english",
-        section: 0,
-        float: false,
-    },
-    TextField {
-        key: "ip_country",
-        label: "ipCountry",
-        placeholder: "US",
-        section: 0,
-        float: false,
-    },
-    TextField {
-        key: "local_save_path",
-        label: "localSavePath",
-        placeholder: "@emulator.fields.localSavePathPlaceholder",
-        section: 1,
-        float: false,
-    },
-    TextField {
-        key: "saves_folder_name",
-        label: "savesFolderName",
-        placeholder: "",
-        section: 1,
-        float: false,
-    },
-    TextField {
-        key: "key_combo",
-        label: "keyCombo",
-        placeholder: "ShiftTab",
-        section: 4,
-        float: false,
-    },
-    TextField {
-        key: "font_size",
-        label: "fontSize",
-        placeholder: "16",
-        section: 4,
-        float: true,
-    },
-];
-
-pub const BOOL_FIELDS: &[BoolField] = &[
-    BoolField {
-        key: "offline",
-        label: "offline",
-        section: 2,
-    },
-    BoolField {
-        key: "steam_deck",
-        label: "steamDeck",
-        section: 2,
-    },
-    BoolField {
-        key: "disable_networking",
-        label: "disableNetworking",
-        section: 2,
-    },
-    BoolField {
-        key: "disable_lan_only",
-        label: "disableLanOnly",
-        section: 2,
-    },
-    BoolField {
-        key: "record_playtime",
-        label: "recordPlaytime",
-        section: 3,
-    },
-    BoolField {
-        key: "achievements_bypass",
-        label: "achievementsBypass",
-        section: 3,
-    },
-    BoolField {
-        key: "force_steamhttp_success",
-        label: "forceSteamhttpSuccess",
-        section: 3,
-    },
-    BoolField {
-        key: "enable_steam_preowned_ids",
-        label: "enableSteamPreownedIds",
-        section: 3,
-    },
-    BoolField {
-        key: "free_weekend",
-        label: "freeWeekend",
-        section: 3,
-    },
-    BoolField {
-        key: "enable_experimental_overlay",
-        label: "enableExperimentalOverlay",
-        section: 4,
-    },
-    BoolField {
-        key: "disable_achievement_notification",
-        label: "disableAchievementNotification",
-        section: 4,
-    },
-    BoolField {
-        key: "overlay_always_show_fps",
-        label: "overlayAlwaysShowFps",
-        section: 4,
-    },
-    BoolField {
-        key: "overlay_always_show_playtime",
-        label: "overlayAlwaysShowPlaytime",
-        section: 4,
-    },
-    BoolField {
-        key: "disable_steamoverlaygameid_env_var",
-        label: "controller.steamInput",
-        section: CONTROLLER_SECTION,
-    },
-];
 
 fn placeholder(p: &str) -> String {
     match p.strip_prefix('@') {
@@ -450,6 +589,24 @@ impl App {
         });
     }
 
+    pub(super) fn emu_search_tick(&mut self) {
+        let Some(e) = self.emu.as_mut() else { return };
+        let Some(at) = e.search_changed_at else { return };
+        if at.elapsed() < std::time::Duration::from_millis(1500) {
+            return;
+        }
+        e.search_changed_at = None;
+        let query = e.settings_search.trimmed().to_lowercase();
+        if query.is_empty() {
+            return;
+        }
+        let results = e.matching_settings(&query);
+        self.emit(
+            "emu_settings_view",
+            Some(serde_json::json!({ "action": "search", "results": count_bucket(results) })),
+        );
+    }
+
     fn emu_side_scans(&mut self) {
         self.load_controller_info();
         let Some(emu) = &self.emu else { return };
@@ -642,6 +799,9 @@ impl App {
             Action::EmuSection(i) => {
                 if let Some(e) = self.emu.as_mut() {
                     e.section = *i;
+                    e.settings_search.set(String::new());
+                    e.settings_changed_only = false;
+                    e.search_changed_at = None;
                 }
             }
             Action::EmuToggleGameData => {
@@ -669,6 +829,26 @@ impl App {
                     let v = e.bools.get(f.key).copied().unwrap_or(false);
                     e.bools.insert(f.key, !v);
                 }
+            }
+            Action::EmuHardwareType(i) => {
+                if let (Some(e), Some((value, _))) = (self.emu.as_mut(), HARDWARE_TYPES.get(*i)) {
+                    e.hardware_type = value.to_string();
+                }
+            }
+            Action::EmuSettingsChangedOnly => {
+                let on = self.emu.as_mut().map(|e| {
+                    e.settings_changed_only = !e.settings_changed_only;
+                    e.settings_changed_only
+                });
+                if on == Some(true) {
+                    self.emit("emu_settings_view", Some(serde_json::json!({ "action": "changed_only" })));
+                }
+            }
+            Action::EmuSettingsReset => {
+                if let Some(e) = self.emu.as_mut() {
+                    e.reset_settings();
+                }
+                self.toast(Tone::Success, t("emulator.settingsResetDone"));
             }
             Action::EmuToggleController => {
                 if let Some(e) = self.emu.as_mut() {
@@ -1918,17 +2098,63 @@ impl App {
         let r = col.next(h);
         hint(&mut sv.buf, r, &watcher);
         col.gap(1);
+        let query = e.settings_search.trimmed().to_lowercase();
+        let changed_only = e.settings_changed_only;
+        let filtering = !query.is_empty() || changed_only;
+        let r = col.next(3);
+        let search_label = t("emulator.settingsSearch");
+        widgets::input(
+            &mut sv.buf,
+            ctx,
+            r,
+            &mut e.settings_search,
+            InputSpec {
+                label: &search_label,
+                placeholder: "",
+                fid: Fid::new("emu.settingsSearch"),
+                id: InputId::EmuSettingsSearch,
+                error: false,
+            },
+        );
+        let r = col.next(1);
+        widgets::checkbox(
+            &mut sv.buf,
+            ctx,
+            r,
+            changed_only,
+            &t("emulator.settingsOnlyChanged"),
+            Fid::new("emu.settingsChanged"),
+            Action::EmuSettingsChangedOnly,
+            true,
+        );
+        let r = col.next(1);
+        widgets::button(
+            &mut sv.buf,
+            ctx,
+            r.x,
+            r.y,
+            r.width,
+            &ButtonSpec::new(
+                t("emulator.settingsReset"),
+                Fid::new("emu.settingsReset"),
+                Action::EmuSettingsReset,
+                Btn::Secondary,
+            ),
+        );
+        col.gap(1);
         let tabs: Vec<ButtonSpec> = SECTIONS
             .iter()
             .enumerate()
             .map(|(i, key)| {
-                let kind = if e.section == i {
+                let kind = if e.section == i && !filtering {
                     Btn::Primary
                 } else {
                     Btn::Secondary
                 };
+                let count = e.changed_in_section(i);
+                let label = if count > 0 { format!("{} ({})", t(key), count) } else { t(key) };
                 ButtonSpec::new(
-                    t(key),
+                    label,
                     Fid::idx("emu.section", i),
                     Action::EmuSection(i),
                     kind,
@@ -1939,10 +2165,13 @@ impl App {
         let r = col.next(rows);
         widgets::buttons_wrapped(&mut sv.buf, ctx, r, &tabs);
         col.gap(1);
+        let mut shown = 0usize;
         for (i, f) in TEXT_FIELDS.iter().enumerate() {
-            if f.section != e.section {
+            let changed = !e.fields[i].trimmed().is_empty();
+            if !e.setting_visible(f.section, f.key, f.label, changed, &query) {
                 continue;
             }
+            shown += 1;
             let r = col.next(3);
             let label = t(&field_text(f.label));
             widgets::input(
@@ -1963,7 +2192,30 @@ impl App {
             let r = col.next(h);
             hint(&mut sv.buf, r, &hk);
         }
-        if e.section == CONTROLLER_SECTION {
+        if e.setting_visible(SYSTEM_SECTION, "steam_hardware_type", "steamHardwareType", !e.hardware_type.is_empty(), &query) {
+            shown += 1;
+            let r = col.next(1);
+            widgets::paragraph(&mut sv.buf, r, &t("emulator.fields.steamHardwareType"), theme::text());
+            for (i, (value, label)) in HARDWARE_TYPES.iter().enumerate() {
+                let r = col.next(1);
+                widgets::radio(
+                    &mut sv.buf,
+                    ctx,
+                    r,
+                    e.hardware_type == *value,
+                    &t(&format!("emulator.fields.{}", label)),
+                    Fid::idx("emu.hardware", i),
+                    Action::EmuHardwareType(i),
+                );
+            }
+            let hk = t("emulator.fields.steamHardwareTypeHint");
+            let h = widgets::wrap_height(&hk, col.w);
+            let r = col.next(h);
+            hint(&mut sv.buf, r, &hk);
+            col.gap(1);
+        }
+        let show_controller = !filtering && e.section == CONTROLLER_SECTION;
+        if show_controller {
             let r = col.next(1);
             widgets::checkbox(
                 &mut sv.buf,
@@ -2050,11 +2302,12 @@ impl App {
             col.gap(1);
         }
         for (i, f) in BOOL_FIELDS.iter().enumerate() {
-            if f.section != e.section {
+            let on = e.bools.get(f.key).copied().unwrap_or(false);
+            if !e.setting_visible(f.section, f.key, f.label, on, &query) {
                 continue;
             }
+            shown += 1;
             let r = col.next(1);
-            let on = e.bools.get(f.key).copied().unwrap_or(false);
             widgets::checkbox(
                 &mut sv.buf,
                 ctx,
@@ -2073,6 +2326,10 @@ impl App {
                 Rect::new(r.x + 4, r.y, r.width.saturating_sub(4), r.height),
                 &hk,
             );
+        }
+        if filtering && shown == 0 {
+            let r = col.next(1);
+            hint(&mut sv.buf, r, &t("emulator.settingsNoMatch"));
         }
         let right_end = col.y;
         sv.advance_to(left_end.max(right_end));

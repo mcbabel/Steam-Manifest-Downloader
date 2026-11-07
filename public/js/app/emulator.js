@@ -1516,15 +1516,54 @@ function emuFileLabel(path) {
   return parts.slice(-2).join('/') || String(path ?? '');
 }
 
-const EMU_BOOL_KEYS = new Set([
-  'offline', 'steam_deck', 'disable_networking', 'disable_lan_only',
-  'record_playtime', 'achievements_bypass', 'force_steamhttp_success',
-  'enable_steam_preowned_ids', 'free_weekend',
-  'enable_experimental_overlay', 'disable_achievement_notification',
-  'overlay_always_show_fps', 'overlay_always_show_playtime',
-  'disable_steamoverlaygameid_env_var',
-]);
-const EMU_FLOAT_KEYS = new Set(['font_size']);
+const EMU_SETTINGS_GROUPS = ['account', 'saves', 'system', 'network', 'stats', 'overlay', 'compat'];
+
+const EMU_SETTINGS = [
+  ['account_name', 'text', 'account', 'accountName', { placeholderKey: 'accountNamePlaceholder' }],
+  ['account_steamid', 'text', 'account', 'accountSteamId', { placeholder: '76561198000000000', inputmode: 'numeric' }],
+  ['language', 'text', 'account', 'language', { placeholder: 'english' }],
+  ['ip_country', 'text', 'account', 'ipCountry', { placeholder: 'US', maxlength: 2 }],
+  ['local_save_path', 'text', 'saves', 'localSavePath', { placeholderKey: 'localSavePathPlaceholder' }],
+  ['saves_folder_name', 'text', 'saves', 'savesFolderName', { placeholder: 'GSE Saves' }],
+  ['steam_hardware_type', 'select', 'system', 'steamHardwareType', { options: [['', 'hwDefault'], ['0', 'hwNone'], ['1', 'hwDeck'], ['2', 'hwMachine'], ['3', 'hwFrame']] }],
+  ['is_under_proton', 'bool', 'system', 'isUnderProton'],
+  ['offline', 'bool', 'system', 'offline'],
+  ['enable_account_avatar', 'bool', 'system', 'enableAccountAvatar'],
+  ['new_app_ticket', 'invert', 'system', 'oldAppTicket'],
+  ['disable_networking', 'bool', 'network', 'disableNetworking'],
+  ['disable_lan_only', 'bool', 'network', 'disableLanOnly'],
+  ['listen_port', 'int', 'network', 'listenPort', { placeholder: '47584', min: 1, max: 65535 }],
+  ['disable_lobby_creation', 'bool', 'network', 'disableLobbyCreation'],
+  ['share_leaderboards_over_network', 'bool', 'network', 'shareLeaderboards'],
+  ['record_playtime', 'bool', 'stats', 'recordPlaytime'],
+  ['pause_total_when_unfocused', 'bool', 'stats', 'pauseTotal'],
+  ['pause_session_when_unfocused', 'bool', 'stats', 'pauseSession'],
+  ['achievements_bypass', 'bool', 'stats', 'achievementsBypass'],
+  ['allow_unknown_stats', 'bool', 'stats', 'allowUnknownStats'],
+  ['enable_experimental_overlay', 'bool', 'overlay', 'enableExperimentalOverlay'],
+  ['hook_delay_sec', 'int', 'overlay', 'hookDelay', { placeholder: '0', min: 0, max: 600 }],
+  ['key_combo', 'text', 'overlay', 'keyCombo', { placeholder: 'shift + tab' }],
+  ['screenshot_combo', 'text', 'overlay', 'screenshotCombo', { placeholder: 'f12' }],
+  ['enable_screenshot', 'invert', 'overlay', 'disableScreenshot'],
+  ['overlay_always_show_fps', 'bool', 'overlay', 'overlayAlwaysShowFps'],
+  ['overlay_always_show_frametime', 'bool', 'overlay', 'overlayAlwaysShowFrametime'],
+  ['overlay_always_show_playtime', 'bool', 'overlay', 'overlayAlwaysShowPlaytime'],
+  ['overlay_always_show_user_info', 'bool', 'overlay', 'overlayAlwaysShowUserInfo'],
+  ['disable_achievement_notification', 'bool', 'overlay', 'disableAchievementNotification'],
+  ['disable_achievement_progress', 'invert', 'overlay', 'showAchievementProgress'],
+  ['disable_friend_notification', 'bool', 'overlay', 'disableFriendNotification'],
+  ['disable_warning_any', 'bool', 'overlay', 'disableWarnings'],
+  ['font_size', 'float', 'overlay', 'fontSize', { placeholder: '16', min: 8, max: 48, step: 0.5 }],
+  ['notification_duration_achievement', 'float', 'overlay', 'notificationDuration', { placeholder: '7', min: 1, max: 60, step: 0.5 }],
+  ['force_steamhttp_success', 'bool', 'compat', 'forceSteamhttpSuccess'],
+  ['enable_steam_preowned_ids', 'bool', 'compat', 'enableSteamPreownedIds'],
+  ['free_weekend', 'bool', 'compat', 'freeWeekend'],
+];
+
+const EMU_TYPES = new Map(EMU_SETTINGS.map(([key, type]) => [key, type]));
+EMU_TYPES.set('disable_steamoverlaygameid_env_var', 'bool');
+EMU_TYPES.set('controller_type', 'text');
+EMU_TYPES.set('steam_hardware_type', 'int');
 
 const EMU_LAST_SETTINGS_KEY = 'lastEmuSettings_v1';
 
@@ -1543,60 +1582,196 @@ function saveLastEmuSettings(settings) {
   } catch {}
 }
 
+function emuFieldValue(el) {
+  const key = el.getAttribute('data-emu-key');
+  const type = EMU_TYPES.get(key) || 'text';
+  if (type === 'bool') return el.checked ? true : undefined;
+  if (type === 'invert') return el.checked ? false : undefined;
+  const raw = (el.value || '').trim();
+  if (!raw) return undefined;
+  if (type === 'int') {
+    const n = parseInt(raw, 10);
+    return Number.isNaN(n) || n < 0 ? undefined : n;
+  }
+  if (type === 'float') {
+    const n = parseFloat(raw);
+    return Number.isNaN(n) ? undefined : n;
+  }
+  return raw;
+}
+
 function gatherEmuSettings() {
   const settings = {};
-  let anySet = false;
   document.querySelectorAll('#step-emulator [data-emu-key]').forEach((el) => {
-    const key = el.getAttribute('data-emu-key');
-    if (!key) return;
-    if (EMU_BOOL_KEYS.has(key)) {
-      if (el.checked) {
-        settings[key] = true;
-        anySet = true;
-      }
-      return;
-    }
-    const raw = (el.value || '').trim();
-    if (!raw) return;
-    if (EMU_FLOAT_KEYS.has(key)) {
-      const n = parseFloat(raw);
-      if (!Number.isNaN(n)) {
-        settings[key] = n;
-        anySet = true;
-      }
-      return;
-    }
-    settings[key] = raw;
-    anySet = true;
+    const value = emuFieldValue(el);
+    if (value !== undefined) settings[el.getAttribute('data-emu-key')] = value;
   });
-  return anySet ? settings : null;
+  return Object.keys(settings).length ? settings : null;
 }
 
 function populateEmuSettings(settings) {
+  const s = Object.assign({}, settings || {});
+  if (s.steam_deck === true && s.steam_hardware_type == null) s.steam_hardware_type = 1;
   document.querySelectorAll('#step-emulator [data-emu-key]').forEach((el) => {
     const key = el.getAttribute('data-emu-key');
-    if (!key) return;
-    if (EMU_BOOL_KEYS.has(key)) {
-      el.checked = settings && settings[key] === true;
-      return;
-    }
-    if (!settings || settings[key] === null || settings[key] === undefined) {
-      el.value = '';
-      return;
-    }
-    el.value = String(settings[key]);
+    const type = EMU_TYPES.get(key) || 'text';
+    if (type === 'bool') el.checked = s[key] === true;
+    else if (type === 'invert') el.checked = s[key] === false;
+    else el.value = s[key] === null || s[key] === undefined ? '' : String(s[key]);
+  });
+  refreshEmuSettingsView();
+}
+
+function buildEmuSettingRow([key, type, group, label, attrs = {}]) {
+  const t = (k) => window.i18n.t(`emulator.fields.${k}`);
+  const row = document.createElement('div');
+  row.className = 'emu-field' + (['bool', 'invert'].includes(type) ? ' emu-field--toggle' : '');
+  row.dataset.group = group;
+  row.dataset.key = key;
+  const id = `emu-set-${key}`;
+  const text = document.createElement('div');
+  text.className = 'emu-field__label-block';
+  const name = document.createElement(['bool', 'invert'].includes(type) ? 'span' : 'label');
+  name.className = 'emu-field__label';
+  name.setAttribute('data-i18n', `emulator.fields.${label}`);
+  name.textContent = t(label);
+  if (name.tagName === 'LABEL') name.htmlFor = id;
+  const hint = document.createElement('p');
+  hint.className = 'emu-field__hint';
+  hint.setAttribute('data-i18n', `emulator.fields.${label}Hint`);
+  hint.textContent = t(`${label}Hint`);
+  text.append(name, hint);
+  let control;
+  if (['bool', 'invert'].includes(type)) {
+    control = document.createElement('label');
+    control.className = 'toggle-switch';
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.id = id;
+    input.setAttribute('data-emu-key', key);
+    input.setAttribute('aria-label', t(label));
+    const slider = document.createElement('span');
+    slider.className = 'toggle-switch__slider';
+    control.append(input, slider);
+  } else if (type === 'select') {
+    control = document.createElement('select');
+    control.className = 'emu-field__input emu-field__select';
+    control.id = id;
+    control.setAttribute('data-emu-key', key);
+    attrs.options.forEach(([value, optLabel]) => {
+      const opt = document.createElement('option');
+      opt.value = value;
+      opt.setAttribute('data-i18n', `emulator.fields.${optLabel}`);
+      opt.textContent = t(optLabel);
+      control.appendChild(opt);
+    });
+  } else {
+    control = document.createElement('input');
+    control.className = 'emu-field__input' + (type === 'text' ? '' : ' emu-field__input--narrow');
+    control.id = id;
+    control.type = type === 'text' ? 'text' : 'number';
+    control.autocomplete = 'off';
+    control.setAttribute('data-emu-key', key);
+    if (attrs.placeholderKey) {
+      control.setAttribute('data-i18n-attr', `placeholder=emulator.fields.${attrs.placeholderKey}`);
+      control.placeholder = t(attrs.placeholderKey);
+    } else if (attrs.placeholder) control.placeholder = attrs.placeholder;
+    ['min', 'max', 'step', 'maxlength', 'inputmode'].forEach(a => { if (attrs[a] != null) control.setAttribute(a, attrs[a]); });
+  }
+  if (row.classList.contains('emu-field--toggle')) row.append(text, control);
+  else {
+    text.insertBefore(control, hint);
+    row.append(text);
+  }
+  return row;
+}
+
+function emuSettingChanged(row) {
+  const el = row.querySelector('[data-emu-key]');
+  return !!el && emuFieldValue(el) !== undefined;
+}
+
+function refreshEmuSettingsView() {
+  refreshSelectPickers(document.getElementById('step-emulator') || document);
+  const fields = document.getElementById('emu-settings-fields');
+  if (!fields) return;
+  const query = (document.getElementById('emu-settings-search')?.value || '').trim().toLowerCase();
+  const onlyChanged = !!document.getElementById('emu-settings-changed')?.checked;
+  const group = state.emuSettingsGroup || EMU_SETTINGS_GROUPS[0];
+  let shown = 0;
+  fields.querySelectorAll('.emu-field').forEach(row => {
+    const matches = query
+      ? row.textContent.toLowerCase().includes(query) || row.dataset.key.includes(query)
+      : (onlyChanged || row.dataset.group === group);
+    const visible = matches && (!onlyChanged || emuSettingChanged(row));
+    row.classList.toggle('hidden', !visible);
+    if (visible) shown += 1;
+  });
+  fields.classList.toggle('emu-settings__fields--mixed', !!query || onlyChanged);
+  document.getElementById('emu-settings-empty')?.classList.toggle('hidden', shown > 0);
+  document.querySelectorAll('#emu-settings-groups .emu-settings__group').forEach(btn => {
+    const active = !query && !onlyChanged && btn.dataset.group === group;
+    btn.classList.toggle('is-active', active);
+    btn.setAttribute('aria-selected', String(active));
+    const count = Array.from(fields.querySelectorAll(`.emu-field[data-group="${btn.dataset.group}"]`)).filter(emuSettingChanged).length;
+    const badge = btn.querySelector('.emu-settings__count');
+    badge.textContent = count ? String(count) : '';
+    badge.classList.toggle('hidden', !count);
   });
 }
 
 function initEmuAccordion() {
-  const toggles = document.querySelectorAll('#step-emulator .emu-accordion__toggle');
-  toggles.forEach((btn) => {
+  const fields = document.getElementById('emu-settings-fields');
+  const groups = document.getElementById('emu-settings-groups');
+  if (!fields || !groups || fields.childElementCount) return;
+  EMU_SETTINGS.forEach(def => fields.appendChild(buildEmuSettingRow(def)));
+  document.querySelectorAll('#step-emulator select[data-emu-key]').forEach(enhanceSelect);
+  EMU_SETTINGS_GROUPS.forEach(group => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'emu-settings__group';
+    btn.dataset.group = group;
+    btn.setAttribute('role', 'tab');
+    const label = document.createElement('span');
+    label.setAttribute('data-i18n', `emulator.sections.${group}`);
+    label.textContent = window.i18n.t(`emulator.sections.${group}`);
+    const count = document.createElement('span');
+    count.className = 'emu-settings__count hidden';
+    btn.append(label, count);
     btn.addEventListener('click', () => {
-      const targetId = btn.getAttribute('data-target');
-      const content = targetId ? document.getElementById(targetId) : null;
-      if (!content) return;
-      const open = content.classList.toggle('hidden');
-      btn.setAttribute('aria-expanded', String(!open));
+      state.emuSettingsGroup = group;
+      const search = document.getElementById('emu-settings-search');
+      const changed = document.getElementById('emu-settings-changed');
+      if (search) search.value = '';
+      if (changed) changed.checked = false;
+      refreshEmuSettingsView();
     });
+    groups.appendChild(btn);
   });
+  document.getElementById('emu-settings-search')?.addEventListener('input', () => {
+    refreshEmuSettingsView();
+    clearTimeout(state.emuSearchTimer);
+    state.emuSearchTimer = setTimeout(() => {
+      const query = (document.getElementById('emu-settings-search')?.value || '').trim();
+      if (!query) return;
+      const shown = document.querySelectorAll('#emu-settings-fields .emu-field:not(.hidden)').length;
+      emitEvent('emu_settings_view', { action: 'search', results: countBucket(shown) });
+    }, 1500);
+  });
+  document.getElementById('emu-settings-changed')?.addEventListener('change', (e) => {
+    refreshEmuSettingsView();
+    if (e.target.checked) emitEvent('emu_settings_view', { action: 'changed_only' });
+  });
+  fields.addEventListener('input', refreshEmuSettingsView);
+  fields.addEventListener('change', refreshEmuSettingsView);
+  document.getElementById('btn-emu-settings-reset')?.addEventListener('click', () => {
+    fields.querySelectorAll('[data-emu-key]').forEach(el => {
+      if (el.type === 'checkbox') el.checked = false;
+      else el.value = '';
+    });
+    refreshEmuSettingsView();
+    updateEmuOverview();
+    showToast(window.i18n.t('emulator.settingsResetDone'), 'success');
+  });
+  refreshEmuSettingsView();
 }
