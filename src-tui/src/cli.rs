@@ -117,6 +117,12 @@ pub struct DownloadArgs {
         help = t("tui.cli.argFolderStyle")
     )]
     pub folder_style: Option<String>,
+    #[arg(
+        long,
+        value_name = "SERVER",
+        help = t("tui.cli.argServer")
+    )]
+    pub server: Option<String>,
     #[arg(long, value_name = "LANGUAGE", help = t("tui.cli.argLanguage"))]
     pub language: Option<String>,
     #[arg(long, value_name = "NAME", help = t("tui.cli.argBranch"))]
@@ -944,12 +950,19 @@ pub async fn download(dir: PathBuf, args: DownloadArgs) -> i32 {
             .folder_style
             .as_deref()
             .map(|s| if s == "default" { String::new() } else { s.to_string() }),
+        download_server: args.server.clone(),
         all_app_ids: Some(plan.all_app_ids.clone()),
         include_dlc: args.dlc.then_some(true),
         branch: args.branch.clone(),
         branch_password: args.branch_password.clone(),
         use_account: args.uses_account(),
     };
+    if let Some(server) = config.download_server.as_deref() {
+        if let Err(e) = smd_core::services::cdn_servers::parse_override(server) {
+            errln!("{}", tf("tui.cli.error", &[("message", &e)]));
+            return 1;
+        }
+    }
     if let Some(limit) = config.speed_limit.as_deref() {
         if let Err(e) = smd_core::services::speed_limit::parse_speed_limit(limit) {
             errln!("{}", tf("tui.cli.error", &[("message", &e)]));

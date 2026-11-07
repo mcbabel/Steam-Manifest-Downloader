@@ -210,6 +210,19 @@ impl App {
                 self.set.draft.target_platform = depot_select::parse_platforms(&list.join(",")).join(",");
                 self.set.dirty = true;
             }
+            Action::SettingsServer(step) => {
+                let regions = smd_core::services::cdn_servers::REGIONS;
+                let n = regions.len() as i32 + 2;
+                let cur = if self.set.server_custom {
+                    n - 1
+                } else {
+                    regions.iter().position(|(c, _)| *c == self.set.draft.download_region).map(|i| i as i32 + 1).unwrap_or(0)
+                };
+                let next = (cur + step).rem_euclid(n);
+                self.set.server_custom = next == n - 1;
+                self.set.draft.download_region = if next == 0 || next == n - 1 { 0 } else { regions[(next - 1) as usize].0 };
+                self.set.dirty = true;
+            }
             Action::SettingsFolderStyle(style) => {
                 self.set.draft.folder_style = style.to_string();
                 self.set.dirty = true;
@@ -389,6 +402,13 @@ impl App {
             self.set.status = Some((Tone::Error, t("settings.speedLimitInvalid")));
             return;
         }
+        let server_custom = self.set.server_custom;
+        if server_custom {
+            if let Err(e) = smd_core::services::cdn_servers::parse_custom(&inputs[SETTING_SERVER]) {
+                self.set.status = Some((Tone::Error, i18n::localize_error(&e)));
+                return;
+            }
+        }
         let draft = self.set.draft.clone();
         let sources = self.settings.depot_sources.clone();
         let old_default = self.settings.download_location.clone();
@@ -422,6 +442,8 @@ impl App {
             s.hubcap_api_key = inputs[SETTING_HUBCAP].clone();
             s.ryuu_api_key = inputs[SETTING_RYUU].clone();
             s.steam_web_api_key = inputs[SETTING_WEBAPI].clone();
+            s.download_region = if server_custom { 0 } else { draft.download_region };
+            s.download_server = if server_custom { inputs[SETTING_SERVER].clone() } else { String::new() };
             s.game_data_media = draft.game_data_media.clone();
             s.auto_update = draft.auto_update;
             s.use_native_downloader = draft.use_native_downloader;
@@ -842,6 +864,12 @@ impl App {
                     let r = sv.next(widgets::status_height(&msg, w));
                     widgets::status(&mut sv.buf, r, tone, &msg, self.tick);
                 }
+                let ht = t(hint_key);
+                let r = sv.next(widgets::wrap_height(&ht, w));
+                hint(&mut sv.buf, r, &ht);
+                sv.gap(1);
+                self.render_download_server(sv, ctx, w);
+                continue;
             }
             let ht = t(hint_key);
             let h = widgets::wrap_height(&ht, w);
@@ -849,6 +877,74 @@ impl App {
             hint(&mut sv.buf, r, &ht);
             sv.gap(1);
         }
+    }
+
+    fn render_download_server(&mut self, sv: &mut ScrollView, ctx: &mut Ctx, w: u16) {
+        let r = sv.next(1);
+        let label = format!("{}: ", t("settings.downloadServer"));
+        widgets::text(&mut sv.buf, r, &label, theme::text());
+        let mut x = r.x + widgets::width(&label);
+        let current = if self.set.server_custom {
+            t("settings.downloadServerCustom")
+        } else {
+            match smd_core::services::cdn_servers::region_name(self.set.draft.download_region) {
+                Some(name) => {
+                    let key = format!("settings.regions.{}", self.set.draft.download_region);
+                    let local = t(&key);
+                    tf("settings.downloadServerRegion", &[("name", &if local == key { name.to_string() } else { local })])
+                }
+                None => t("settings.downloadServerAuto"),
+            }
+        };
+        x += widgets::button(
+            &mut sv.buf,
+            ctx,
+            x,
+            r.y,
+            r.right().saturating_sub(x),
+            &ButtonSpec::new("◂", Fid::new("settings.serverPrev"), Action::SettingsServer(-1), Btn::Secondary),
+        ) + 1;
+        let cw = widgets::width(&current) + 2;
+        widgets::text(
+            &mut sv.buf,
+            Rect::new(x, r.y, cw.min(r.right().saturating_sub(x)), 1),
+            &format!(" {} ", current),
+            theme::accent(),
+        );
+        x += cw + 1;
+        widgets::button(
+            &mut sv.buf,
+            ctx,
+            x,
+            r.y,
+            r.right().saturating_sub(x),
+            &ButtonSpec::new("▸", Fid::new("settings.serverNext"), Action::SettingsServer(1), Btn::Secondary),
+        );
+        if self.set.server_custom {
+            let r = sv.next(3);
+            let ph = t("settings.downloadServerPlaceholder");
+            let label = t("settings.downloadServerCustom");
+            widgets::input(
+                &mut sv.buf,
+                ctx,
+                r,
+                &mut self.set.inputs[SETTING_SERVER],
+                InputSpec {
+                    label: &label,
+                    placeholder: &ph,
+                    fid: Fid::idx("settings.input", SETTING_SERVER),
+                    id: InputId::Setting(SETTING_SERVER),
+                    error: false,
+                },
+            );
+            let ht = t("settings.downloadServerCustomHint");
+            let r = sv.next(widgets::wrap_height(&ht, w));
+            hint(&mut sv.buf, r, &ht);
+        }
+        let ht = t("settings.downloadServerHint");
+        let r = sv.next(widgets::wrap_height(&ht, w));
+        hint(&mut sv.buf, r, &ht);
+        sv.gap(1);
     }
 
     fn render_depot_selection(

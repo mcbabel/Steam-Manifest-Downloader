@@ -74,6 +74,10 @@ pub struct Settings {
     pub folder_style: String,
     #[serde(default)]
     pub latest_manifests: bool,
+    #[serde(default)]
+    pub download_region: u32,
+    #[serde(default)]
+    pub download_server: String,
     #[serde(default = "default_auto_update")]
     pub remote_updates: bool,
     #[serde(default)]
@@ -166,6 +170,8 @@ impl Default for Settings {
             target_platform: String::new(),
             folder_style: String::new(),
             latest_manifests: false,
+            download_region: 0,
+            download_server: String::new(),
             remote_updates: true,
             steam_path: String::new(),
             last_seen_version: String::new(),
@@ -224,6 +230,10 @@ pub async fn load_settings(app_data_dir: &Path) -> Settings {
 
 pub async fn save_settings(app_data_dir: &Path, settings: &Settings) -> Result<(), String> {
     crate::services::net::apply_proxy(&settings.proxy)?;
+    let download_server = crate::services::cdn_servers::parse_custom(&settings.download_server)?;
+    if settings.download_region != 0 && crate::services::cdn_servers::region_name(settings.download_region).is_none() {
+        return Err(format!("Unknown download region: {}", settings.download_region));
+    }
     crate::services::steam_library::set_custom_dir(&settings.steam_path);
     let speed_limit =
         crate::services::speed_limit::parse_speed_limit(&settings.download_speed_limit)
@@ -238,6 +248,7 @@ pub async fn save_settings(app_data_dir: &Path, settings: &Settings) -> Result<(
     }
 
     let mut to_persist = settings.clone();
+    to_persist.download_server = download_server;
     if !crate::services::embedded_tools::AVAILABLE {
         to_persist.use_native_downloader = true;
     }

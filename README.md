@@ -62,6 +62,7 @@ Upload `.lua` / `.st` files or depot key exports (`.json`, `.csv`), or search by
 | ⏻ | **Shut down when finished** — optional, with a 60 second countdown that can be cancelled; the next start offers to continue with the skipped steps |
 | 💾 | **Disk space check** — warns before a download that does not fit |
 | 🌐 | **Proxy with a test button** — HTTP, HTTPS or SOCKS5 for every connection, retries on connection errors, readable error messages that never show API keys |
+| 🛰️ | **Download server like Steam** — picks Steam's content servers the way the Steam client does (your region, least busy first, spread over several servers), or a region of your choice or your own LanCache |
 | 🎮 | **Steam Store API** integration — game names + cover art |
 | 🖼️ | **Add to Steam Library** — non-Steam shortcut with banner / hero / logo / icon (Linux step + Windows toggle). Steam is found automatically (registry, usual folders, Flatpak, Snap) or set under Settings → Steam folder |
 | 🔧 | **gbe_fork emulator** patching — Regular + Experimental variants, 39 settings in groups with search, per file selection; edit, update to a newer gbe_fork or revert later, restore DRM originals one by one, ColdClientLoader for games that check their steam_api, or patch a folder that is already on disk |
@@ -311,6 +312,7 @@ smd logout                          # sign out and revoke the sign-in
 | `--all-depots` | Every depot into separate subfolders, even when "Like Steam" is enabled in the settings |
 | `--dlc` | With `--like-steam`: also download the DLC in the file. The emulator step later marks them as owned for gbe_fork |
 | `--folder-style` | Name of the game folder: `default` (`220 - Half-Life 2`), `underscore` (`220_Half-Life_2`) or `dash` (`220-Half-Life-2`). Defaults to the setting |
+| `--server` | Download server for this run: `auto`, the number of a Steam region (for example `5` for Frankfurt) or your own server such as `lancache.lan`. Defaults to the setting |
 | `--platform` / `--language` | With `--like-steam`: pick depots for other platforms (`windows`, `linux`, `macos`, several comma separated like `windows,linux`) or game language (`german`, `english`, …). In Docker the default platform is Linux, so use `--platform windows` for the Windows version |
 | `--keys FILE` | Depot keys from a key file (`.json`, `.csv`, `.vdf`, `.txt`) for depots that have none. Repeatable |
 | `--app APP_ID` | Which game to take from a key file that lists several |

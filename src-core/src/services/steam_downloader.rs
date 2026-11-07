@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -11,6 +11,7 @@ use tokio::fs;
 use tokio::io::{AsyncSeekExt, AsyncWriteExt};
 use tokio::sync::{Mutex, Semaphore};
 
+use crate::services::cdn_servers;
 use crate::services::manifest_code_provider::fetch_manifest_request_code_external;
 use crate::services::steam_cdn;
 use crate::services::steam_chunks::decode_chunk;
@@ -158,10 +159,7 @@ pub async fn download_depot_native(
     chunk_concurrency: u32,
     resume: ResumeOptions,
 ) -> Result<NativeDownloadOutcome, String> {
-    let servers = discover_cdn_servers(session.clone(), 0, 20).await?;
-    if servers.is_empty() {
-        return Err("no CDN servers returned by Steam".to_string());
-    }
+    let pool = Arc::new(ServerPool::discover(session.clone(), app_id).await?);
     if cancel.load(Ordering::SeqCst) {
         return Err("cancelled".to_string());
     }
@@ -181,7 +179,7 @@ pub async fn download_depot_native(
 
     let manifest = fetch_manifest_with_fallback(
         &http,
-        &servers,
+        &pool.servers,
         session.clone(),
         app_id,
         depot_id,
@@ -194,7 +192,7 @@ pub async fn download_depot_native(
     download_chunks_from_manifest(
         http,
         session,
-        servers,
+        pool,
         app_id,
         depot_id,
         depot_key,
@@ -223,15 +221,12 @@ pub async fn download_depot_from_local_manifest(
     chunk_concurrency: u32,
     resume: ResumeOptions,
 ) -> Result<NativeDownloadOutcome, String> {
-    let servers = discover_cdn_servers(session.clone(), 0, 20).await?;
-    if servers.is_empty() {
-        return Err("no CDN servers returned by Steam".to_string());
-    }
+    let pool = Arc::new(ServerPool::discover(session.clone(), app_id).await?);
     let manifest = decode_manifest(&manifest_bytes, &depot_key)?;
     download_chunks_from_manifest(
         http,
         session,
-        servers,
+        pool,
         app_id,
         depot_id,
         depot_key,
@@ -249,7 +244,7 @@ pub async fn download_depot_from_local_manifest(
 async fn download_chunks_from_manifest(
     http: Client,
     session: Arc<SteamSession>,
-    servers: Vec<CdnServer>,
+    pool: Arc<ServerPool>,
     app_id: u32,
     depot_id: u32,
     depot_key: [u8; 32],
@@ -462,7 +457,7 @@ async fn download_chunks_from_manifest(
             };
             let http = http.clone();
             let session = session.clone();
-            let servers = servers.clone();
+            let pool = pool.clone();
             let depot_key = depot_key;
             let progress = progress.clone();
             let completed_chunks = completed_chunks.clone();
@@ -522,7 +517,8 @@ async fn download_chunks_from_manifest(
                 let res = process_chunk(
                     http,
                     session,
-                    &servers,
+                    &pool,
+                    index as usize,
                     app_id,
                     depot_id,
                     &depot_key,
@@ -670,7 +666,8 @@ struct ChunkOutcome {
 async fn process_chunk(
     http: Client,
     session: Arc<SteamSession>,
-    servers: &[CdnServer],
+    pool: &ServerPool,
+    slot: usize,
     app_id: u32,
     depot_id: u32,
     depot_key: &[u8; 32],
@@ -681,12 +678,14 @@ async fn process_chunk(
     let sha_hex = hex::encode(&job.sha);
 
     let mut last_err: Option<String> = None;
+    let mut hard_errors = 0;
     for attempt in 0..CHUNK_RETRY_COUNT {
         if attempt > 0 {
             let delay_ms = chunk_retry_backoff_ms(attempt);
             tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
         }
-        let server = pick_server(servers, attempt);
+        let server_idx = pool.pick(slot, attempt);
+        let server = &pool.servers[server_idx];
         let token = get_or_fetch_token(
             &token_cache,
             session.clone(),
@@ -701,12 +700,13 @@ async fn process_chunk(
             depot_id,
             &sha_hex,
             token.as_deref(),
-            !server.https_support.is_empty() && server.https_support != "none",
+            server.use_https(),
         )
         .await
         {
             Ok(b) if b.len() as u32 == job.cb_compressed || job.cb_compressed == 0 => b,
             Ok(b) => {
+                pool.failed(server_idx);
                 last_err = Some(format!(
                     "chunk size mismatch: got {} bytes, expected {}",
                     b.len(),
@@ -715,8 +715,12 @@ async fn process_chunk(
                 continue;
             }
             Err(e) => {
+                pool.failed(server_idx);
                 if is_hard_chunk_error(&e) {
-                    return Err(e);
+                    hard_errors += 1;
+                    if hard_errors > 1 || pool.servers.len() < 2 {
+                        return Err(e);
+                    }
                 }
                 last_err = Some(e);
                 continue;
@@ -724,27 +728,28 @@ async fn process_chunk(
         };
         let network_bytes = encrypted.len() as u64;
 
-        let decoded = match decode_chunk(&encrypted, depot_key, job.cb_original) {
+        let key = *depot_key;
+        let expected_sha = job.sha.clone();
+        let cb_original = job.cb_original;
+        let checked = tokio::task::spawn_blocking(move || -> Result<Vec<u8>, String> {
+            let decoded = decode_chunk(&encrypted, &key, cb_original).map_err(|e| format!("chunk decode failed: {}", e))?;
+            let actual_sha = Sha1::digest(&decoded).to_vec();
+            if actual_sha != expected_sha {
+                return Err(format!("chunk SHA mismatch: got {} expected {}", hex::encode(&actual_sha), hex::encode(&expected_sha)));
+            }
+            Ok(decoded)
+        })
+        .await
+        .map_err(|e| format!("chunk decode task failed: {}", e))?;
+        let decoded = match checked {
             Ok(d) => d,
             Err(e) => {
-                last_err = Some(format!("chunk decode failed: {}", e));
+                pool.failed(server_idx);
+                last_err = Some(e);
                 continue;
             }
         };
-
-        let actual_sha = {
-            let mut hasher = Sha1::new();
-            hasher.update(&decoded);
-            hasher.finalize().to_vec()
-        };
-        if actual_sha != job.sha {
-            last_err = Some(format!(
-                "chunk SHA mismatch: got {} expected {}",
-                hex::encode(&actual_sha),
-                sha_hex
-            ));
-            continue;
-        }
+        pool.worked(server_idx);
 
         if let Some(parent) = job.file_path.parent() {
             fs::create_dir_all(parent)
@@ -1056,7 +1061,7 @@ async fn fetch_manifest_with_fallback(
         let token = fetch_cdn_auth_token(session.clone(), &server.host, app_id, depot_id)
             .await
             .unwrap_or(None);
-        let use_https = !server.https_support.is_empty() && server.https_support != "none";
+        let use_https = server.use_https();
         match steam_cdn::fetch_decoded_manifest(
             http,
             &server.host,
@@ -1078,8 +1083,74 @@ async fn fetch_manifest_with_fallback(
     Err(last_err.unwrap_or_else(|| "no servers tried".to_string()))
 }
 
-fn pick_server<'a>(servers: &'a [CdnServer], attempt: usize) -> &'a CdnServer {
-    &servers[attempt % servers.len()]
+const SERVER_PENALTY: u32 = 3;
+
+pub(crate) struct ServerPool {
+    servers: Vec<CdnServer>,
+    spread: usize,
+    preferred: usize,
+    failures: Vec<AtomicU32>,
+}
+
+impl ServerPool {
+    fn new(servers: Vec<CdnServer>, spread: usize) -> Self {
+        let failures = servers.iter().map(|_| AtomicU32::new(0)).collect();
+        let spread = spread.clamp(1, servers.len().max(1));
+        let preferred = servers.len();
+        Self { servers, spread, preferred, failures }
+    }
+
+    async fn discover(session: Arc<SteamSession>, app_id: u32) -> Result<Self, String> {
+        let choice = cdn_servers::choice();
+        let found = discover_cdn_servers(session, choice.cell(), 30).await;
+        let found = match (found, &choice) {
+            (Ok(list), _) => list,
+            (Err(e), cdn_servers::ServerChoice::Custom(_)) => {
+                crate::dlog!("native", "content server list failed ({}), using the own server only", e);
+                Vec::new()
+            }
+            (Err(e), _) => return Err(e),
+        };
+        let (servers, spread) = cdn_servers::order(found, app_id, &choice);
+        if servers.is_empty() {
+            return Err("no CDN servers returned by Steam".to_string());
+        }
+        crate::dlog!(
+            "native",
+            "content servers ({}): {}",
+            choice.kind(),
+            servers.iter().take(6).map(|s| s.host.as_str()).collect::<Vec<_>>().join(", ")
+        );
+        let mut pool = Self::new(servers, spread);
+        pool.preferred = match &choice {
+            cdn_servers::ServerChoice::Auto => pool.servers.len(),
+            cdn_servers::ServerChoice::Region(cell) => pool.servers.iter().filter(|s| s.cell_id == *cell).count(),
+            cdn_servers::ServerChoice::Custom(_) => 1,
+        };
+        Ok(pool)
+    }
+
+    fn pick(&self, slot: usize, attempt: usize) -> usize {
+        let n = self.servers.len();
+        let base = slot % self.spread + attempt;
+        (0..n)
+            .map(|k| (base + k) % n)
+            .find(|&i| self.failures[i].load(Ordering::Relaxed) < SERVER_PENALTY)
+            .unwrap_or(base % n)
+    }
+
+    fn failed(&self, idx: usize) {
+        self.failures[idx].fetch_add(1, Ordering::Relaxed);
+    }
+
+    fn worked(&self, idx: usize) {
+        if idx >= self.preferred {
+            cdn_servers::note_fallback();
+        }
+        if self.failures[idx].load(Ordering::Relaxed) != 0 {
+            self.failures[idx].store(0, Ordering::Relaxed);
+        }
+    }
 }
 
 fn chunk_retry_backoff_ms(attempt: usize) -> u64 {
@@ -1166,6 +1237,53 @@ mod verify_cache_tests {
         verified.insert(chunk_key(&file, 512, &[0x01; 20]));
 
         assert!(!verified.contains(&chunk_key(&file, 512, &[0x02; 20])));
+    }
+}
+
+#[cfg(test)]
+mod server_pool_tests {
+    use super::*;
+
+    fn pool(n: usize, spread: usize) -> ServerPool {
+        ServerPool::new((0..n).map(|i| CdnServer { host: format!("s{}", i), ..Default::default() }).collect(), spread)
+    }
+
+    #[test]
+    fn first_tries_spread_over_the_best_servers() {
+        let p = pool(5, 3);
+        let firsts: Vec<usize> = (0..6).map(|slot| p.pick(slot, 0)).collect();
+        assert_eq!(firsts, [0, 1, 2, 0, 1, 2]);
+        assert_eq!(p.pick(0, 1), 1);
+        assert_eq!(p.pick(2, 3), 0);
+    }
+
+    #[test]
+    fn a_failing_server_is_passed_over_until_it_works_again() {
+        let p = pool(3, 3);
+        for _ in 0..SERVER_PENALTY {
+            p.failed(1);
+        }
+        assert_eq!(p.pick(1, 0), 2);
+        p.worked(1);
+        assert_eq!(p.pick(1, 0), 1);
+        for i in 0..3 {
+            for _ in 0..SERVER_PENALTY {
+                p.failed(i);
+            }
+        }
+        assert_eq!(p.pick(1, 0), 1, "all failing: keep rotating");
+    }
+
+    #[test]
+    fn serving_from_outside_the_chosen_servers_counts_as_fallback() {
+        cdn_servers::set_choice(cdn_servers::ServerChoice::Custom("lan".into()));
+        let mut p = pool(3, 1);
+        p.preferred = 1;
+        p.worked(0);
+        assert!(!cdn_servers::fell_back());
+        p.worked(2);
+        assert!(cdn_servers::fell_back());
+        cdn_servers::set_choice(cdn_servers::ServerChoice::Auto);
     }
 }
 

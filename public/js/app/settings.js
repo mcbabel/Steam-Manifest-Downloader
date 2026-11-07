@@ -12,6 +12,7 @@ async function openSettings(target) {
     setSpeedLimitUnit(speedLimit.unit);
     setSpeedLimitEnabled(speedLimit.value !== '', false);
     els.proxyInput.value = settings.proxy || '';
+    await fillDownloadServer(settings);
     if (els.steamPathInput) {
       els.steamPathInput.value = settings.steam_path || '';
       refreshSteamPathStatus();
@@ -113,6 +114,7 @@ async function saveSettings() {
       ? joinSpeedLimit(els.speedLimitInput.value, getSpeedLimitUnit())
       : '';
     currentSettings.proxy = els.proxyInput.value.trim();
+    Object.assign(currentSettings, readDownloadServer());
     if (els.hubcapApiKeyInput) {
       currentSettings.hubcap_api_key = els.hubcapApiKeyInput.value.trim();
     }
@@ -177,6 +179,16 @@ async function saveSettings() {
     if (changed) showToast(window.i18n.t('settings.saved'), 'success');
   } catch (e) {
     console.error('Failed to save settings:', e);
+    if (/server address|without a path|download region/i.test(String(e))) {
+      const err = document.getElementById('download-server-error');
+      if (err) {
+        err.textContent = window.i18n.localizeError(String(e));
+        err.classList.remove('hidden');
+      }
+      showSettingsSection('sources');
+      document.getElementById('download-server-input')?.focus();
+      return;
+    }
     if (/proxy/i.test(String(e)) && els.proxyError) {
       els.proxyError.textContent = window.i18n.localizeError(String(e));
       els.proxyError.classList.remove('hidden');
@@ -480,6 +492,70 @@ function bindSteamPathControls() {
   els.steamPathInput.addEventListener('change', refreshSteamPathStatus);
 }
 
+let downloadRegions = null;
+
+async function fillDownloadServer(settings) {
+  const select = document.getElementById('download-server-select');
+  const input = document.getElementById('download-server-input');
+  const err = document.getElementById('download-server-error');
+  if (!select || !input) return;
+  if (err) err.classList.add('hidden');
+  if (!downloadRegions) {
+    try { downloadRegions = await invoke('download_regions') || []; } catch (_) { downloadRegions = []; }
+  }
+  select.innerHTML = '';
+  const add = (value, label) => {
+    const opt = document.createElement('option');
+    opt.value = value;
+    opt.textContent = label;
+    select.appendChild(opt);
+  };
+  add('auto', window.i18n.t('settings.downloadServerAuto'));
+  downloadRegions.forEach(r => {
+    const key = `settings.regions.${r.cell}`;
+    const name = window.i18n.t(key);
+    add(`cell:${r.cell}`, window.i18n.t('settings.downloadServerRegion', { name: name === key ? r.name : name }));
+  });
+  add('custom', window.i18n.t('settings.downloadServerCustom'));
+  const server = String(settings.download_server || '').trim();
+  const region = Number(settings.download_region || 0);
+  select.value = server ? 'custom' : (region && downloadRegions.some(r => r.cell === region) ? `cell:${region}` : 'auto');
+  input.value = server;
+  syncDownloadServer();
+  rebuildSelectPicker(select);
+}
+
+function syncDownloadServer() {
+  const select = document.getElementById('download-server-select');
+  const box = document.getElementById('download-server-custom');
+  if (select && box) box.classList.toggle('hidden', select.value !== 'custom');
+}
+
+function readDownloadServer() {
+  const select = document.getElementById('download-server-select');
+  const input = document.getElementById('download-server-input');
+  if (!select || !input) return {};
+  const value = select.value || 'auto';
+  if (value === 'custom') {
+    const server = input.value.trim();
+    return server ? { download_server: server, download_region: 0 } : { download_server: '', download_region: 0 };
+  }
+  if (value.startsWith('cell:')) return { download_server: '', download_region: Number(value.slice(5)) || 0 };
+  return { download_server: '', download_region: 0 };
+}
+
+function bindDownloadServerControls() {
+  const select = document.getElementById('download-server-select');
+  const input = document.getElementById('download-server-input');
+  const err = document.getElementById('download-server-error');
+  if (select) select.addEventListener('change', () => {
+    syncDownloadServer();
+    if (err) err.classList.add('hidden');
+    if (select.value === 'custom' && input) input.focus();
+  });
+  if (input) input.addEventListener('input', () => { if (err) err.classList.add('hidden'); });
+}
+
 function bindProxyControls() {
   if (!els.btnProxyTest) return;
   els.btnProxyTest.addEventListener('click', testProxy);
@@ -574,6 +650,9 @@ function settingsSnapshot() {
     if (SETTINGS_NOT_SAVED.has(input.id)) return;
     if (input === els.speedLimitInput && !limitOn) return;
     parts.push(`${input.id}=${input.type === 'checkbox' ? input.checked : input.value.trim()}`);
+  });
+  panels.querySelectorAll('select[id]').forEach(select => {
+    parts.push(`${select.id}=${select.value}`);
   });
   const active = limitOn
     ? '.segmented__option.is-active, .speed-limit__unit.is-active, .language-card.is-active'

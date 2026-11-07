@@ -274,6 +274,7 @@
       "argPlatform": "Mit --like-steam: Plattformen, für die Depots gewählt werden, durch Komma getrennt (z. B. windows,linux). Standard: dieses System, oder Windows, wenn es das Spiel dafür nicht gibt.",
       "argLanguage": "Mit --like-steam: Spielsprache, so wie Steam sie nennt (zum Beispiel german, english, french). Standard: die App-Sprache.",
       "argFolderStyle": "Name des Spielordners: default (\"220 - Half-Life 2\"), underscore (\"220_Half-Life_2\") oder dash (\"220-Half-Life-2\"). Standard: die Einstellung.",
+      "argServer": "Download-Server für diesen Lauf: auto (wie Steam), die Nummer einer Steam-Region (z. B. 5 für Frankfurt, siehe Einstellungen) oder ein eigener Server wie lancache.lan. Standard: die Einstellung.",
       "autoSelectFailed": "Die Depot-Liste konnte nicht von Steam gelesen werden, deshalb werden alle Depots geladen: {message}",
       "argDlc": "Mit --like-steam: auch die DLCs aus der Datei laden und für gbe_fork als vorhanden eintragen.",
       "argLikeSteam": "Diesen Download wie Steam ausführen: die Depots wählen, die Steam installieren würde, und in einen Spielordner laden (Standard: die Einstellung).",

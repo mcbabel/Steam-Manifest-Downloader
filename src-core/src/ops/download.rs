@@ -60,6 +60,8 @@ pub struct DownloadConfig {
     pub like_steam: Option<bool>,
     #[serde(rename = "folderStyle", alias = "folder_style", default, skip_serializing_if = "Option::is_none")]
     pub folder_style: Option<String>,
+    #[serde(rename = "downloadServer", alias = "download_server", default, skip_serializing_if = "Option::is_none")]
+    pub download_server: Option<String>,
     #[serde(rename = "allAppIds", alias = "all_app_ids", default)]
     pub all_app_ids: Option<Vec<String>>,
     #[serde(rename = "includeDlc", alias = "include_dlc", default)]
@@ -1134,7 +1136,12 @@ async fn run_download_pipeline_inner(
     crate::services::speed_limit::set_limit(
         crate::services::speed_limit::parse_speed_limit(speed_limit_text)?,
     );
-    let extra_args = if settings.dd_extra_args.is_empty() {
+    let server_choice = match config.download_server.as_deref() {
+        Some(v) => crate::services::cdn_servers::parse_override(v)?,
+        None => crate::services::cdn_servers::ServerChoice::from_settings(settings.download_region, &settings.download_server),
+    };
+    crate::services::cdn_servers::set_choice(server_choice.clone());
+    let mut extra_args = if settings.dd_extra_args.is_empty() {
         vec![
             "-max-downloads".to_string(),
             "8".to_string(),
@@ -1143,6 +1150,12 @@ async fn run_download_pipeline_inner(
     } else {
         settings.dd_extra_args.clone()
     };
+    if let Some(cell) = server_choice.cell() {
+        if !extra_args.iter().any(|a| a.eq_ignore_ascii_case("-cellid")) {
+            extra_args.push("-cellid".to_string());
+            extra_args.push(cell.to_string());
+        }
+    }
 
     let download_results = if use_native {
         run_native_pipeline(

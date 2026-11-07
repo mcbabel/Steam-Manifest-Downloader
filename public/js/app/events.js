@@ -159,6 +159,7 @@ function initEvents() {
 
   bindSpeedLimitControls();
   bindProxyControls();
+  bindDownloadServerControls();
   bindSteamPathControls();
   bindDepotSelectionSettings();
   initSettingsLayout();

@@ -20,6 +20,14 @@ pub async fn save_settings(app: AppHandle, settings: serde_json::Value) -> Resul
 }
 
 #[command]
+pub fn download_regions() -> Vec<serde_json::Value> {
+    smd_core::services::cdn_servers::REGIONS
+        .iter()
+        .map(|(cell, name)| serde_json::json!({ "cell": cell, "name": name }))
+        .collect()
+}
+
+#[command]
 pub async fn test_proxy(proxy: String) -> Result<smd_core::services::net::ProxyTest, String> {
     smd_core::services::net::test_proxy(&proxy).await
 }

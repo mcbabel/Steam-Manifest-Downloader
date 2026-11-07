@@ -37,6 +37,7 @@ pub mod steam_account;
 pub mod steam_branches;
 pub mod steam_manifest;
 pub mod steam_cdn;
+pub mod cdn_servers;
 pub mod steam_chunks;
 pub mod steam_downloader;
 pub mod speed_limit;

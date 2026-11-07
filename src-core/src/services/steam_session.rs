@@ -242,15 +242,24 @@ impl Default for SteamSession {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct CdnServer {
     pub host: String,
     pub https_support: String,
+    pub cell_id: u32,
+    pub weighted_load: f32,
+    pub allowed_app_ids: Vec<u32>,
+}
+
+impl CdnServer {
+    pub fn use_https(&self) -> bool {
+        !self.https_support.is_empty() && self.https_support != "none"
+    }
 }
 
 pub async fn discover_cdn_servers(
     session: Arc<SteamSession>,
-    cell_id: u32,
+    cell_id: Option<u32>,
     max_servers: u32,
 ) -> Result<Vec<CdnServer>, String> {
     call_with_retry(
@@ -259,8 +268,9 @@ pub async fn discover_cdn_servers(
         CDN_TIMEOUT,
         "Steam CDN server discovery timed out",
         |conn| async move {
+            let cell = cell_id.unwrap_or_else(|| conn.cell_id());
             let req = CContentServerDirectory_GetServersForSteamPipe_Request {
-                cell_id: Some(cell_id),
+                cell_id: Some(cell),
                 max_servers: Some(max_servers),
                 ..Default::default()
             };
@@ -268,6 +278,7 @@ pub async fn discover_cdn_servers(
                 .service_method(req)
                 .await
                 .map_err(|e| format!("GetServersForSteamPipe failed: {}", e))?;
+            crate::dlog!("native", "content servers asked for cell {}", cell);
             Ok(resp
                 .servers
                 .into_iter()
@@ -283,10 +294,16 @@ fn server_info_to_cdn(mut s: CContentServerDirectory_ServerInfo) -> Option<CdnSe
     if type_str != "CDN" && type_str != "SteamCache" {
         return None;
     }
+    if s.use_as_proxy.unwrap_or(false) || s.steam_china_only.unwrap_or(false) {
+        return None;
+    }
     let host = s.host.take()?;
     Some(CdnServer {
         host,
         https_support: s.https_support.unwrap_or_default(),
+        cell_id: s.cell_id.unwrap_or(0).max(0) as u32,
+        weighted_load: s.weighted_load.unwrap_or(f32::MAX),
+        allowed_app_ids: std::mem::take(&mut s.allowed_app_ids),
     })
 }
 

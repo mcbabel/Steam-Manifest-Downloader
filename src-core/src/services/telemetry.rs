@@ -902,6 +902,8 @@ fn settings_snapshot(s: &settings_service::Settings) -> serde_json::Value {
         "steam_path_set": !s.steam_path.trim().is_empty(),
         "max_retries": s.max_retries.min(20),
         "chunk_concurrency": s.native_chunk_concurrency.min(64),
+        "download_server": crate::services::cdn_servers::ServerChoice::from_settings(s.download_region, &s.download_server).kind(),
+        "download_region": s.download_region,
         "keep_files_on_cancel": s.cancel_keep_files,
         "game_language": game_language_label(&s.game_language),
         "target_platform": crate::services::depot_select::platform_label(&crate::services::depot_select::parse_platforms(&s.target_platform)),

@@ -568,6 +568,8 @@ const FEATURES: &[(&str, &str, &str)] = &[
     ("Controller: Steam Input through Steam", "controller_applied", "steam_input"),
     ("Controller: problems", "controller_applied", "notes"),
     ("Emulator step sections", "emu_section_viewed", "section"),
+    ("Download server of finished downloads", "download_completed", "server"),
+    ("Chosen download server fell back to Steam's", "download_completed", "server_fallback"),
     ("Notes from the remote file", "remote_notice", "action"),
     ("Notes from the remote file: level", "remote_notice", "level"),
     ("Offline notice", "offline_notice", ""),

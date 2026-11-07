@@ -183,8 +183,9 @@ type, how many manifest sources are configured (as a range) and whether they
 differ from the defaults, whether a Hubcap or Ryuu key and a Steam folder are
 set (true or false, never the key or the path), whether a Steam Web API key
 is set (true or false), the media choice for game data (`off`, `images` or
-`all`), the retry and chunk counts,
-and the game language and platforms picked for Like Steam (`auto`, a fixed
+`all`), the retry and chunk counts, the download server choice (`auto`,
+`region` or `custom`, with the number of the Steam region but never the
+address of your own server), and the game language and platforms picked for Like Steam (`auto`, a fixed
 label like `german`, or a platform list like `windows,linux`).
 
 ### How a download was started
@@ -223,6 +224,7 @@ or a server message. The set is:
 | `fail_class` | what kind of failure — e.g. `not_found`, `rate_limited`, `http_5xx`, `timeout`, `connect`, `decode`, `io`, `no_sources_configured`, `no_api_key` |
 | `source_ok` | which *kind* of source worked — `steam_direct`, `depot_source`, `hubcap`, `ryuu`, `manifesthub`, `uploaded`, `cached`. Never the URL |
 | `sources_tried` | which kinds of source were attempted, with counts — so a source that is always tried and never works can be spotted |
+| `server` / `server_fallback` | the download server setting (`auto`, `region` or `custom`) and whether a chosen region or own server had to fall back to Steam's servers. Never the server's address |
 | `fail_stages` / `sources_ok` | the same labels with counts, for jobs where depots failed differently |
 | `source_count` | how many manifest sources you have configured (a number, never the URLs) |
 | `had_mh_key` | whether a ManifestHub key was set — true or false, never the key |

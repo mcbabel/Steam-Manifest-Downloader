@@ -240,6 +240,7 @@ pub enum Action {
     SettingsPlatform(&'static str),
     SettingsGameMedia(&'static str),
     SettingsFolderStyle(&'static str),
+    SettingsServer(i32),
     SettingsGameLanguage(i32),
     SettingsLanguage(&'static str),
     SettingsTheme(ThemeMode),

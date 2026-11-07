@@ -807,6 +807,7 @@ pub struct SettingsPage {
     pub status: Option<(Tone, String)>,
     pub proxy_status: Option<(Tone, String)>,
     pub steam_status: Option<(Tone, String)>,
+    pub server_custom: bool,
     pub scroll: u16,
     pub dirty: bool,
 }
@@ -822,6 +823,7 @@ pub const SETTING_RYUU: usize = 7;
 pub const SETTING_MH: usize = 8;
 pub const SETTING_STEAM: usize = 9;
 pub const SETTING_WEBAPI: usize = 10;
+pub const SETTING_SERVER: usize = 11;
 
 impl SettingsPage {
     pub fn new(settings: &Settings, mh_key: &str) -> Self {
@@ -836,6 +838,7 @@ impl SettingsPage {
             status: None,
             proxy_status: None,
             steam_status: None,
+            server_custom: false,
             scroll: 0,
             dirty: false,
         };
@@ -857,7 +860,9 @@ impl SettingsPage {
             TextInput::new(mh_key).masked(),
             TextInput::new(s.steam_path.clone()),
             TextInput::new(s.steam_web_api_key.clone()).masked(),
+            TextInput::new(s.download_server.clone()),
         ];
+        self.server_custom = !s.download_server.trim().is_empty();
         self.dirty = false;
     }
 }

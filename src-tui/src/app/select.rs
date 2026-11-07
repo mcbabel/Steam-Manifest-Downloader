@@ -601,6 +601,7 @@ impl App {
             repair: self.wiz.active_repair(&parsed.main_app_id).is_some(),
             like_steam: None,
             folder_style: None,
+            download_server: None,
             all_app_ids: Some(parsed.all_app_ids.clone()),
             include_dlc: self.wiz.depot_include_dlc,
             branch,

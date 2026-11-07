@@ -457,6 +457,8 @@ pub fn summarize(
         "fail_stages": tally(&stages),
         "sources_ok": tally(&sources_ok),
         "sources_tried": tally(tried),
+        "server": crate::services::cdn_servers::choice().kind(),
+        "server_fallback": crate::services::cdn_servers::fell_back(),
     })
 }
 

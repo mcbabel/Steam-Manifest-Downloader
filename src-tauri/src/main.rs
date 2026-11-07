@@ -53,6 +53,7 @@ fn main() {
             commands::get_settings,
             commands::save_settings,
             commands::test_proxy,
+            commands::download_regions,
             commands::check_dotnet,
             commands::get_disk_space,
             commands::check_free_space,

@@ -1711,6 +1711,21 @@
                 <p id="proxy-status" class="proxy-status hidden" role="status"></p>
                 <p id="proxy-error" class="error-message hidden"></p>
               </div>
+              <div class="settings-row settings-row--stack">
+                <label class="settings-row__text" for="download-server-select">
+                  <span class="settings-row__label" data-i18n="settings.downloadServer">Download server</span>
+                  <span class="settings-row__hint" data-i18n="settings.downloadServerHint">Automatic picks the servers like the Steam client: the region Steam assigns your connection, the least busy server first. A region or your own server is tried first, Steam's servers stay as a fallback.</span>
+                </label>
+                <select id="download-server-select">
+                  <option value="auto" data-i18n="settings.downloadServerAuto">Automatic (like Steam)</option>
+                  <option value="custom" data-i18n="settings.downloadServerCustom">Own server…</option>
+                </select>
+                <div id="download-server-custom" class="hidden">
+                  <input type="text" id="download-server-input" class="dd-path__input" data-i18n-attr="placeholder=settings.downloadServerPlaceholder,aria-label=settings.downloadServerCustom" placeholder="lancache.lan or http://192.168.1.10">
+                  <p class="settings-row__hint" data-i18n="settings.downloadServerCustomHint">For example a LanCache in your network. Only used by the native engine.</p>
+                </div>
+                <p id="download-server-error" class="error-message hidden"></p>
+              </div>
             </div>
           </section>
 
