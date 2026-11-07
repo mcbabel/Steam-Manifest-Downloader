@@ -130,7 +130,7 @@
       "recommended": "Recommended"
     },
     "emu": {
-      "achievementWatcher": "Tip: Achievement Watcher shows a notification when you unlock an achievement in an emulated game (Windows). Original: github.com/xan105/Achievement-Watcher — maintained fork: github.com/darktakayanagi/Achievement-Watcher",
+      "achievementWatcher": "Tip: Achievement Watcher Next shows a notification when you unlock an achievement in an emulated game (Windows and Linux). It continues the original Achievement Watcher, which is no longer developed: github.com/Shirowwww/Achievement-Watcher-Next",
       "toggleAll": "Select all / none"
     },
     "history": {

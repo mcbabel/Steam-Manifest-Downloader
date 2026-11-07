@@ -130,7 +130,7 @@
       "recommended": "Empfohlen"
     },
     "emu": {
-      "achievementWatcher": "Tipp: Achievement Watcher zeigt eine Benachrichtigung, wenn du in einem Spiel mit Emulator einen Erfolg freischaltest (Windows). Original: github.com/xan105/Achievement-Watcher — gepflegter Fork: github.com/darktakayanagi/Achievement-Watcher",
+      "achievementWatcher": "Tipp: Achievement Watcher Next zeigt eine Benachrichtigung, wenn du in einem Spiel mit Emulator einen Erfolg freischaltest (Windows und Linux). Es führt das ursprüngliche Achievement Watcher fort, das nicht mehr weiterentwickelt wird: github.com/Shirowwww/Achievement-Watcher-Next",
       "toggleAll": "Alle / keine auswählen"
     },
     "history": {

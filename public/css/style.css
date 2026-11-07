@@ -5490,16 +5490,24 @@ textarea.bug-report__input {
 
 .emu-panels {
   min-width: 0;
+  display: grid;
   padding: 1.25rem 1.5rem 1.5rem;
 }
 
 .emu-panel {
-  display: none;
+  grid-area: 1 / 1;
+  min-width: 0;
+  visibility: hidden;
 }
 
 .emu-panel.is-active {
-  display: block;
+  visibility: visible;
   animation: fadeIn 0.25s ease;
+}
+
+.emu-panel:not(.is-active),
+.emu-panel:not(.is-active) * {
+  transition: none !important;
 }
 
 .emu-panel__title {
