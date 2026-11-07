@@ -92,6 +92,20 @@ When telemetry is enabled, the app sends small events describing:
     API check bypass or the DLC depot merge ran, and whether it worked
   - `drm_restored` — an original program file with Steam DRM was put back,
     one by one (`single`) or while reverting the patch (`revert`)
+  - `emu_saves` — saves were backed up or restored (`backup`, `restore`) and
+    whether it worked, never a path
+  - `emu_achievements` — achievements were locked again one by one or all, or
+    the stats cleared (`lock_one`, `lock_all`, `clear_stats`), never which ones
+  - `emu_profile` — a profile picture, overlay font or sound was set or removed
+    (`avatar`, `font`, `achievement`, `friend`), for a font whether it came
+    from the installed fonts or a file, and whether it worked. Never the file
+    or font name
+  - `emu_network` — the other players' addresses were saved, with how many as
+    a range (never the addresses), or lobby_connect was started and whether it
+    worked
+  - `emu_mod` — a workshop mod was added or removed, whether it worked, whether
+    the workshop page had details and whether Steam lists it for another game.
+    Never the workshop ID or the mod's name
   - `emu_gbe_updated` — a patched game was updated to the newest gbe_fork
     release, and whether the old version was known (`known` or `unknown`)
   - `game_data_written` — the emulator step wrote game data for gbe_fork,

@@ -44,6 +44,7 @@ async function goToEmulatorStep(opts = {}) {
   }
   renderEmuFileList(state.emulatorScan);
   updateEmuActionButtons();
+  resetEmuExtrasView();
   if (opts.prefillSettings !== false) {
     populateEmuSettings(loadLastEmuSettings() || {});
   }
@@ -512,7 +513,7 @@ function reportEmuSection(section) {
 function initEmuNav() {
   const step = document.getElementById('step-emulator');
   if (!step) return;
-  const tabs = () => Array.from(step.querySelectorAll('.emu-nav__tab'));
+  const tabs = () => Array.from(step.querySelectorAll('.emu-nav__tab:not(.hidden)'));
   tabs().forEach(tab => {
     tab.addEventListener('click', () => {
       selectEmuTab(tab.dataset.section);
@@ -1176,6 +1177,7 @@ async function applyEmuReplacement() {
         state.emuApplyComplete = true;
         if (els.btnEmuApply) els.btnEmuApply.textContent = window.i18n.t('emulator.goBackHome');
       }
+      syncEmuAfterPatch();
     } else {
       const failedResults = results.filter(r => !r.success);
       const details = failedResults
@@ -1357,6 +1359,13 @@ async function confirmEmuDownload() {
   state.unlistenEmuDownload = await listen('emu-download-progress', (event) => {
     showEmuDownloadProgress(event.payload);
   });
+  const retry = state.emuDownloadRetry;
+  state.emuDownloadRetry = null;
+  if (retry) {
+    await retry();
+    cleanupEmuDownloadListener();
+    return;
+  }
   setEmuApplyStatus('busy', window.i18n.t('emulator.emuDownloading', { progress: '0%' }));
   await applyEmuReplacement();
 }
@@ -1393,6 +1402,7 @@ function cleanupEmuDownloadListener() {
 function cancelEmuDownload() {
   if (els.emuDownloadModal) els.emuDownloadModal.classList.add('hidden');
   cleanupEmuDownloadListener();
+  state.emuDownloadRetry = null;
   const pending = state.emuPendingDownload;
   state.emuPendingDownload = null;
   if (!pending) return;
@@ -1596,6 +1606,7 @@ async function openEmuEditFromHistory(entry) {
   await hydrateEmuPatchedContext();
   loadEmuControllerInfo();
   refreshEmuDrmRestore();
+  resetEmuExtrasView();
   loadEmuReleaseInfo();
 }
 

@@ -261,6 +261,7 @@ function initEvents() {
     initEmuGameData();
     initEmuController();
     initEmuNav();
+    initEmuExtras();
   }
   if (els.btnEmuSaveSettings) {
     els.btnEmuSaveSettings.addEventListener('click', saveEmuSettings);

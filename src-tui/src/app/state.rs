@@ -470,6 +470,22 @@ fn sort_key(info: Option<&DepotMetadata>) -> u32 {
     }
 }
 
+#[derive(Default)]
+pub struct EmuExtras {
+    pub saves: Vec<smd_core::services::emu_extras::SaveFolder>,
+    pub save_idx: usize,
+    pub ach: Option<smd_core::services::emu_extras::AchievementView>,
+    pub assets: smd_core::services::emu_extras::OverlayAssets,
+    pub mods: Vec<smd_core::services::emu_extras::ModEntry>,
+    pub zip_path: TextInput,
+    pub asset_path: TextInput,
+    pub broadcasts: TextInput,
+    pub mod_id: TextInput,
+    pub mod_path: TextInput,
+    pub status: Option<(Tone, String)>,
+    pub armed: Option<(u8, Instant)>,
+}
+
 pub struct EmuState {
     pub game_dir: String,
     pub app_id: String,
@@ -504,6 +520,7 @@ pub struct EmuState {
     pub drm: Vec<DrmScanEntry>,
     pub drm_backups: Vec<smd_core::services::steamless::DrmBackup>,
     pub patch_info: Option<smd_core::services::emulator::PatchInfo>,
+    pub extras: EmuExtras,
     pub drm_status: Option<(Tone, String)>,
     pub drm_busy: bool,
     pub status: Option<(Tone, String)>,
@@ -553,6 +570,7 @@ impl EmuState {
             drm: Vec::new(),
             drm_backups: Vec::new(),
             patch_info: None,
+            extras: EmuExtras::default(),
             drm_status: None,
             drm_busy: false,
             status: None,

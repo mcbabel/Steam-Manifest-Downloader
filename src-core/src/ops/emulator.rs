@@ -729,3 +729,45 @@ mod dlc_tests {
         assert!(ini.contains("[app::dlcs]\nunlock_all=0\n300=Soundtrack\n400=DLC 400\n"));
     }
 }
+
+pub async fn blocking<T: Send + 'static>(f: impl FnOnce() -> T + Send + 'static) -> Result<T, String> {
+    tokio::task::spawn_blocking(f).await.map_err(|e| e.to_string())
+}
+
+pub async fn lobby_connect(
+    sink: &Sink,
+    state: &AppState,
+    app_data_dir: &Path,
+    target: String,
+    allow_download: bool,
+) -> Result<String, String> {
+    let windows = target.to_ascii_lowercase().ends_with(".dll");
+    let platform = if windows { Platform::Windows } else { Platform::Linux };
+    let info = emulator::fetch_release_info(&state.http_client, app_data_dir).await?;
+    if !emulator::platform_cached(&info, platform) && !info.bundled {
+        if !allow_download {
+            let size = if windows { info.windows_size } else { info.linux_size };
+            let name = if windows { "windows" } else { "linux" };
+            return Err(format!(
+                "{}{}",
+                DOWNLOAD_CONFIRM_PREFIX,
+                serde_json::json!({ "tag": info.tag, "platforms": [{ "platform": name, "size": size }] })
+            ));
+        }
+        let sink = sink.clone();
+        let name = if windows { "windows" } else { "linux" };
+        emulator::ensure_cached(&state.http_client, &info, platform, move |downloaded, total| {
+            sink.emit(
+                EMU_DOWNLOAD_PROGRESS,
+                serde_json::json!({ "platform": name, "downloaded": downloaded, "total": total }),
+            );
+        })
+        .await?;
+    }
+    let cache = PathBuf::from(&info.cache_root).join(platform.cache_subdir());
+    blocking(move || {
+        let tool = crate::services::emu_extras::lobby_tool(&cache, windows).ok_or("GBE_TOOLS_MISSING")?;
+        crate::services::emu_extras::place_lobby_tool(&tool, Path::new(&target)).map(|p| p.to_string_lossy().to_string())
+    })
+    .await?
+}

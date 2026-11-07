@@ -131,7 +131,19 @@
     },
     "emu": {
       "achievementWatcher": "Tipp: Achievement Watcher Next zeigt eine Benachrichtigung, wenn du in einem Spiel mit Emulator einen Erfolg freischaltest (Windows und Linux). Es führt das ursprüngliche Achievement Watcher fort, das nicht mehr weiterentwickelt wird: github.com/Shirowwww/Achievement-Watcher-Next",
-      "toggleAll": "Alle / keine auswählen"
+      "toggleAll": "Alle / keine auswählen",
+      "extras": {
+        "zipPath": "Sicherungsdatei (.zip)",
+        "zipNeeded": "Gib zuerst den Pfad der Sicherungsdatei an.",
+        "backup": "In diese Datei sichern",
+        "restore": "Aus dieser Datei wiederherstellen",
+        "filePath": "Datei",
+        "fileHint": "Gib den Pfad eines Bildes (PNG, JPG), einer Schrift (TTF, OTF) oder eines Tons (WAV) an und nutze die Datei für eine der Zeilen darunter.",
+        "fileNeeded": "Gib zuerst den Pfad der Datei an.",
+        "useFile": "Datei verwenden",
+        "modPath": "Ordner oder Datei der Mod",
+        "addMod": "Mod hinzufügen"
+      }
     },
     "history": {
       "filter": "Filter",

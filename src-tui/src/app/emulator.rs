@@ -36,7 +36,7 @@ pub struct BoolField {
     pub invert: bool,
 }
 
-pub const SECTIONS: [&str; 8] = [
+pub const SECTIONS: [&str; 12] = [
     "emulator.sections.account",
     "emulator.sections.saves",
     "emulator.sections.system",
@@ -45,6 +45,10 @@ pub const SECTIONS: [&str; 8] = [
     "emulator.sections.overlay",
     "emulator.sections.compat",
     "emulator.sections.controller",
+    "emulator.tabs.saves",
+    "emulator.tabs.profile",
+    "emulator.tabs.network",
+    "emulator.tabs.mods",
 ];
 
 pub const SYSTEM_SECTION: usize = 2;
@@ -458,7 +462,7 @@ fn game_data_summary(r: &smd_core::services::game_data::GameDataResult) -> Strin
     lines.join("\n")
 }
 
-fn count_bucket(n: usize) -> &'static str {
+pub(super) fn count_bucket(n: usize) -> &'static str {
     match n {
         0 => "0",
         1 => "1",
@@ -876,6 +880,9 @@ impl App {
                     e.settings_changed_only = false;
                     e.search_changed_at = None;
                 }
+                if *i >= super::emu_extras::EXTRA_SAVES {
+                    self.load_extra_section(*i);
+                }
             }
             Action::EmuToggleGameData => {
                 self.prefs.emu_game_data_off = !self.prefs.emu_game_data_off;
@@ -934,6 +941,7 @@ impl App {
                     e.controller_type = value.to_string();
                 }
             }
+            a if self.dispatch_emu_extras(a) => {}
             Action::EmuApply => self.emu_apply(),
             Action::EmuDownloadConfirmed => {
                 self.close_modal();
@@ -2291,9 +2299,15 @@ impl App {
             ),
         );
         col.gap(1);
+        let has_target = e.extra_target().is_some();
+        let patched = e.game_patched();
+        if e.section >= super::emu_extras::EXTRA_SAVES && (!has_target || (e.section == super::emu_extras::EXTRA_SAVES && !patched)) {
+            e.section = 0;
+        }
         let tabs: Vec<ButtonSpec> = SECTIONS
             .iter()
             .enumerate()
+            .filter(|(i, _)| *i < super::emu_extras::EXTRA_SAVES || (has_target && (*i != super::emu_extras::EXTRA_SAVES || patched)))
             .map(|(i, key)| {
                 let kind = if e.section == i && !filtering {
                     Btn::Primary
@@ -2362,6 +2376,9 @@ impl App {
             let r = col.next(h);
             hint(&mut sv.buf, r, &hk);
             col.gap(1);
+        }
+        if !filtering && e.section >= super::emu_extras::EXTRA_SAVES {
+            render_extras(e, &mut sv.buf, ctx, &mut col, tick);
         }
         let show_controller = !filtering && e.section == CONTROLLER_SECTION;
         if show_controller {
@@ -2489,6 +2506,164 @@ impl App {
             e.scroll = scroll;
         }
     }
+}
+
+fn extra_button(buf: &mut Buffer, ctx: &mut Ctx, col: &mut Col, label: String, fid: Fid, action: Action) {
+    let r = col.next(1);
+    let w = (widgets::width(&label) + 4).min(r.width);
+    widgets::button(buf, ctx, r.x, r.y, w, &ButtonSpec::new(label, fid, action, Btn::Secondary));
+}
+
+fn extra_buttons(buf: &mut Buffer, ctx: &mut Ctx, col: &mut Col, specs: Vec<ButtonSpec>) {
+    let rows = widgets::button_rows(&specs, col.w);
+    let r = col.next(rows);
+    widgets::buttons_wrapped(buf, ctx, r, &specs);
+}
+
+fn extra_hint(buf: &mut Buffer, col: &mut Col, text: &str) {
+    let text = crate::i18n::strip_html(text);
+    let h = widgets::wrap_height(&text, col.w);
+    let r = col.next(h);
+    hint(buf, r, &text);
+}
+
+fn extra_input(buf: &mut Buffer, ctx: &mut Ctx, col: &mut Col, input: &mut crate::ui::input::TextInput, label: &str, placeholder: &str, fid: Fid, id: InputId) {
+    let r = col.next(3);
+    widgets::input(buf, ctx, r, input, InputSpec { label, placeholder, fid, id, error: false });
+}
+
+fn render_extras(e: &mut EmuState, buf: &mut Buffer, ctx: &mut Ctx, col: &mut Col, tick: u64) {
+    use super::emu_extras::{EXTRA_MODS, EXTRA_NETWORK, EXTRA_PROFILE, EXTRA_SAVES};
+    let x = &mut e.extras;
+    match e.section {
+        EXTRA_SAVES => {
+            let r = col.next(1);
+            widgets::heading(buf, r, &t("emulator.saves.folder"));
+            if x.saves.is_empty() {
+                extra_hint(buf, col, &t("emulator.saves.none"));
+            }
+            for (i, f) in x.saves.iter().enumerate() {
+                let meta = if f.exists {
+                    tf("emulator.saves.meta", &[("files", &f.files), ("size", &widgets::fmt_bytes(f.size_bytes)), ("date", &f.modified.and_then(|m| chrono::DateTime::from_timestamp(m as i64, 0)).map(|d| d.with_timezone(&chrono::Local).format("%Y-%m-%d %H:%M").to_string()).unwrap_or_else(|| "-".into()))])
+                } else {
+                    t("emulator.saves.empty")
+                };
+                let place = t(&format!("emulator.saves.place.{}", if f.portable { "portable" } else { f.place.as_str() }));
+                let r = col.next(1);
+                widgets::radio(buf, ctx, r, x.save_idx == i, &format!("{} [{}]", f.path, place), Fid::idx("emu.save", i), Action::EmuSaveSelect(i));
+                let r = col.next(1);
+                widgets::text(buf, Rect::new(r.x + 4, r.y, r.width.saturating_sub(4), 1), &meta, theme::muted());
+            }
+            extra_hint(buf, col, &t("emulator.saves.hint"));
+            let zip_label = t("tui.emu.extras.zipPath");
+            extra_input(buf, ctx, col, &mut x.zip_path, &zip_label, "~/saves-backup.zip", Fid::new("emu.extraZip"), InputId::EmuExtraZip);
+            let exists = x.saves.get(x.save_idx).is_some_and(|f| f.exists);
+            extra_buttons(buf, ctx, col, vec![
+                ButtonSpec::new(t("emulator.saves.open"), Fid::new("emu.savesOpen"), Action::EmuSavesOpen, Btn::Secondary).enabled(exists),
+                ButtonSpec::new(t("tui.emu.extras.backup"), Fid::new("emu.savesBackup"), Action::EmuSavesBackup, Btn::Secondary).enabled(exists),
+                ButtonSpec::new(t("tui.emu.extras.restore"), Fid::new("emu.savesRestore"), Action::EmuSavesRestore, Btn::Secondary).enabled(!x.saves.is_empty()),
+            ]);
+            col.gap(1);
+            let r = col.next(1);
+            widgets::heading(buf, r, &t("emulator.achievements.title"));
+            let rows = x.ach.as_ref().map(|a| a.rows.clone()).unwrap_or_default();
+            let stats = x.ach.as_ref().map(|a| a.stats_files).unwrap_or(0);
+            if rows.is_empty() {
+                extra_hint(buf, col, &t("emulator.achievements.none"));
+            } else {
+                let earned = rows.iter().filter(|r| r.earned).count();
+                extra_hint(buf, col, &tf("emulator.achievements.count", &[("earned", &earned), ("total", &rows.len())]));
+                for a in rows.iter().take(200) {
+                    let r = col.next(1);
+                    let mark = if a.earned { "✓" } else { "·" };
+                    let name = if a.hidden && !a.earned { t("emulator.achievements.hidden") } else { a.display_name.clone() };
+                    widgets::text(buf, r, &format!("{} {}", crate::ui::glyphs::text(mark), name), if a.earned { theme::success() } else { theme::dim() });
+                }
+            }
+            extra_buttons(buf, ctx, col, vec![
+                ButtonSpec::new(t("emulator.achievements.resetAll"), Fid::new("emu.achReset"), Action::EmuAchResetAll, Btn::Secondary).enabled(rows.iter().any(|r| r.earned)),
+                ButtonSpec::new(t("emulator.achievements.resetStats"), Fid::new("emu.statsReset"), Action::EmuStatsReset, Btn::Secondary).enabled(stats > 0),
+            ]);
+        }
+        EXTRA_PROFILE => {
+            let r = col.next(1);
+            widgets::heading(buf, r, &t("emulator.profile.title"));
+            let file_label = t("tui.emu.extras.filePath");
+            extra_input(buf, ctx, col, &mut x.asset_path, &file_label, "~/picture.png", Fid::new("emu.extraAsset"), InputId::EmuExtraAsset);
+            extra_hint(buf, col, &t("tui.emu.extras.fileHint"));
+            let rows: [(&'static str, String, Option<String>, String); 4] = [
+                ("avatar", t("emulator.profile.avatar"), x.assets.avatar.clone(), t("emulator.profile.avatarHint")),
+                ("font", t("emulator.profile.font"), x.assets.font.clone(), t("emulator.profile.overlayHint")),
+                ("achievement", t("emulator.profile.achievementSound"), x.assets.achievement_sound.as_ref().map(|_| t("emulator.profile.ownSound")), String::new()),
+                ("friend", t("emulator.profile.friendSound"), x.assets.friend_sound.as_ref().map(|_| t("emulator.profile.ownSound")), String::new()),
+            ];
+            for (ri, (kind, label, value, hint_text)) in rows.into_iter().enumerate() {
+                col.gap(1);
+                let r = col.next(1);
+                let current = value.clone().unwrap_or_else(|| {
+                    if kind == "font" { t("emulator.profile.defaultFont") } else if kind == "avatar" { "-".into() } else { t("emulator.profile.noSound") }
+                });
+                widgets::text(buf, r, &format!("{}: {}", label, current), theme::text());
+                if !hint_text.is_empty() {
+                    extra_hint(buf, col, &hint_text);
+                }
+                let mut specs = vec![ButtonSpec::new(t("tui.emu.extras.useFile"), Fid::idx("emu.assetSet", ri), Action::EmuAssetSet(kind), Btn::Secondary)];
+                if value.is_some() {
+                    specs.push(ButtonSpec::new(t("emulator.profile.remove"), Fid::idx("emu.assetClear", ri), Action::EmuAssetClear(kind), Btn::Secondary));
+                }
+                extra_buttons(buf, ctx, col, specs);
+            }
+        }
+        EXTRA_NETWORK => {
+            let r = col.next(1);
+            widgets::heading(buf, r, &t("emulator.network.title"));
+            let label = t("emulator.network.broadcasts");
+            extra_input(buf, ctx, col, &mut x.broadcasts, &label, "100.64.0.2, 100.64.0.3", Fid::new("emu.broadcasts"), InputId::EmuBroadcasts);
+            extra_hint(buf, col, &t("emulator.network.broadcastsHint"));
+            extra_button(buf, ctx, col, t("emulator.network.save"), Fid::new("emu.broadcastsSave"), Action::EmuBroadcastsSave);
+            col.gap(1);
+            let r = col.next(1);
+            widgets::heading(buf, r, &t("emulator.network.lobbyTitle"));
+            if e.edit_mode || e.apply_complete || e.scan.iter().any(|f| f.is_patched) {
+                extra_hint(buf, col, &t("emulator.network.lobbyHint"));
+                extra_button(buf, ctx, col, t("emulator.network.lobbyStart"), Fid::new("emu.lobby"), Action::EmuLobbyConnect(false));
+            } else {
+                extra_hint(buf, col, &t("emulator.network.lobbyLater"));
+            }
+        }
+        EXTRA_MODS => {
+            let r = col.next(1);
+            widgets::heading(buf, r, &t("emulator.mods.title"));
+            if x.mods.is_empty() {
+                extra_hint(buf, col, &t("emulator.mods.empty"));
+            }
+            let label = t("emulator.mods.remove");
+            let bw = widgets::width(&label) + 4;
+            for (i, m) in x.mods.iter().enumerate() {
+                let r = col.next(1);
+                let meta = tf("emulator.mods.meta", &[("id", &m.id), ("files", &m.files), ("size", &widgets::fmt_bytes(m.size_bytes))]);
+                widgets::text(buf, Rect::new(r.x, r.y, r.width.saturating_sub(bw + 2), 1), &format!("{} · {}", m.title, meta), theme::text());
+                widgets::button(buf, ctx, r.x + r.width.saturating_sub(bw), r.y, bw, &ButtonSpec::new(label.clone(), Fid::idx("emu.modRemove", i), Action::EmuModRemove(i), Btn::Secondary));
+            }
+            col.gap(1);
+            let r = col.next(1);
+            widgets::heading(buf, r, &t("emulator.mods.add"));
+            let id_label = t("emulator.mods.idPlaceholder");
+            extra_input(buf, ctx, col, &mut x.mod_id, &id_label, "123456789", Fid::new("emu.modId"), InputId::EmuModId);
+            let path_label = t("tui.emu.extras.modPath");
+            extra_input(buf, ctx, col, &mut x.mod_path, &path_label, "~/mods/my_mod", Fid::new("emu.modPath"), InputId::EmuModPath);
+            extra_hint(buf, col, &t("emulator.mods.hint"));
+            extra_button(buf, ctx, col, t("tui.emu.extras.addMod"), Fid::new("emu.modAdd"), Action::EmuModAdd);
+        }
+        _ => {}
+    }
+    if let Some((tone, msg)) = &x.status {
+        col.gap(1);
+        let h = widgets::status_height(msg, col.w).min(8);
+        let r = col.next(h);
+        widgets::status(buf, r, *tone, msg, tick);
+    }
+    col.gap(1);
 }
 
 struct Col {

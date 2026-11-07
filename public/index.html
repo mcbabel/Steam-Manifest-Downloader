@@ -672,6 +672,26 @@
               <span class="emu-nav__label" data-i18n="emulator.tabs.emulator">Emulator</span>
               <span class="emu-nav__badge hidden" data-badge="emulator"></span>
             </button>
+            <button type="button" class="emu-nav__tab" role="tab" id="emu-tab-saves" data-section="saves" aria-controls="emu-panel-saves" aria-selected="false">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+              <span class="emu-nav__label" data-i18n="emulator.tabs.saves">Saves</span>
+              <span class="emu-nav__badge hidden" data-badge="saves"></span>
+            </button>
+            <button type="button" class="emu-nav__tab" role="tab" id="emu-tab-profile" data-section="profile" aria-controls="emu-panel-profile" aria-selected="false">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              <span class="emu-nav__label" data-i18n="emulator.tabs.profile">Profile</span>
+              <span class="emu-nav__badge hidden" data-badge="profile"></span>
+            </button>
+            <button type="button" class="emu-nav__tab" role="tab" id="emu-tab-network" data-section="network" aria-controls="emu-panel-network" aria-selected="false">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+              <span class="emu-nav__label" data-i18n="emulator.tabs.network">Multiplayer</span>
+              <span class="emu-nav__badge hidden" data-badge="network"></span>
+            </button>
+            <button type="button" class="emu-nav__tab" role="tab" id="emu-tab-mods" data-section="mods" aria-controls="emu-panel-mods" aria-selected="false">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+              <span class="emu-nav__label" data-i18n="emulator.tabs.mods">Mods</span>
+              <span class="emu-nav__badge hidden" data-badge="mods"></span>
+            </button>
             <button type="button" class="emu-nav__tab" role="tab" id="emu-tab-extras" data-section="extras" aria-controls="emu-panel-extras" aria-selected="false">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
               <span class="emu-nav__label" data-i18n="emulator.tabs.extras">Extras</span>
@@ -851,6 +871,130 @@
                 <div id="emu-settings-fields" class="emu-settings__fields"></div>
                 <p id="emu-settings-empty" class="dd-path__hint hidden" data-i18n="emulator.settingsNoMatch">No setting matches.</p>
               </div>
+            </div>
+          </section>
+
+          <section id="emu-panel-saves" class="emu-panel" data-section="saves" role="tabpanel" aria-labelledby="emu-tab-saves">
+            <h3 class="emu-panel__title" data-i18n="emulator.saves.title">Saves and achievements</h3>
+            <p class="emu-extra__needs hidden" data-i18n="emulator.extras.needsTarget">Select a Steam API file in Files first.</p>
+            <div class="emu-section emu-gamedata-section">
+              <span class="emu-gamedata__key-label" data-i18n="emulator.saves.folder">Save folder</span>
+              <div id="emu-saves-list" class="emu-extra-list"></div>
+              <p class="emu-bypass-row__hint" data-i18n-html="emulator.saves.hint">gbe_fork keeps progress outside the game folder. For saves that move with the game, set a portable save path under Emulator → Saves.</p>
+              <div class="emu-gamedata__actions">
+                <button type="button" id="btn-emu-saves-open" class="btn btn--small btn--outline" data-i18n="emulator.saves.open">Open folder</button>
+                <button type="button" id="btn-emu-saves-backup" class="btn btn--small btn--outline" data-i18n="emulator.saves.backup">Back up…</button>
+                <button type="button" id="btn-emu-saves-restore" class="btn btn--small btn--outline" data-i18n="emulator.saves.restore">Restore…</button>
+              </div>
+              <p id="emu-saves-status" class="dd-path__hint hidden" role="status"></p>
+            </div>
+            <div class="emu-section emu-gamedata-section">
+              <div class="emu-extra-head">
+                <span class="emu-gamedata__key-label" data-i18n="emulator.achievements.title">Achievements</span>
+                <span id="emu-ach-count" class="dd-path__hint"></span>
+              </div>
+              <div id="emu-ach-list" class="emu-ach-list"></div>
+              <p id="emu-ach-empty" class="dd-path__hint hidden"></p>
+              <div class="emu-gamedata__actions">
+                <button type="button" id="btn-emu-ach-reset" class="btn btn--small btn--outline" data-i18n="emulator.achievements.resetAll">Lock all again</button>
+                <button type="button" id="btn-emu-stats-reset" class="btn btn--small btn--outline" data-i18n="emulator.achievements.resetStats">Clear stats</button>
+              </div>
+              <p id="emu-ach-status" class="dd-path__hint hidden" role="status"></p>
+            </div>
+          </section>
+
+          <section id="emu-panel-profile" class="emu-panel" data-section="profile" role="tabpanel" aria-labelledby="emu-tab-profile">
+            <h3 class="emu-panel__title" data-i18n="emulator.profile.title">Profile and overlay</h3>
+            <p class="emu-extra__needs hidden" data-i18n="emulator.extras.needsTarget">Select a Steam API file in Files first.</p>
+            <div class="emu-section emu-gamedata-section">
+              <span class="emu-gamedata__key-label" data-i18n="emulator.profile.avatar">Profile picture</span>
+              <div class="emu-avatar">
+                <div id="emu-avatar-preview" class="emu-avatar__img" aria-hidden="true"></div>
+                <div class="emu-avatar__side">
+                  <p class="emu-bypass-row__hint" data-i18n="emulator.profile.avatarHint">PNG or JPG. Shown in the overlay and to other players on the network.</p>
+                  <div class="emu-gamedata__actions">
+                    <button type="button" id="btn-emu-avatar" class="btn btn--small btn--outline" data-i18n="emulator.profile.choose">Choose…</button>
+                    <button type="button" id="btn-emu-avatar-clear" class="btn btn--small btn--outline hidden" data-i18n="emulator.profile.remove">Remove</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="emu-section emu-gamedata-section">
+              <span class="emu-gamedata__key-label" data-i18n="emulator.profile.overlayAssets">Overlay font and sounds</span>
+              <p class="emu-bypass-row__hint" data-i18n="emulator.profile.overlayHint">Only used by the overlay of the experimental build.</p>
+              <div class="emu-asset-row" data-asset="font">
+                <div class="emu-asset-row__text">
+                  <span class="emu-field__label" data-i18n="emulator.profile.font">Font</span>
+                  <span class="emu-asset-row__value dd-path__hint" data-i18n="emulator.profile.defaultFont">Built-in font</span>
+                </div>
+                <div class="emu-font-system">
+                  <label for="emu-font-system" class="sr-only" data-i18n="emulator.profile.systemFonts">Installed fonts</label>
+                  <select id="emu-font-system">
+                    <option value="" data-i18n="emulator.profile.systemFontsLoading">Loading installed fonts…</option>
+                  </select>
+                </div>
+                <button type="button" class="btn btn--small btn--outline" data-asset-pick="font" data-i18n="emulator.profile.fontFile">File…</button>
+                <button type="button" class="btn btn--small btn--outline hidden" data-asset-clear="font" data-i18n="emulator.profile.remove">Remove</button>
+              </div>
+              <div class="emu-asset-row" data-asset="achievement">
+                <div class="emu-asset-row__text">
+                  <span class="emu-field__label" data-i18n="emulator.profile.achievementSound">Achievement sound</span>
+                  <span class="emu-asset-row__value dd-path__hint" data-i18n="emulator.profile.noSound">None</span>
+                </div>
+                <button type="button" class="btn btn--small btn--outline" data-asset-pick="achievement" data-i18n="emulator.profile.choose">Choose…</button>
+                <button type="button" class="btn btn--small btn--outline hidden" data-asset-clear="achievement" data-i18n="emulator.profile.remove">Remove</button>
+              </div>
+              <div class="emu-asset-row" data-asset="friend">
+                <div class="emu-asset-row__text">
+                  <span class="emu-field__label" data-i18n="emulator.profile.friendSound">Invite sound</span>
+                  <span class="emu-asset-row__value dd-path__hint" data-i18n="emulator.profile.noSound">None</span>
+                </div>
+                <button type="button" class="btn btn--small btn--outline" data-asset-pick="friend" data-i18n="emulator.profile.choose">Choose…</button>
+                <button type="button" class="btn btn--small btn--outline hidden" data-asset-clear="friend" data-i18n="emulator.profile.remove">Remove</button>
+              </div>
+              <p id="emu-profile-status" class="dd-path__hint hidden" role="status"></p>
+            </div>
+          </section>
+
+          <section id="emu-panel-network" class="emu-panel" data-section="network" role="tabpanel" aria-labelledby="emu-tab-network">
+            <h3 class="emu-panel__title" data-i18n="emulator.network.title">Multiplayer</h3>
+            <p class="emu-extra__needs hidden" data-i18n="emulator.extras.needsTarget">Select a Steam API file in Files first.</p>
+            <div class="emu-section emu-gamedata-section">
+              <label for="emu-broadcasts" class="emu-gamedata__key-label" data-i18n="emulator.network.broadcasts">Other players' addresses</label>
+              <textarea id="emu-broadcasts" class="emu-field__input emu-broadcasts" rows="4" spellcheck="false" data-i18n-attr="placeholder=emulator.network.broadcastsPlaceholder"></textarea>
+              <p class="emu-bypass-row__hint" data-i18n-html="emulator.network.broadcastsHint">gbe_fork finds players on the same network by itself. Over a VPN like Tailscale, ZeroTier or Radmin it doesn't, so put the other PCs' VPN IPs here, one per line.</p>
+              <div class="emu-gamedata__actions">
+                <button type="button" id="btn-emu-broadcasts" class="btn btn--small btn--outline" data-i18n="emulator.network.save">Save addresses</button>
+              </div>
+              <p id="emu-broadcasts-status" class="dd-path__hint hidden" role="status"></p>
+            </div>
+            <p id="emu-lobby-later" class="dd-path__hint hidden" data-i18n="emulator.network.lobbyLater">lobby_connect is there once the game is patched: History, Edit emulator settings, Multiplayer.</p>
+            <div id="emu-lobby-section" class="emu-section emu-gamedata-section">
+              <span class="emu-gamedata__key-label" data-i18n="emulator.network.lobbyTitle">Join a friend's lobby</span>
+              <p class="emu-bypass-row__hint" data-i18n-html="emulator.network.lobbyHint">For games without a server browser, <code>lobby_connect</code> from gbe_fork lists the lobbies of players on the network and starts the game straight into one.</p>
+              <div class="emu-gamedata__actions">
+                <button type="button" id="btn-emu-lobby" class="btn btn--small btn--outline" data-i18n="emulator.network.lobbyStart">Start lobby_connect</button>
+              </div>
+              <p id="emu-lobby-status" class="dd-path__hint hidden" role="status"></p>
+            </div>
+          </section>
+
+          <section id="emu-panel-mods" class="emu-panel" data-section="mods" role="tabpanel" aria-labelledby="emu-tab-mods">
+            <h3 class="emu-panel__title" data-i18n="emulator.mods.title">Workshop mods</h3>
+            <p class="emu-extra__needs hidden" data-i18n="emulator.extras.needsTarget">Select a Steam API file in Files first.</p>
+            <div class="emu-section emu-gamedata-section">
+              <div id="emu-mods-list" class="emu-extra-list"></div>
+              <p id="emu-mods-empty" class="dd-path__hint" data-i18n="emulator.mods.empty">No mods yet.</p>
+            </div>
+            <div class="emu-section emu-gamedata-section">
+              <label for="emu-mod-id" class="emu-gamedata__key-label" data-i18n="emulator.mods.add">Add a mod</label>
+              <div class="dd-path__input-wrap dd-path__input-wrap--with-btn">
+                <input type="text" id="emu-mod-id" class="dd-path__input" autocomplete="off" spellcheck="false" data-i18n-attr="placeholder=emulator.mods.idPlaceholder">
+                <button type="button" id="btn-emu-mod-folder" class="btn btn--small btn--outline" data-i18n="emulator.mods.chooseFolder">Folder…</button>
+                <button type="button" id="btn-emu-mod-file" class="btn btn--small btn--outline" data-i18n="emulator.mods.chooseFile">File…</button>
+              </div>
+              <p class="emu-bypass-row__hint" data-i18n="emulator.mods.hint">The workshop ID or link tells the game which item it is. SMD copies the mod's files into steam_settings/mods and fetches its name and picture from the workshop page.</p>
+              <p id="emu-mods-status" class="dd-path__hint hidden" role="status"></p>
             </div>
           </section>
 
@@ -1942,6 +2086,7 @@
   <script src="js/app/shortcuts.js"></script>
   <script src="js/app/select-picker.js"></script>
   <script src="js/app/emulator.js"></script>
+  <script src="js/app/emulator-extras.js"></script>
   <script src="js/app/settings.js"></script>
   <script src="js/app/account.js"></script>
   <script src="js/app/updater.js"></script>

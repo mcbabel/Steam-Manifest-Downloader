@@ -131,7 +131,19 @@
     },
     "emu": {
       "achievementWatcher": "Tip: Achievement Watcher Next shows a notification when you unlock an achievement in an emulated game (Windows and Linux). It continues the original Achievement Watcher, which is no longer developed: github.com/Shirowwww/Achievement-Watcher-Next",
-      "toggleAll": "Select all / none"
+      "toggleAll": "Select all / none",
+      "extras": {
+        "zipPath": "Backup file (.zip)",
+        "zipNeeded": "Enter the path of the backup file first.",
+        "backup": "Back up to this file",
+        "restore": "Restore from this file",
+        "filePath": "File",
+        "fileHint": "Enter the path of a picture (PNG, JPG), font (TTF, OTF) or sound (WAV), then use it for one of the rows below.",
+        "fileNeeded": "Enter the path of the file first.",
+        "useFile": "Use the file",
+        "modPath": "Folder or file of the mod",
+        "addMod": "Add the mod"
+      }
     },
     "history": {
       "filter": "Filter",

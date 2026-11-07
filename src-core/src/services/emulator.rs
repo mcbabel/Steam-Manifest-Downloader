@@ -178,6 +178,7 @@ pub struct EmuSettings {
     pub enable_screenshot: Option<bool>,
     pub notification_duration_achievement: Option<f32>,
     pub controller_type: Option<String>,
+    pub font_override: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -270,6 +271,7 @@ const INI_FIELDS: &[IniField] = &[
     field("screenshot_combo", IniFile::Overlay, "overlay::hotkeys", "screenshot_combo", IniKind::Text),
     field("font_size", IniFile::Overlay, "overlay::appearance", "Font_Size", IniKind::Float),
     field("notification_duration_achievement", IniFile::Overlay, "overlay::appearance", "Notification_Duration_Achievement", IniKind::Float),
+    field("font_override", IniFile::Overlay, "overlay::appearance", "Font_Override", IniKind::Text),
 ];
 
 pub const CONTROLLER_TYPES: [&str; 6] = ["XBOX360", "XBOXONE", "PS3", "PS4", "PS5", "SWITCH"];
@@ -390,7 +392,13 @@ impl EmuSettings {
         };
         write_or_remove("configs.user.ini", self.render_user_ini())?;
         write_or_remove("configs.main.ini", self.render_main_ini())?;
-        write_or_remove("configs.overlay.ini", self.render_overlay_ini())?;
+        if self.font_override.is_none() {
+            let mut kept = self.clone();
+            kept.font_override = EmuSettings::read_from_dir(dir).font_override;
+            write_or_remove("configs.overlay.ini", kept.render_overlay_ini())?;
+        } else {
+            write_or_remove("configs.overlay.ini", self.render_overlay_ini())?;
+        }
         let app_path = dir.join("configs.app.ini");
         let existing = fs::read_to_string(&app_path).unwrap_or_default();
         let merged = merge_app_section(&existing, APP_CONTROLLER_SECTION, &self.app_controller());

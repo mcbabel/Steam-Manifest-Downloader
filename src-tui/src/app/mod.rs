@@ -1,5 +1,6 @@
 mod account;
 pub mod action;
+mod emu_extras;
 mod emulator;
 mod history;
 mod journey;
@@ -815,6 +816,11 @@ impl App {
             InputId::EmuField(i) => self.emu.as_mut()?.fields.get_mut(i)?,
             InputId::EmuControllerFile => &mut self.emu.as_mut()?.controller_file,
             InputId::EmuSettingsSearch => &mut self.emu.as_mut()?.settings_search,
+            InputId::EmuExtraZip => &mut self.emu.as_mut()?.extras.zip_path,
+            InputId::EmuExtraAsset => &mut self.emu.as_mut()?.extras.asset_path,
+            InputId::EmuBroadcasts => &mut self.emu.as_mut()?.extras.broadcasts,
+            InputId::EmuModId => &mut self.emu.as_mut()?.extras.mod_id,
+            InputId::EmuModPath => &mut self.emu.as_mut()?.extras.mod_path,
             InputId::Setting(i) => self.set.inputs.get_mut(i)?,
             InputId::SettingsSourceAdd => &mut self.set.source_add,
             InputId::HistoryFilter => &mut self.hist.filter,

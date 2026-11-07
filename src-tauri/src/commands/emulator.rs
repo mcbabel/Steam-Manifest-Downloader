@@ -134,3 +134,129 @@ pub async fn emu_write_emu_settings(
 pub async fn emu_revert_replacement(targets: Vec<String>) -> Result<Vec<ReplaceResult>, String> {
     emu_ops::revert_replacement(targets).await
 }
+
+use smd_core::services::emu_extras as extras;
+use std::path::PathBuf;
+
+#[command]
+pub async fn emu_save_folders(target: String, app_id: String) -> Result<Vec<extras::SaveFolder>, String> {
+    emu_ops::blocking(move || extras::save_folders(&PathBuf::from(target), &app_id)).await
+}
+
+#[command]
+pub async fn emu_backup_saves(folder: String, dest: String) -> Result<usize, String> {
+    emu_ops::blocking(move || extras::backup_saves(&PathBuf::from(folder), &PathBuf::from(dest))).await?
+}
+
+#[command]
+pub async fn emu_restore_saves(folder: String, archive: String) -> Result<usize, String> {
+    emu_ops::blocking(move || extras::restore_saves(&PathBuf::from(folder), &PathBuf::from(archive))).await?
+}
+
+#[command]
+pub async fn emu_achievements(target: String, app_id: String, lang: String) -> Result<extras::AchievementView, String> {
+    emu_ops::blocking(move || extras::achievements(&PathBuf::from(target), &app_id, &lang)).await
+}
+
+#[command]
+pub async fn emu_reset_achievements(target: String, app_id: String, names: Option<Vec<String>>) -> Result<usize, String> {
+    emu_ops::blocking(move || extras::reset_achievements(&PathBuf::from(target), &app_id, names.as_deref())).await?
+}
+
+#[command]
+pub async fn emu_reset_stats(target: String, app_id: String) -> Result<usize, String> {
+    emu_ops::blocking(move || extras::reset_stats(&PathBuf::from(target), &app_id)).await?
+}
+
+#[command]
+pub async fn emu_image(path: String) -> Result<String, String> {
+    emu_ops::blocking(move || extras::image_data_url(&PathBuf::from(path))).await?
+}
+
+#[command]
+pub async fn emu_overlay_assets(target: String) -> Result<extras::OverlayAssets, String> {
+    emu_ops::blocking(move || extras::overlay_assets(&PathBuf::from(target))).await
+}
+
+#[command]
+pub async fn emu_installed_fonts() -> Result<Vec<extras::FontEntry>, String> {
+    emu_ops::blocking(extras::installed_fonts).await
+}
+
+#[command]
+pub async fn emu_set_font(targets: Vec<String>, src: String) -> Result<(), String> {
+    emu_ops::blocking(move || extras::set_font(&targets, &PathBuf::from(src))).await?
+}
+
+#[command]
+pub async fn emu_remove_font(targets: Vec<String>) -> Result<(), String> {
+    emu_ops::blocking(move || extras::remove_font(&targets)).await?
+}
+
+#[command]
+pub async fn emu_set_avatar(targets: Vec<String>, src: String) -> Result<(), String> {
+    emu_ops::blocking(move || extras::set_avatar(&targets, &PathBuf::from(src))).await?
+}
+
+#[command]
+pub async fn emu_remove_avatar(targets: Vec<String>) -> Result<(), String> {
+    emu_ops::blocking(move || extras::remove_avatar(&targets)).await?
+}
+
+#[command]
+pub async fn emu_set_sound(targets: Vec<String>, kind: String, src: String) -> Result<(), String> {
+    emu_ops::blocking(move || extras::set_sound(&targets, &kind, &PathBuf::from(src))).await?
+}
+
+#[command]
+pub async fn emu_remove_sound(targets: Vec<String>, kind: String) -> Result<(), String> {
+    emu_ops::blocking(move || extras::remove_sound(&targets, &kind)).await?
+}
+
+#[command]
+pub async fn emu_broadcasts(target: String) -> Result<Vec<String>, String> {
+    emu_ops::blocking(move || extras::broadcasts(&PathBuf::from(target))).await
+}
+
+#[command]
+pub async fn emu_set_broadcasts(targets: Vec<String>, list: Vec<String>) -> Result<Vec<String>, String> {
+    emu_ops::blocking(move || extras::set_broadcasts(&targets, &list)).await?
+}
+
+#[command]
+pub async fn emu_lobby_connect(
+    state: tauri::State<'_, AppState>,
+    app: AppHandle,
+    game_dir: String,
+    target: String,
+    allow_download: bool,
+) -> Result<String, String> {
+    let _ = game_dir;
+    emu_ops::lobby_connect(&sink(&app), &state, &app_data_dir(&app), target, allow_download).await
+}
+
+#[command]
+pub async fn emu_launch_console(path: String) -> Result<(), String> {
+    emu_ops::blocking(move || extras::launch_console(&PathBuf::from(path))).await?
+}
+
+#[command]
+pub async fn emu_mods(target: String) -> Result<Vec<extras::ModEntry>, String> {
+    emu_ops::blocking(move || extras::mods(&PathBuf::from(target))).await
+}
+
+#[command]
+pub async fn emu_add_mod(
+    state: tauri::State<'_, AppState>,
+    targets: Vec<String>,
+    app_id: String,
+    id: String,
+    src: String,
+) -> Result<extras::AddedMod, String> {
+    extras::add_mod(&state.http_client, &targets, &app_id, &id, &PathBuf::from(src)).await
+}
+
+#[command]
+pub async fn emu_remove_mod(targets: Vec<String>, id: String) -> Result<(), String> {
+    emu_ops::blocking(move || extras::remove_mod(&targets, &id)).await?
+}

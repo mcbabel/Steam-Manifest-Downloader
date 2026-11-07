@@ -469,6 +469,11 @@ const ALLOWED_EVENT_KINDS: &[&str] = &[
     "controller_applied",
     "emu_gbe_updated",
     "drm_restored",
+    "emu_saves",
+    "emu_achievements",
+    "emu_profile",
+    "emu_network",
+    "emu_mod",
     "behavior_consent",
     "ui_screen",
 ];
