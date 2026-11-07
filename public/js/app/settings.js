@@ -6,7 +6,7 @@ async function openSettings(target) {
 
     els.ddExtraArgsInput.value = (settings.dd_extra_args || []).join(' ');
     els.maxRetriesInput.value = settings.max_retries ?? 3;
-    els.chunkConcurrencyInput.value = settings.native_chunk_concurrency ?? 8;
+    els.chunkConcurrencyInput.value = settings.native_chunk_concurrency ?? 16;
     const speedLimit = splitSpeedLimit(settings.download_speed_limit);
     els.speedLimitInput.value = speedLimit.value;
     setSpeedLimitUnit(speedLimit.unit);
@@ -109,7 +109,7 @@ async function saveSettings() {
       currentSettings.dd_extra_args = ["-max-downloads", "8", "-verify-all"];
     }
     currentSettings.max_retries = parseInt(els.maxRetriesInput.value) || 3;
-    currentSettings.native_chunk_concurrency = parseInt(els.chunkConcurrencyInput.value) || 8;
+    currentSettings.native_chunk_concurrency = parseInt(els.chunkConcurrencyInput.value) || 16;
     currentSettings.download_speed_limit = els.speedLimitToggle && els.speedLimitToggle.checked
       ? joinSpeedLimit(els.speedLimitInput.value, getSpeedLimitUnit())
       : '';

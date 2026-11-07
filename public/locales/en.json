@@ -933,7 +933,7 @@
     "maxRetries": "Max Retries on Error",
     "maxRetriesHint": "Extra attempts per depot when the connection drops.",
     "chunkConcurrency": "Max concurrent chunks (native engine)",
-    "chunkConcurrencyHint": "Lower it if downloads make the system lag.",
+    "chunkConcurrencyHint": "Raise it if downloads stay below your line speed, lower it if downloads make the system lag. Default: 16.",
     "speedLimit": "Speed Limit",
     "speedLimitHint": "Also applies to a running download. 100 Mbit/s is about 12 MB/s.",
     "proxy": "Proxy",

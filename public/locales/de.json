@@ -933,7 +933,7 @@
     "maxRetries": "Maximale Wiederholungen bei Fehler",
     "maxRetriesHint": "Zusätzliche Versuche pro Depot, wenn die Verbindung abbricht.",
     "chunkConcurrency": "Max. gleichzeitige Chunks (native Engine)",
-    "chunkConcurrencyHint": "Verringern, wenn Downloads das System ausbremsen.",
+    "chunkConcurrencyHint": "Höher stellen, wenn Downloads unter deiner Leitungsgeschwindigkeit bleiben, niedriger, wenn das System beim Download hängt. Standard: 16.",
     "speedLimit": "Geschwindigkeitslimit",
     "speedLimitHint": "Gilt auch für einen laufenden Download. 100 Mbit/s sind etwa 12 MB/s.",
     "proxy": "Proxy",

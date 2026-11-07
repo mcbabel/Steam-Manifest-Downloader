@@ -426,7 +426,7 @@ impl App {
                 .parse()
                 .ok()
                 .filter(|n| *n > 0)
-                .unwrap_or(8);
+                .unwrap_or(16);
             s.max_retries = inputs[SETTING_RETRIES].parse().unwrap_or(3);
             s.dd_extra_args = if inputs[SETTING_DD_ARGS].is_empty() {
                 vec!["-max-downloads".into(), "8".into(), "-verify-all".into()]
@@ -799,7 +799,7 @@ impl App {
                 SETTING_CHUNKS,
                 "settings.chunkConcurrency",
                 "settings.chunkConcurrencyHint",
-                "8",
+                "16",
             ),
             (
                 SETTING_RETRIES,

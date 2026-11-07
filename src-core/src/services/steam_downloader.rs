@@ -23,7 +23,7 @@ use crate::services::steam_session::{
 
 const CHUNK_RETRY_COUNT: usize = 8;
 
-pub const DEFAULT_CHUNK_CONCURRENCY: u32 = 8;
+pub const DEFAULT_CHUNK_CONCURRENCY: u32 = 16;
 pub const MAX_CHUNK_CONCURRENCY: u32 = 64;
 
 fn effective_chunk_concurrency(setting: u32) -> usize {
@@ -304,9 +304,9 @@ async fn download_chunks_from_manifest(
     let network_bytes = Arc::new(Mutex::new(0u64));
     let skipped_chunks = Arc::new(Mutex::new(0u64));
     let skipped_bytes = Arc::new(Mutex::new(0u64));
-    let semaphore = Arc::new(Semaphore::new(effective_chunk_concurrency(
-        chunk_concurrency,
-    )));
+    let network_limit = effective_chunk_concurrency(chunk_concurrency);
+    let semaphore = Arc::new(Semaphore::new(network_limit * 2));
+    let network_slots = Arc::new(Semaphore::new(network_limit));
     let file_locks: FileLocks = Arc::new(Mutex::new(HashMap::new()));
     let token_cache: Arc<Mutex<HashMap<String, Option<String>>>> =
         Arc::new(Mutex::new(HashMap::new()));
@@ -466,6 +466,7 @@ async fn download_chunks_from_manifest(
             let skipped_chunks = skipped_chunks.clone();
             let skipped_bytes = skipped_bytes.clone();
             let permit = semaphore.clone();
+            let network_slots = network_slots.clone();
             let file_locks = file_locks.clone();
             let token_cache = token_cache.clone();
             let cancel = cancel.clone();
@@ -517,6 +518,7 @@ async fn download_chunks_from_manifest(
                 let res = process_chunk(
                     http,
                     session,
+                    network_slots,
                     &pool,
                     index as usize,
                     app_id,
@@ -666,6 +668,7 @@ struct ChunkOutcome {
 async fn process_chunk(
     http: Client,
     session: Arc<SteamSession>,
+    network_slots: Arc<Semaphore>,
     pool: &ServerPool,
     slot: usize,
     app_id: u32,
@@ -684,6 +687,11 @@ async fn process_chunk(
             let delay_ms = chunk_retry_backoff_ms(attempt);
             tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
         }
+        let slot_permit = network_slots
+            .clone()
+            .acquire_owned()
+            .await
+            .map_err(|e| format!("chunk scheduler closed: {}", e))?;
         let server_idx = pool.pick(slot, attempt);
         let server = &pool.servers[server_idx];
         let token = get_or_fetch_token(
@@ -726,6 +734,7 @@ async fn process_chunk(
                 continue;
             }
         };
+        drop(slot_permit);
         let network_bytes = encrypted.len() as u64;
 
         let key = *depot_key;
@@ -1308,8 +1317,8 @@ mod chunk_concurrency_tests {
 
     #[test]
     fn the_default_matches_the_documented_fallback() {
-        assert_eq!(DEFAULT_CHUNK_CONCURRENCY, 8);
-        assert_eq!(effective_chunk_concurrency(DEFAULT_CHUNK_CONCURRENCY), 8);
+        assert_eq!(DEFAULT_CHUNK_CONCURRENCY, 16);
+        assert_eq!(effective_chunk_concurrency(DEFAULT_CHUNK_CONCURRENCY), 16);
     }
 
     #[tokio::test]
