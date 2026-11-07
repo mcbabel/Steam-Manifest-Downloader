@@ -6198,6 +6198,23 @@ button.emu-extra-row:hover,
   font-size: 0.85rem;
 }
 
+.emu-cold-steam {
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--accent-glow);
+  border: 1px solid var(--border-active);
+  border-radius: var(--radius-sm);
+}
+
+.emu-cold-steam .dd-path__hint {
+  margin: 0 0 0.6rem;
+}
+
+.emu-section--muted {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
 .latest-manifests-note {
   margin: 0.25rem 0 0.75rem;
 }

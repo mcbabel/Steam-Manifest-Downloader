@@ -491,6 +491,57 @@ pub fn find_shortcut_appid(exe_path: &str) -> Option<u32> {
         .and_then(shortcut_appid_in_entry)
 }
 
+pub fn shortcuts_path() -> Option<PathBuf> {
+    let install = detect_steam().ok()?;
+    Some(
+        PathBuf::from(&install.steam_dir)
+            .join("userdata")
+            .join(&install.user_id3)
+            .join("config")
+            .join("shortcuts.vdf"),
+    )
+}
+
+pub fn retarget_shortcuts_in(path: &Path, from_exe: &str, to_exe: &str) -> Result<usize, String> {
+    let bytes = std::fs::read(path).map_err(|e| format!("read shortcuts.vdf: {}", e))?;
+    let mut entries = parse_shortcuts(&bytes)?;
+    let to_dir = Path::new(to_exe).parent().map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
+    let mut changed = 0;
+    for entry in entries.iter_mut() {
+        let matches = shortcut_string_field(entry, "Exe").is_some_and(|exe| same_exe(exe, from_exe));
+        if !matches {
+            continue;
+        }
+        let VdfNode::Object(fields) = &mut entry.1 else { continue };
+        for (k, v) in fields.iter_mut() {
+            if k.eq_ignore_ascii_case("Exe") {
+                *v = VdfNode::String(quote_exe(to_exe));
+            } else if k.eq_ignore_ascii_case("StartDir") {
+                let quoted = matches!(v, VdfNode::String(s) if s.starts_with('"'));
+                *v = VdfNode::String(if quoted { quote_exe(&to_dir) } else { to_dir.clone() });
+            }
+        }
+        changed += 1;
+    }
+    if changed > 0 {
+        let backup = path.with_extension("vdf.bak");
+        let _ = std::fs::copy(path, &backup);
+        std::fs::write(path, serialize_shortcuts(&entries)).map_err(|e| format!("write shortcuts.vdf: {}", e))?;
+    }
+    Ok(changed)
+}
+
+pub fn has_shortcut_for(exe: &str) -> bool {
+    shortcuts_path()
+        .and_then(|p| std::fs::read(p).ok())
+        .and_then(|b| parse_shortcuts(&b).ok())
+        .is_some_and(|entries| {
+            entries
+                .iter()
+                .any(|e| shortcut_string_field(e, "Exe").is_some_and(|x| same_exe(x, exe)))
+        })
+}
+
 pub fn run_shortcut(appid: u32) -> Result<(), String> {
     let install = detect_steam()?;
     let game_id = (u64::from(appid) << 32) | 0x0200_0000;
@@ -885,3 +936,27 @@ mod tests {
     }
 }
 
+
+#[cfg(test)]
+mod retarget_tests {
+    use super::*;
+
+    #[test]
+    fn a_steam_entry_points_at_the_loader_and_back() {
+        let dir = std::env::temp_dir().join(format!("smd-shortcuts-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("shortcuts.vdf");
+        let exe = "C:\\Games\\Game\\Game.exe";
+        let loader = "C:\\Games\\Game\\steamclient_loader_x64.exe";
+        let node = build_shortcut_node(7, "Game", &quote_exe(exe), "\"C:\\Games\\Game\"", "", "");
+        std::fs::write(&path, serialize_shortcuts(&[("0".into(), node)])).unwrap();
+        assert_eq!(retarget_shortcuts_in(&path, exe, loader).unwrap(), 1);
+        let entries = parse_shortcuts(&std::fs::read(&path).unwrap()).unwrap();
+        assert!(same_exe(shortcut_string_field(&entries[0], "Exe").unwrap(), loader));
+        assert_eq!(shortcut_appid_in_entry(&entries[0]), Some(7));
+        assert_eq!(retarget_shortcuts_in(&path, exe, loader).unwrap(), 0);
+        assert_eq!(retarget_shortcuts_in(&path, loader, exe).unwrap(), 1);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+}

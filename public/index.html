@@ -744,6 +744,35 @@
               <p id="emu-already-patched" class="emu-already-patched hidden"></p>
             </div>
 
+            <div id="emu-method-section" class="emu-section hidden">
+              <label class="settings-section__label" data-i18n="emulator.method.label">How gbe_fork gets loaded</label>
+              <div class="emu-variant-group" role="radiogroup">
+                <label class="emu-variant">
+                  <input type="radio" name="emu-method" value="replace" checked="">
+                  <span class="emu-variant__body">
+                    <span class="emu-variant__title" data-i18n="emulator.method.replace">Replace steam_api</span>
+                    <span class="emu-variant__hint" data-i18n="emulator.method.replaceHint">The usual way. Works for most games.</span>
+                  </span>
+                </label>
+                <label class="emu-variant">
+                  <input type="radio" name="emu-method" value="coldclient">
+                  <span class="emu-variant__body">
+                    <span class="emu-variant__title" data-i18n="emulator.method.coldclient">ColdClientLoader</span>
+                    <span class="emu-variant__hint" data-i18n="emulator.method.coldclientHint">Leaves the game's files alone and starts it through a loader. For games that check their steam_api.</span>
+                  </span>
+                </label>
+              </div>
+              <div id="emu-cold-options" class="emu-gamedata__key hidden">
+                <label for="emu-cold-exe" class="emu-gamedata__key-label" data-i18n="emulator.method.exe">Game program</label>
+                <select id="emu-cold-exe" class="emu-field__input emu-field__select"></select>
+                <p class="emu-bypass-row__hint" data-i18n="emulator.method.exeHint">Start the game with steamclient_loader next to it from now on. SMD points the game's Steam entry at it.</p>
+              </div>
+              <div id="emu-cold-steam" class="emu-cold-steam hidden">
+                <p class="dd-path__hint" data-i18n="emulator.method.steamRunning">Steam is running, so the game's Steam entry still starts the game directly. Steam has to close for a moment to change it.</p>
+                <button type="button" id="btn-emu-cold-steam" class="btn btn--small btn--primary" data-i18n="emulator.method.closeSteam">Close Steam and change it</button>
+              </div>
+            </div>
+
             <div id="emu-variant-section" class="emu-section">
               <label class="settings-section__label" data-i18n="emulator.variantLabel">Emulator variant</label>
               <div class="emu-variant-group" role="radiogroup" aria-labelledby="emu-variant-label">

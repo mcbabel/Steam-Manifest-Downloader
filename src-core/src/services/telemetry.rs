@@ -474,6 +474,7 @@ const ALLOWED_EVENT_KINDS: &[&str] = &[
     "emu_profile",
     "emu_network",
     "emu_mod",
+    "coldclient_used",
     "behavior_consent",
     "ui_screen",
 ];

@@ -436,8 +436,14 @@ pub async fn apply_replacement(
     installed_app_ids: Vec<String>,
     emu_settings: Option<EmuSettings>,
     allow_download: bool,
+    prefer_local: bool,
+    coldclient_exe: Option<String>,
 ) -> Result<Vec<ReplaceResult>, String> {
-    let info = emulator::fetch_release_info(&state.http_client, app_data_dir).await?;
+    let mut info = emulator::fetch_release_info(&state.http_client, app_data_dir).await?;
+    if prefer_local {
+        info = emulator::local_info(app_data_dir, &info).ok_or("No gbe_fork release on this PC yet")?;
+    }
+    let cold = coldclient_exe.filter(|e| !e.trim().is_empty());
     crate::dlog!(
         "emu",
         "apply_replacement targets={} variant={:?} release={} cache_root={}",
@@ -447,10 +453,14 @@ pub async fn apply_replacement(
         info.cache_root
     );
 
-    let need_windows = targets.iter().any(|t| t.platform == Platform::Windows);
+    let need_windows = cold.is_some() || targets.iter().any(|t| t.platform == Platform::Windows);
     let need_linux = targets.iter().any(|t| t.platform == Platform::Linux);
+    let cold_missing = cold.is_some()
+        && emulator::platform_cached(&info, Platform::Windows)
+        && !emulator::tools_present(&PathBuf::from(&info.cache_root).join(Platform::Windows.cache_subdir()), Platform::Windows)
+        && !info.bundled;
     let mut missing = Vec::new();
-    if need_windows && !emulator::platform_cached(&info, Platform::Windows) {
+    if need_windows && (!emulator::platform_cached(&info, Platform::Windows) || cold_missing) {
         missing.push(("windows", info.windows_size));
     }
     if need_linux && !emulator::platform_cached(&info, Platform::Linux) {
@@ -475,6 +485,9 @@ pub async fn apply_replacement(
             DOWNLOAD_CONFIRM_PREFIX,
             serde_json::json!({ "tag": info.tag, "platforms": platforms })
         ));
+    }
+    if cold_missing {
+        emulator::forget_extracted(&info, Platform::Windows);
     }
     if need_windows {
         let sink = sink.clone();
@@ -537,6 +550,11 @@ pub async fn apply_replacement(
         if r.success {
             emulator::write_patch_info(path, &info.tag, variant);
         }
+        results.push(r);
+    }
+    if let Some(exe) = cold {
+        let windows_cache = cache_root.join(Platform::Windows.cache_subdir());
+        let r = install_coldclient(&windows_cache, &exe, &app_id, &installed_app_ids, settings_ref, dlcs.as_deref(), &info.tag).await;
         results.push(r);
     }
     let succeeded = results.iter().filter(|r| r.success).count();
@@ -675,18 +693,117 @@ pub async fn write_controller(
     .await
 }
 
-pub async fn revert_replacement(targets: Vec<String>) -> Result<Vec<ReplaceResult>, String> {
+async fn install_coldclient(
+    windows_cache: &Path,
+    exe: &str,
+    app_id: &str,
+    installed_app_ids: &[String],
+    settings: Option<&EmuSettings>,
+    dlcs: Option<&[(String, String)]>,
+    tag: &str,
+) -> ReplaceResult {
+    use crate::services::coldclient;
+    let mut r = ReplaceResult::new(exe);
+    let Some(src) = coldclient::loader_source(windows_cache) else {
+        r.fail_class = Some("coldclient_missing".into());
+        r.error = Some("This gbe_fork release has no ColdClientLoader files".into());
+        return r;
+    };
+    let installed = match coldclient::install(&src, Path::new(exe), app_id) {
+        Ok(i) => i,
+        Err(e) => {
+            r.fail_class = Some(emulator::fail::COPY_FAILED.into());
+            r.error = Some(e);
+            return r;
+        }
+    };
+    r.path = installed.loader.clone();
+    let loader = Path::new(&installed.loader);
+    let settings_dir = loader.parent().map(|p| p.join("steam_settings")).unwrap_or_default();
+    match emulator::write_settings_dir(&settings_dir, app_id, installed_app_ids, settings, dlcs) {
+        Ok(n) => r.dlc_count = n,
+        Err((class, e)) => {
+            r.fail_class = Some(class.into());
+            r.error = Some(e);
+            return r;
+        }
+    }
+    emulator::write_patch_info(loader, tag, Variant::Experimental);
+    r.success = true;
+    r.shortcut = retarget_steam_entry(exe, &installed.loader, false).await;
+    let (from, to) = (exe.to_string(), installed.loader.clone());
+    r.links = blocking(move || coldclient::retarget_links(&from, &to)).await.unwrap_or(0);
+    r
+}
+
+async fn retarget_steam_entry(from: &str, to: &str, close_steam: bool) -> Option<String> {
+    use crate::services::steam_library;
+    if !steam_library::has_shortcut_for(from) {
+        return None;
+    }
+    let path = steam_library::shortcuts_path()?;
+    let running = steam_library::is_steam_running();
+    if running && !close_steam {
+        return Some("steam_running".into());
+    }
+    let steam_dir = steam_library::detect_steam().ok().map(|s| PathBuf::from(s.steam_dir));
+    if running {
+        let dir = steam_dir.clone()?;
+        if steam_library::shutdown_steam(&dir).await.is_err() {
+            return Some("steam_running".into());
+        }
+    }
+    let state = match steam_library::retarget_shortcuts_in(&path, from, to) {
+        Ok(n) if n > 0 => "updated",
+        Ok(_) => "none",
+        Err(_) => "failed",
+    };
+    if running {
+        if let Some(dir) = steam_dir {
+            let _ = steam_library::start_steam(&dir);
+        }
+    }
+    Some(state.into())
+}
+
+pub async fn coldclient_shortcut(game_dir: String, back: bool, close_steam: bool) -> Vec<String> {
+    let installs = blocking(move || crate::services::coldclient::installs_in(Path::new(&game_dir)))
+        .await
+        .unwrap_or_default();
+    let mut states = Vec::new();
+    for i in installs {
+        let (from, to) = if back { (&i.loader, &i.exe) } else { (&i.exe, &i.loader) };
+        states.push(retarget_steam_entry(from, to, close_steam).await.unwrap_or_else(|| "none".into()));
+    }
+    states
+}
+
+pub async fn revert_replacement(targets: Vec<String>, close_steam: bool) -> Result<Vec<ReplaceResult>, String> {
     let mut results = Vec::with_capacity(targets.len());
     for target in targets {
         let path = PathBuf::from(&target);
-        let mut r = ReplaceResult {
-            path: target.clone(),
-            backup_path: None,
-            success: false,
-            error: None,
-            fail_class: None,
-            dlc_count: None,
-        };
+        let mut r = ReplaceResult::new(&target);
+        if let Some(cold) = crate::services::coldclient::install_for_loader(&path) {
+            let state = retarget_steam_entry(&cold.loader, &cold.exe, close_steam).await;
+            if state.as_deref() == Some("steam_running") {
+                r.fail_class = Some("steam_running".into());
+                r.error = Some("Steam is running".into());
+                results.push(r);
+                continue;
+            }
+            r.shortcut = state;
+            let (from, to) = (cold.loader.clone(), cold.exe.clone());
+            r.links = blocking(move || crate::services::coldclient::retarget_links(&from, &to)).await.unwrap_or(0);
+            match crate::services::coldclient::remove(&path) {
+                Ok(_) => r.success = true,
+                Err(e) => {
+                    r.fail_class = Some(emulator::fail::RESTORE_FAILED.into());
+                    r.error = Some(e);
+                }
+            }
+            results.push(r);
+            continue;
+        }
         match emulator::revert_replacement(&path) {
             Ok(()) => r.success = true,
             Err((class, e)) => {
@@ -744,7 +861,14 @@ pub async fn lobby_connect(
     let windows = target.to_ascii_lowercase().ends_with(".dll");
     let platform = if windows { Platform::Windows } else { Platform::Linux };
     let info = emulator::fetch_release_info(&state.http_client, app_data_dir).await?;
-    if !emulator::platform_cached(&info, platform) && !info.bundled {
+    let cache_dir = PathBuf::from(&info.cache_root).join(platform.cache_subdir());
+    let pruned = emulator::platform_cached(&info, platform)
+        && crate::services::emu_extras::lobby_tool(&cache_dir, windows).is_none()
+        && !info.bundled;
+    if pruned && allow_download {
+        emulator::forget_extracted(&info, platform);
+    }
+    if (!emulator::platform_cached(&info, platform) || pruned) && !info.bundled {
         if !allow_download {
             let size = if windows { info.windows_size } else { info.linux_size };
             let name = if windows { "windows" } else { "linux" };

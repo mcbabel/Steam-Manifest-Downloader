@@ -129,6 +129,7 @@ fn main() {
             commands::emu_mods,
             commands::emu_add_mod,
             commands::emu_remove_mod,
+            commands::emu_coldclient_shortcut,
             commands::emu_controller_info,
             commands::emu_write_controller,
             commands::emu_revert_replacement,

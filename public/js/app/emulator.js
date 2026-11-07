@@ -45,6 +45,7 @@ async function goToEmulatorStep(opts = {}) {
   renderEmuFileList(state.emulatorScan);
   updateEmuActionButtons();
   resetEmuExtrasView();
+  refreshEmuMethod();
   if (opts.prefillSettings !== false) {
     populateEmuSettings(loadLastEmuSettings() || {});
   }
@@ -369,7 +370,9 @@ function renderEmuFileList(files) {
   }
 
   const rows = files.map((f, idx) => {
-    const relPath = relativizeEmuPath(f.path);
+    const relPath = f.loader
+      ? window.i18n.t('emulator.method.loaderRow', { exe: relativizeEmuPath(f.loader) })
+      : relativizeEmuPath(f.path);
     const isLinux = f.platform === 'linux';
     const platformLabel = isLinux
       ? window.i18n.t('emulator.platformLinux')
@@ -386,6 +389,7 @@ function renderEmuFileList(files) {
         <span class="emu-file-item__tags">
           <span class="emu-file-tag ${platformClass}">${escapeHtml(platformLabel)}</span>
           <span class="emu-file-tag">${escapeHtml(archLabel)}</span>
+          ${f.loader ? `<span class="emu-file-tag">${escapeHtml(window.i18n.t('emulator.method.coldclient'))}</span>` : ''}
           ${state.emuPatchedPaths.has(f.path)
             ? `<span class="emu-file-tag emu-file-tag--patched">${escapeHtml(window.i18n.t('emulator.patchedBadge'))}</span>`
             : ''}
@@ -625,7 +629,9 @@ async function loadEmuReleaseInfo() {
     state.emulatorReleaseInfo = info;
     els.emuReleaseStatus.classList.remove('emu-release-status--busy');
     els.emuReleaseStatus.classList.add('emu-release-status--ready');
-    els.emuReleaseStatus.textContent = window.i18n.t('emulator.releaseReady', { tag: info.tag });
+    els.emuReleaseStatus.textContent = info.local_tag && info.local_tag !== info.tag
+      ? window.i18n.t('emulator.releaseNewer', { tag: info.tag, local: info.local_tag })
+      : window.i18n.t('emulator.releaseReady', { tag: info.tag });
     refreshEmuPatchVersion();
   } catch (e) {
     console.error('emu_release_info failed:', e);
@@ -1109,8 +1115,9 @@ async function applyEmuReplacement() {
     resetApp();
     return;
   }
-  const selectedTargets = getSelectedEmuTargets();
-  if (selectedTargets.length === 0) {
+  const coldExe = emuColdClientExe();
+  const selectedTargets = getSelectedEmuTargets().filter(t => !coldExe || t.platform !== 'windows' || t.loader);
+  if (selectedTargets.length === 0 && !coldExe) {
     setEmuApplyStatus('error', window.i18n.t('emulator.applyNoSelection'));
     return;
   }
@@ -1133,8 +1140,14 @@ async function applyEmuReplacement() {
       installedAppIds,
       emuSettings: gathered || {},
       allowDownload: !!state.emuAllowDownload,
+      preferLocal: !!state.emuPreferLocal,
+      coldclientExe: coldExe,
     });
     state.emuAllowDownload = false;
+    state.emuPreferLocal = false;
+    const doneTargets = results.filter(r => r.success).map(r =>
+      selectedTargets.find(t => t.path === r.path) || { path: r.path, platform: 'windows', arch: 'x64', loader: true });
+    if (coldExe || results.some(r => r.shortcut)) noteEmuColdClient(results, !!coldExe);
     const total = results.length;
     const success = results.filter(r => r.success).length;
     const failed = total - success;
@@ -1148,7 +1161,7 @@ async function applyEmuReplacement() {
       fail_class: emuFailClass(results),
     });
     if (failed === 0) {
-      const bypassMessage = await syncEmuBypass(selectedTargets);
+      const bypassMessage = await syncEmuBypass(doneTargets.filter(t => !t.loader));
       const extra = bypassMessage ? '\n\n' + bypassMessage : '';
       const dlcResult = results.find(r => typeof r.dlcCount === 'number');
       const dlcNote = dlcResult
@@ -1162,10 +1175,10 @@ async function applyEmuReplacement() {
         try { await saveSteamWebApiKey(keyInput.value); } catch (_) {}
       }
       const gameNote = toggle && toggle.checked
-        ? '\n\n' + await writeEmuGameData(selectedTargets, appId, gathered && gathered.language)
+        ? '\n\n' + await writeEmuGameData(doneTargets, appId, gathered && gathered.language)
         : '';
       const controllerNote = emuControllerOn()
-        ? '\n\n' + await writeEmuController(selectedTargets)
+        ? '\n\n' + await writeEmuController(doneTargets)
         : '';
       setEmuApplyStatus('success', window.i18n.t('emulator.applySuccess', { count: success, total }) + dlcNote + extra + gameNote + controllerNote);
       saveLastEmuSettings(gathered);
@@ -1334,10 +1347,17 @@ function showEmuDownloadConfirm(info) {
       const size = formatBytes(p.size);
       return `${platformDisplayName(p.platform)}${size ? ` (~${size})` : ''}`;
     });
+    const cold = document.querySelector('input[name="emu-method"]:checked')?.value === 'coldclient';
     els.emuDownloadScope.textContent = window.i18n.t('modals.emuDownload.scope', {
       tag: info.tag || '',
       items: items.join(', '),
-    });
+    }) + (cold ? ' ' + window.i18n.t('modals.emuDownload.coldNote') : '');
+  }
+  if (els.btnEmuDownloadNo) {
+    const local = state.emulatorReleaseInfo && state.emulatorReleaseInfo.local_tag;
+    els.btnEmuDownloadNo.textContent = local && local !== info.tag
+      ? window.i18n.t('modals.emuDownload.keepLocal', { tag: local })
+      : window.i18n.t('modals.emuDownload.no');
   }
   if (els.emuDownloadModal) {
     const link = els.emuDownloadModal.querySelector('a[href^="http"]');
@@ -1399,6 +1419,22 @@ function cleanupEmuDownloadListener() {
   }
 }
 
+function declineEmuDownload() {
+  if (state.emuDownloadRetry) {
+    cancelEmuDownload();
+    return;
+  }
+  const local = state.emulatorReleaseInfo && state.emulatorReleaseInfo.local_tag;
+  if (!local || !state.emuPendingDownload) {
+    cancelEmuDownload();
+    return;
+  }
+  if (els.emuDownloadModal) els.emuDownloadModal.classList.add('hidden');
+  state.emuPendingDownload = null;
+  state.emuPreferLocal = true;
+  applyEmuReplacement();
+}
+
 function cancelEmuDownload() {
   if (els.emuDownloadModal) els.emuDownloadModal.classList.add('hidden');
   cleanupEmuDownloadListener();
@@ -1420,9 +1456,10 @@ function cancelEmuDownload() {
 
 function showEmuRevertConfirm() {
   if (els.emuRevertScope) {
+    const loader = (state.emuEditTargets || []).some(t => t.loader);
     els.emuRevertScope.textContent = window.i18n.t('modals.emuRevert.scope', {
       count: (state.emuEditTargets || []).length,
-    });
+    }) + (loader ? ' ' + window.i18n.t('modals.emuRevert.loader') : '');
   }
   if (els.emuRevertModal) els.emuRevertModal.classList.remove('hidden');
 }
@@ -1452,16 +1489,24 @@ async function confirmEmuRevert() {
   let details = '';
   try {
     const paths = revertTargets.map(t => t.path);
-    const results = await invoke('emu_revert_replacement', { targets: paths });
-    try { await invoke('steam_api_bypass_revert', { targets: paths }); }
+    const results = await invoke('emu_revert_replacement', { targets: paths, closeSteam: true });
+    const plain = revertTargets.filter(t => !t.loader).map(t => t.path);
+    try { if (plain.length) await invoke('steam_api_bypass_revert', { targets: plain }); }
     catch (e) { console.error('bypass revert during emu revert:', e); }
     await restoreAllDrm();
     success = results.filter(r => r.success).length;
     failed = results.length - success;
     details = results
       .filter(r => !r.success)
-      .map(r => `${emuFileLabel(r.path)}\n    ${r.error || window.i18n.t('emulator.applyReasonUnknown')}`)
+      .map(r => `${emuFileLabel(r.path)}\n    ${r.failClass === 'steam_running'
+        ? window.i18n.t('emulator.method.steamRunning')
+        : (r.error || window.i18n.t('emulator.applyReasonUnknown'))}`)
       .join('\n');
+    if (revertTargets.some(t => t.loader)) {
+      const links = results.reduce((n, r) => n + (r.links || 0), 0);
+      if (links) showToast(window.i18n.t('emulator.method.linksBack', { count: links }), 'success');
+      emitEvent('coldclient_used', { action: 'removed', ok: failed === 0, links: links > 0 });
+    }
     emitEvent('patch_reverted', {
       entry: revertEntry,
       outcome: emuOutcome(success, results.length),
@@ -1607,6 +1652,7 @@ async function openEmuEditFromHistory(entry) {
   loadEmuControllerInfo();
   refreshEmuDrmRestore();
   resetEmuExtrasView();
+  refreshEmuMethod();
   loadEmuReleaseInfo();
 }
 

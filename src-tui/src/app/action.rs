@@ -208,6 +208,10 @@ pub enum Action {
     EmuLobbyConnect(bool),
     EmuModAdd,
     EmuModRemove(usize),
+    EmuMethod(bool),
+    EmuColdExe(usize),
+    EmuColdSteam,
+    EmuUseLocal,
     EmuUpdateGbe,
     EmuDone,
 

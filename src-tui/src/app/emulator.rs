@@ -676,8 +676,68 @@ impl App {
         self.emu_apply();
     }
 
+    fn load_cold_exes(&mut self) {
+        let Some(e) = self.emu.as_ref() else { return };
+        if e.edit_mode || !e.scan.iter().any(|f| f.platform == Platform::Windows && f.loader.is_none()) {
+            return;
+        }
+        let dir = e.game_dir.clone();
+        self.spawn(async move {
+            let list = smd_core::ops::shortcuts::detect_executables(&dir).await.unwrap_or_default();
+            apply(move |app| {
+                let Some(e) = app.emu.as_mut() else { return };
+                let exes: Vec<_> = list
+                    .into_iter()
+                    .filter(|x| x.platform == "windows" && !x.name.to_ascii_lowercase().starts_with("steamclient_loader"))
+                    .collect();
+                e.cold_idx = exes.iter().position(|x| x.recommended).unwrap_or(0);
+                e.cold_exes = exes.into_iter().map(|x| x.path).collect();
+                if e.cold_exes.is_empty() {
+                    e.cold = false;
+                }
+            })
+        });
+    }
+
+    fn note_coldclient(&mut self, results: &[ReplaceResult], fresh: bool) {
+        let running = results.iter().any(|r| r.shortcut.as_deref() == Some("steam_running"));
+        let links: usize = results.iter().map(|r| r.links).sum();
+        if let Some(e) = self.emu.as_mut() {
+            e.cold_steam_running = running;
+        }
+        if links > 0 {
+            self.toast(Tone::Success, tf("emulator.method.linksDone", &[("count", &links)]));
+        }
+        if fresh {
+            let ok = results.iter().any(|r| r.success && r.shortcut.is_some()) || results.iter().any(|r| r.success);
+            let shortcut = results.iter().find_map(|r| r.shortcut.clone()).unwrap_or_else(|| "none".into());
+            self.emit("coldclient_used", Some(serde_json::json!({ "action": "setup", "ok": ok, "shortcut": shortcut, "links": links > 0 })));
+        }
+    }
+
+    fn cold_steam(&mut self) {
+        let Some(e) = self.emu.as_ref() else { return };
+        let dir = e.game_dir.clone();
+        self.spawn(async move {
+            let states = smd_core::ops::emulator::coldclient_shortcut(dir, false, true).await;
+            apply(move |app| {
+                let ok = states.iter().any(|s| s == "updated");
+                app.emit("coldclient_used", Some(serde_json::json!({ "action": "shortcut", "ok": ok })));
+                if ok {
+                    if let Some(e) = app.emu.as_mut() {
+                        e.cold_steam_running = false;
+                    }
+                    app.toast(Tone::Success, t("emulator.method.shortcutDone"));
+                } else {
+                    app.toast(Tone::Error, t("emulator.method.shortcutFailed"));
+                }
+            })
+        });
+    }
+
     fn emu_side_scans(&mut self) {
         self.load_controller_info();
+        self.load_cold_exes();
         let Some(emu) = &self.emu else { return };
         let dir = emu.game_dir.clone();
         let app_id = emu.app_id.clone();
@@ -942,6 +1002,24 @@ impl App {
                 }
             }
             a if self.dispatch_emu_extras(a) => {}
+            Action::EmuMethod(cold) => {
+                if let Some(e) = self.emu.as_mut() {
+                    e.cold = *cold && !e.cold_exes.is_empty();
+                }
+            }
+            Action::EmuColdExe(i) => {
+                if let Some(e) = self.emu.as_mut() {
+                    e.cold_idx = *i;
+                }
+            }
+            Action::EmuColdSteam => self.cold_steam(),
+            Action::EmuUseLocal => {
+                self.close_modal();
+                if let Some(e) = self.emu.as_mut() {
+                    e.prefer_local = true;
+                }
+                self.emu_apply();
+            }
             Action::EmuApply => self.emu_apply(),
             Action::EmuDownloadConfirmed => {
                 self.close_modal();
@@ -989,8 +1067,14 @@ impl App {
                     true,
                     Action::EmuRevertConfirmed,
                 );
+                let loader = self.emu.as_ref().is_some_and(|e| e.edit_targets.iter().any(|t| t.loader.is_some()));
                 if let Modal::Confirm(c) = &mut m {
-                    c.note = Some(tf("modals.emuRevert.scope", &[("count", &count)]));
+                    let mut note = tf("modals.emuRevert.scope", &[("count", &count)]);
+                    if loader {
+                        note.push(' ');
+                        note.push_str(&t("modals.emuRevert.loader"));
+                    }
+                    c.note = Some(note);
                 }
                 self.queue_modal(m);
             }
@@ -1014,8 +1098,12 @@ impl App {
             self.reset_wizard();
             return;
         }
-        let targets = e.selected_targets();
-        if targets.is_empty() {
+        let cold_exe = if e.cold && !e.edit_mode { e.cold_exes.get(e.cold_idx).cloned() } else { None };
+        let mut targets = e.selected_targets();
+        if cold_exe.is_some() {
+            targets.retain(|t| t.platform != Platform::Windows || t.loader.is_some());
+        }
+        if targets.is_empty() && cold_exe.is_none() {
             e.status = Some((Tone::Error, t("emulator.applyNoSelection")));
             return;
         }
@@ -1045,6 +1133,8 @@ impl App {
         let app_id = e.app_id.clone();
         let allow = e.allow_download;
         e.allow_download = false;
+        let prefer_local = std::mem::take(&mut e.prefer_local);
+        let fresh_cold = cold_exe.is_some();
         let installed: Vec<String> = self
             .wiz
             .parsed
@@ -1073,9 +1163,16 @@ impl App {
                 installed,
                 Some(settings),
                 allow,
+                prefer_local,
+                cold_exe,
             )
             .await;
-            apply(move |app| app.on_emu_applied(r, targets, variant_name, gathered))
+            apply(move |app| {
+                if let Ok(results) = &r {
+                    app.note_coldclient(results, fresh_cold);
+                }
+                app.on_emu_applied(r, targets, variant_name, gathered)
+            })
         });
     }
 
@@ -1207,20 +1304,34 @@ impl App {
                             }
                         })
                         .collect();
+                    let cold = self.emu.as_ref().is_some_and(|e| e.cold);
+                    let local = match self.emu.as_ref().and_then(|e| e.release.as_ref()) {
+                        Some(Ok(info)) => info.local_tag.clone().filter(|l| *l != tag),
+                        _ => None,
+                    };
+                    let mut body = format!(
+                        "{}\nhttps://github.com/Detanup01/gbe_fork/releases/tag/{}",
+                        crate::i18n::strip_html(&t("modals.emuDownload.body")),
+                        tag
+                    );
+                    if cold {
+                        body.push_str("\n\n");
+                        body.push_str(&t("modals.emuDownload.coldNote"));
+                    }
+                    let no = match &local {
+                        Some(l) => tf("modals.emuDownload.keepLocal", &[("tag", l)]),
+                        None => t("modals.emuDownload.no"),
+                    };
                     let mut m = Modal::confirm(
                         t("modals.emuDownload.title"),
-                        format!(
-                            "{}\nhttps://github.com/Detanup01/gbe_fork/releases/tag/{}",
-                            t("modals.emuDownload.body"),
-                            tag
-                        ),
+                        body,
                         t("modals.emuDownload.yes"),
-                        t("modals.emuDownload.no"),
+                        no,
                         false,
                         Action::EmuDownloadConfirmed,
                     );
                     if let Modal::Confirm(c) = &mut m {
-                        c.on_no = Some(Action::EmuDownloadCancelled);
+                        c.on_no = Some(if local.is_some() { Action::EmuUseLocal } else { Action::EmuDownloadCancelled });
                         c.note = Some(tf(
                             "modals.emuDownload.scope",
                             &[("tag", &tag), ("items", &items.join(", "))],
@@ -1487,7 +1598,7 @@ impl App {
         let game_dir = e.game_dir.clone();
         let entry = self.emu_entry();
         self.spawn(async move {
-            let r = smd_core::ops::emulator::revert_replacement(paths.clone()).await;
+            let r = smd_core::ops::emulator::revert_replacement(paths.clone(), true).await;
             for p in &paths {
                 let _ = smd_core::services::steam_api_bypass::revert_for_target(std::path::Path::new(p));
             }
@@ -1516,9 +1627,23 @@ impl App {
                 let details = results
                     .iter()
                     .filter(|r| !r.success)
-                    .map(|r| format!("{}\n    {}", file_label(&r.path), r.error.clone().unwrap_or_else(|| t("emulator.applyReasonUnknown"))))
+                    .map(|r| {
+                        let why = if r.fail_class.as_deref() == Some("steam_running") {
+                            t("emulator.method.steamRunning")
+                        } else {
+                            r.error.clone().unwrap_or_else(|| t("emulator.applyReasonUnknown"))
+                        };
+                        format!("{}\n    {}", file_label(&r.path), why)
+                    })
                     .collect::<Vec<_>>()
                     .join("\n");
+                if targets.iter().any(|t| t.loader.is_some()) {
+                    let links: usize = results.iter().map(|r| r.links).sum();
+                    if links > 0 {
+                        app.toast(Tone::Success, tf("emulator.method.linksBack", &[("count", &links)]));
+                    }
+                    app.emit("coldclient_used", Some(serde_json::json!({ "action": "removed", "ok": failed == 0, "links": links > 0 })));
+                }
                 app.emit("patch_reverted", Some(serde_json::json!({
                     "entry": entry, "outcome": outcome(success, results.len()),
                     "platforms": platform_mix(&targets), "targets": count_bucket(results.len()),
@@ -1890,6 +2015,13 @@ impl App {
                     .unwrap_or(&f.path)
                     .trim_start_matches(['/', '\\'])
                     .to_string();
+                let rel = match &f.loader {
+                    Some(exe) => tf(
+                        "emulator.method.loaderRow",
+                        &[("exe", &exe.strip_prefix(&dir).unwrap_or(exe).trim_start_matches(['/', '\\']).to_string())],
+                    ),
+                    None => rel,
+                };
                 let checked = e.selected.contains(&f.path);
                 let mut tags = vec![
                     widgets::badge(
@@ -2121,7 +2253,43 @@ impl App {
             }
         }
 
-        if !e.edit_mode {
+        let plain_windows = e.scan.iter().any(|f| f.platform == Platform::Windows && f.loader.is_none());
+        if !e.edit_mode && plain_windows {
+            col.gap(1);
+            let r = col.next(1);
+            widgets::heading(&mut sv.buf, r, &t("emulator.method.label"));
+            let r = col.next(1);
+            widgets::radio(&mut sv.buf, ctx, r, !e.cold, &format!("{} — {}", t("emulator.method.replace"), t("emulator.method.replaceHint")), Fid::new("emu.methodReplace"), Action::EmuMethod(false));
+            let r = col.next(1);
+            if e.cold_exes.is_empty() {
+                widgets::text(&mut sv.buf, r, &format!("  {} — {}", t("emulator.method.coldclient"), t("emulator.method.coldclientHint")), theme::muted());
+            } else {
+                widgets::radio(&mut sv.buf, ctx, r, e.cold, &format!("{} — {}", t("emulator.method.coldclient"), t("emulator.method.coldclientHint")), Fid::new("emu.methodCold"), Action::EmuMethod(true));
+            }
+            if e.cold {
+                let r = col.next(1);
+                widgets::text(&mut sv.buf, Rect::new(r.x + 4, r.y, r.width.saturating_sub(4), 1), &t("emulator.method.exe"), theme::text());
+                let dir = e.game_dir.clone();
+                for (i, exe) in e.cold_exes.iter().enumerate().take(12) {
+                    let r = col.next(1);
+                    let rel = exe.strip_prefix(&dir).unwrap_or(exe).trim_start_matches(['/', '\\']).to_string();
+                    widgets::radio(&mut sv.buf, ctx, Rect::new(r.x + 4, r.y, r.width.saturating_sub(4), 1), e.cold_idx == i, &rel, Fid::idx("emu.coldExe", i), Action::EmuColdExe(i));
+                }
+                let h = widgets::wrap_height(&t("emulator.method.exeHint"), lw.saturating_sub(4));
+                let r = col.next(h);
+                hint(&mut sv.buf, Rect::new(r.x + 4, r.y, r.width.saturating_sub(4), r.height), &t("emulator.method.exeHint"));
+            }
+        }
+        if e.cold_steam_running {
+            col.gap(1);
+            let msg = t("emulator.method.steamRunning");
+            let h = widgets::wrap_height(&msg, lw);
+            let r = col.next(h);
+            widgets::paragraph(&mut sv.buf, r, &msg, theme::warning());
+            let r = col.next(1);
+            widgets::button(&mut sv.buf, ctx, r.x, r.y, r.width, &ButtonSpec::new(t("emulator.method.closeSteam"), Fid::new("emu.coldSteam"), Action::EmuColdSteam, Btn::Primary));
+        }
+        if !e.edit_mode && !e.cold {
             col.gap(1);
             let r = col.next(1);
             widgets::heading(&mut sv.buf, r, &t("emulator.variantLabel"));
@@ -2769,6 +2937,7 @@ mod tests {
             platform,
             arch: arch.into(),
             is_patched: false,
+            loader: None,
         }
     }
 

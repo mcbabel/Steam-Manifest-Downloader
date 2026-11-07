@@ -338,14 +338,17 @@
       "body": "Stellt die <strong>originale Steam-API-Bibliothek</strong> wieder her und entfernt die daneben abgelegten Emulator-Dateien. Deine gbe_fork-Konfigurationsdateien bleiben auf der Festplatte, werden aber nicht mehr verwendet.",
       "yes": "Zurücksetzen",
       "no": "Patch behalten",
-      "scope": "Betrifft die {count} bereits gepatchte(n) Datei(en) in diesem Ordner. Nicht gepatchte Dateien bleiben unberührt."
+      "scope": "Betrifft die {count} bereits gepatchte(n) Datei(en) in diesem Ordner. Nicht gepatchte Dateien bleiben unberührt.",
+      "loader": "Der Steam-Eintrag zeigt wieder auf die exe des Spiels, dafür geht Steam kurz zu, falls es läuft."
     },
     "emuDownload": {
       "title": "gbe_fork-Emulator herunterladen?",
       "body": "Zum Patchen werden die Emulator-Dateien vom <a href=\"https://github.com/Detanup01/gbe_fork/releases/latest\">gbe_fork-Projekt auf GitHub</a> benötigt. Sie werden einmal heruntergeladen und für zukünftige Patches lokal zwischengespeichert.",
       "yes": "Laden & anwenden",
       "no": "Abbrechen",
-      "scope": "gbe_fork {tag}: {items}"
+      "scope": "gbe_fork {tag}: {items}",
+      "keepLocal": "Bei {tag} bleiben",
+      "coldNote": "Der ColdClientLoader braucht die Loader-Dateien dieses Releases, die auf diesem PC noch fehlen."
     },
     "folderMissing": {
       "title": "Ordner nicht gefunden",
@@ -791,7 +794,24 @@
     },
     "extras": {
       "needsTarget": "Wähl zuerst unter Dateien eine Steam-API-Datei aus."
-    }
+    },
+    "method": {
+      "label": "Wie gbe_fork geladen wird",
+      "replace": "steam_api ersetzen",
+      "replaceHint": "Der übliche Weg. Klappt bei den meisten Spielen.",
+      "coldclient": "ColdClientLoader",
+      "coldclientHint": "Lässt die Dateien des Spiels in Ruhe und startet es über einen Loader. Für Spiele, die ihre steam_api prüfen.",
+      "exe": "Programm des Spiels",
+      "exeHint": "Ab jetzt startet das Spiel über steamclient_loader daneben. SMD stellt den Steam-Eintrag des Spiels darauf um.",
+      "steamRunning": "Steam läuft, deshalb startet der Steam-Eintrag das Spiel noch direkt. Zum Umstellen muss Steam kurz zu.",
+      "closeSteam": "Steam schließen und umstellen",
+      "shortcutDone": "Der Steam-Eintrag startet das Spiel jetzt über den Loader.",
+      "shortcutFailed": "Der Steam-Eintrag ließ sich nicht umstellen.",
+      "loaderRow": "ColdClientLoader für {exe}",
+      "linksDone": "{count} Desktop- oder Startmenü-Verknüpfung(en) starten das Spiel jetzt über den Loader.",
+      "linksBack": "{count} Desktop- oder Startmenü-Verknüpfung(en) starten das Spiel wieder direkt."
+    },
+    "releaseNewer": "gbe_fork {tag} ist verfügbar. Auf diesem PC: {local}."
   },
   "steamLibrary": {
     "title": "Zur Steam-Bibliothek hinzufügen",
@@ -1220,7 +1240,11 @@
     "unsafeBackupPath": "Unsicherer Pfad in der Sicherung: {0}",
     "noTerminal": "Kein Terminal gefunden, in dem lobby_connect laufen kann",
     "noEmuFilesSelected": "Keine Emulator-Dateien ausgewählt",
-    "notControllerLayout": "Diese Datei ist keine Steam-Input-Belegung"
+    "notControllerLayout": "Diese Datei ist keine Steam-Input-Belegung",
+    "coldClientMissing": "Diesem gbe_fork-Release fehlen die ColdClientLoader-Dateien",
+    "noLocalEmu": "Auf diesem PC gibt es noch kein gbe_fork",
+    "chooseWindowsExe": "Wähl das Windows-Programm des Spiels (.exe)",
+    "gameHasOwnFile": "Das Spiel hat schon eine eigene {0}, SMD überschreibt sie nicht"
   },
   "shortcuts": {
     "ctrl": "Strg",

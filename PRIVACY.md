@@ -106,6 +106,11 @@ When telemetry is enabled, the app sends small events describing:
   - `emu_mod` — a workshop mod was added or removed, whether it worked, whether
     the workshop page had details and whether Steam lists it for another game.
     Never the workshop ID or the mod's name
+  - `coldclient_used` — gbe_fork was set up with the ColdClientLoader, the
+    game's Steam entry was changed afterwards, or it was removed again
+    (`setup`, `shortcut`, `removed`), whether it worked, what happened to the
+    Steam entry (`updated`, `steam_running`, `none`) and whether desktop or
+    start menu shortcuts were changed. Never the game or a path
   - `emu_gbe_updated` — a patched game was updated to the newest gbe_fork
     release, and whether the old version was known (`known` or `unknown`)
   - `game_data_written` — the emulator step wrote game data for gbe_fork,

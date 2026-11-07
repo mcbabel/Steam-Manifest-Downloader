@@ -551,11 +551,96 @@ async function addEmuMod(directory) {
   refreshEmuMods();
 }
 
+function emuColdClientExe() {
+  if (state.emuEditMode) return null;
+  const chosen = document.querySelector('input[name="emu-method"]:checked');
+  if (!chosen || chosen.value !== 'coldclient') return null;
+  const select = document.getElementById('emu-cold-exe');
+  return select && select.value ? select.value : null;
+}
+
+async function refreshEmuMethod() {
+  const section = document.getElementById('emu-method-section');
+  if (!section) return;
+  const windows = (state.emulatorScan || []).some(f => f.platform === 'windows' && !f.loader);
+  const show = !state.emuEditMode && windows;
+  section.classList.toggle('hidden', !show);
+  if (!show) return;
+  const select = document.getElementById('emu-cold-exe');
+  if (!select || !state.downloadDir || select.dataset.dir === state.downloadDir) return;
+  select.dataset.dir = state.downloadDir;
+  let exes = [];
+  try {
+    const r = await invoke('detect_executables', { downloadDir: state.downloadDir });
+    exes = ((r && r.executables) || [])
+      .filter(e => e.platform === 'windows' && !/^steamclient_loader/i.test(e.name || ''));
+  } catch (_) {}
+  select.innerHTML = '';
+  exes.forEach(e => {
+    const opt = document.createElement('option');
+    opt.value = e.path;
+    opt.textContent = relativizeEmuPath(e.path);
+    if (e.recommended) opt.selected = true;
+    select.appendChild(opt);
+  });
+  rebuildSelectPicker(select);
+  const cold = section.querySelector('input[value="coldclient"]');
+  if (cold) cold.disabled = exes.length === 0;
+}
+
+function syncEmuMethodUi() {
+  const cold = !!document.querySelector('input[name="emu-method"][value="coldclient"]:checked');
+  const options = document.getElementById('emu-cold-options');
+  if (options) options.classList.toggle('hidden', !cold);
+  const variant = document.getElementById('emu-variant-section');
+  if (variant) variant.classList.toggle('emu-section--muted', cold);
+  updateEmuOverview();
+}
+
+function noteEmuColdClient(results, fresh) {
+  const box = document.getElementById('emu-cold-steam');
+  const running = results.some(r => r.shortcut === 'steam_running');
+  if (box) box.classList.toggle('hidden', !running);
+  const ok = results.some(r => r.success && (fresh || r.shortcut));
+  const links = results.reduce((n, r) => n + (r.links || 0), 0);
+  if (links) showToast(window.i18n.t('emulator.method.linksDone', { count: links }), 'success');
+  if (fresh) {
+    emitEvent('coldclient_used', {
+      action: 'setup',
+      ok,
+      shortcut: results.map(r => r.shortcut).find(Boolean) || 'none',
+      links: links > 0,
+    });
+  }
+}
+
+async function closeSteamForColdClient() {
+  const btn = document.getElementById('btn-emu-cold-steam');
+  if (btn) btn.disabled = true;
+  try {
+    const states = await invoke('emu_coldclient_shortcut', { gameDir: state.downloadDir, back: false, closeSteam: true }) || [];
+    const ok = states.includes('updated');
+    showToast(window.i18n.t(ok ? 'emulator.method.shortcutDone' : 'emulator.method.shortcutFailed'), ok ? 'success' : 'error');
+    emitEvent('coldclient_used', { action: 'shortcut', ok });
+    if (ok) document.getElementById('emu-cold-steam').classList.add('hidden');
+  } catch (e) {
+    showToast(emuExtraError(e), 'error');
+  }
+  if (btn) btn.disabled = false;
+}
+
 function resetEmuExtrasView() {
   state.emuSaveFolder = null;
   EMU_EXTRA_TABS.forEach(t => setEmuBadge(t, '', null));
   ['emu-saves-status', 'emu-ach-status', 'emu-profile-status', 'emu-broadcasts-status', 'emu-lobby-status', 'emu-mods-status']
     .forEach(id => setEmuExtraStatus(id, null, ''));
+  const steamBox = document.getElementById('emu-cold-steam');
+  if (steamBox) steamBox.classList.add('hidden');
+  const replace = document.querySelector('input[name="emu-method"][value="replace"]');
+  if (replace) replace.checked = true;
+  const select = document.getElementById('emu-cold-exe');
+  if (select) delete select.dataset.dir;
+  syncEmuMethodUi();
   syncEmuAfterPatch();
 }
 
@@ -590,4 +675,6 @@ function initEmuExtras() {
   on('btn-emu-lobby', () => startEmuLobbyConnect(false));
   on('btn-emu-mod-folder', () => addEmuMod(true));
   on('btn-emu-mod-file', () => addEmuMod(false));
+  on('btn-emu-cold-steam', closeSteamForColdClient);
+  step.querySelectorAll('input[name="emu-method"]').forEach(r => r.addEventListener('change', syncEmuMethodUi));
 }

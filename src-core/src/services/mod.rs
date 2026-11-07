@@ -22,6 +22,7 @@ pub mod install_state;
 pub mod telemetry;
 pub mod emulator;
 pub mod emu_extras;
+pub mod coldclient;
 pub mod game_data;
 pub mod depot_info;
 pub mod steam_library;

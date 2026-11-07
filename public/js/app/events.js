@@ -321,7 +321,7 @@ function initEvents() {
     els.btnEmuDownloadYes.addEventListener('click', confirmEmuDownload);
   }
   if (els.btnEmuDownloadNo) {
-    els.btnEmuDownloadNo.addEventListener('click', cancelEmuDownload);
+    els.btnEmuDownloadNo.addEventListener('click', declineEmuDownload);
   }
   const btnUpdateGbe = document.getElementById('btn-emu-update-gbe');
   if (btnUpdateGbe) {

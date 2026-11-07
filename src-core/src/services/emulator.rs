@@ -87,6 +87,8 @@ pub struct ReleaseInfo {
     pub cache_root: String,
     #[serde(default)]
     pub bundled: bool,
+    #[serde(default)]
+    pub local_tag: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -95,6 +97,8 @@ pub struct ScannedFile {
     pub platform: Platform,
     pub arch: String,
     pub is_patched: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub loader: Option<String>,
 }
 
 pub mod fail {
@@ -109,7 +113,7 @@ pub mod fail {
     pub const RESTORE_FAILED: &str = "restore_failed";
 }
 
-type TargetError = (&'static str, String);
+pub type TargetError = (&'static str, String);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ReplaceResult {
@@ -121,6 +125,25 @@ pub struct ReplaceResult {
     pub fail_class: Option<String>,
     #[serde(default, rename = "dlcCount", skip_serializing_if = "Option::is_none")]
     pub dlc_count: Option<usize>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub shortcut: Option<String>,
+    #[serde(default)]
+    pub links: usize,
+}
+
+impl ReplaceResult {
+    pub fn new(path: &str) -> Self {
+        ReplaceResult {
+            path: path.to_string(),
+            backup_path: None,
+            success: false,
+            error: None,
+            fail_class: None,
+            dlc_count: None,
+            shortcut: None,
+            links: 0,
+        }
+    }
 }
 
 pub fn render_app_ini(dlcs: &[(String, String)]) -> String {
@@ -589,6 +612,7 @@ fn bundled_release_info(app_data_dir: &Path) -> Option<ReleaseInfo> {
         linux_size,
         cache_root: root.to_string_lossy().to_string(),
         bundled: true,
+        local_tag: None,
     })
 }
 
@@ -661,6 +685,49 @@ pub async fn fetch_release_info(client: &Client, app_data_dir: &Path) -> Result<
         linux_cached,
         cache_root: root.to_string_lossy().to_string(),
         bundled: false,
+        local_tag: None,
+    })
+    .map(|mut info: ReleaseInfo| {
+        if !info.windows_cached && !info.linux_cached {
+            info.local_tag = local_release(app_data_dir, &info.tag).map(|(t, _)| t);
+        }
+        info
+    })
+}
+
+pub fn local_release(app_data_dir: &Path, except: &str) -> Option<(String, PathBuf)> {
+    let root = cache_root(app_data_dir);
+    let mut tags: Vec<(std::time::SystemTime, String)> = fs::read_dir(&root)
+        .ok()?
+        .flatten()
+        .filter(|e| e.path().is_dir())
+        .map(|e| e.file_name().to_string_lossy().to_string())
+        .filter(|tag| tag != except)
+        .filter(|tag| {
+            [Platform::Windows, Platform::Linux]
+                .iter()
+                .any(|p| root.join(tag).join(p.cache_subdir()).join(".extracted").exists())
+        })
+        .map(|tag| {
+            let t = fs::metadata(root.join(&tag)).and_then(|m| m.modified()).unwrap_or(std::time::UNIX_EPOCH);
+            (t, tag)
+        })
+        .collect();
+    tags.sort();
+    let (_, tag) = tags.pop()?;
+    let path = root.join(&tag);
+    Some((tag, path))
+}
+
+pub fn local_info(app_data_dir: &Path, base: &ReleaseInfo) -> Option<ReleaseInfo> {
+    let (tag, root) = local_release(app_data_dir, &base.tag)?;
+    Some(ReleaseInfo {
+        tag,
+        windows_cached: root.join(Platform::Windows.cache_subdir()).join(".extracted").exists(),
+        linux_cached: root.join(Platform::Linux.cache_subdir()).join(".extracted").exists(),
+        cache_root: root.to_string_lossy().to_string(),
+        local_tag: None,
+        ..base.clone()
     })
 }
 
@@ -671,12 +738,35 @@ pub fn platform_cached(info: &ReleaseInfo, platform: Platform) -> bool {
         .exists()
 }
 
-fn prune_keep(name: &str) -> bool {
-    let lower = name.to_lowercase();
-    lower == ".extracted"
-        || lower.ends_with(".dll")
-        || lower.ends_with(".so")
-        || lower.contains(".so.")
+fn prune_keep(rel: &Path) -> bool {
+    let lower = rel.to_string_lossy().replace('\\', "/").to_lowercase();
+    let name = lower.rsplit('/').next().unwrap_or(&lower);
+    name == ".extracted"
+        || name.ends_with(".dll")
+        || name.ends_with(".so")
+        || name.contains(".so.")
+        || (lower.contains("tools/lobby_connect/") && name.starts_with("lobby_connect"))
+        || (lower.contains("steamclient_experimental/")
+            && (name.starts_with("steamclient_loader") || name == "coldclientloader.ini"))
+        || (lower.contains("controller.example/glyphs/") && name.ends_with(".png"))
+}
+
+pub fn tools_present(platform_dir: &Path, platform: Platform) -> bool {
+    let has = |name: &str| {
+        WalkDir::new(platform_dir)
+            .max_depth(6)
+            .into_iter()
+            .flatten()
+            .any(|e| e.file_type().is_file() && e.file_name().to_string_lossy().eq_ignore_ascii_case(name))
+    };
+    match platform {
+        Platform::Windows => has("lobby_connect_x64.exe") && has("steamclient_loader_x64.exe"),
+        Platform::Linux => has("lobby_connect_x64"),
+    }
+}
+
+pub fn forget_extracted(info: &ReleaseInfo, platform: Platform) {
+    let _ = fs::remove_file(PathBuf::from(&info.cache_root).join(platform.cache_subdir()).join(".extracted"));
 }
 
 fn prune_platform_dir(dir: &Path) {
@@ -688,10 +778,7 @@ fn prune_platform_dir(dir: &Path) {
     {
         let path = entry.path();
         if path.is_file() {
-            let keep = path
-                .file_name()
-                .and_then(|n| n.to_str())
-                .is_some_and(prune_keep);
+            let keep = path.strip_prefix(dir).is_ok_and(prune_keep);
             if !keep {
                 let _ = fs::remove_file(path);
             }
@@ -873,6 +960,17 @@ pub fn scan_game_dir(game_dir: &Path) -> Vec<ScannedFile> {
             platform,
             arch: arch.to_string(),
             is_patched,
+            loader: None,
+        });
+    }
+    for cold in crate::services::coldclient::installs_in(game_dir) {
+        let x64 = cold.loader.to_ascii_lowercase().ends_with("_x64.exe");
+        out.push(ScannedFile {
+            path: cold.loader,
+            platform: Platform::Windows,
+            arch: if x64 { "x64" } else { "x32" }.to_string(),
+            is_patched: true,
+            loader: Some(cold.exe),
         });
     }
     out
@@ -978,14 +1076,7 @@ pub fn apply_replacement(
     emu_settings: Option<&EmuSettings>,
     dlcs: Option<&[(String, String)]>,
 ) -> ReplaceResult {
-    let mut result = ReplaceResult {
-        path: target.to_string_lossy().to_string(),
-        backup_path: None,
-        success: false,
-        error: None,
-        fail_class: None,
-        dlc_count: None,
-    };
+    let mut result = ReplaceResult::new(&target.to_string_lossy());
     crate::dlog!(
         "emu",
         "apply start target={} platform={:?} arch={} variant={:?}",
@@ -1068,6 +1159,23 @@ fn apply_to_target(
             (fail::SETTINGS_WRITE_FAILED, format!("write steam_interfaces.txt: {}", e))
         })?;
     }
+    write_settings_dir(&settings_dir, app_id, installed_app_ids, emu_settings, dlcs).map(|n| {
+        if n.is_some() {
+            result.dlc_count = n;
+        }
+    })
+}
+
+pub fn write_settings_dir(
+    settings_dir: &Path,
+    app_id: &str,
+    installed_app_ids: &[String],
+    emu_settings: Option<&EmuSettings>,
+    dlcs: Option<&[(String, String)]>,
+) -> Result<Option<usize>, TargetError> {
+    fs::create_dir_all(settings_dir)
+        .map_err(|e| (fail::SETTINGS_WRITE_FAILED, format!("create steam_settings: {}", e)))?;
+    let mut dlc_count = None;
     fs::write(settings_dir.join("steam_appid.txt"), app_id.trim()).map_err(|e| {
         (fail::SETTINGS_WRITE_FAILED, format!("write steam_appid.txt: {}", e))
     })?;
@@ -1087,14 +1195,14 @@ fn apply_to_target(
         fs::write(settings_dir.join("configs.app.ini"), render_app_ini(list)).map_err(|e| {
             (fail::SETTINGS_WRITE_FAILED, format!("write configs.app.ini: {}", e))
         })?;
-        result.dlc_count = Some(list.len());
+        dlc_count = Some(list.len());
     }
 
     if let Some(s) = emu_settings {
-        s.write_to_dir(&settings_dir)
+        s.write_to_dir(settings_dir)
             .map_err(|e| (fail::SETTINGS_WRITE_FAILED, format!("write emu settings: {}", e)))?;
     }
-    Ok(())
+    Ok(dlc_count)
 }
 
 const PATCH_INFO_FILE: &str = ".smd-emulator.json";
@@ -1489,8 +1597,20 @@ mod prune_tests {
         fs::create_dir_all(&tools).unwrap();
         fs::write(tools.join("generate_interfaces_x64.exe"), b"tool").unwrap();
         fs::write(dir.join("README.md"), b"docs").unwrap();
+        let lobby = dir.join("release").join("tools").join("lobby_connect");
+        fs::create_dir_all(&lobby).unwrap();
+        fs::write(lobby.join("lobby_connect_x64.exe"), b"tool").unwrap();
+        fs::write(lobby.join("README.lobby_connect.md"), b"docs").unwrap();
+        let cold = dir.join("release").join("steamclient_experimental");
+        fs::create_dir_all(&cold).unwrap();
+        fs::write(cold.join("steamclient_loader_x64.exe"), b"loader").unwrap();
+        fs::write(cold.join("ColdClientLoader.ini"), b"ini").unwrap();
 
         prune_platform_dir(&dir);
+
+        assert!(lobby.join("lobby_connect_x64.exe").exists());
+        assert!(!lobby.join("README.lobby_connect.md").exists());
+        assert!(cold.join("steamclient_loader_x64.exe").exists() && cold.join("ColdClientLoader.ini").exists());
 
         assert!(dll_dir.join("steam_api64.dll").exists());
         assert!(dir.join(".extracted").exists());
@@ -1499,6 +1619,7 @@ mod prune_tests {
         assert!(!tools.join("generate_interfaces_x64.exe").exists());
         assert!(!dir.join("README.md").exists());
         assert!(!tools.exists());
+        assert!(!tools_present(&dir, Platform::Linux));
         let _ = fs::remove_dir_all(&dir);
     }
 

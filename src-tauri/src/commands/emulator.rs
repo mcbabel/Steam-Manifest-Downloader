@@ -57,6 +57,8 @@ pub async fn emu_apply_replacement(
     installed_app_ids: Vec<String>,
     emu_settings: Option<EmuSettings>,
     allow_download: bool,
+    prefer_local: Option<bool>,
+    coldclient_exe: Option<String>,
 ) -> Result<Vec<ReplaceResult>, String> {
     emu_ops::apply_replacement(
         &sink(&app),
@@ -68,8 +70,15 @@ pub async fn emu_apply_replacement(
         installed_app_ids,
         emu_settings,
         allow_download,
+        prefer_local.unwrap_or(false),
+        coldclient_exe,
     )
     .await
+}
+
+#[command]
+pub async fn emu_coldclient_shortcut(game_dir: String, back: bool, close_steam: bool) -> Result<Vec<String>, String> {
+    Ok(emu_ops::coldclient_shortcut(game_dir, back, close_steam).await)
 }
 
 #[command]
@@ -131,8 +140,8 @@ pub async fn emu_write_emu_settings(
 }
 
 #[command]
-pub async fn emu_revert_replacement(targets: Vec<String>) -> Result<Vec<ReplaceResult>, String> {
-    emu_ops::revert_replacement(targets).await
+pub async fn emu_revert_replacement(targets: Vec<String>, close_steam: Option<bool>) -> Result<Vec<ReplaceResult>, String> {
+    emu_ops::revert_replacement(targets, close_steam.unwrap_or(false)).await
 }
 
 use smd_core::services::emu_extras as extras;
