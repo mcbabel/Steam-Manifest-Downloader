@@ -11,6 +11,7 @@
 ![Tauri](https://img.shields.io/badge/Tauri_v2-FFC131?logo=tauri&logoColor=white)
 ![Downloads](https://img.shields.io/github/downloads/MCbabel/Steam-Manifest-Downloader/total?color=brightgreen)
 [![Lines of Code](https://img.shields.io/endpoint?url=https%3A%2F%2Ftokei.kojix2.net%2Fbadge%2Fgithub%2FMCbabel%2FSteam-Manifest-Downloader%2Flines)](https://tokei.kojix2.net/github/MCbabel/Steam-Manifest-Downloader)
+[![Ask DeepWiki](https://img.shields.io/badge/Ask-DeepWiki-0b7285?logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjIuMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNMiA0aDZhNCA0IDAgMCAxIDQgNHYxM2EzIDMgMCAwIDAtMy0zSDJ6Ii8%2BPHBhdGggZD0iTTIyIDRoLTZhNCA0IDAgMCAwLTQgNHYxM2EzIDMgMCAwIDEgMy0zaDd6Ii8%2BPC9zdmc%2B)](https://deepwiki.com/MCbabel/Steam-Manifest-Downloader)
 
 Upload `.lua` / `.st` files or depot key exports (`.json`, `.csv`), or search by App ID across configurable sources (GitHub, archive.org, plain HTTPS folders, Hubcap, Ryuu). The app downloads the depots straight from Steam's CDN with its built-in Rust engine (DepotDownloaderMod stays available as an option), keeps games up to date from the history, optionally creates Steam library entries with full grid art, and can patch games with the gbe_fork emulator + Steamless DRM removal. Desktop app, terminal version and Docker image.
 
