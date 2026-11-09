@@ -511,7 +511,7 @@ The `include_bytes!` macro in `src-core/src/services/embedded_tools.rs` embeds t
 | **Terminal UI** | ratatui, crossterm, clap |
 | **Framework** | Tauri v2 |
 | **Downloader** | Built-in Rust engine (steam-vent), DepotDownloaderMod (.NET 9) as an option |
-| **Emulator** | gbe_fork (downloaded on demand from GitHub releases, bundled in the Windows standalone ZIP) |
+| **Emulator** | gbe_fork (downloaded on demand from GitHub releases, bundled in the Windows standalone ZIP, the cached release is used when GitHub is unreachable) |
 | **DRM tooling** | Steamless v3.1.0.5 (CC-BY-NC-ND), Steam-API-Check-Bypass |
 
 ---

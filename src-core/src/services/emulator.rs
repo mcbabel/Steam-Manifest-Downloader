@@ -620,6 +620,36 @@ pub async fn fetch_release_info(client: &Client, app_data_dir: &Path) -> Result<
     if let Some(info) = bundled_release_info(app_data_dir) {
         return Ok(info);
     }
+    match fetch_release_online(client, app_data_dir).await {
+        Ok(info) => Ok(info),
+        Err(e) => match offline_release_info(app_data_dir) {
+            Some(info) => {
+                crate::dlog!("emu", "release info unavailable ({}), using cached {}", e, info.tag);
+                Ok(info)
+            }
+            None => Err(e),
+        },
+    }
+}
+
+pub fn offline_release_info(app_data_dir: &Path) -> Option<ReleaseInfo> {
+    let (tag, root) = local_release(app_data_dir, "")?;
+    Some(ReleaseInfo {
+        tag,
+        published_at: String::new(),
+        windows_url: String::new(),
+        windows_size: 0,
+        linux_url: String::new(),
+        linux_size: 0,
+        windows_cached: root.join(Platform::Windows.cache_subdir()).join(".extracted").exists(),
+        linux_cached: root.join(Platform::Linux.cache_subdir()).join(".extracted").exists(),
+        cache_root: root.to_string_lossy().to_string(),
+        bundled: false,
+        local_tag: None,
+    })
+}
+
+async fn fetch_release_online(client: &Client, app_data_dir: &Path) -> Result<ReleaseInfo, String> {
     let resp = client
         .get(RELEASES_API)
         .header("User-Agent", USER_AGENT)
@@ -814,6 +844,13 @@ pub async fn ensure_cached(
             .map_err(|e| format!("copy bundled archive {}: {}", asset_url, e))?;
         let size = fs::metadata(&archive_path).map(|m| m.len()).unwrap_or(0);
         on_progress(size, size);
+    }
+    if !archive_path.exists() && asset_url.is_empty() {
+        return Err(format!(
+            "GitHub is not reachable and gbe_fork {} has no {} files on this PC yet",
+            info.tag,
+            platform.cache_subdir()
+        ));
     }
     if !archive_path.exists() {
         let mut resp = client
@@ -1939,6 +1976,27 @@ mod patch_info_tests {
         let info = read_patch_info(&target);
         assert_eq!(info.tag.as_deref(), Some("release-2026_10_01"));
         assert_eq!(info.variant.as_deref(), Some("experimental"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+}
+
+#[cfg(test)]
+mod offline_release_tests {
+    use super::*;
+
+    #[test]
+    fn falls_back_to_the_cached_release_when_github_is_unreachable() {
+        let dir = std::env::temp_dir().join(format!("smd-offline-release-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        assert!(offline_release_info(&dir).is_none());
+        let win = cache_root(&dir).join("release-2026_10_01").join(Platform::Windows.cache_subdir());
+        fs::create_dir_all(&win).unwrap();
+        assert!(offline_release_info(&dir).is_none());
+        fs::write(win.join(".extracted"), b"").unwrap();
+        let info = offline_release_info(&dir).unwrap();
+        assert_eq!(info.tag, "release-2026_10_01");
+        assert!(info.windows_cached && !info.linux_cached);
+        assert!(info.windows_url.is_empty());
         let _ = fs::remove_dir_all(&dir);
     }
 }
