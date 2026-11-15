@@ -473,7 +473,7 @@ lipo -create -output target/universal-apple-darwin/release/steam-manifest-downlo
   target/aarch64-apple-darwin/release/steam-manifest-downloader \
   target/x86_64-apple-darwin/release/steam-manifest-downloader
 cargo packager --release -p smd-gui --formats app,dmg \
-  --binaries-dir "$PWD/target/universal-apple-darwin/release" --out-dir "$PWD/target/packages"
+  --target universal-apple-darwin --out-dir "$PWD/target/packages"
 ```
 
 Output: `target/packages/`. Step 1 is not needed on macOS, the app uses only the built-in downloader.

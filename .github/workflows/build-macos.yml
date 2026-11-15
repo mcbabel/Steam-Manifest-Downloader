@@ -78,7 +78,7 @@ jobs:
             target/aarch64-apple-darwin/release/steam-manifest-downloader \
             target/x86_64-apple-darwin/release/steam-manifest-downloader
           cargo packager --release -p smd-gui --formats app,dmg \
-            --binaries-dir "$PWD/target/universal-apple-darwin/release" \
+            --target universal-apple-darwin \
             --out-dir "$PWD/target/packages"
 
       - name: Build terminal app
