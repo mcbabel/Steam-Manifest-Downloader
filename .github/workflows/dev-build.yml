@@ -16,6 +16,9 @@ on:
       - '.github/actions/**'
       - '.github/workflows/docker.yml'
       - 'packaging/windows-standalone/**'
+      - 'packaging/version.sh'
+      - 'docs/remote/**'
+      - '.gitattributes'
       - 'Dockerfile'
       - '.dockerignore'
   pull_request:
@@ -33,6 +36,9 @@ on:
       - '.github/actions/**'
       - '.github/workflows/docker.yml'
       - 'packaging/windows-standalone/**'
+      - 'packaging/version.sh'
+      - 'docs/remote/**'
+      - '.gitattributes'
       - 'Dockerfile'
       - '.dockerignore'
 

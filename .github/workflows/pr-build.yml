@@ -29,7 +29,7 @@ jobs:
         run: |
           git fetch --no-tags origin "$BASE_REF"
           if git diff --name-only "origin/$BASE_REF...HEAD" \
-            | grep -qE '^(src-gui|src-core|src-tui|locales|assets|tools|packaging|\.github/workflows|\.github/actions)/|^Cargo\.(toml|lock)$'; then
+            | grep -qE '^(src-gui|src-core|src-tui|locales|assets|tools|packaging|docs/remote|\.github/workflows|\.github/actions)/|^Cargo\.(toml|lock)$|^\.gitattributes$'; then
             echo "code=true" >> "$GITHUB_OUTPUT"
           else
             echo "code=false" >> "$GITHUB_OUTPUT"
