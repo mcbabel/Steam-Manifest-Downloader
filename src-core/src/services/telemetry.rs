@@ -686,7 +686,7 @@ pub fn sanitize_location(text: &str) -> String {
         }
     }
     let line = numbers.last().map(|n| n.to_string());
-    let short = ["src-core/", "src-tauri/", "src-tui/", "public/js/"]
+    let short = ["src-core/", "src-gui/", "src-tui/"]
         .iter()
         .find_map(|root| path.find(root).map(|i| path[i..].to_string()))
         .or_else(|| {
@@ -974,13 +974,14 @@ mod tests {
             sanitize_location("/home/bob/build/src-core/src/ops/download.rs:812"),
             "src-core/src/ops/download.rs:812"
         );
+        assert_eq!(sanitize_location("D:\\a\\smd\\smd\\src-gui\\src\\app\\logic\\select.rs:40:9"), "src-gui/src/app/logic/select.rs:40");
         assert_eq!(
             sanitize_location("C:\\Users\\bob\\.cargo\\registry\\src\\index.crates.io-6f17d22bba15001f\\tokio-1.40.0\\src\\rt.rs:55"),
             "tokio-1.40.0/src/rt.rs:55"
         );
         assert_eq!(
-            sanitize_location("tauri://localhost/js/app/emulator.js:1234:5"),
-            "emulator.js:1234"
+            sanitize_location("/rustc/1a2b3c4d/library/core/src/option.rs:1234:5"),
+            "option.rs:1234"
         );
     }
 

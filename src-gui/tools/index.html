@@ -1,0 +1,2128 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Steam Manifest Downloader</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="app-shell">
+  <div class="title-bar" id="title-bar">
+    <div class="title-bar__drag-region">
+      <div class="title-bar__icon">
+        <img src="/assets/icon-small.svg" alt="" width="16" height="16">
+      </div>
+      <span class="title-bar__text" data-i18n="appName">Steam Manifest Downloader</span>
+    </div>
+    <div class="title-bar__controls">
+      <button class="title-bar__btn title-bar__btn--minimize" id="btn-minimize" data-i18n-attr="title=titleBar.minimize,aria-label=titleBar.minimize">
+        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect y="5" width="12" height="2" fill="currentColor"/></svg>
+      </button>
+      <button class="title-bar__btn title-bar__btn--maximize" id="btn-maximize" data-i18n-attr="title=titleBar.maximize,aria-label=titleBar.maximize">
+        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="1" width="10" height="10" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+      </button>
+      <button class="title-bar__btn title-bar__btn--close" id="btn-close" data-i18n-attr="title=titleBar.close,aria-label=titleBar.close">
+        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 1L11 11M11 1L1 11" stroke="currentColor" stroke-width="1.5"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="scroll-wrapper">
+  <div class="app">
+    <header class="header">
+      <h1 class="header__title">
+        <svg class="header__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span class="gradient-text" data-i18n="appName">Steam Manifest Downloader</span>
+      </h1>
+      <p class="header__subtitle" data-i18n="header.subtitle">Upload a .lua/.st file, select manifests, and download automatically</p>
+      <div class="header__actions">
+        <button id="btn-settings" class="btn btn--outline header__settings-btn" data-i18n-attr="title=header.settings,aria-label=header.settings">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+        <button id="btn-history" class="btn btn--outline header__history-btn" data-i18n-attr="title=header.history,aria-label=header.history">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </button>
+        <button id="btn-queue" class="btn btn--outline header__queue-btn" data-i18n-attr="title=queue.title,aria-label=queue.title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+          </svg>
+          <span id="queue-badge" class="header__badge hidden"></span>
+        </button>
+        <button id="btn-report-bug" class="btn btn--outline header__bug-btn" data-i18n-attr="title=bugReport.title,aria-label=bugReport.title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 2 1.88 1.88"/><path d="M14.12 3.88 16 2"/><path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6"/><path d="M12 20v-9"/><path d="M6.53 9C4.6 8.8 3 7.1 3 5"/><path d="M6 13H2"/><path d="M3 21c0-2.1 1.7-3.9 3.8-4"/><path d="M20.97 5c0 2.1-1.6 3.8-3.5 4"/><path d="M22 13h-4"/><path d="M17.2 17c2.1.1 3.8 1.9 3.8 4"/></svg>
+        </button>
+        <button id="btn-theme-toggle" class="btn btn--outline header__theme-btn" data-i18n-attr="title=header.themeToggle,aria-label=header.themeToggle">
+          <svg id="theme-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </button>
+
+      </div>
+    </header>
+    <div id="offline-banner" class="app-banner app-banner--warning hidden" role="status">
+      <span data-i18n="remote.offline">No internet connection. Searching and downloading do not work right now, patching does.</span>
+    </div>
+    <div id="remote-notices" class="app-notices" aria-live="polite"></div>
+
+    <div id="dotnet-warning" class="dotnet-warning hidden">
+      <div class="dotnet-warning__content">
+        <span class="dotnet-warning__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </span>
+        <span class="dotnet-warning__text" data-i18n-html="dotnetWarning.text">
+          <strong>.NET 9 Runtime</strong> is required but not installed. DepotDownloader will not work without it.
+        </span>
+        <a href="https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.16-windows-x64-installer"
+           id="dotnet-install-link"
+           class="btn btn--small dotnet-warning__btn"
+           target="_blank" rel="noopener"
+           data-i18n="dotnetWarning.download">
+          Download .NET 9
+        </a>
+        <button id="dotnet-warning-dismiss" class="dotnet-warning__dismiss" data-i18n-attr="title=dotnetWarning.dismiss,aria-label=dotnetWarning.dismiss">&times;</button>
+      </div>
+    </div>
+
+    <div class="steps" role="progressbar" aria-label="Download workflow progress" data-i18n-attr="aria-label=steps.ariaLabel" aria-valuemin="1" aria-valuemax="3" aria-valuenow="1" id="steps-indicator">
+      <div class="steps__item active" data-step="1">
+        <div class="steps__number">1</div>
+        <div class="steps__label" data-i18n="steps.upload">Upload</div>
+      </div>
+      <div class="steps__connector"></div>
+      <div class="steps__item" data-step="2">
+        <div class="steps__number">2</div>
+        <div class="steps__label" data-i18n="steps.select">Select</div>
+      </div>
+      <div class="steps__connector"></div>
+      <div class="steps__item" data-step="3">
+        <div class="steps__number">3</div>
+        <div class="steps__label" data-i18n="steps.download">Download</div>
+      </div>
+      <div class="steps__connector steps__connector--shortcut hidden" id="step4-connector"></div>
+      <div class="steps__item steps__item--shortcut hidden" data-step="4" id="step4-indicator">
+        <div class="steps__number">4</div>
+        <div class="steps__label" data-i18n="steps.shortcut">Shortcut</div>
+      </div>
+      <div class="steps__connector steps__connector--steam hidden" id="step6-connector"></div>
+      <div class="steps__item steps__item--steam hidden" data-step="6" id="step6-indicator">
+        <div class="steps__number">6</div>
+        <div class="steps__label" data-i18n="steps.steamLibrary">Steam</div>
+      </div>
+      <div class="steps__connector steps__connector--emulator" id="step5-connector"></div>
+      <div class="steps__item steps__item--emulator" data-step="5" id="step5-indicator">
+        <div class="steps__number">5</div>
+        <div class="steps__label" data-i18n="steps.emulator">Emulator</div>
+      </div>
+    </div>
+
+    <section id="step-upload" class="step active">
+      <div class="card">
+        <div class="tab-bar">
+          <button class="tab-bar__tab active" data-tab="upload" id="tab-upload">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+            </svg>
+            <span data-i18n="tabs.upload">Upload File</span>
+          </button>
+          <button class="tab-bar__tab" data-tab="search" id="tab-search">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <span data-i18n="tabs.search">Search by App ID</span>
+          </button>
+          <button class="tab-bar__tab" data-tab="patch-only" id="tab-patch-only">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+            </svg>
+            <span data-i18n="tabs.patchOnly">Patch Existing Folder</span>
+          </button>
+        </div>
+
+        <div id="tab-content-upload" class="tab-content active">
+          <div id="drop-zone" class="drop-zone">
+            <svg class="drop-zone__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <p class="drop-zone__text" data-i18n-html="upload.dropText">Drop your <strong>.lua</strong>, <strong>.st</strong> or depot key file here</p>
+            <p class="drop-zone__hint" data-i18n="upload.dropHint">or click to browse</p>
+          </div>
+          <div id="file-info" class="file-info hidden">
+            <svg class="file-info__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+            <span id="file-name" class="file-info__name"></span>
+            <button id="file-remove" class="file-info__remove" data-i18n-attr="title=upload.removeFile,aria-label=upload.removeFile">&times;</button>
+          </div>
+          <div id="upload-error" class="error-message hidden"></div>
+          <div id="upload-choice" class="next-steps hidden"></div>
+          <div id="upload-loading" class="loading hidden">
+            <div class="spinner"></div>
+            <span data-i18n="upload.parsing">Parsing file...</span>
+          </div>
+        </div>
+
+        <div id="tab-content-search" class="tab-content">
+          <div id="sources-empty-state" class="sources-empty hidden">
+            <h3 class="sources-empty__title" data-i18n="search.noSourceTitle">No depot source configured</h3>
+            <p class="sources-empty__lead" data-i18n-html="search.noSourceLead">
+              The app does not ship with any depot sources. Paste a URL pointing at a folder
+              that follows the layout <code>branches/&lt;appid&gt;/&lt;files&gt;</code> (containing
+              <code>.lua</code>, <code>.manifest</code> and optional <code>key.vdf</code> files).
+              GitHub repos and <code>archive.org/view_archive.php</code> URLs are auto-detected;
+              any plain HTTPS base URL also works.
+            </p>
+            <div class="sources-empty__row">
+              <input type="text" id="sources-empty-input" class="search-input" data-i18n-attr="placeholder=search.sourcePlaceholder" autocomplete="off">
+              <button id="btn-sources-empty-add" class="btn btn--primary" data-i18n="search.addSource">Add Source</button>
+            </div>
+            <p id="sources-empty-error" class="error-message hidden"></p>
+            <p class="sources-empty__alt"><span data-i18n="search.noSourceAlt">No source at hand? A .lua or .st file works without one.</span> <button type="button" id="btn-sources-empty-upload" class="btn btn--small btn--outline" data-i18n="search.useUpload">Upload a file instead</button></p>
+          </div>
+
+          <div id="search-game-banner" class="game-info-banner hidden">
+            <img id="search-game-image" class="game-info-banner__image" src="" alt="Game Cover" data-i18n-attr="alt=common.gameCover">
+            <div class="game-info-banner__details">
+              <h2 id="search-game-name" class="game-info-banner__title"></h2>
+              <p id="search-game-description" class="game-info-banner__description"></p>
+            </div>
+          </div>
+
+          <div id="search-input-block" class="search-input-row hidden">
+            <div class="search-input-wrapper">
+              <input type="text" id="search-appid-input" class="search-input" data-i18n-attr="placeholder=search.inputPlaceholder" autocomplete="off">
+              <div id="search-autocomplete" class="search-autocomplete hidden"></div>
+            </div>
+            <button id="btn-search" class="btn btn--primary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <span data-i18n="search.submit">Search</span>
+            </button>
+          </div>
+
+          <div id="search-error" class="error-message hidden"></div>
+          <div id="search-next-steps" class="next-steps hidden" role="status"></div>
+          <div id="search-loading" class="loading hidden">
+            <div class="spinner"></div>
+            <span data-i18n="search.loading">Searching repositories...</span>
+          </div>
+
+          <div id="search-results" class="search-results hidden">
+            <div id="repo-list" class="repo-list"></div>
+          </div>
+
+          <div id="search-next-row" class="search-next-row hidden">
+            <button id="btn-search-next" class="btn btn--primary">
+              <span data-i18n="search.next">Next</span> →
+            </button>
+          </div>
+
+          <div id="search-account-row" class="search-account-row hidden">
+            <span class="search-account-row__text" data-i18n="account.searchHint">Your own game or a playtest? Load it with your Steam account.</span>
+            <button id="btn-search-account" class="btn btn--small btn--outline" data-i18n="account.loadFromAccount">Load with my Steam account</button>
+          </div>
+
+          <div id="search-playtest-row" class="search-account-row search-playtest-row hidden"></div>
+
+          <div id="manifest-loading" class="loading hidden">
+            <div class="spinner"></div>
+            <span data-i18n="search.manifestLoading">Fetching manifests...</span>
+          </div>
+        </div>
+
+        <div id="tab-content-patch-only" class="tab-content">
+          <p class="patch-only__lead" data-i18n="patchOnly.lead">Already have the game files? Point this at the folder and run only the emulator step: DLL swap, Steamless and gbe_fork config. Nothing is downloaded.</p>
+
+          <div class="settings-section">
+            <label for="patch-only-dir" class="settings-section__label">
+              <svg class="label-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+              </svg>
+              <span data-i18n="patchOnly.folderLabel">Game Folder</span>
+            </label>
+            <div class="dd-path__input-wrap dd-path__input-wrap--with-btn">
+              <input type="text" id="patch-only-dir" class="dd-path__input"
+                data-i18n-attr="placeholder=patchOnly.folderPlaceholder"
+                value="">
+              <button type="button" id="btn-patch-only-browse" class="btn btn--small btn--outline dd-path__browse-btn" data-i18n-attr="title=patchOnly.browseFolder,aria-label=patchOnly.browseFolder">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M6 14l1.45-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H18a2 2 0 0 1 2 2v2"/>
+                </svg>
+              </button>
+            </div>
+            <p class="dd-path__hint" data-i18n="patchOnly.folderHint">Pick the folder that holds the game executable and its Steam API library. Subfolders are scanned too.</p>
+          </div>
+
+          <div class="settings-section">
+            <label for="patch-only-appid" class="settings-section__label">
+              <span data-i18n="patchOnly.appIdLabel">App ID</span>
+            </label>
+            <div class="search-input-wrapper">
+              <input type="text" id="patch-only-appid" class="search-input" data-i18n-attr="placeholder=patchOnly.appIdPlaceholder" autocomplete="off">
+              <div id="patch-only-autocomplete" class="search-autocomplete hidden"></div>
+            </div>
+            <p class="dd-path__hint" data-i18n="patchOnly.appIdHint">Required — the emulator writes it to steam_appid.txt. Type a game name to look it up.</p>
+          </div>
+
+          <div id="patch-only-error" class="error-message hidden"></div>
+          <div id="patch-only-loading" class="loading hidden">
+            <div class="spinner"></div>
+            <span data-i18n="patchOnly.scanning">Scanning folder for Steam API libraries...</span>
+          </div>
+
+          <div class="search-next-row">
+            <button id="btn-patch-only-start" class="btn btn--primary">
+              <span data-i18n="patchOnly.submit">Continue to Emulator Step</span> &rarr;
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="step-select" class="step hidden">
+      <div class="card">
+        <div id="game-info-banner" class="game-info-banner hidden">
+          <img id="game-header-image" class="game-info-banner__image" src="" alt="Game Cover" data-i18n-attr="alt=common.gameCover">
+          <div class="game-info-banner__details">
+            <h2 id="game-name" class="game-info-banner__title"></h2>
+            <p id="game-description" class="game-info-banner__description"></p>
+          </div>
+        </div>
+        <div id="game-info-loading" class="loading hidden">
+          <div class="spinner"></div>
+          <span data-i18n="select.gameInfoLoading">Fetching game info...</span>
+        </div>
+        <div id="denuvo-note" class="denuvo-note hidden" role="note">
+          <strong data-i18n="select.denuvoTitle">Denuvo Anti-Tamper</strong>
+          <span data-i18n="select.denuvoText">Steam lists Denuvo for this game. The download works, but Denuvo checks the license on its own, so the game will not start with the gbe_fork emulator or without a license of your own. SMD does not remove Denuvo.</span>
+        </div>
+
+        <div class="select-header">
+          <div class="select-header__info">
+            <h2><span data-i18n="select.appIdLabel">App ID:</span> <span id="app-id-display" class="gradient-text"></span></h2>
+            <p id="depot-count"></p>
+          </div>
+          <div class="select-header__actions">
+            <button id="btn-auto-select" class="btn btn--small btn--outline hidden" data-i18n="select.autoSelect" disabled>Pick like Steam</button>
+            <button id="btn-auto-select-dlc" class="btn btn--small btn--outline hidden">Add DLC</button>
+            <button id="btn-latest-manifests" class="btn btn--small btn--outline" data-i18n="select.latestAll" data-i18n-attr="title=select.latestAllHint">Newest manifests</button>
+            <button id="btn-select-all" class="btn btn--small" data-i18n="select.selectAll">Select All</button>
+            <button id="btn-deselect-all" class="btn btn--small btn--outline" data-i18n="select.deselectAll">Deselect All</button>
+          </div>
+        </div>
+
+        <p id="latest-manifests-note" class="dd-path__hint latest-manifests-note hidden" role="status"></p>
+
+        <div id="auto-select-note" class="auto-select-note hidden" role="status">
+          <svg class="auto-select-note__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.8L20 10l-5.1 3.6L16.5 20 12 16.4 7.5 20l1.6-6.4L4 10l6.1-1.2z"/></svg>
+          <div class="auto-select-note__text">
+            <strong id="auto-select-title"></strong>
+            <span id="auto-select-detail"></span>
+          </div>
+          <button type="button" id="btn-auto-start-cancel" class="btn btn--small btn--outline hidden"></button>
+        </div>
+
+        <div class="depot-filters">
+          <div class="search-box">
+            <input type="text" id="depotSearch" data-i18n-attr="placeholder=select.depotSearchPlaceholder" />
+          </div>
+          <label class="filter-toggle">
+            <input type="checkbox" id="showSelectedOnly" />
+            <span data-i18n="select.showSelectedOnly">Show selected only</span>
+          </label>
+        </div>
+
+        <div id="steam-keys-offer" class="steam-keys-offer hidden" role="status"></div>
+        <div id="depot-list" class="depot-list"></div>
+
+        <div id="branch-section" class="settings-section branch-section hidden">
+          <span id="branch-label" class="settings-section__label"><span data-i18n="branch.label">Steam branch</span></span>
+          <div id="branch-row" class="branch-section__row">
+            <div id="branch-picker" class="history-sort branch-picker">
+              <button type="button" id="branch-button" class="history-sort__button branch-picker__button" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="branch-label">
+                <span id="branch-button-label" class="history-sort__label branch-picker__label">public</span>
+                <svg class="history-sort__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <ul id="branch-menu" class="history-sort__menu history-sort__menu--scroll branch-picker__menu hidden" role="listbox" tabindex="-1" aria-labelledby="branch-label"></ul>
+            </div>
+            <input type="password" id="branch-password" class="dd-path__input branch-section__password hidden" autocomplete="off" spellcheck="false" data-i18n-attr="placeholder=branch.passwordPlaceholder,aria-label=branch.passwordPlaceholder">
+          </div>
+          <div id="branch-login-row" class="branch-section__login hidden">
+            <span id="branch-more" class="dd-path__hint"></span>
+            <button type="button" id="btn-branch-login" class="btn btn--small btn--outline" data-i18n="account.signIn">Sign in with QR code</button>
+          </div>
+          <div id="use-account-row" class="settings-field__toggle-wrap branch-section__account hidden">
+            <label class="toggle-switch">
+              <input type="checkbox" id="use-account-toggle">
+              <span class="toggle-switch__slider"></span>
+            </label>
+            <label for="use-account-toggle" class="settings-field__toggle-text" data-i18n="branch.useAccount">Download through my Steam account</label>
+          </div>
+          <p id="branch-hint" class="dd-path__hint"></p>
+        </div>
+
+        <div class="settings-section">
+          <label for="download-dir" class="settings-section__label">
+            <svg class="label-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+            </svg>
+            <span data-i18n="select.downloadLocation">Download Location</span>
+          </label>
+          <div class="dd-path__input-wrap dd-path__input-wrap--with-btn">
+            <input type="text" id="download-dir" class="dd-path__input"
+              data-i18n-attr="placeholder=select.downloadLocationPlaceholder"
+              value="">
+            <button type="button" id="btn-browse-dir" class="btn btn--small btn--outline dd-path__browse-btn" data-i18n-attr="title=select.browseFolder,aria-label=select.browseFolder">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M6 14l1.45-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H18a2 2 0 0 1 2 2v2"/>
+              </svg>
+            </button>
+          </div>
+          <p class="dd-path__hint" data-i18n="select.downloadLocationHint">Default: Documents/SteamDownloads — Game files will be saved in a subfolder here</p>
+        </div>
+
+        <div class="settings-section">
+          <label for="mh-apikey" class="settings-section__label"><span data-i18n="select.manifestHubLabel">ManifestHub API Key</span> <span class="optional-badge" data-i18n="common.optional">Optional</span></label>
+          <div class="dd-path__input-wrap">
+            <input type="text" id="mh-apikey" class="dd-path__input"
+              data-i18n-attr="placeholder=select.manifestHubPlaceholder"
+              value="">
+          </div>
+          <p class="dd-path__hint" data-i18n-html="select.manifestHubHint">Required for custom manifest IDs. Get your key at <a href="https://manifesthub2.filegear-sg.me/" target="_blank" class="link">manifesthub2.filegear-sg.me</a></p>
+        </div>
+
+        <div id="update-mode-notice" class="update-notice hidden" role="status"></div>
+
+        <div class="card__footer">
+          <button id="btn-back" class="btn btn--outline">
+            &larr; <span data-i18n="common.back">Back</span>
+          </button>
+          <div class="card__footer-right">
+            <button id="btn-queue-add" class="btn btn--outline" disabled data-i18n="queue.add">Add to Queue</button>
+            <button id="btn-download" class="btn btn--primary" disabled>
+              <span data-i18n="select.downloadSelected">Download Selected</span>
+              <svg class="btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="step-progress" class="step hidden">
+      <div class="card">
+        <div id="native-alpha-banner" class="native-alpha-banner hidden">
+          <strong data-i18n="progress.nativeAlphaTitle">Native downloader (alpha)</strong>
+          <p data-i18n-html="progress.nativeAlphaBody">This is experimental. If anything fails, please copy the console errors below and <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/issues" target="_blank" rel="noopener" class="link">open an issue on GitHub</a> — or turn the native engine off in Settings to fall back to DepotDownloaderMod.</p>
+        </div>
+        <div id="disk-space-info" class="disk-space-info hidden">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="22" y1="12" x2="2" y2="12"/>
+            <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+            <line x1="6" y1="16" x2="6.01" y2="16"/>
+            <line x1="10" y1="16" x2="10.01" y2="16"/>
+          </svg>
+          <span id="disk-space-text" data-i18n="progress.diskSpaceLoading">Checking disk space...</span>
+        </div>
+        <div id="progress-header" class="progress-header">
+          <h2 data-i18n="progress.downloading">Downloading...</h2>
+          <div class="progress-bar">
+            <div id="progress-bar-fill" class="progress-bar__fill" style="width: 0%"></div>
+          </div>
+          <p id="progress-status" class="progress-status"></p>
+        </div>
+
+        <div id="depot-progress-list" class="depot-progress-list"></div>
+
+        <div class="depot-download-progress">
+          <div class="depot-progress-bar">
+            <div id="depot-progress-fill" class="depot-progress-fill" style="width: 0%"></div>
+          </div>
+          <span id="depot-progress-text" class="depot-progress-text">0%</span>
+        </div>
+        <div id="download-speed-info" class="download-speed-info hidden">
+          <span id="download-speed" class="download-speed-info__speed"></span>
+          <span class="download-speed-info__separator">—</span>
+          <span id="download-eta" class="download-speed-info__eta"></span>
+        </div>
+
+        <div class="settings-field__toggle-wrap shutdown-after">
+          <label class="toggle-switch">
+            <input type="checkbox" id="shutdown-after-toggle">
+            <span class="toggle-switch__slider"></span>
+          </label>
+          <label for="shutdown-after-toggle" class="settings-field__toggle-text" data-i18n="progress.shutdownAfter">Shut down the PC when the download has finished</label>
+        </div>
+
+        <div id="terminal" class="terminal">
+          <div class="terminal__header">
+            <span class="terminal__dot terminal__dot--red"></span>
+            <span class="terminal__dot terminal__dot--yellow"></span>
+            <span class="terminal__dot terminal__dot--green"></span>
+            <span class="terminal__title" data-i18n="progress.terminalTitle">Output</span>
+          </div>
+          <div id="terminal-output" class="terminal__body"></div>
+        </div>
+
+        <div id="completion-message" class="completion-message hidden"></div>
+        <div id="failure-advice" class="next-steps hidden" role="status"></div>
+        <div id="feedback-prompt" class="feedback-card hidden" role="status">
+          <div class="feedback-card__icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>
+          </div>
+          <div class="feedback-card__text">
+            <div class="feedback-card__title" data-i18n="feedback.title">Glad SMD helps!</div>
+            <div class="feedback-card__hint" data-i18n="feedback.text">A star on GitHub helps other people find the project. Ideas and bug reports are welcome too.</div>
+            <div class="feedback-card__actions">
+              <button type="button" class="btn btn--small btn--primary" data-feedback="star" data-i18n="feedback.star">Star on GitHub</button>
+              <button type="button" class="btn btn--small btn--outline" data-feedback="issue" data-i18n="feedback.issue">Share an idea or bug</button>
+            </div>
+          </div>
+          <button type="button" class="feedback-card__close" data-feedback="dismiss" data-i18n-attr="title=feedback.dismiss,aria-label=feedback.dismiss">&times;</button>
+        </div>
+
+        <div class="card__footer">
+          <div class="card__footer-left">
+            <button id="btn-cancel" class="btn btn--danger">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+              <span data-i18n="progress.cancel">Cancel Download</span>
+            </button>
+            <button id="btn-pause" class="btn btn--outline" data-i18n="progress.pause">
+              Pause
+            </button>
+          </div>
+          <div class="card__footer-right">
+            <button id="btn-report-failure" class="btn btn--outline hidden" data-i18n="bugReport.reportThis">Report this error</button>
+            <button id="btn-next-step" class="btn btn--primary hidden" data-i18n="progress.next">
+              Next
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="step-shortcut" class="step hidden">
+      <div class="card">
+        <h2 class="shortcut-header" data-i18n="shortcut.title">Create Shortcuts</h2>
+        <p class="shortcut-description" data-i18n="shortcut.description">Create desktop or start menu shortcuts to launch the downloaded game.</p>
+
+        <div class="shortcut-exe-section">
+          <label for="shortcut-exe-path" class="settings-section__label" data-i18n="shortcut.exeLabel">Game Executable</label>
+          <div class="dd-path__input-wrap dd-path__input-wrap--with-btn">
+            <input type="text" id="shortcut-exe-path" class="dd-path__input" data-i18n-attr="placeholder=shortcut.exePlaceholder" readonly>
+            <button type="button" id="btn-browse-exe" class="btn btn--small btn--outline dd-path__browse-btn" data-i18n-attr="title=shortcut.browse" data-i18n="shortcut.browse">Browse</button>
+          </div>
+          <p class="dd-path__hint" data-i18n="shortcut.exeHint">Auto-detected game executable. Click browse or select from detected files below.</p>
+        </div>
+
+        <div id="shortcut-detected-section" class="shortcut-detected-section hidden">
+          <button type="button" id="btn-toggle-detected" class="settings-advanced__toggle">
+            <span class="settings-advanced__arrow">&#9654;</span>
+            <span data-i18n="shortcut.otherDetected">Other detected executables</span>
+          </button>
+          <div id="shortcut-detected-list" class="shortcut-detected-list hidden"></div>
+        </div>
+
+        <div class="shortcut-options">
+          <div class="shortcut-option">
+            <span class="shortcut-option__label" data-i18n="shortcut.desktopShortcut">Desktop Shortcut</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="shortcut-desktop" checked>
+              <span class="toggle-switch__slider"></span>
+            </label>
+          </div>
+          <div class="shortcut-option">
+            <span class="shortcut-option__label" data-i18n="shortcut.startMenuShortcut">Start Menu Shortcut</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="shortcut-startmenu" checked>
+              <span class="toggle-switch__slider"></span>
+            </label>
+          </div>
+          <div class="shortcut-option shortcut-option--full" id="shortcut-steam-row">
+            <div class="shortcut-option__text">
+              <span class="shortcut-option__label" data-i18n="steamLibrary.windowsToggle">Also add to Steam library</span>
+              <p class="shortcut-option__hint" data-i18n="steamLibrary.windowsToggleHint">Creates a non-Steam shortcut with grid art so the game appears in your Steam library too.</p>
+              <button type="button" id="btn-shortcut-steam-choose" class="btn btn--small btn--outline shortcut-option__action hidden" data-i18n="steamLibrary.chooseFolder">Choose Steam folder</button>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="shortcut-steam-library">
+              <span class="toggle-switch__slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div id="shortcut-status" class="completion-message hidden"></div>
+
+        <div class="card__footer">
+          <div class="card__footer-left">
+            <button id="btn-shortcut-start-over" class="btn btn--outline">
+              &#8617; <span data-i18n="shortcut.goHome">Go Home</span>
+            </button>
+          </div>
+          <div class="card__footer-right">
+            <button id="btn-shortcut-skip" class="btn btn--outline" data-i18n="shortcut.skip">
+              Skip
+            </button>
+            <button id="btn-create-shortcuts" class="btn btn--primary" data-i18n="shortcut.createShortcuts">
+              Create Shortcuts
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="step-steam-library" class="step hidden">
+      <div class="card">
+        <h2 class="shortcut-header" data-i18n="steamLibrary.title">Add to Steam Library</h2>
+        <p class="shortcut-description" data-i18n="steamLibrary.description">Add this game to your Steam library as a non-Steam shortcut with full grid art.</p>
+
+        <div id="steam-library-status" class="emu-release-status" data-i18n="steamLibrary.detecting">Detecting Steam installation...</div>
+
+        <div class="shortcut-exe-section">
+          <label for="steam-exe-path" class="settings-section__label" data-i18n="steamLibrary.exeLabel">Game Executable</label>
+          <div class="dd-path__input-wrap dd-path__input-wrap--with-btn">
+            <input type="text" id="steam-exe-path" class="dd-path__input" data-i18n-attr="placeholder=shortcut.exePlaceholder" readonly>
+            <button type="button" id="btn-steam-browse-exe" class="btn btn--small btn--outline dd-path__browse-btn" data-i18n="shortcut.browse">Browse</button>
+          </div>
+          <p class="dd-path__hint" data-i18n="steamLibrary.exeHint">Auto-detected executable. Click Browse or pick from detected files.</p>
+        </div>
+
+        <div id="steam-detected-section" class="shortcut-detected-section hidden">
+          <button type="button" id="btn-steam-toggle-detected" class="settings-advanced__toggle">
+            <span class="settings-advanced__arrow">&#9654;</span>
+            <span data-i18n="shortcut.otherDetected">Other detected executables</span>
+          </button>
+          <div id="steam-detected-list" class="shortcut-detected-list hidden"></div>
+        </div>
+
+        <div class="settings-field">
+          <label for="steam-game-name" class="settings-field__label" data-i18n="steamLibrary.gameNameLabel">Display name</label>
+          <input type="text" id="steam-game-name" class="dd-path__input" data-i18n-attr="placeholder=steamLibrary.gameNamePlaceholder" autocomplete="off">
+        </div>
+
+        <div class="settings-field">
+          <label for="steam-launch-options" class="settings-field__label" data-i18n="steamLibrary.launchOptionsLabel">Launch options</label>
+          <input type="text" id="steam-launch-options" class="dd-path__input" data-i18n-attr="placeholder=steamLibrary.launchOptionsPlaceholder" autocomplete="off">
+          <p class="dd-path__hint" data-i18n="steamLibrary.launchOptionsHint">Optional. For Windows games on Linux, set the Proton compatibility tool in Steam after adding.</p>
+        </div>
+
+        <div id="steam-library-result" class="completion-message hidden"></div>
+
+        <div class="card__footer">
+          <div class="card__footer-left">
+            <button id="btn-steam-skip" class="btn btn--outline" data-i18n="steamLibrary.skip">
+              Skip
+            </button>
+          </div>
+          <button id="btn-steam-add" class="btn btn--primary" data-i18n="steamLibrary.add">
+            Add to Steam
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section id="step-emulator" class="step hidden">
+      <div class="card">
+        <div class="emu-top">
+          <div class="emu-top__text">
+            <h2 class="emu-header" data-i18n="emulator.title">Apply Emulator Patch</h2>
+            <p class="emu-description" data-i18n="emulator.description">Replace the game's Steam API library with the gbe_fork emulator so the game can run without the Steam client.</p>
+          </div>
+          <div id="emu-release-status" class="emu-release-status" data-i18n="emulator.releaseLoading">Loading emulator release info...</div>
+        </div>
+        <div id="emu-summary" class="emu-summary" aria-live="polite"></div>
+
+        <div class="emu-body">
+          <nav class="emu-nav" role="tablist" data-i18n-attr="aria-label=emulator.title">
+            <button type="button" class="emu-nav__tab is-active" role="tab" id="emu-tab-files" data-section="files" aria-controls="emu-panel-files" aria-selected="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span class="emu-nav__label" data-i18n="emulator.tabs.files">Files</span>
+              <span class="emu-nav__badge hidden" data-badge="files"></span>
+            </button>
+            <button type="button" class="emu-nav__tab" role="tab" id="emu-tab-gamedata" data-section="gamedata" aria-controls="emu-panel-gamedata" aria-selected="false">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="6"/><path d="M15.48 12.89 17 22l-5-3-5 3 1.52-9.11"/></svg>
+              <span class="emu-nav__label" data-i18n="emulator.tabs.gameData">Game data</span>
+              <span class="emu-nav__badge hidden" data-badge="gamedata"></span>
+            </button>
+            <button type="button" class="emu-nav__tab" role="tab" id="emu-tab-controller" data-section="controller" aria-controls="emu-panel-controller" aria-selected="false">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="12" x2="10" y2="12"></line><line x1="8" y1="10" x2="8" y2="14"></line><line x1="15" y1="13" x2="15.01" y2="13"></line><line x1="18" y1="11" x2="18.01" y2="11"></line><path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59l-.885 7.97A3 3 0 0 0 4.8 20c1.1 0 2.1-.6 2.6-1.6L8.5 16h7l1.1 2.4c.5 1 1.5 1.6 2.6 1.6a3 3 0 0 0 2.983-3.44l-.885-7.97A4 4 0 0 0 17.32 5z"></path></svg>
+              <span class="emu-nav__label" data-i18n="emulator.tabs.controller">Controller</span>
+              <span class="emu-nav__badge hidden" data-badge="controller"></span>
+            </button>
+            <button type="button" class="emu-nav__tab" role="tab" id="emu-tab-emulator" data-section="emulator" aria-controls="emu-panel-emulator" aria-selected="false">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+              <span class="emu-nav__label" data-i18n="emulator.tabs.emulator">Emulator</span>
+              <span class="emu-nav__badge hidden" data-badge="emulator"></span>
+            </button>
+            <button type="button" class="emu-nav__tab" role="tab" id="emu-tab-saves" data-section="saves" aria-controls="emu-panel-saves" aria-selected="false">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+              <span class="emu-nav__label" data-i18n="emulator.tabs.saves">Saves</span>
+              <span class="emu-nav__badge hidden" data-badge="saves"></span>
+            </button>
+            <button type="button" class="emu-nav__tab" role="tab" id="emu-tab-profile" data-section="profile" aria-controls="emu-panel-profile" aria-selected="false">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              <span class="emu-nav__label" data-i18n="emulator.tabs.profile">Profile</span>
+              <span class="emu-nav__badge hidden" data-badge="profile"></span>
+            </button>
+            <button type="button" class="emu-nav__tab" role="tab" id="emu-tab-network" data-section="network" aria-controls="emu-panel-network" aria-selected="false">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+              <span class="emu-nav__label" data-i18n="emulator.tabs.network">Multiplayer</span>
+              <span class="emu-nav__badge hidden" data-badge="network"></span>
+            </button>
+            <button type="button" class="emu-nav__tab" role="tab" id="emu-tab-mods" data-section="mods" aria-controls="emu-panel-mods" aria-selected="false">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+              <span class="emu-nav__label" data-i18n="emulator.tabs.mods">Mods</span>
+              <span class="emu-nav__badge hidden" data-badge="mods"></span>
+            </button>
+            <button type="button" class="emu-nav__tab" role="tab" id="emu-tab-extras" data-section="extras" aria-controls="emu-panel-extras" aria-selected="false">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+              <span class="emu-nav__label" data-i18n="emulator.tabs.extras">Extras</span>
+              <span class="emu-nav__badge hidden" data-badge="extras"></span>
+            </button>
+          </nav>
+          <div class="emu-panels">
+          <section id="emu-panel-files" class="emu-panel is-active" data-section="files" role="tabpanel" aria-labelledby="emu-tab-files">
+            <h3 class="emu-panel__title" data-i18n="emulator.detectedLabel">Detected Steam API files</h3>
+            <div id="emu-denuvo-note" class="denuvo-note hidden" role="note">
+              <strong data-i18n="select.denuvoTitle">Denuvo Anti-Tamper</strong>
+              <span data-i18n="emulator.denuvoNote">Steam lists Denuvo for this game. Denuvo checks the license on its own, so the game will most likely not start with gbe_fork, even after patching.</span>
+            </div>
+            <div id="emu-drm-section" class="emu-drm-section hidden">
+              <div class="emu-drm-header">
+                <svg class="emu-drm-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                <div class="emu-drm-header__text">
+                  <h3 class="emu-drm-title" data-i18n="emulator.drmTitle">Steam DRM detected</h3>
+                  <p class="emu-drm-description" data-i18n="emulator.drmDescription">These executables are protected by Steam DRM (SteamStub). They won't run with the emulator until the DRM is removed.</p>
+                </div>
+              </div>
+              <div id="emu-drm-list" class="emu-drm-list"></div>
+              <div id="emu-drm-status-wrap" class="emu-drm-status-wrap hidden">
+                <button id="btn-emu-drm-copy" class="emu-drm-copy-btn" type="button" data-i18n-attr="title=emulator.drmCopyLog,aria-label=emulator.drmCopyLog">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
+                </button>
+                <div id="emu-drm-status" class="emu-drm-status"></div>
+              </div>
+              <div class="emu-drm-actions">
+                <button id="btn-emu-drm-remove" class="btn btn--danger" data-i18n="emulator.drmRemove">Remove DRM (via Steamless)</button>
+                <span class="emu-drm-attribution" data-i18n="emulator.drmAttribution">Powered by Steamless by atom0s</span>
+              </div>
+            </div>
+
+            <div class="emu-section">
+              <div id="emu-patch-version" class="emu-patch-version hidden">
+                <span id="emu-patch-version-text"></span>
+                <button type="button" id="btn-emu-update-gbe" class="btn btn--small btn--primary hidden"></button>
+              </div>
+              <div id="emu-file-list" class="emu-file-list" aria-live="polite"></div>
+              <div id="emu-drm-restore" class="emu-drm-restore hidden">
+                <p class="emu-gamedata__key-label" data-i18n="emulator.drmRestore.title">Steam DRM removed</p>
+                <p class="dd-path__hint" data-i18n="emulator.drmRestore.hint">Steamless kept the original program files. Restore one to put Steam DRM back in.</p>
+                <div id="emu-drm-restore-list" class="emu-drm-restore__list"></div>
+              </div>
+              <p id="emu-file-empty" class="emu-file-empty hidden" data-i18n="emulator.noFiles">No Steam API libraries were found in the download folder.</p>
+              <p id="emu-already-patched" class="emu-already-patched hidden"></p>
+            </div>
+
+            <div id="emu-method-section" class="emu-section hidden">
+              <label class="settings-section__label" data-i18n="emulator.method.label">How gbe_fork gets loaded</label>
+              <div class="emu-variant-group" role="radiogroup">
+                <label class="emu-variant">
+                  <input type="radio" name="emu-method" value="replace" checked="">
+                  <span class="emu-variant__body">
+                    <span class="emu-variant__title" data-i18n="emulator.method.replace">Replace steam_api</span>
+                    <span class="emu-variant__hint" data-i18n="emulator.method.replaceHint">The usual way. Works for most games.</span>
+                  </span>
+                </label>
+                <label class="emu-variant">
+                  <input type="radio" name="emu-method" value="coldclient">
+                  <span class="emu-variant__body">
+                    <span class="emu-variant__title" data-i18n="emulator.method.coldclient">ColdClientLoader</span>
+                    <span class="emu-variant__hint" data-i18n="emulator.method.coldclientHint">Leaves the game's files alone and starts it through a loader. For games that check their steam_api.</span>
+                  </span>
+                </label>
+              </div>
+              <div id="emu-cold-options" class="emu-gamedata__key hidden">
+                <label for="emu-cold-exe" class="emu-gamedata__key-label" data-i18n="emulator.method.exe">Game program</label>
+                <select id="emu-cold-exe" class="emu-field__input emu-field__select"></select>
+                <p class="emu-bypass-row__hint" data-i18n="emulator.method.exeHint">Start the game with steamclient_loader next to it from now on. SMD points the game's Steam entry at it.</p>
+              </div>
+              <div id="emu-cold-steam" class="emu-cold-steam hidden">
+                <p class="dd-path__hint" data-i18n="emulator.method.steamRunning">Steam is running, so the game's Steam entry still starts the game directly. Steam has to close for a moment to change it.</p>
+                <button type="button" id="btn-emu-cold-steam" class="btn btn--small btn--primary" data-i18n="emulator.method.closeSteam">Close Steam and change it</button>
+              </div>
+            </div>
+
+            <div id="emu-variant-section" class="emu-section">
+              <label class="settings-section__label" data-i18n="emulator.variantLabel">Emulator variant</label>
+              <div class="emu-variant-group" role="radiogroup" aria-labelledby="emu-variant-label">
+                <label class="emu-variant">
+                  <input type="radio" name="emu-variant" value="regular" checked>
+                  <span class="emu-variant__body">
+                    <span class="emu-variant__title" data-i18n="emulator.variantRegular">Regular</span>
+                    <span class="emu-variant__hint" data-i18n="emulator.variantRegularHint">Stable build, recommended for most games.</span>
+                  </span>
+                </label>
+                <label class="emu-variant">
+                  <input type="radio" name="emu-variant" value="experimental">
+                  <span class="emu-variant__body">
+                    <span class="emu-variant__title" data-i18n="emulator.variantExperimental">Experimental</span>
+                    <span class="emu-variant__hint" data-i18n="emulator.variantExperimentalHint">Latest features, may be unstable.</span>
+                  </span>
+                </label>
+              </div>
+            </div>
+          </section>
+
+          <section id="emu-panel-gamedata" class="emu-panel" data-section="gamedata" role="tabpanel" aria-labelledby="emu-tab-gamedata">
+            <h3 class="emu-panel__title" data-i18n="emulator.tabs.gameData">Game data</h3>
+            <div id="emu-gamedata-section" class="emu-section emu-gamedata-section">
+              <div class="emu-bypass-row">
+                <div class="emu-bypass-row__text">
+                  <span class="emu-bypass-row__label" data-i18n="emulator.gameData.label">Game data for gbe_fork</span>
+                  <p class="emu-bypass-row__hint" data-i18n-html="emulator.gameData.hint">Writes what gbe_fork needs into <code>steam_settings</code>: languages, depots, branches, achievements with icons, leaderboards, inventory items and cloud save folders. With a Steam Web API key also the stats and all achievements. The controller layout has its own tab.</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="emu-gamedata-toggle" checked>
+                  <span class="toggle-switch__slider"></span>
+                </label>
+              </div>
+              <div class="emu-gamedata__key">
+                <label for="emu-webapi-key" class="emu-gamedata__key-label" data-i18n="settings.steamWebApiKey">Steam Web API key</label>
+                <div class="dd-path__input-wrap dd-path__input-wrap--with-btn">
+                  <input type="password" id="emu-webapi-key" class="dd-path__input" autocomplete="off" spellcheck="false" data-i18n-attr="placeholder=settings.steamWebApiKeyPlaceholder">
+                  <button type="button" id="btn-emu-webapi-save" class="btn btn--small btn--outline" data-i18n="emulator.gameData.saveKey">Save key</button>
+                </div>
+                <p class="emu-bypass-row__hint" data-i18n-html="settings.steamWebApiKeyHint">Optional. Get a free key at <a href="https://steamcommunity.com/dev/apikey" target="_blank" rel="noopener" class="link">steamcommunity.com/dev/apikey</a>. It stays on this PC and is only sent to Steam.</p>
+              </div>
+              <div class="emu-gamedata__media">
+                <span class="emu-gamedata__key-label" id="emu-gamedata-media-label" data-i18n="emulator.gameData.media">Save media</span>
+                <div id="emu-gamedata-media" class="segmented" role="radiogroup" aria-labelledby="emu-gamedata-media-label">
+                  <button type="button" class="segmented__option is-active" data-value="off" role="radio" aria-checked="true" data-i18n="emulator.gameData.mediaOff">Off</button>
+                  <button type="button" class="segmented__option" data-value="images" role="radio" aria-checked="false" data-i18n="emulator.gameData.mediaImages">Images</button>
+                  <button type="button" class="segmented__option" data-value="all" role="radio" aria-checked="false" data-i18n="emulator.gameData.mediaAll">Images and video</button>
+                </div>
+                <p class="emu-bypass-row__hint" data-i18n-html="emulator.gameData.mediaHint">Artwork, screenshots and inventory icons go into a <code>steam_media</code> folder in the game folder. The game does not need them.</p>
+              </div>
+              <div class="emu-gamedata__actions">
+                <button type="button" id="btn-emu-gamedata" class="btn btn--small btn--outline" data-i18n="emulator.gameData.generate">Write game data now</button>
+                <p id="emu-gamedata-status" class="dd-path__hint hidden" role="status"></p>
+              </div>
+            </div>
+
+            <p class="dd-path__hint emu-achievement-hint" data-i18n-html="emulator.achievementWatcherHint">Tip: <a href="https://github.com/Shirowwww/Achievement-Watcher-Next" target="_blank" rel="noopener" class="link">Achievement Watcher Next</a> shows a notification when you unlock an achievement in an emulated game (Windows and Linux). It continues the original Achievement Watcher, which is no longer developed.</p>
+          </section>
+
+          <section id="emu-panel-controller" class="emu-panel" data-section="controller" role="tabpanel" aria-labelledby="emu-tab-controller">
+            <h3 class="emu-panel__title" data-i18n="emulator.controller.title">Controller (Steam Input)</h3>
+            <div id="emu-controller-section" class="emu-section emu-gamedata-section">
+              <div class="emu-bypass-row">
+                <div class="emu-bypass-row__text">
+                  <span class="emu-bypass-row__label" data-i18n="emulator.controller.label">Controller support</span>
+                  <p class="emu-bypass-row__hint" data-i18n-html="emulator.controller.hint">Writes the game's Steam Input layout into <code>steam_settings/controller</code>, with button icons, so games that read the controller through Steam get input. This happens automatically when you patch or save, there is nothing else to press.</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="emu-controller-toggle" checked="">
+                  <span class="toggle-switch__slider"></span>
+                </label>
+              </div>
+              <p id="emu-controller-status" class="dd-path__hint" role="status"></p>
+              <p id="emu-controller-build" class="dd-path__hint hidden"></p>
+              <div class="emu-gamedata__key">
+                <span class="emu-gamedata__key-label" data-i18n="emulator.controller.layoutFile">Layout file</span>
+                <div class="dd-path__input-wrap dd-path__input-wrap--with-btn">
+                  <input type="text" id="emu-controller-file" class="dd-path__input" readonly="" data-i18n-attr="placeholder=emulator.controller.noFile">
+                  <button type="button" id="btn-emu-controller-file" class="btn btn--small btn--outline" data-i18n="emulator.controller.chooseFile">Choose file…</button>
+                  <button type="button" id="btn-emu-controller-clear" class="btn btn--small btn--outline hidden" data-i18n="emulator.controller.clearFile">Remove</button>
+                </div>
+                <p class="emu-bypass-row__hint" data-i18n-html="emulator.controller.layoutFileHint">Optional. A Steam Input layout (.vdf) that replaces the one from Steam, for example from your Steam folder under <code>steamapps/workshop/content/241100</code>.</p>
+              </div>
+              <div class="emu-gamedata__key">
+                <label for="emu-controller-type" class="emu-gamedata__key-label" data-i18n="emulator.fields.controllerType">Controller type</label>
+                <select id="emu-controller-type" class="emu-field__input emu-field__select" data-emu-key="controller_type">
+                  <option value="" data-i18n="emulator.fields.controllerDefault">gbe_fork default (Xbox 360)</option>
+                  <option value="XBOX360">Xbox 360</option>
+                  <option value="XBOXONE">Xbox One</option>
+                  <option value="PS3">PlayStation 3</option>
+                  <option value="PS4">PlayStation 4</option>
+                  <option value="PS5">PlayStation 5</option>
+                  <option value="SWITCH">Nintendo Switch</option>
+                </select>
+                <p class="emu-bypass-row__hint" data-i18n="emulator.fields.controllerTypeHint">Which controller gbe_fork reports to the game. Games show matching button icons.</p>
+              </div>
+              <p class="dd-path__hint emu-controller__xinput" data-i18n="emulator.controller.xinputHint">gbe_fork only understands Xbox (XInput) controllers. Other controllers need Steam Input through Steam (below) or a tool like DS4Windows.</p>
+              <div class="emu-field emu-field--toggle">
+                <div class="emu-field__label-block">
+                  <span class="emu-field__label" data-i18n="emulator.controller.steamInput">Steam Input through Steam</span>
+                  <p class="emu-field__hint" data-i18n="emulator.controller.steamInputHint">Only for PlayStation, Switch and other non-Xbox controllers, leave it off with an Xbox controller. It adds to the layout above, it does not replace it: Steam turns your controller into an Xbox controller, and gbe_fork uses the layout. For this, add the game to Steam in step 4 and start it from there.</p>
+                </div>
+                <label class="toggle-switch"><input type="checkbox" data-emu-key="disable_steamoverlaygameid_env_var"><span class="toggle-switch__slider"></span></label>
+              </div>
+              <p id="emu-controller-result" class="dd-path__hint hidden" role="status"></p>
+            </div>
+          </section>
+
+          <section id="emu-panel-emulator" class="emu-panel" data-section="emulator" role="tabpanel" aria-labelledby="emu-tab-emulator">
+            <h3 class="emu-panel__title" data-i18n="emulator.tabs.emulatorTitle">Emulator settings</h3>
+            <div class="emu-section">
+              <p id="emu-settings-hint" class="emu-settings-hint" data-i18n="emulator.settingsHint">Unset values keep the gbe_fork defaults. You can change these later from the History tab.</p>
+
+              <div class="emu-settings">
+                <div class="emu-settings__bar">
+                  <input type="search" id="emu-settings-search" class="emu-field__input emu-settings__search" autocomplete="off" spellcheck="false" data-i18n-attr="placeholder=emulator.settingsSearch,aria-label=emulator.settingsSearch">
+                  <label class="emu-settings__only">
+                    <input type="checkbox" id="emu-settings-changed">
+                    <span data-i18n="emulator.settingsOnlyChanged">Only changed</span>
+                  </label>
+                  <button type="button" id="btn-emu-settings-reset" class="btn btn--small btn--outline" data-i18n="emulator.settingsReset">Reset all</button>
+                </div>
+                <div id="emu-settings-groups" class="emu-settings__groups" role="tablist"></div>
+                <div id="emu-settings-fields" class="emu-settings__fields"></div>
+                <p id="emu-settings-empty" class="dd-path__hint hidden" data-i18n="emulator.settingsNoMatch">No setting matches.</p>
+              </div>
+            </div>
+          </section>
+
+          <section id="emu-panel-saves" class="emu-panel" data-section="saves" role="tabpanel" aria-labelledby="emu-tab-saves">
+            <h3 class="emu-panel__title" data-i18n="emulator.saves.title">Saves and achievements</h3>
+            <p class="emu-extra__needs hidden" data-i18n="emulator.extras.needsTarget">Select a Steam API file in Files first.</p>
+            <div class="emu-section emu-gamedata-section">
+              <span class="emu-gamedata__key-label" data-i18n="emulator.saves.folder">Save folder</span>
+              <div id="emu-saves-list" class="emu-extra-list"></div>
+              <p class="emu-bypass-row__hint" data-i18n-html="emulator.saves.hint">gbe_fork keeps progress outside the game folder. For saves that move with the game, set a portable save path under Emulator → Saves.</p>
+              <div class="emu-gamedata__actions">
+                <button type="button" id="btn-emu-saves-open" class="btn btn--small btn--outline" data-i18n="emulator.saves.open">Open folder</button>
+                <button type="button" id="btn-emu-saves-backup" class="btn btn--small btn--outline" data-i18n="emulator.saves.backup">Back up…</button>
+                <button type="button" id="btn-emu-saves-restore" class="btn btn--small btn--outline" data-i18n="emulator.saves.restore">Restore…</button>
+              </div>
+              <p id="emu-saves-status" class="dd-path__hint hidden" role="status"></p>
+            </div>
+            <div class="emu-section emu-gamedata-section">
+              <div class="emu-extra-head">
+                <span class="emu-gamedata__key-label" data-i18n="emulator.achievements.title">Achievements</span>
+                <span id="emu-ach-count" class="dd-path__hint"></span>
+              </div>
+              <div id="emu-ach-list" class="emu-ach-list"></div>
+              <p id="emu-ach-empty" class="dd-path__hint hidden"></p>
+              <div class="emu-gamedata__actions">
+                <button type="button" id="btn-emu-ach-reset" class="btn btn--small btn--outline" data-i18n="emulator.achievements.resetAll">Lock all again</button>
+                <button type="button" id="btn-emu-stats-reset" class="btn btn--small btn--outline" data-i18n="emulator.achievements.resetStats">Clear stats</button>
+              </div>
+              <p id="emu-ach-status" class="dd-path__hint hidden" role="status"></p>
+            </div>
+          </section>
+
+          <section id="emu-panel-profile" class="emu-panel" data-section="profile" role="tabpanel" aria-labelledby="emu-tab-profile">
+            <h3 class="emu-panel__title" data-i18n="emulator.profile.title">Profile and overlay</h3>
+            <p class="emu-extra__needs hidden" data-i18n="emulator.extras.needsTarget">Select a Steam API file in Files first.</p>
+            <div class="emu-section emu-gamedata-section">
+              <span class="emu-gamedata__key-label" data-i18n="emulator.profile.avatar">Profile picture</span>
+              <div class="emu-avatar">
+                <div id="emu-avatar-preview" class="emu-avatar__img" aria-hidden="true"></div>
+                <div class="emu-avatar__side">
+                  <p class="emu-bypass-row__hint" data-i18n="emulator.profile.avatarHint">PNG or JPG. Shown in the overlay and to other players on the network.</p>
+                  <div class="emu-gamedata__actions">
+                    <button type="button" id="btn-emu-avatar" class="btn btn--small btn--outline" data-i18n="emulator.profile.choose">Choose…</button>
+                    <button type="button" id="btn-emu-avatar-clear" class="btn btn--small btn--outline hidden" data-i18n="emulator.profile.remove">Remove</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="emu-section emu-gamedata-section">
+              <span class="emu-gamedata__key-label" data-i18n="emulator.profile.overlayAssets">Overlay font and sounds</span>
+              <p class="emu-bypass-row__hint" data-i18n="emulator.profile.overlayHint">Only used by the overlay of the experimental build.</p>
+              <div class="emu-asset-row" data-asset="font">
+                <div class="emu-asset-row__text">
+                  <span class="emu-field__label" data-i18n="emulator.profile.font">Font</span>
+                  <span class="emu-asset-row__value dd-path__hint" data-i18n="emulator.profile.defaultFont">Built-in font</span>
+                </div>
+                <div class="emu-font-system">
+                  <label for="emu-font-system" class="sr-only" data-i18n="emulator.profile.systemFonts">Installed fonts</label>
+                  <select id="emu-font-system">
+                    <option value="" data-i18n="emulator.profile.systemFontsLoading">Loading installed fonts…</option>
+                  </select>
+                </div>
+                <button type="button" class="btn btn--small btn--outline" data-asset-pick="font" data-i18n="emulator.profile.fontFile">File…</button>
+                <button type="button" class="btn btn--small btn--outline hidden" data-asset-clear="font" data-i18n="emulator.profile.remove">Remove</button>
+              </div>
+              <div class="emu-asset-row" data-asset="achievement">
+                <div class="emu-asset-row__text">
+                  <span class="emu-field__label" data-i18n="emulator.profile.achievementSound">Achievement sound</span>
+                  <span class="emu-asset-row__value dd-path__hint" data-i18n="emulator.profile.noSound">None</span>
+                </div>
+                <button type="button" class="btn btn--small btn--outline" data-asset-pick="achievement" data-i18n="emulator.profile.choose">Choose…</button>
+                <button type="button" class="btn btn--small btn--outline hidden" data-asset-clear="achievement" data-i18n="emulator.profile.remove">Remove</button>
+              </div>
+              <div class="emu-asset-row" data-asset="friend">
+                <div class="emu-asset-row__text">
+                  <span class="emu-field__label" data-i18n="emulator.profile.friendSound">Invite sound</span>
+                  <span class="emu-asset-row__value dd-path__hint" data-i18n="emulator.profile.noSound">None</span>
+                </div>
+                <button type="button" class="btn btn--small btn--outline" data-asset-pick="friend" data-i18n="emulator.profile.choose">Choose…</button>
+                <button type="button" class="btn btn--small btn--outline hidden" data-asset-clear="friend" data-i18n="emulator.profile.remove">Remove</button>
+              </div>
+              <p id="emu-profile-status" class="dd-path__hint hidden" role="status"></p>
+            </div>
+          </section>
+
+          <section id="emu-panel-network" class="emu-panel" data-section="network" role="tabpanel" aria-labelledby="emu-tab-network">
+            <h3 class="emu-panel__title" data-i18n="emulator.network.title">Multiplayer</h3>
+            <p class="emu-extra__needs hidden" data-i18n="emulator.extras.needsTarget">Select a Steam API file in Files first.</p>
+            <div class="emu-section emu-gamedata-section">
+              <label for="emu-broadcasts" class="emu-gamedata__key-label" data-i18n="emulator.network.broadcasts">Other players' addresses</label>
+              <textarea id="emu-broadcasts" class="emu-field__input emu-broadcasts" rows="4" spellcheck="false" data-i18n-attr="placeholder=emulator.network.broadcastsPlaceholder"></textarea>
+              <p class="emu-bypass-row__hint" data-i18n-html="emulator.network.broadcastsHint">gbe_fork finds players on the same network by itself. Over a VPN like Tailscale, ZeroTier or Radmin it doesn't, so put the other PCs' VPN IPs here, one per line.</p>
+              <div class="emu-gamedata__actions">
+                <button type="button" id="btn-emu-broadcasts" class="btn btn--small btn--outline" data-i18n="emulator.network.save">Save addresses</button>
+              </div>
+              <p id="emu-broadcasts-status" class="dd-path__hint hidden" role="status"></p>
+            </div>
+            <p id="emu-lobby-later" class="dd-path__hint hidden" data-i18n="emulator.network.lobbyLater">lobby_connect is there once the game is patched: History, Edit emulator settings, Multiplayer.</p>
+            <div id="emu-lobby-section" class="emu-section emu-gamedata-section">
+              <span class="emu-gamedata__key-label" data-i18n="emulator.network.lobbyTitle">Join a friend's lobby</span>
+              <p class="emu-bypass-row__hint" data-i18n-html="emulator.network.lobbyHint">For games without a server browser, <code>lobby_connect</code> from gbe_fork lists the lobbies of players on the network and starts the game straight into one.</p>
+              <div class="emu-gamedata__actions">
+                <button type="button" id="btn-emu-lobby" class="btn btn--small btn--outline" data-i18n="emulator.network.lobbyStart">Start lobby_connect</button>
+              </div>
+              <p id="emu-lobby-status" class="dd-path__hint hidden" role="status"></p>
+            </div>
+          </section>
+
+          <section id="emu-panel-mods" class="emu-panel" data-section="mods" role="tabpanel" aria-labelledby="emu-tab-mods">
+            <h3 class="emu-panel__title" data-i18n="emulator.mods.title">Workshop mods</h3>
+            <p class="emu-extra__needs hidden" data-i18n="emulator.extras.needsTarget">Select a Steam API file in Files first.</p>
+            <div class="emu-section emu-gamedata-section">
+              <div id="emu-mods-list" class="emu-extra-list"></div>
+              <p id="emu-mods-empty" class="dd-path__hint" data-i18n="emulator.mods.empty">No mods yet.</p>
+            </div>
+            <div class="emu-section emu-gamedata-section">
+              <label for="emu-mod-id" class="emu-gamedata__key-label" data-i18n="emulator.mods.add">Add a mod</label>
+              <div class="dd-path__input-wrap dd-path__input-wrap--with-btn">
+                <input type="text" id="emu-mod-id" class="dd-path__input" autocomplete="off" spellcheck="false" data-i18n-attr="placeholder=emulator.mods.idPlaceholder">
+                <button type="button" id="btn-emu-mod-folder" class="btn btn--small btn--outline" data-i18n="emulator.mods.chooseFolder">Folder…</button>
+                <button type="button" id="btn-emu-mod-file" class="btn btn--small btn--outline" data-i18n="emulator.mods.chooseFile">File…</button>
+              </div>
+              <p class="emu-bypass-row__hint" data-i18n="emulator.mods.hint">The workshop ID or link tells the game which item it is. SMD copies the mod's files into steam_settings/mods and fetches its name and picture from the workshop page.</p>
+              <p id="emu-mods-status" class="dd-path__hint hidden" role="status"></p>
+            </div>
+          </section>
+
+          <section id="emu-panel-extras" class="emu-panel" data-section="extras" role="tabpanel" aria-labelledby="emu-tab-extras">
+            <h3 class="emu-panel__title" data-i18n="emulator.tabs.extras">Extras</h3>
+            <div id="emu-bypass-section" class="emu-section emu-bypass-section">
+              <div class="emu-bypass-row">
+                <div class="emu-bypass-row__text">
+                  <span class="emu-bypass-row__label" data-i18n="emulator.bypassLabel">Steam API Check Bypass</span>
+                  <p class="emu-bypass-row__hint" data-i18n-html="emulator.bypassHint">Installs a <code>version.dll</code> next to the game that intercepts Steam-API integrity checks. Enable if the game refuses to launch with gbe_fork. Windows games only.</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="emu-bypass-toggle">
+                  <span class="toggle-switch__slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <div id="emu-dlc-merge-section" class="emu-section emu-dlc-merge-section hidden">
+              <div class="emu-bypass-row">
+                <div class="emu-bypass-row__text">
+                  <span class="emu-bypass-row__label" data-i18n="emulator.dlcMergeLabel">DLC depots detected</span>
+                  <p id="emu-dlc-merge-hint" class="emu-bypass-row__hint" data-i18n="emulator.dlcMergeHint">Multiple depot folders found. Many games expect DLC content next to the main game files. Merge the DLC depots into the main game folder?</p>
+                  <p id="emu-dlc-merge-status" class="dd-path__hint hidden"></p>
+                </div>
+                <button id="btn-emu-merge-dlcs" type="button" class="btn btn--primary btn--small" data-i18n="emulator.dlcMergeButton">
+                  Merge DLC depots
+                </button>
+              </div>
+            </div>
+          </section>
+          </div>
+        </div>
+
+        <div id="emu-apply-status" class="completion-message hidden"></div>
+
+        <div class="card__footer">
+          <div class="card__footer-left">
+            <button id="btn-emu-start-over" class="btn btn--outline">
+              &#8617; <span data-i18n="emulator.startOver">Start Over</span>
+            </button>
+            <button id="btn-emu-new" class="btn btn--outline" data-i18n="emulator.goToHome">
+              Go to Home
+            </button>
+            <button id="btn-emu-revert" class="btn btn--danger hidden" data-i18n="emulator.revert">
+              Revert Patch
+            </button>
+          </div>
+          <div class="card__footer-right">
+            <button id="btn-emu-save-settings" class="btn btn--outline hidden" data-i18n="emulator.saveSettings">
+              Save Settings
+            </button>
+            <button id="btn-emu-apply" class="btn btn--primary" data-i18n="emulator.apply">
+              Apply Emulator Patch
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+  </div>
+
+  <div id="cancel-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="cancel-modal-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content">
+      <div class="modal__icon modal__icon--warning" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+      <h3 class="modal__title" id="cancel-modal-title" data-i18n="modals.cancel.title">Cancel Download?</h3>
+      <p class="modal__text" id="cancel-modal-body" data-i18n-html="modals.cancel.body">
+        Are you sure you want to cancel? All downloaded files for this App ID will be <strong>permanently deleted</strong>.
+      </p>
+      <div class="modal__actions">
+        <button id="btn-cancel-no" class="btn btn--outline" data-modal-cancel data-i18n="modals.cancel.no">No, Continue</button>
+        <button id="btn-cancel-yes" class="btn btn--danger" data-i18n="modals.cancel.yes">Yes, Cancel &amp; Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="shutdown-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="shutdown-modal-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content">
+      <div class="modal__icon modal__icon--warning" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+          <line x1="12" y1="2" x2="12" y2="12"/>
+        </svg>
+      </div>
+      <h3 class="modal__title" id="shutdown-modal-title" data-i18n="modals.shutdown.title">Shutting Down</h3>
+      <p class="modal__text" id="shutdown-modal-body"></p>
+      <div class="modal__actions">
+        <button id="btn-shutdown-abort" class="btn btn--outline" data-modal-cancel data-i18n="modals.shutdown.abort">Cancel</button>
+        <button id="btn-shutdown-now" class="btn btn--danger" data-i18n="modals.shutdown.now">Shut Down Now</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="followup-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="followup-modal-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content">
+      <div class="modal__icon modal__icon--accent" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </div>
+      <h3 class="modal__title" id="followup-modal-title" data-i18n="modals.followup.title">Continue Where You Left Off?</h3>
+      <p class="modal__text" id="followup-modal-body"></p>
+      <div class="modal__actions modal__actions--stack">
+        <button id="btn-followup-later" class="btn btn--outline" data-modal-cancel data-i18n="modals.followup.later">Later</button>
+        <button id="btn-followup-discard" class="btn btn--outline" data-i18n="modals.followup.discard">Discard</button>
+        <button id="btn-followup-resume" class="btn btn--primary" data-i18n="modals.followup.resume">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="close-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="close-modal-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content">
+      <div class="modal__icon modal__icon--warning" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+      <h3 class="modal__title" id="close-modal-title" data-i18n="modals.close.title">Close Application?</h3>
+      <p class="modal__text" data-i18n-html="modals.close.body">
+        A download is in progress! Closing will cancel it and you may <strong>lose progress</strong>. Close anyway?
+      </p>
+      <div class="modal__actions">
+        <button id="btn-close-no" class="btn btn--outline" data-modal-cancel data-i18n="modals.close.no">No, Keep Running</button>
+        <button id="btn-close-yes" class="btn btn--danger" data-i18n="modals.close.yes">Yes, Close</button>
+      </div>
+    </div>
+  </div>
+
+
+
+  <div id="remove-source-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="remove-source-modal-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content">
+      <div class="modal__icon modal__icon--warning" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+      <h3 class="modal__title" id="remove-source-modal-title" data-i18n="modals.removeDefaultSource.title">Remove default source?</h3>
+      <p class="modal__text" data-i18n-html="modals.removeDefaultSource.body">
+        This is a source that was installed with the app. <strong>Search by App ID will stop working</strong> until you add your own source. You can always re-add it later.
+      </p>
+      <div class="modal__actions">
+        <button id="btn-remove-source-no" class="btn btn--outline" data-modal-cancel data-i18n="modals.removeDefaultSource.no">Keep</button>
+        <button id="btn-remove-source-yes" class="btn btn--danger" data-i18n="modals.removeDefaultSource.yes">Remove anyway</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="history-remove-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="history-remove-modal-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content">
+      <div class="modal__icon modal__icon--warning" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+          <path d="M10 11v6"/>
+          <path d="M14 11v6"/>
+        </svg>
+      </div>
+      <h3 class="modal__title" id="history-remove-modal-title" data-i18n="modals.historyRemove.title">Remove entry?</h3>
+      <p class="modal__text" data-i18n-html="modals.historyRemove.body">
+        This removes the entry from your history. <strong>Downloaded files stay on disk.</strong>
+      </p>
+      <div class="modal__actions">
+        <button id="btn-history-remove-no" class="btn btn--outline" data-modal-cancel data-i18n="modals.historyRemove.no">Keep</button>
+        <button id="btn-history-remove-yes" class="btn btn--danger" data-i18n="modals.historyRemove.yes">Remove</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="emu-revert-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="emu-revert-modal-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content">
+      <div class="modal__icon modal__icon--warning" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+      <h3 class="modal__title" id="emu-revert-modal-title" data-i18n="modals.emuRevert.title">Revert emulator patch?</h3>
+      <p class="modal__text" data-i18n-html="modals.emuRevert.body">
+        This restores the <strong>original Steam API library</strong> and removes the emulator files that were placed next to it. Your gbe_fork configuration files stay on disk but are no longer used.
+      </p>
+      <p class="modal__text" id="emu-revert-scope"></p>
+      <div class="modal__actions">
+        <button id="btn-emu-revert-no" class="btn btn--outline" data-modal-cancel data-i18n="modals.emuRevert.no">Keep patch</button>
+        <button id="btn-emu-revert-yes" class="btn btn--danger" data-i18n="modals.emuRevert.yes">Revert</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="emu-download-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="emu-download-modal-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content">
+      <div class="modal__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+      </div>
+      <h3 class="modal__title" id="emu-download-modal-title" data-i18n="modals.emuDownload.title">Download the gbe_fork emulator?</h3>
+      <p class="modal__text" data-i18n-html="modals.emuDownload.body">
+        Patching needs the emulator files from the <a href="https://github.com/Detanup01/gbe_fork/releases/latest">gbe_fork project on GitHub</a>. They are downloaded once and cached locally for future patches.
+      </p>
+      <p class="modal__text" id="emu-download-scope"></p>
+      <div class="modal__actions">
+        <button id="btn-emu-download-no" class="btn btn--outline" data-modal-cancel data-i18n="modals.emuDownload.no">Cancel</button>
+        <button id="btn-emu-download-yes" class="btn btn--primary" data-i18n="modals.emuDownload.yes">Download &amp; apply</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="history-clear-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="history-clear-modal-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content">
+      <div class="modal__icon modal__icon--warning" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+      <h3 class="modal__title" id="history-clear-modal-title" data-i18n="modals.historyClear.title">Clear all history?</h3>
+      <p class="modal__text" data-i18n-html="modals.historyClear.body">
+        This removes <strong>all entries</strong> from your history. Downloaded files stay on disk.
+      </p>
+      <div id="history-clear-resumable-warning" class="modal__notice hidden">
+        <p class="modal__text" id="history-clear-resumable-text"></p>
+        <label class="modal__check">
+          <input type="checkbox" id="history-clear-delete-files">
+          <span data-i18n="modals.historyClear.deleteFilesLabel">Also delete partial files on disk</span>
+        </label>
+      </div>
+      <div class="modal__actions">
+        <button id="btn-history-clear-no" class="btn btn--outline" data-modal-cancel data-i18n="modals.historyClear.no">Keep</button>
+        <button id="btn-history-clear-yes" class="btn btn--danger" data-i18n="modals.historyClear.yes">Clear All</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="telemetry-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="telemetry-modal-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content telemetry-modal-content">
+      <h3 class="modal__title" id="telemetry-modal-title">
+        <svg class="modal__title-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 3v18h18"/>
+          <path d="M7 16V9"/>
+          <path d="M12 16V5"/>
+          <path d="M17 16v-4"/>
+        </svg>
+        <span data-i18n="modals.telemetry.title">Help improve the app?</span>
+      </h3>
+      <p class="telemetry-modal__lead" data-i18n-html="modals.telemetry.lead">
+        We'd like to collect <strong>anonymous</strong> usage statistics so we know which features to invest in.
+      </p>
+      <div class="telemetry-modal__list">
+        <div class="telemetry-modal__col telemetry-modal__col--collect">
+          <h4>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+              <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            <span data-i18n="modals.telemetry.collectTitle">We collect</span>
+          </h4>
+          <ul>
+            <li data-i18n="modals.telemetry.collectItem1">App version, OS, architecture</li>
+            <li data-i18n="modals.telemetry.collectItem2">Which features get used (counters only)</li>
+            <li data-i18n="modals.telemetry.collectItem3">A random install ID (not tied to you)</li>
+            <li data-i18n="modals.telemetry.collectItem4">Why a download failed — which step and what kind of error, from a fixed list of labels</li>
+            <li data-i18n="modals.telemetry.collectItem5">With "Allow everything": how you move through the app, so we see where it gets stuck</li>
+          </ul>
+        </div>
+        <div class="telemetry-modal__col telemetry-modal__col--never">
+          <h4>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M19.69 14a6.9 6.9 0 0 0 .31-2V5l-8-3-3.16 1.18"/>
+              <path d="M4.73 4.73 4 5v7c0 6 8 10 8 10a20.29 20.29 0 0 0 5.62-4.38"/>
+              <line x1="1" y1="1" x2="23" y2="23"/>
+            </svg>
+            <span data-i18n="modals.telemetry.neverTitle">We never collect</span>
+          </h4>
+          <ul>
+            <li data-i18n="modals.telemetry.neverItem1">Game IDs, depot IDs, file names</li>
+            <li data-i18n-html="modals.telemetry.neverItem2">Contents of <code>.lua</code> / <code>.st</code> files</li>
+            <li data-i18n="modals.telemetry.neverItem3">IP addresses, account info</li>
+            <li data-i18n="modals.telemetry.neverItem4">Your manifest source URLs — only the kind of source, never the address</li>
+          </ul>
+        </div>
+      </div>
+      <p class="dd-path__hint" data-i18n="modals.telemetry.hint">
+        Events are end-to-end encrypted with a public key embedded in the app — only the maintainer's server can decrypt them. You can change your choice anytime in Settings → Advanced Settings.
+      </p>
+      <div class="modal__actions">
+        <button id="btn-telemetry-decline" class="btn btn--outline" data-modal-cancel data-i18n="modals.telemetry.decline">No thanks</button>
+        <button id="btn-telemetry-basic" class="btn btn--outline" data-i18n="modals.telemetry.basic">Statistics only</button>
+        <button id="btn-telemetry-accept" class="btn btn--primary" data-i18n="modals.telemetry.accept">Allow everything</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="behavior-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="behavior-modal-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content telemetry-modal-content behavior-modal-content">
+      <h3 class="modal__title" id="behavior-modal-title">
+        <svg class="modal__title-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="M13 13l6 6"/></svg>
+        <span data-i18n="modals.behavior.title">Show us where the app gets stuck?</span>
+      </h3>
+      <p class="telemetry-modal__lead" data-i18n="modals.behavior.lead">You already share anonymous usage statistics. Would you also let SMD record how you move through the app?</p>
+      <div class="telemetry-modal__list">
+        <div class="telemetry-modal__col telemetry-modal__col--collect">
+          <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span data-i18n="modals.telemetry.collectTitle">We collect</span></h4>
+          <ul>
+            <li data-i18n="modals.behavior.item1">Which screens and steps you open, and how long you stay</li>
+            <li data-i18n="modals.behavior.item2">Which buttons you click, by their internal name</li>
+            <li data-i18n="modals.behavior.item3">Clicks on things that are not clickable, and repeated clicks where nothing happens</li>
+            <li data-i18n="modals.behavior.item4">Long pauses, going back and forth, and opened hints</li>
+          </ul>
+        </div>
+        <div class="telemetry-modal__col telemetry-modal__col--never">
+          <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.69 14a6.9 6.9 0 0 0 .31-2V5l-8-3-3.16 1.18"/><path d="M4.73 4.73 4 5v7c0 6 8 10 8 10a20.29 20.29 0 0 0 5.62-4.38"/><line x1="1" y1="1" x2="23" y2="23"/></svg><span data-i18n="modals.telemetry.neverTitle">We never collect</span></h4>
+          <ul>
+            <li data-i18n="modals.behavior.never1">What you type, game names, IDs or paths</li>
+            <li data-i18n="modals.behavior.never2">Screen contents or mouse positions</li>
+          </ul>
+        </div>
+      </div>
+      <p class="dd-path__hint behavior-modal__hint" data-i18n="modals.behavior.hint">Encrypted like everything else. You can switch it off anytime under Settings → Privacy &amp; diagnostics.</p>
+      <div class="modal__actions">
+        <button id="btn-behavior-decline" class="btn btn--outline" data-modal-cancel data-i18n="modals.behavior.decline">No, statistics only</button>
+        <button id="btn-behavior-accept" class="btn btn--primary" data-i18n="modals.behavior.accept">Yes, allow</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="bug-report-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="bug-report-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content bug-report">
+      <h3 class="modal__title" id="bug-report-title">
+        <span class="modal__title-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 2 1.88 1.88"/><path d="M14.12 3.88 16 2"/><path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6"/><path d="M12 20v-9"/><path d="M6.53 9C4.6 8.8 3 7.1 3 5"/><path d="M6 13H2"/><path d="M3 21c0-2.1 1.7-3.9 3.8-4"/><path d="M20.97 5c0 2.1-1.6 3.8-3.5 4"/><path d="M22 13h-4"/><path d="M17.2 17c2.1.1 3.8 1.9 3.8 4"/></svg></span>
+        <span data-i18n="bugReport.title">Report a bug</span>
+      </h3>
+      <p class="bug-report__intro" data-i18n="bugReport.intro">Describe what went wrong. GitHub opens with your report filled in, so you can check everything there before you send it. You need a GitHub account.</p>
+      <div class="bug-report__fields">
+        <label class="bug-report__field">
+          <span class="settings-row__label" data-i18n="bugReport.summary">Short summary</span>
+          <input type="text" id="bug-title" class="dd-path__input bug-report__input" maxlength="120" data-i18n-attr="placeholder=bugReport.summaryPlaceholder">
+        </label>
+        <label class="bug-report__field">
+          <span class="settings-row__label" data-i18n="bugReport.what">What happened?</span>
+          <textarea id="bug-what" class="dd-path__input bug-report__input" rows="3" data-i18n-attr="placeholder=bugReport.whatPlaceholder"></textarea>
+        </label>
+        <label class="bug-report__field">
+          <span class="settings-row__label" data-i18n="bugReport.steps">Steps to reproduce</span>
+          <textarea id="bug-steps" class="dd-path__input bug-report__input" rows="2" data-i18n-attr="placeholder=bugReport.stepsPlaceholder"></textarea>
+        </label>
+        <label class="bug-report__field">
+          <span class="settings-row__label" data-i18n="bugReport.expected">What did you expect?</span>
+          <textarea id="bug-expected" class="dd-path__input bug-report__input" rows="2"></textarea>
+        </label>
+        <div class="settings-group">
+          <label class="settings-row" for="bug-include-diag">
+            <span class="settings-row__text">
+              <span class="settings-row__label" data-i18n="bugReport.includeDiag">Attach diagnostic info</span>
+              <span class="settings-row__hint" id="bug-diag-preview"></span>
+            </span>
+            <span class="toggle-switch">
+              <input type="checkbox" id="bug-include-diag" checked>
+              <span class="toggle-switch__slider"></span>
+            </span>
+          </label>
+          <label class="settings-row" for="bug-include-log">
+            <span class="settings-row__text">
+              <span class="settings-row__label" data-i18n="bugReport.includeLog">Attach the last lines of the download log</span>
+              <span class="settings-row__hint" data-i18n="bugReport.includeLogHint">Can contain folder and game names. You see everything on GitHub before sending.</span>
+            </span>
+            <span class="toggle-switch">
+              <input type="checkbox" id="bug-include-log">
+              <span class="toggle-switch__slider"></span>
+            </span>
+          </label>
+        </div>
+        <p id="bug-report-error" class="error-message hidden"></p>
+      </div>
+      <div class="modal__actions">
+        <button id="btn-bug-cancel" class="btn btn--outline" data-modal-cancel data-i18n="settings.cancel">Cancel</button>
+        <button id="btn-bug-open" class="btn btn--primary" data-i18n="bugReport.open">Open on GitHub</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="settings-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content settings-modal-content settings">
+      <header class="settings__header">
+        <h3 class="modal__title settings__title" id="settings-modal-title">
+          <svg class="modal__title-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+          <span data-i18n="settings.title">Settings</span>
+        </h3>
+        <label class="settings__search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="search" id="settings-search" autocomplete="off" data-i18n-attr="placeholder=settings.searchPlaceholder,aria-label=settings.searchPlaceholder">
+        </label>
+      </header>
+
+      <div class="settings__body">
+        <nav class="settings__nav" role="tablist" data-i18n-attr="aria-label=settings.title">
+          <button type="button" class="settings__tab is-active" role="tab" data-section="general" aria-selected="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+            <span data-i18n="settings.sectionGeneral">General</span>
+          </button>
+          <button type="button" class="settings__tab" role="tab" data-section="downloads" aria-selected="false">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span data-i18n="settings.sectionDownloads">Downloads</span>
+          </button>
+          <button type="button" class="settings__tab" role="tab" data-section="depots" aria-selected="false">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            <span data-i18n="settings.sectionDepots">Depot selection</span>
+          </button>
+          <button type="button" class="settings__tab" role="tab" data-section="sources" aria-selected="false">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            <span data-i18n="settings.sectionSources">Sources &amp; network</span>
+          </button>
+          <button type="button" class="settings__tab" role="tab" data-section="steam" aria-selected="false">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="15" y1="13" x2="15.01" y2="13"/><line x1="18" y1="11" x2="18.01" y2="11"/><rect x="2" y="6" width="20" height="12" rx="2"/></svg>
+            <span data-i18n="settings.sectionSteam">Steam</span>
+          </button>
+          <button type="button" class="settings__tab" role="tab" data-section="privacy" aria-selected="false">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span data-i18n="settings.sectionPrivacy">Privacy &amp; diagnostics</span>
+          </button>
+        </nav>
+
+        <div class="settings__panels">
+          <p id="settings-no-results" class="settings__empty hidden" data-i18n="settings.noResults">No setting matches your search.</p>
+
+          <section class="settings__panel is-active" data-section="general" role="tabpanel">
+            <h4 class="settings__panel-title" data-i18n="settings.sectionGeneral">General</h4>
+            <div class="settings-group">
+              <div class="settings-row settings-row--stack">
+                <div class="settings-row__text">
+                  <span class="settings-row__label" data-i18n="settings.language">Language</span>
+                  <span class="settings-row__hint" data-i18n="settings.languageHint">Switching the language requires restarting the app.</span>
+                </div>
+                <div id="settings-language-cards" class="language-cards"></div>
+              </div>
+              <label class="settings-row" for="auto-update-toggle">
+                <span class="settings-row__text">
+                  <span class="settings-row__label" data-i18n="settings.autoUpdate">Auto-Update</span>
+                  <span class="settings-row__hint" data-i18n="settings.autoUpdateHint">Checks GitHub for a new version at startup and offers to install it.</span>
+                </span>
+                <span class="toggle-switch">
+                  <input type="checkbox" id="auto-update-toggle" checked>
+                  <span class="toggle-switch__slider"></span>
+                </span>
+              </label>
+              <label class="settings-row" for="notification-sound-toggle">
+                <span class="settings-row__text">
+                  <span class="settings-row__label" data-i18n="settings.notificationSound">Notification Sound</span>
+                  <span class="settings-row__hint" data-i18n="settings.notificationSoundHint">Plays a sound when all downloads are finished.</span>
+                </span>
+                <span class="toggle-switch">
+                  <input type="checkbox" id="notification-sound-toggle" checked>
+                  <span class="toggle-switch__slider"></span>
+                </span>
+              </label>
+            </div>
+          </section>
+
+          <section class="settings__panel" data-section="downloads" role="tabpanel">
+            <h4 class="settings__panel-title" data-i18n="settings.sectionDownloads">Downloads</h4>
+            <div class="settings-group">
+              <label class="settings-row" for="native-downloader-toggle">
+                <span class="settings-row__text">
+                  <span class="settings-row__label" data-i18n="settings.nativeDownloaderToggle">Download directly from Steam (native, recommended)</span>
+                  <span class="settings-row__hint" id="native-downloader-hint" data-i18n="settings.nativeDownloaderHint">Loads manifests and files straight from Steam. Off uses the old DepotDownloaderMod engine.</span>
+                </span>
+                <span class="toggle-switch">
+                  <input type="checkbox" id="native-downloader-toggle" checked>
+                  <span class="toggle-switch__slider"></span>
+                </span>
+              </label>
+              <div class="settings-row settings-row--wrap">
+                <label class="settings-row__text" for="speed-limit-toggle">
+                  <span class="settings-row__label" data-i18n="settings.speedLimit">Speed Limit</span>
+                  <span class="settings-row__hint" data-i18n="settings.speedLimitHint">Also applies to a running download. 100 Mbit/s is about 12 MB/s.</span>
+                </label>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="speed-limit-toggle" data-i18n-attr="aria-label=settings.speedLimitToggle">
+                  <span class="toggle-switch__slider"></span>
+                </label>
+                <div id="speed-limit-controls" class="speed-limit settings-row__extra hidden">
+                  <div class="speed-limit__field">
+                    <input type="number" id="speed-limit-input" class="speed-limit__input" min="0" step="any" inputmode="decimal" data-i18n-attr="aria-label=settings.speedLimitValue">
+                    <div class="speed-limit__units" role="radiogroup" data-i18n-attr="aria-label=settings.speedLimitUnit">
+                      <button type="button" class="speed-limit__unit is-active" data-unit="MB/s" role="radio" aria-checked="true">MB/s</button>
+                      <button type="button" class="speed-limit__unit" data-unit="Mbit/s" role="radio" aria-checked="false">Mbit/s</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="settings-row settings-row--wrap">
+                <span class="settings-row__text">
+                  <span class="settings-row__label" data-i18n="settings.folderStyle">Game folder name</span>
+                  <span class="settings-row__hint" data-i18n="settings.folderStyleHint">For new downloads. Underscores or dashes leave nothing scripts and terminals need quotes for. Games already in the history keep their folder.</span>
+                </span>
+                <div id="folder-style-options" class="segmented" role="radiogroup" data-i18n-attr="aria-label=settings.folderStyle">
+                  <button type="button" class="segmented__option is-active" data-value="" role="radio" aria-checked="true">220 - Half-Life 2</button>
+                  <button type="button" class="segmented__option" data-value="underscore" role="radio" aria-checked="false">220_Half-Life_2</button>
+                  <button type="button" class="segmented__option" data-value="dash" role="radio" aria-checked="false">220-Half-Life-2</button>
+                </div>
+              </div>
+              <label class="settings-row" for="cancel-keep-files-toggle">
+                <span class="settings-row__text">
+                  <span class="settings-row__label" data-i18n="settings.cancelKeepFilesToggle">Keep downloaded files when cancelling</span>
+                  <span class="settings-row__hint" data-i18n="settings.cancelKeepFilesHint">A cancelled download can then be resumed where it stopped.</span>
+                </span>
+                <span class="toggle-switch">
+                  <input type="checkbox" id="cancel-keep-files-toggle">
+                  <span class="toggle-switch__slider"></span>
+                </span>
+              </label>
+            </div>
+            <h5 class="settings__group-title" data-i18n="settings.groupFineTuning">Fine tuning</h5>
+            <div class="settings-group">
+              <label class="settings-row" for="max-retries-input">
+                <span class="settings-row__text">
+                  <span class="settings-row__label" data-i18n="settings.maxRetries">Max Retries on Error</span>
+                  <span class="settings-row__hint" data-i18n="settings.maxRetriesHint">Extra attempts per depot when the connection drops.</span>
+                </span>
+                <input type="number" id="max-retries-input" class="dd-path__input settings-row__number" min="0" max="10" value="3">
+              </label>
+              <label class="settings-row" for="chunk-concurrency-input">
+                <span class="settings-row__text">
+                  <span class="settings-row__label" data-i18n="settings.chunkConcurrency">Max concurrent chunks (native engine)</span>
+                  <span class="settings-row__hint" data-i18n="settings.chunkConcurrencyHint">Raise it if downloads stay below your line speed, lower it if downloads make the system lag. Default: 16.</span>
+                </span>
+                <input type="number" id="chunk-concurrency-input" class="dd-path__input settings-row__number" min="1" max="64" value="16">
+              </label>
+              <div class="settings-row settings-row--stack" id="dd-extra-args-row">
+                <label class="settings-row__text" for="dd-extra-args-input">
+                  <span class="settings-row__label" data-i18n="settings.ddExtraArgs">DepotDownloader Extra Arguments</span>
+                  <span class="settings-row__hint" data-i18n="settings.ddExtraArgsHint">Only used by the DepotDownloaderMod engine.</span>
+                </label>
+                <input type="text" id="dd-extra-args-input" class="dd-path__input" placeholder="-max-downloads 8 -verify-all">
+              </div>
+            </div>
+          </section>
+
+          <section class="settings__panel" data-section="depots" role="tabpanel">
+            <h4 class="settings__panel-title" data-i18n="settings.sectionDepots">Depot selection</h4>
+            <div class="settings-group">
+              <label class="settings-row" for="auto-select-depots-toggle">
+                <span class="settings-row__text">
+                  <span class="settings-row__label" data-i18n="settings.autoSelectDepots">Like Steam: pick the depots and put them into one game folder</span>
+                  <span class="settings-row__hint" data-i18n="settings.autoSelectDepotsHint">Selects what Steam would install here and writes it into one game folder. Off: you pick the depots and each gets its own folder.</span>
+                </span>
+                <span class="toggle-switch">
+                  <input type="checkbox" id="auto-select-depots-toggle">
+                  <span class="toggle-switch__slider"></span>
+                </span>
+              </label>
+              <label class="settings-row" for="latest-manifests-toggle">
+                <span class="settings-row__text">
+                  <span class="settings-row__label" data-i18n="settings.latestManifests">Always the newest manifests</span>
+                  <span class="settings-row__hint" data-i18n="settings.latestManifestsHint">Every depot is set to its newest manifest from Steam, not the one the source has. Updates from the history always do this.</span>
+                </span>
+                <span class="toggle-switch">
+                  <input type="checkbox" id="latest-manifests-toggle">
+                  <span class="toggle-switch__slider"></span>
+                </span>
+              </label>
+            </div>
+            <div id="auto-select-options" class="auto-select-options">
+              <h5 class="settings__group-title" data-i18n="settings.groupLikeSteam">When picking like Steam</h5>
+              <div class="settings-group">
+                <label class="settings-row" for="auto-start-download-toggle">
+                  <span class="settings-row__text">
+                    <span class="settings-row__label" data-i18n="settings.autoStartDownload">Start the download right away</span>
+                    <span class="settings-row__hint" data-i18n="settings.autoStartDownloadHint">You only pick the game, the download starts 5 seconds later.</span>
+                  </span>
+                  <span class="toggle-switch">
+                    <input type="checkbox" id="auto-start-download-toggle">
+                    <span class="toggle-switch__slider"></span>
+                  </span>
+                </label>
+                <label class="settings-row" for="include-dlc-toggle">
+                  <span class="settings-row__text">
+                    <span class="settings-row__label" data-i18n="settings.includeDlc">Include DLC</span>
+                    <span class="settings-row__hint" data-i18n="settings.includeDlcHint">The emulator step marks the DLC as owned for gbe_fork.</span>
+                  </span>
+                  <span class="toggle-switch">
+                    <input type="checkbox" id="include-dlc-toggle" checked>
+                    <span class="toggle-switch__slider"></span>
+                  </span>
+                </label>
+                <div class="settings-row settings-row--wrap">
+                  <span class="settings-row__text">
+                    <span class="settings-row__label" data-i18n="settings.targetPlatform">Platform</span>
+                    <span class="settings-row__hint" data-i18n="settings.targetPlatformHint">Auto uses this system. Without a Linux build the Windows version is picked and runs with Proton.</span>
+                  </span>
+                  <div id="target-platform-options" class="segmented" role="group" data-i18n-attr="aria-label=settings.targetPlatform">
+                    <button type="button" class="segmented__option is-active" data-value="" aria-pressed="true" data-i18n="settings.auto">Auto</button>
+                    <button type="button" class="segmented__option" data-value="windows" aria-pressed="false">Windows</button>
+                    <button type="button" class="segmented__option" data-value="linux" aria-pressed="false">Linux</button>
+                    <button type="button" class="segmented__option" data-value="macos" aria-pressed="false">macOS</button>
+                  </div>
+                </div>
+                <div class="settings-row">
+                  <span class="settings-row__text">
+                    <span class="settings-row__label" data-i18n="settings.gameLanguage">Game language</span>
+                  </span>
+                  <div id="game-language" class="history-sort">
+                    <button type="button" id="game-language-button" class="history-sort__button" aria-haspopup="listbox" aria-expanded="false" data-i18n-attr="aria-label=settings.gameLanguage">
+                      <span id="game-language-label" class="history-sort__label"></span>
+                      <svg class="history-sort__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <ul id="game-language-menu" class="history-sort__menu history-sort__menu--scroll hidden" role="listbox" tabindex="-1" data-i18n-attr="aria-label=settings.gameLanguage"></ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="settings__panel" data-section="sources" role="tabpanel">
+            <h4 class="settings__panel-title" data-i18n="settings.sectionSources">Sources &amp; network</h4>
+            <div class="settings-group">
+              <div class="settings-row settings-row--stack">
+                <div class="settings-row__text">
+                  <span class="settings-row__label" data-i18n="settings.depotSources">Depot Sources</span>
+                  <span class="settings-row__hint" data-i18n-html="settings.depotSourcesHint">Folders in the <code>branches/&lt;appid&gt;/</code> layout with keys and manifests, asked in this order.</span>
+                </div>
+                <ul id="sources-list" class="sources-list"></ul>
+                <div class="sources-add-row">
+                  <input type="text" id="sources-add-input" class="dd-path__input" data-i18n-attr="placeholder=settings.depotSourcePlaceholder">
+                  <button type="button" id="btn-sources-add" class="btn btn--outline" data-i18n="settings.add">Add</button>
+                </div>
+                <p id="sources-add-error" class="error-message hidden"></p>
+              </div>
+              <div class="settings-row settings-row--stack">
+                <label class="settings-row__text" for="hubcap-apikey-input">
+                  <span class="settings-row__label" data-i18n="settings.hubcapApiKey">Hubcap API Key</span>
+                  <span class="settings-row__hint" data-i18n-html="settings.hubcapApiKeyHint">Adds Hubcap as a source when it has the game.</span>
+                </label>
+                <input type="text" id="hubcap-apikey-input" class="dd-path__input" data-i18n-attr="placeholder=settings.hubcapApiKeyPlaceholder" autocomplete="off">
+              </div>
+              <div class="settings-row settings-row--stack">
+                <label class="settings-row__text" for="ryuu-apikey-input">
+                  <span class="settings-row__label" data-i18n="settings.ryuuApiKey">Ryuu API Key</span>
+                  <span class="settings-row__hint" data-i18n-html="settings.ryuuApiKeyHint">Adds Ryuu as a source when it has the game.</span>
+                </label>
+                <input type="text" id="ryuu-apikey-input" class="dd-path__input" data-i18n-attr="placeholder=settings.ryuuApiKeyPlaceholder" autocomplete="off">
+              </div>
+            </div>
+            <h5 class="settings__group-title" data-i18n="settings.groupNetwork">Network</h5>
+            <div class="settings-group">
+              <div class="settings-row settings-row--stack">
+                <label class="settings-row__text" for="proxy-input">
+                  <span class="settings-row__label" data-i18n="settings.proxy">Proxy</span>
+                  <span class="settings-row__hint" data-i18n="settings.proxyHint">For every download and update. http://host:port or socks5://host:port, user:password@ if needed. Empty uses the system proxy.</span>
+                </label>
+                <div class="dd-path__input-wrap dd-path__input-wrap--with-btn">
+                  <input type="text" id="proxy-input" class="dd-path__input" data-i18n-attr="placeholder=settings.proxyPlaceholder">
+                  <button type="button" id="btn-proxy-test" class="btn btn--small btn--outline" data-i18n="settings.proxyTest">Test</button>
+                </div>
+                <p id="proxy-status" class="proxy-status hidden" role="status"></p>
+                <p id="proxy-error" class="error-message hidden"></p>
+              </div>
+              <div class="settings-row settings-row--stack">
+                <label class="settings-row__text" for="download-server-select">
+                  <span class="settings-row__label" data-i18n="settings.downloadServer">Download server</span>
+                  <span class="settings-row__hint" data-i18n="settings.downloadServerHint">Automatic picks the servers like the Steam client: the region Steam assigns your connection, the least busy server first. A region or your own server is tried first, Steam's servers stay as a fallback.</span>
+                </label>
+                <select id="download-server-select">
+                  <option value="auto" data-i18n="settings.downloadServerAuto">Automatic (like Steam)</option>
+                  <option value="custom" data-i18n="settings.downloadServerCustom">Own server…</option>
+                </select>
+                <div id="download-server-custom" class="hidden">
+                  <input type="text" id="download-server-input" class="dd-path__input" data-i18n-attr="placeholder=settings.downloadServerPlaceholder,aria-label=settings.downloadServerCustom" placeholder="lancache.lan or http://192.168.1.10">
+                  <p class="settings-row__hint" data-i18n="settings.downloadServerCustomHint">For example a LanCache in your network. Only used by the native engine.</p>
+                </div>
+                <p id="download-server-error" class="error-message hidden"></p>
+              </div>
+            </div>
+          </section>
+
+          <section class="settings__panel" data-section="steam" role="tabpanel">
+            <h4 class="settings__panel-title" data-i18n="settings.sectionSteam">Steam</h4>
+            <div class="settings-group">
+              <div class="settings-row settings-row--stack">
+                <label class="settings-row__text" for="steam-webapi-key-input">
+                  <span class="settings-row__label" data-i18n="settings.steamWebApiKey">Steam Web API key</span>
+                  <span class="settings-row__hint" data-i18n-html="settings.steamWebApiKeyHint">Optional. Get a free key at <a href="https://steamcommunity.com/dev/apikey" target="_blank" rel="noopener" class="link">steamcommunity.com/dev/apikey</a>. It stays on this PC and is only sent to Steam.</span>
+                </label>
+                <input type="password" id="steam-webapi-key-input" class="dd-path__input" autocomplete="off" spellcheck="false" data-i18n-attr="placeholder=settings.steamWebApiKeyPlaceholder">
+              </div>
+              <div class="settings-row settings-row--stack">
+                <label class="settings-row__text" for="steam-path-input">
+                  <span class="settings-row__label" data-i18n="settings.steamPath">Steam folder</span>
+                  <span class="settings-row__hint" data-i18n="settings.steamPathHint">Needed to add games to Steam and start them through it. Leave it empty to find Steam on its own.</span>
+                </label>
+                <div class="dd-path__input-wrap dd-path__input-wrap--with-btn">
+                  <input type="text" id="steam-path-input" class="dd-path__input" data-i18n-attr="placeholder=settings.steamPathPlaceholder" autocomplete="off">
+                  <button type="button" id="btn-steam-path-browse" class="btn btn--small btn--outline" data-i18n="shortcut.browse">Browse</button>
+                </div>
+                <p id="steam-path-status" class="proxy-status hidden" role="status"></p>
+              </div>
+            </div>
+            <h5 class="settings__group-title" data-i18n="account.title">Steam account</h5>
+            <div class="settings-group" id="account-group">
+              <div class="settings-row">
+                <span class="settings-row__text">
+                  <span class="settings-row__label" id="account-status" data-i18n="account.signedOut">Not signed in</span>
+                  <span class="settings-row__hint" id="account-detail" data-i18n="account.signedOutHint">Optional. Only needed for branches, playtests and depots of games you own or were invited to.</span>
+                  <span class="settings-row__hint" data-i18n="account.note">You sign in with the Steam app on your phone, so SMD never sees your password. Signing out also revokes the sign-in at Steam.</span>
+                </span>
+                <span class="account-actions">
+                  <button type="button" id="btn-account-login" class="btn btn--small btn--primary" data-i18n="account.signIn">Sign in with QR code</button>
+                  <button type="button" id="btn-account-logout" class="btn btn--small btn--outline hidden" data-i18n="account.signOut">Sign out</button>
+                </span>
+              </div>
+            </div>
+          </section>
+
+          <section class="settings__panel" data-section="privacy" role="tabpanel">
+            <h4 class="settings__panel-title" data-i18n="settings.sectionPrivacy">Privacy &amp; diagnostics</h4>
+            <div class="settings-group">
+              <label class="settings-row" for="telemetry-toggle">
+                <span class="settings-row__text">
+                  <span class="settings-row__label" data-i18n="settings.telemetry">Anonymous Usage Statistics</span>
+                  <span class="settings-row__hint" data-i18n-html="settings.telemetryHint">Encrypted, without game IDs, paths or account data. <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/blob/main/PRIVACY.md" target="_blank" rel="noopener">Privacy details</a>.</span>
+                </span>
+                <span class="toggle-switch">
+                  <input type="checkbox" id="telemetry-toggle">
+                  <span class="toggle-switch__slider"></span>
+                </span>
+              </label>
+              <label class="settings-row" for="remote-updates-toggle">
+                <span class="settings-row__text">
+                  <span class="settings-row__label" data-i18n="settings.remoteUpdates">Notes and links online</span>
+                  <span class="settings-row__hint" data-i18n="settings.remoteUpdatesHint">Loads a signed file with current links and notes from smd.mcbabel.de at start. Nothing is sent but the request itself. Off: the built-in values stay.</span>
+                </span>
+                <span class="toggle-switch">
+                  <input type="checkbox" id="remote-updates-toggle" checked="">
+                  <span class="toggle-switch__slider"></span>
+                </span>
+              </label>
+              <label class="settings-row" for="behavior-toggle" id="behavior-row">
+                <span class="settings-row__text">
+                  <span class="settings-row__label" data-i18n="settings.telemetryBehavior">Usage behaviour</span>
+                  <span class="settings-row__hint" data-i18n="settings.telemetryBehaviorHint">Which screens you open and what you click, so we see where the app gets stuck. Never what you type.</span>
+                </span>
+                <span class="toggle-switch">
+                  <input type="checkbox" id="behavior-toggle">
+                  <span class="toggle-switch__slider"></span>
+                </span>
+              </label>
+            </div>
+            <h5 class="settings__group-title" data-i18n="settings.debugInfo">Debug Info</h5>
+            <div class="settings-group">
+              <div class="settings-row settings-row--stack">
+                <div id="build-info" class="build-info">
+                  <div class="build-info__row">
+                    <span class="build-info__key" data-i18n="settings.debugInfoChannel">Channel</span>
+                    <span class="build-info__val"><span id="build-info-channel" class="build-info__badge">—</span></span>
+                  </div>
+                  <div class="build-info__row">
+                    <span class="build-info__key" data-i18n="settings.debugInfoVersion">Version</span>
+                    <span class="build-info__val" id="build-info-version">—</span>
+                  </div>
+                  <div class="build-info__row">
+                    <span class="build-info__key" data-i18n="settings.debugInfoCommit">Commit</span>
+                    <span class="build-info__val" id="build-info-sha">—</span>
+                  </div>
+                  <div class="build-info__row">
+                    <span class="build-info__key" data-i18n="settings.debugInfoBuildDate">Build date</span>
+                    <span class="build-info__val" id="build-info-date">—</span>
+                  </div>
+                  <div class="build-info__row">
+                    <span class="build-info__key" data-i18n="settings.debugInfoProfile">Profile</span>
+                    <span class="build-info__val" id="build-info-profile">—</span>
+                  </div>
+                  <div class="build-info__row">
+                    <span class="build-info__key" data-i18n="settings.debugInfoPlatform">Platform</span>
+                    <span class="build-info__val" id="build-info-platform">—</span>
+                  </div>
+                  <div class="build-info__row">
+                    <span class="build-info__key" data-i18n="settings.debugInfoDiagnosticId">Diagnostic ID</span>
+                    <span class="build-info__val" id="build-info-diagnostic">—</span>
+                  </div>
+                </div>
+                <div class="settings-row__actions">
+                  <button type="button" id="btn-copy-build-info" class="btn btn--outline btn--small" data-i18n="settings.copyDebugInfo">Copy diagnostic info</button>
+                  <button type="button" id="btn-settings-report-bug" class="btn btn--outline btn--small" data-i18n="bugReport.title">Report a bug</button>
+                  <span class="settings-row__hint" data-i18n="settings.debugInfoHint">Paste it into bug reports.</span>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <footer class="modal__actions settings__footer">
+        <span id="settings-dirty" class="settings__dirty hidden" data-i18n="settings.unsaved">Unsaved changes</span>
+        <button id="btn-settings-cancel" class="btn btn--outline" data-modal-cancel data-i18n="settings.cancel">Cancel</button>
+        <button id="btn-settings-save" class="btn btn--primary" data-i18n="settings.save">Save</button>
+      </footer>
+    </div>
+  </div>
+
+  <div id="whats-new-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="whats-new-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content update-modal-content">
+      <header class="update-modal__header">
+        <div class="update-modal__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3l1.9 5.8H20l-4.9 3.6 1.9 5.8L12 14.6l-4.9 3.6 1.9-5.8L4 8.8h6.1z"/>
+          </svg>
+        </div>
+        <div class="update-modal__heading">
+          <h3 class="update-modal__title" id="whats-new-title"></h3>
+          <div class="update-modal__meta">
+            <span id="whats-new-date" class="update-modal__date"></span>
+          </div>
+        </div>
+      </header>
+      <div class="update-modal__body">
+        <div id="whats-new-notes" class="update-modal__notes"></div>
+      </div>
+      <footer class="update-modal__actions">
+        <div class="update-modal__actions-left">
+          <button id="btn-whats-new-github" type="button" class="btn btn--small update-modal__skip" data-i18n="modals.update.onGithub">Open on GitHub</button>
+        </div>
+        <div class="update-modal__actions-right">
+          <button id="btn-whats-new-close" type="button" class="btn btn--primary" data-modal-cancel data-i18n="whatsNew.close">Got it</button>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <div id="update-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="update-modal-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content update-modal-content">
+      <header class="update-modal__header">
+        <div class="update-modal__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+        </div>
+        <div class="update-modal__heading">
+          <h3 class="update-modal__title" id="update-modal-title" data-i18n="modals.update.title">Update Available</h3>
+          <div class="update-modal__meta">
+            <span class="update-modal__versions">
+              <span id="update-current" class="update-modal__current"></span>
+              <span class="update-modal__arrow" aria-hidden="true">&rarr;</span>
+              <span id="update-version" class="update-modal__version"></span>
+            </span>
+            <span id="update-date-row" class="update-modal__date">
+              <span class="update-modal__dot" aria-hidden="true">&middot;</span>
+              <span id="update-date"></span>
+            </span>
+          </div>
+        </div>
+      </header>
+      <div class="update-modal__body">
+        <div id="update-notes" class="update-modal__notes"></div>
+      </div>
+      <div id="update-system-hint" class="update-modal__system-hint hidden">
+        <p id="update-system-text" data-i18n="modals.update.systemText">This build is installed by your package manager. Update with:</p>
+        <div id="update-system-cmd-list" class="update-system-cmd-list"></div>
+      </div>
+      <div id="update-progress-wrap" class="update-modal__progress hidden">
+        <div class="progress-bar">
+          <div id="update-progress-fill" class="progress-bar__fill" style="width: 0%"></div>
+        </div>
+        <p id="update-progress-text" class="update-modal__progress-text" data-i18n="modals.update.downloading">Downloading update...</p>
+      </div>
+      <footer id="update-actions" class="update-modal__actions">
+        <div class="update-modal__actions-left">
+          <button id="btn-update-skip" type="button" class="btn btn--small update-modal__skip" data-i18n="modals.update.skip">Skip This Version</button>
+          <button id="btn-update-notes-link" type="button" class="btn btn--small update-modal__skip hidden" data-i18n="modals.update.onGithub">Open on GitHub</button>
+        </div>
+        <div class="update-modal__actions-right">
+          <button id="btn-update-later" type="button" class="btn btn--outline" data-modal-cancel data-i18n="modals.update.later">Later</button>
+          <button id="btn-update-now" type="button" class="btn btn--primary" data-i18n="modals.update.now">Update Now</button>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <div id="language-picker" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="language-picker-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content language-picker-content">
+      <div class="modal__icon modal__icon--accent" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M2 12h20"/>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+        </svg>
+      </div>
+      <h3 class="modal__title" id="language-picker-title" data-i18n="languagePicker.title">Choose your language</h3>
+      <p class="modal__text" data-i18n="languagePicker.subtitle">You can change this anytime in Settings.</p>
+      <div id="language-picker-cards" class="language-cards"></div>
+    </div>
+  </div>
+
+  <div id="welcome-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="welcome-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content welcome-content">
+      <div class="modal__icon modal__icon--accent" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+      </div>
+      <h3 class="modal__title" id="welcome-title" data-i18n="welcome.title">Welcome to Steam Manifest Downloader</h3>
+      <p class="modal__text welcome__lead" data-i18n="welcome.lead">How do you want to start? You can switch at any time with the tabs in step 1.</p>
+      <div class="welcome__choices">
+        <button type="button" class="welcome__choice" data-choice="upload">
+          <span class="welcome__choice-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span>
+          <span class="welcome__choice-text">
+            <span class="welcome__choice-title" data-i18n="welcome.uploadTitle">I have a .lua or .st file</span>
+            <span class="welcome__choice-hint" data-i18n="welcome.uploadHint">Drop it in and pick the depots.</span>
+          </span>
+        </button>
+        <button type="button" class="welcome__choice" data-choice="search">
+          <span class="welcome__choice-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+          <span class="welcome__choice-text">
+            <span class="welcome__choice-title" data-i18n="welcome.searchTitle">Search for a game</span>
+            <span class="welcome__choice-hint" data-i18n="welcome.searchHint">By name or App ID, in the depot sources you have set up.</span>
+          </span>
+        </button>
+        <button type="button" class="welcome__choice" data-choice="patch">
+          <span class="welcome__choice-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span>
+          <span class="welcome__choice-text">
+            <span class="welcome__choice-title" data-i18n="welcome.patchTitle">The game is already on disk</span>
+            <span class="welcome__choice-hint" data-i18n="welcome.patchHint">Only run the emulator step on a folder.</span>
+          </span>
+        </button>
+      </div>
+      <div class="welcome__location">
+        <span class="welcome__location-label" data-i18n="welcome.location">Downloads go to</span>
+        <code id="welcome-location-path" class="welcome__location-path"></code>
+        <button type="button" id="btn-welcome-location" class="btn btn--small btn--outline" data-i18n="welcome.change">Change</button>
+      </div>
+      <div class="welcome__footer">
+        <a href="https://smd.mcbabel.de/documentation/" target="_blank" rel="noopener" class="link" data-i18n="welcome.docs">Read the guide</a>
+        <button type="button" id="btn-welcome-close" class="btn btn--small" data-modal-cancel data-i18n="welcome.later">Look around first</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="history-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="history-modal-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content history-modal-content">
+      <h3 class="modal__title" id="history-modal-title">
+        <svg class="modal__title-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <span data-i18n="modals.history.title">Download History</span>
+      </h3>
+      <div id="history-banner" class="history-banner hidden" role="alert"></div>
+      <div id="history-toolbar" class="history-toolbar hidden">
+        <div class="history-toolbar__row">
+          <input type="search" id="history-search" class="history-toolbar__search" autocomplete="off" spellcheck="false" data-i18n-attr="placeholder=history.searchPlaceholder,aria-label=history.searchPlaceholder">
+          <div id="history-sort" class="history-sort">
+            <button type="button" id="history-sort-button" class="history-sort__button" aria-haspopup="listbox" aria-expanded="false" data-i18n-attr="aria-label=history.sortLabel">
+              <span id="history-sort-label" class="history-sort__label"></span>
+              <svg class="history-sort__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <ul id="history-sort-menu" class="history-sort__menu hidden" role="listbox" tabindex="-1" data-i18n-attr="aria-label=history.sortLabel">
+              <li class="history-sort__option" role="option" data-value="newest" data-i18n="history.sortNewest">Newest first</li>
+              <li class="history-sort__option" role="option" data-value="oldest" data-i18n="history.sortOldest">Oldest first</li>
+              <li class="history-sort__option" role="option" data-value="name" data-i18n="history.sortName">Name A–Z</li>
+              <li class="history-sort__option" role="option" data-value="size" data-i18n="history.sortSize">Largest first</li>
+            </ul>
+          </div>
+        </div>
+        <div id="history-filters" class="history-toolbar__filters" role="radiogroup" data-i18n-attr="aria-label=history.filterLabel"></div>
+      </div>
+      <div id="history-list" class="history-list"></div>
+      <div class="modal__actions">
+        <button id="btn-history-clear" class="btn btn--outline btn--small btn--push-end" data-i18n="modals.history.clear">Clear All</button>
+        <button id="btn-history-close" class="btn btn--primary" data-modal-cancel data-i18n="modals.history.close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="resume-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="resume-modal-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content">
+      <div class="modal__icon modal__icon--accent" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="6 3 20 12 6 21 6 3"/>
+        </svg>
+      </div>
+      <h3 class="modal__title" id="resume-modal-title" data-i18n="modals.resume.title">Resume Download</h3>
+      <p class="modal__text" data-i18n="modals.resume.body">Resume continues where the download stopped and only checks the last pieces before that point. Check Everything reads all files that were already downloaded and compares them, which can take several minutes for large games.</p>
+      <div class="modal__actions modal__actions--stack">
+        <button id="btn-resume-cancel" class="btn btn--outline" data-modal-cancel data-i18n="common.cancel">Cancel</button>
+        <button id="btn-resume-verify" class="btn btn--outline" data-i18n="modals.resume.verify">Check Everything</button>
+        <button id="btn-resume-fast" class="btn btn--primary" data-i18n="modals.resume.fast">Resume</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="launch-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="launch-modal-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content launch-modal-content">
+      <h3 class="modal__title" id="launch-modal-title" data-i18n="modals.launch.title">Which file starts the game?</h3>
+      <p class="modal__text" data-i18n="modals.launch.body">Pick the program file of the game. SMD remembers it for the next start.</p>
+      <div id="launch-list" class="launch-list" role="radiogroup"></div>
+      <div class="modal__actions">
+        <button id="btn-launch-cancel" class="btn btn--outline" data-modal-cancel data-i18n="common.cancel">Cancel</button>
+        <button id="btn-launch-start" class="btn btn--primary" data-i18n="modals.launch.start">Play</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="queue-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="queue-modal-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content queue-modal-content">
+      <h3 class="modal__title" id="queue-modal-title" data-i18n="queue.title">Download Queue</h3>
+      <p class="modal__text" data-i18n="queue.body">Queued downloads run one after another. If "Shut down the PC" is on, the PC shuts down after the last one.</p>
+      <div id="queue-running" class="queue-running hidden" role="status"></div>
+      <div id="queue-list" class="queue-list"></div>
+      <div class="modal__actions">
+        <button id="btn-queue-clear" class="btn btn--outline btn--small btn--push-end" data-i18n="queue.clear">Clear</button>
+        <button id="btn-queue-close" class="btn btn--outline" data-modal-cancel data-i18n="common.close">Close</button>
+        <button id="btn-queue-start" class="btn btn--primary" data-i18n="queue.start">Start Queue</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="confirm-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content">
+      <div class="modal__icon modal__icon--warning" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+      <h3 class="modal__title" id="confirm-modal-title"></h3>
+      <p class="modal__text" id="confirm-modal-body"></p>
+      <div class="modal__actions">
+        <button id="btn-confirm-no" class="btn btn--outline" data-modal-cancel></button>
+        <button id="btn-confirm-yes" class="btn btn--primary"></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="app-toast" class="app-toast hidden" role="status" aria-live="polite"></div>
+</div>
+  <div id="account-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="account-modal-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content account-modal">
+      <h3 class="modal__title" id="account-modal-title" data-i18n="account.qrTitle">Sign in with the Steam app</h3>
+      <p class="modal__text" data-i18n="account.qrIntro">Open the Steam app on your phone, tap the shield (Steam Guard) and scan the code.</p>
+      <div id="account-qr" class="account-qr account-qr--empty" aria-label="QR code"></div>
+      <p id="account-modal-status" class="account-modal__status" role="status"></p>
+      <p class="settings-row__hint" data-i18n="account.qrNote">SMD never sees your password. Your account only unlocks what Steam grants it: branches, playtests and depots of games you own or were invited to.</p>
+      <div class="modal__actions">
+        <button id="btn-account-cancel" class="btn btn--outline" data-i18n="settings.cancel">Cancel</button>
+        <button id="btn-account-retry" class="btn btn--primary hidden" data-i18n="account.qrRetry">New code</button>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

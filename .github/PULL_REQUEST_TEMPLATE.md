@@ -33,7 +33,7 @@ clip where useful.
 -->
 
 - [ ] `cargo check` / `cargo build` passes locally
-- [ ] Tested in `cargo tauri dev`
+- [ ] Tested with `cargo run -p smd-gui`
 - [ ] Tested on Windows
 - [ ] Tested on Linux
 
@@ -42,6 +42,6 @@ clip where useful.
 - [ ] PR targets `dev`
 - [ ] Commits follow Conventional Commits (`type: subject`)
 - [ ] No unrelated changes mixed in
-- [ ] Frontend changes keep existing values HTML-escaped where interpolated
-- [ ] No new `println!` / `console.log` debug noise left behind
+- [ ] Values put into markup strings are escaped with `escape_html`
+- [ ] No new `println!` debug noise left behind
 - [ ] I agree to contribute my changes under the project's **GPL-2.0** license

@@ -29,7 +29,7 @@ jobs:
         run: |
           git fetch --no-tags origin "$BASE_REF"
           if git diff --name-only "origin/$BASE_REF...HEAD" \
-            | grep -qE '^(src-tauri|src-core|src-tui|public|assets|tools|\.github/workflows|\.github/actions)/|^Cargo\.(toml|lock)$'; then
+            | grep -qE '^(src-gui|src-core|src-tui|locales|assets|tools|packaging|\.github/workflows|\.github/actions)/|^Cargo\.(toml|lock)$'; then
             echo "code=true" >> "$GITHUB_OUTPUT"
           else
             echo "code=false" >> "$GITHUB_OUTPUT"
@@ -47,16 +47,8 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: |
-            src-tauri
-            .
 
       - name: Run tests
-        working-directory: src-tauri
-        run: cargo test --bin steam-manifest-downloader
-
-      - name: Run core and terminal app tests
         run: cargo test --workspace --locked
 
   build-windows:
@@ -69,11 +61,6 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: src-tauri
-
-      - name: Install Tauri CLI
-        run: cargo install cargo-binstall --locked && cargo binstall tauri-cli --version "^2.0" -y
 
       - name: Build
         env:
@@ -82,21 +69,21 @@ jobs:
         shell: bash
         run: |
           export SMD_BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-          cargo tauri build
+          cargo build --release --locked -p smd-gui
 
       - name: Rename artifact
         shell: bash
         run: |
-          VERSION=$(grep -oP '"version":\s*"\K[^"]+' src-tauri/tauri.conf.json)
+          VERSION=$(bash packaging/version.sh)
           SHA=$(echo "${{ github.event.pull_request.head.sha }}" | cut -c1-7)
-          mv src-tauri/target/release/steam-manifest-downloader.exe \
-             "src-tauri/target/release/Steam-Manifest-Downloader_${VERSION}-pr${{ github.event.pull_request.number }}-${SHA}_portable.exe"
+          mv target/release/steam-manifest-downloader.exe \
+             "target/release/Steam-Manifest-Downloader_${VERSION}-pr${{ github.event.pull_request.number }}-${SHA}_portable.exe"
 
       - name: Upload portable EXE
         uses: actions/upload-artifact@v7
         with:
           name: windows-portable-pr${{ github.event.pull_request.number }}
-          path: src-tauri/target/release/Steam-Manifest-Downloader_*_portable.exe
+          path: target/release/Steam-Manifest-Downloader_*_portable.exe
 
   build-linux:
     needs: test
@@ -109,7 +96,7 @@ jobs:
       - name: AppImage name
         id: name
         run: |
-          VERSION=$(grep -oP '"version":\s*"\K[^"]+' src-tauri/tauri.conf.json)
+          VERSION=$(bash packaging/version.sh)
           SHA=$(echo "${{ github.event.pull_request.head.sha }}" | cut -c1-7)
           echo "file=Steam Manifest Downloader_${VERSION}-pr${{ github.event.pull_request.number }}-${SHA}_amd64.AppImage" >> "$GITHUB_OUTPUT"
 

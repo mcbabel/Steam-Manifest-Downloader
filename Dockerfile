@@ -3,8 +3,8 @@ WORKDIR /src
 COPY Cargo.toml Cargo.lock ./
 COPY src-core src-core
 COPY src-tui src-tui
-COPY src-tauri/tauri.conf.json src-tauri/tauri.conf.json
-COPY public/locales public/locales
+COPY src-gui src-gui
+COPY locales locales
 ARG SMD_BUILD_CHANNEL=source
 ARG SMD_GIT_SHA=
 RUN SMD_BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) cargo build --release --locked -p smd-tui \

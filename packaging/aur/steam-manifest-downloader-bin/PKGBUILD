@@ -3,15 +3,20 @@ pkgname=steam-manifest-downloader-bin
 _pkgname=steam-manifest-downloader
 pkgver=1.5.0
 pkgrel=1
-pkgdesc="Download Steam game depots and manifests via a modern Tauri GUI (precompiled)"
+pkgdesc="Download Steam game depots and manifests with a native desktop app (precompiled)"
 arch=('x86_64')
 url="https://github.com/MCbabel/Steam-Manifest-Downloader"
 license=('GPL-2.0-or-later')
 depends=(
-  'webkit2gtk-4.1'
-  'gtk3'
-  'libayatana-appindicator'
-  'openssl'
+  'gcc-libs'
+  'glibc'
+  'libxkbcommon'
+  'hicolor-icon-theme'
+)
+optdepends=(
+  'vulkan-driver: hardware accelerated rendering'
+  'xdg-desktop-portal: file and folder dialogs'
+  'zenity: file and folder dialogs without a desktop portal'
 )
 provides=("${_pkgname}=${pkgver}")
 conflicts=("${_pkgname}")

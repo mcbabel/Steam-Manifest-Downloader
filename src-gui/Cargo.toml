@@ -1,0 +1,80 @@
+[package]
+name = "smd-gui"
+version = "1.5.0"
+edition = "2021"
+license = "GPL-2.0-or-later"
+description = "Steam Manifest Downloader, native desktop interface"
+authors = ["MCbabel"]
+build = "build.rs"
+
+[[bin]]
+name = "steam-manifest-downloader"
+path = "src/main.rs"
+
+[features]
+default = ["default-sources"]
+default-sources = ["smd-core/default-sources"]
+
+[dependencies]
+smd-core = { path = "../src-core", default-features = false }
+eframe = { version = "0.37", default-features = false, features = ["accesskit", "clipboard", "links", "system_fonts", "wayland", "x11", "wgpu"] }
+egui = { version = "0.37", default-features = false, features = ["monochrome_emoji_fonts"] }
+egui_extras = { version = "0.37", default-features = false, features = ["svg", "image"] }
+egui_taffy = { path = "vendor/egui_taffy" }
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+reqwest = { version = "0.12", features = ["json", "rustls-tls", "rustls-tls-native-roots", "socks"], default-features = false }
+hex = "0.4"
+sys-locale = "0.3"
+fontique = "0.11"
+open = "5"
+dirs = "7"
+regex = "1"
+chrono = "0.4"
+rfd = { version = "0.15", default-features = false, features = ["xdg-portal", "tokio"] }
+
+notify-rust = { version = "4", default-features = false, features = ["z"] }
+raw-window-handle = "0.6"
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+rusqlite = { version = "0.41", features = ["bundled"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+zbus = { version = "5", default-features = false, features = ["tokio"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+rusty-leveldb = "4"
+windows = { version = "0.62", features = ["Win32_Foundation", "Win32_System_Com", "Win32_UI_Shell", "Win32_Media_Audio"] }
+
+[dev-dependencies]
+rusty-leveldb = "4"
+
+[build-dependencies]
+winresource = "0.1"
+
+[package.metadata.packager]
+product-name = "Steam Manifest Downloader"
+identifier = "com.steammanifestdownloader.desktop"
+publisher = "steammanifestdownloader"
+description = "Download Steam game depots and manifests"
+homepage = "https://github.com/MCbabel/Steam-Manifest-Downloader"
+category = "Utility"
+icons = ["assets/icons/icon.png", "assets/icons/icon.ico", "assets/icons/icon.icns"]
+out-dir = "../target/packages"
+
+[[package.metadata.packager.binaries]]
+path = "steam-manifest-downloader"
+main = true
+
+[package.metadata.packager.nsis]
+installer-mode = "currentUser"
+installer-icon = "assets/icons/icon.ico"
+languages = ["English", "German"]
+appdata-paths = ["$APPDATA/$IDENTIFIER", "$LOCALAPPDATA/$IDENTIFIER"]
+
+[package.metadata.packager.macos]
+minimum-system-version = "11.0"
+signing-identity = "-"

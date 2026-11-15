@@ -42,8 +42,7 @@ Tips if something does not work
   -> Virus & threat protection -> Protection history". This can need
   administrator rights. If you are not allowed to change the antivirus on
   this PC, the emulator cannot be used here.
-- Microsoft's WebView2 runtime is normally already installed on Windows 10
-  and 11. If the app does not start at all, it is probably missing. Help and
+- If the app does not start at all, update the graphics driver. Help and
   bug reports: https://github.com/mcbabel/Steam-Manifest-Downloader/issues
 
 Licenses of the included programs: see THIRD-PARTY-NOTICES.txt

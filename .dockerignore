@@ -3,8 +3,8 @@
 !Cargo.lock
 !src-core
 !src-tui
-!src-tauri/tauri.conf.json
-!public/locales
+!src-gui
+!locales
 !smd
 src-core/target
 src-tui/target

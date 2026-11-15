@@ -2,10 +2,10 @@
 Type=Application
 Name=Steam Manifest Downloader
 GenericName=Steam Depot Downloader
-Comment=Download Steam game depots and manifests via a modern Tauri GUI
+Comment=Download Steam game depots and manifests
 Exec=steam-manifest-downloader
 Icon=de.mcbabel.SteamManifestDownloader
 Terminal=false
 Categories=Utility;Game;
-StartupWMClass=steam-manifest-downloader
-Keywords=steam;depot;manifest;tauri;
+StartupWMClass=de.mcbabel.SteamManifestDownloader
+Keywords=steam;depot;manifest;

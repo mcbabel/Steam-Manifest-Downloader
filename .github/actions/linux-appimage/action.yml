@@ -1,5 +1,5 @@
 name: Linux AppImage
-description: Builds the desktop app as an AppImage that brings WebKitGTK and the libraries it needs
+description: Builds the desktop app as an AppImage
 
 inputs:
   channel:
@@ -19,22 +19,25 @@ runs:
     - name: Install build dependencies
       shell: bash
       run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev \
-          gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
-          patchelf file
+        if command -v file >/dev/null && command -v desktop-file-validate >/dev/null; then
+          exit 0
+        fi
+        if sudo timeout 120 apt-get update && sudo timeout 120 apt-get install -y file desktop-file-utils; then
+          exit 0
+        fi
+        command -v file >/dev/null
+        echo "::warning::desktop-file-utils could not be installed, the desktop file is not validated"
 
     - uses: dtolnay/rust-toolchain@stable
 
     - uses: Swatinem/rust-cache@v2
       with:
-        workspaces: src-tauri
         key: appimage
 
-    - name: Install Tauri CLI
-      shell: bash
-      run: cargo install cargo-binstall --locked && cargo binstall tauri-cli --version "^2.0" -y
+    - name: Install cargo-packager
+      uses: taiki-e/cache-cargo-install-action@v2
+      with:
+        tool: cargo-packager@0.11.8
 
     - name: Build AppImage
       id: build
@@ -47,15 +50,16 @@ runs:
         OUTPUT: ${{ inputs.output }}
       run: |
         export SMD_BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-        cargo tauri build --bundles appimage
-        BUILT=$(ls src-tauri/target/release/bundle/appimage/*.AppImage)
+        cargo build --release --locked -p smd-gui
+        cargo packager --release -p smd-gui --formats appimage
+        BUILT=$(ls target/packages/*.AppImage)
         NAME="$OUTPUT"
-        [ -n "$NAME" ] || NAME=$(basename "$BUILT")
+        [ -n "$NAME" ] || NAME="Steam Manifest Downloader_$(bash packaging/version.sh)_amd64.AppImage"
         mv "$BUILT" "$NAME"
         ls -la "$NAME"
         echo "file=$NAME" >> "$GITHUB_OUTPUT"
 
-    - name: Check that WebKitGTK is inside
+    - name: Check the AppImage
       shell: bash
       env:
         FILE: ${{ steps.build.outputs.file }}
@@ -63,5 +67,6 @@ runs:
         chmod +x "$FILE"
         rm -rf squashfs-root
         "./$FILE" --appimage-extract >/dev/null
-        ls squashfs-root/usr/lib/libwebkit2gtk-4.1.so.0 squashfs-root/usr/lib/libjavascriptcoregtk-4.1.so.0
+        test -x squashfs-root/usr/bin/steam-manifest-downloader
+        ls squashfs-root/*.desktop
         rm -rf squashfs-root

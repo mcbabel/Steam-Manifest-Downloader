@@ -7,7 +7,7 @@
 <meta name="description" content="Install, use, configure and build Steam Manifest Downloader 1.5.0. System requirements, the five step pipeline, updates, file formats, settings, depot sources, the terminal version and Docker, build instructions and troubleshooting.">
 <meta name="theme-color" content="#06060A">
 <meta property="og:title" content="Documentation, Steam Manifest Downloader">
-<meta property="og:description" content="Install, use, configure and build Steam Manifest Downloader 1.5.0. Desktop app for Windows 10 and 11, Linux and macOS (beta), terminal version and Docker image. Built with Rust and Tauri v2.">
+<meta property="og:description" content="Install, use, configure and build Steam Manifest Downloader 1.5.0. Desktop app for Windows 10 and 11, Linux and macOS (beta), terminal version and Docker image. Written in Rust.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://smd.mcbabel.de/documentation/">
 <meta name="twitter:card" content="summary">
@@ -90,7 +90,7 @@
 
       <ul class="hero__meta">
         <li>Windows 10, 11, Linux and macOS (beta)</li>
-        <li>Rust and Tauri v2</li>
+        <li>Written in Rust</li>
         <li>GPL-2.0</li>
         <li>Nine sections</li>
       </ul>
@@ -162,7 +162,7 @@
             <li><a href="#building-from-source">Building from source</a></li>
             <li class="sub"><a href="#build-prerequisites">Prerequisites</a></li>
             <li class="sub"><a href="#build-ddm">Building DepotDownloaderMod</a></li>
-            <li class="sub"><a href="#build-tauri">Building the Tauri app</a></li>
+            <li class="sub"><a href="#build-app">Building the desktop app</a></li>
             <li class="sub"><a href="#build-terminal">Building the terminal version</a></li>
             <li class="sub"><a href="#build-project-structure">Project structure</a></li>
           </ul>
@@ -322,7 +322,7 @@
                 <ul class="docnav__subs">
                   <li><a href="#build-prerequisites">Prerequisites</a></li>
                   <li><a href="#build-ddm">Step 1: building DepotDownloaderMod</a></li>
-                  <li><a href="#build-tauri">Step 2: building the Tauri app</a></li>
+                  <li><a href="#build-app">Step 2: building the desktop app</a></li>
                   <li><a href="#build-terminal">Step 3: building the terminal version</a></li>
                   <li><a href="#build-project-structure">Step 4: project structure</a></li>
                 </ul>
@@ -355,7 +355,7 @@
               <span class="chip chip--key">three parts</span>
             </div>
             <h2 id="h-start" class="h2-paper">Getting started <a class="alink" href="#getting-started" aria-label="Permalink to Getting started">#</a></h2>
-            <p class="lead-paper">Steam Manifest Downloader (SMD) is a Tauri v2 desktop application built with Rust and a WebView front end, with a terminal version for servers, scripts and Docker.</p>
+            <p class="lead-paper">Steam Manifest Downloader (SMD) is a desktop application written in Rust, with a native interface and no web view, and a terminal version for servers, scripts and Docker.</p>
             <nav class="qidx" aria-label="Inside Getting started">
               <p class="qidx__lab">In this section</p>
               <ul class="qidx__list">
@@ -388,11 +388,11 @@
                 </li>
                 <li>
                   <span class="rows__k">windows</span>
-                  <span class="rows__v">Windows 10 version 1803 or later, with WebView2. Windows 11 is supported as well.</span>
+                  <span class="rows__v">Windows 10 or Windows 11, 64-bit. Nothing else has to be installed.</span>
                 </li>
                 <li>
                   <span class="rows__k">linux</span>
-                  <span class="rows__v">Ubuntu 22.04, Debian 12 or newer, or a comparable distribution. The AppImage brings WebKitGTK along and needs FUSE support, or <code>APPIMAGE_EXTRACT_AND_RUN=1</code>. The AUR packages use WebKitGTK from the system</span>
+                  <span class="rows__v">Ubuntu 22.04, Debian 12 or newer, or a comparable distribution. The AppImage needs FUSE support, or <code>APPIMAGE_EXTRACT_AND_RUN=1</code>. The app uses the graphics driver and X11 or Wayland of your desktop</span>
                 </li>
                 <li>
                   <span class="rows__k">terminal</span>
@@ -443,7 +443,7 @@ paru -S steam-manifest-downloader</code></pre>
               <p>Updates come through your package manager, and the in-app updater points you there instead of fetching an AppImage.</p>
 
               <h4 id="linux-appimage">Linux, AppImage <a class="alink" href="#linux-appimage" aria-label="Permalink to Linux, AppImage">#</a></h4>
-              <p>The AppImage brings WebKitGTK and the other libraries it needs, so nothing has to be installed. It runs on distributions from Ubuntu 22.04 and Debian 12 on.</p>
+              <p>The AppImage is a single native program, so nothing has to be installed. It runs on distributions from Ubuntu 22.04 and Debian 12 on.</p>
               <ol>
                 <li>Download the latest <code>.AppImage</code> file from the <a href="https://github.com/MCbabel/Steam-Manifest-Downloader/releases">releases page</a></li>
                 <li>Make it executable, then run it</li>
@@ -916,7 +916,7 @@ setManifestid(1392863, "4398981003384795747", 13789896785)</code></pre>
             </nav>
 
             <div class="prose">
-              <p>Emulator specific settings live in step 5, see <a href="#step-emulator">Step 5: emulator</a>, and are remembered in <code>localStorage</code>.</p>
+              <p>Emulator specific settings live in step 5, see <a href="#step-emulator">Step 5: emulator</a>, and are remembered in <code>gui-state.json</code> in the app data directory.</p>
 
               <h3 id="settings-top">Categories <a class="alink" href="#settings-top" aria-label="Permalink to Categories">#</a></h3>
               <ul>
@@ -1008,7 +1008,7 @@ setManifestid(1392863, "4398981003384795747", 13789896785)</code></pre>
               <p>If you have a <a href="https://manifesthub2.filegear-sg.me/">ManifestHub</a> API key, paste it here. With the native engine it acts as the last fallback, used only when neither Steam directly nor your configured depot sources can supply a manifest. It is also required if you enter a <strong>custom manifest ID</strong> by hand.</p>
 
               <h3 id="settings-emulator">Emulator settings persistence <a class="alink" href="#settings-emulator" aria-label="Permalink to Emulator settings persistence">#</a></h3>
-              <p>The 39 emulator options in step 5, such as display name, language, offline mode and the overlay tweaks, are not stored in the global settings file. Instead they are saved to the browser's <code>localStorage</code> after each successful Apply and pre-filled the next time you reach step 5. Settings opened via history, in edit mode, read live from the game's <code>steam_settings/</code> INI files instead.</p>
+              <p>The 39 emulator options in step 5, such as display name, language, offline mode and the overlay tweaks, are not stored in the global settings file. Instead they are saved to <code>gui-state.json</code> in the app data directory after each successful Apply and pre-filled the next time you reach step 5. Settings opened via history, in edit mode, read live from the game's <code>steam_settings/</code> INI files instead.</p>
             </div>
           </div>
         </section>
@@ -1068,7 +1068,7 @@ setManifestid(1392863, "4398981003384795747", 13789896785)</code></pre>
               <span class="chip chip--key">one binary</span>
             </div>
             <h2 id="h-terminal" class="h2-paper">Terminal version and Docker <a class="alink" href="#terminal" aria-label="Permalink to Terminal version and Docker">#</a></h2>
-            <p class="lead-paper"><code>smd</code> is a single binary that brings the whole app into the terminal, with no WebView and no installer. Run it without arguments for the interactive interface, or use its commands on a server, in Docker or in scripts.</p>
+            <p class="lead-paper"><code>smd</code> is a single binary that brings the whole app into the terminal, with no window and no installer. Run it without arguments for the interactive interface, or use its commands on a server, in Docker or in scripts.</p>
             <nav class="qidx" aria-label="Inside Terminal version and Docker">
               <p class="qidx__lab">In this section</p>
               <ul class="qidx__list">
@@ -1210,13 +1210,13 @@ smd logout                          <span class="cm"># sign out and revoke the s
               <span class="chip chip--key">four steps</span>
             </div>
             <h2 id="h-build" class="h2-paper">Building from source <a class="alink" href="#building-from-source" aria-label="Permalink to Building from source">#</a></h2>
-            <p class="lead-paper">This guide covers how to compile Steam Manifest Downloader from source. The project uses Tauri v2 with a Rust backend and an embedded .NET tool, DepotDownloaderMod.</p>
+            <p class="lead-paper">This guide covers how to compile Steam Manifest Downloader from source. The project is written in Rust and embeds one .NET tool, DepotDownloaderMod, as an optional download engine.</p>
             <nav class="qidx" aria-label="Inside Building from source">
               <p class="qidx__lab">In this section</p>
               <ul class="qidx__list">
                 <li><a href="#build-prerequisites">Prerequisites</a></li>
                 <li><a href="#build-ddm">Step 1: building DepotDownloaderMod</a></li>
-                <li><a href="#build-tauri">Step 2: building the Tauri app</a></li>
+                <li><a href="#build-app">Step 2: building the desktop app</a></li>
                 <li><a href="#build-terminal">Step 3: building the terminal version</a></li>
                 <li><a href="#build-project-structure">Step 4: project structure</a></li>
               </ul>
@@ -1226,31 +1226,19 @@ smd logout                          <span class="cm"># sign out and revoke the s
               <h3 id="build-prerequisites">Prerequisites <a class="alink" href="#build-prerequisites" aria-label="Permalink to Prerequisites">#</a></h3>
               <ul>
                 <li><strong>Rust</strong>, latest stable, and <strong>Cargo</strong>. <a href="https://rustup.rs/">Install via rustup</a></li>
-                <li><strong>Tauri CLI</strong>, installed via Cargo</li>
+                <li><strong>cargo-packager</strong>, only if you want an installer, an AppImage or a DMG</li>
               </ul>
               <div class="snip">
                 <div class="snip__bar">
                   <p class="snip__lang">bash</p>
-                  <button class="copy" type="button" aria-label="Copy the command that installs the Tauri CLI"><span class="copy__label">Copy</span></button>
+                  <button class="copy" type="button" aria-label="Copy the command that installs cargo-packager"><span class="copy__label">Copy</span></button>
                 </div>
-                <pre tabindex="0"><code>cargo install tauri-cli</code></pre>
+                <pre tabindex="0"><code>cargo install cargo-packager --locked</code></pre>
               </div>
               <ul>
-                <li><strong>.NET 9.0 Desktop Runtime</strong>, required to run the embedded DepotDownloaderMod. <a href="https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.16-windows-x64-installer">Download the .NET 9.0 Desktop Runtime</a></li>
+                <li><strong>.NET 9.0 Desktop Runtime</strong>, only needed to run the optional DepotDownloaderMod engine on Windows. <a href="https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.16-windows-x64-installer">Download the .NET 9.0 Desktop Runtime</a></li>
               </ul>
-
-              <h4 id="linux-additional-dependencies">Linux additional dependencies <a class="alink" href="#linux-additional-dependencies" aria-label="Permalink to Linux additional dependencies">#</a></h4>
-              <div class="snip">
-                <div class="snip__bar">
-                  <p class="snip__lang">bash</p>
-                  <button class="copy" type="button" aria-label="Copy the Linux build dependency commands for Debian, Ubuntu, Arch and CachyOS"><span class="copy__label">Copy</span></button>
-                </div>
-                <pre tabindex="0"><code><span class="cm"># Debian/Ubuntu</span>
-sudo apt install libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf gstreamer1.0-plugins-base gstreamer1.0-plugins-good
-
-<span class="cm"># Arch/CachyOS</span>
-sudo pacman -S webkit2gtk-4.1 libappindicator-gtk3 librsvg patchelf gst-plugins-base gst-plugins-good</code></pre>
-              </div>
+              <p>Linux needs no extra development packages beyond a C compiler (<code>build-essential</code> on Debian and Ubuntu, <code>base-devel</code> on Arch).</p>
 
               <h3 id="build-ddm">Step 1: building DepotDownloaderMod, optional <a class="alink" href="#build-ddm" aria-label="Permalink to Step 1: building DepotDownloaderMod, optional">#</a></h3>
               <p>The project embeds DepotDownloaderMod binaries at compile time. <strong>Pre-built versions are already included</strong> in the repository, so this step is only needed if you want to build them yourself.</p>
@@ -1301,40 +1289,39 @@ dotnet publish -c Release -r linux-x64 --self-contained true \
               </div>
               <p>Then copy <code>publish-linux/DepotDownloaderMod</code> to <code>src-core/vendor/ddm-linux/DepotDownloaderMod</code> in the project.</p>
 
-              <h3 id="build-tauri">Step 2: building the Tauri app <a class="alink" href="#build-tauri" aria-label="Permalink to Step 2: building the Tauri app">#</a></h3>
-
-              <h4 id="build-tauri-windows">Windows <a class="alink" href="#build-tauri-windows" aria-label="Permalink to Windows">#</a></h4>
+              <h3 id="build-app">Step 2: building the desktop app <a class="alink" href="#build-app" aria-label="Permalink to Step 2: building the desktop app">#</a></h3>
+              <p>The desktop app is the crate <code>src-gui</code>. It is written in Rust from the window down to the last button, there is no web view.</p>
               <div class="snip">
                 <div class="snip__bar">
                   <p class="snip__lang">bash</p>
-                  <button class="copy" type="button" aria-label="Copy the Windows Tauri build command"><span class="copy__label">Copy</span></button>
+                  <button class="copy" type="button" aria-label="Copy the command that builds the desktop app"><span class="copy__label">Copy</span></button>
                 </div>
-                <pre tabindex="0"><code>cargo tauri build</code></pre>
+                <pre tabindex="0"><code>cargo build --release -p smd-gui</code></pre>
               </div>
-              <p>Output locations:</p>
-              <ul class="rows">
-                <li>
-                  <span class="rows__k">nsis</span>
-                  <span class="rows__v">The installer lands in <code>src-tauri/target/release/bundle/nsis/</code></span>
-                </li>
-                <li>
-                  <span class="rows__k">portable</span>
-                  <span class="rows__v">The portable executable is <code>src-tauri/target/release/steam-manifest-downloader.exe</code></span>
-                </li>
-              </ul>
+              <p>Output: <code>target/release/steam-manifest-downloader</code>, or <code>steam-manifest-downloader.exe</code> on Windows. This file is the whole app and runs on its own. While developing, <code>cargo run -p smd-gui</code> is enough.</p>
 
-              <h4 id="linux-arch-cachyos-and-similar">Linux, Arch, CachyOS and similar <a class="alink" href="#linux-arch-cachyos-and-similar" aria-label="Permalink to Linux, Arch, CachyOS and similar">#</a></h4>
+              <h4 id="build-app-windows">Windows installer <a class="alink" href="#build-app-windows" aria-label="Permalink to Windows installer">#</a></h4>
               <div class="snip">
                 <div class="snip__bar">
                   <p class="snip__lang">bash</p>
-                  <button class="copy" type="button" aria-label="Copy the Linux Tauri build command"><span class="copy__label">Copy</span></button>
+                  <button class="copy" type="button" aria-label="Copy the command that builds the Windows installer"><span class="copy__label">Copy</span></button>
                 </div>
-                <pre tabindex="0"><code>NO_STRIP=true APPIMAGE_EXTRACT_AND_RUN=1 cargo tauri build</code></pre>
+                <pre tabindex="0"><code>cargo packager --release -p smd-gui --formats nsis</code></pre>
               </div>
-              <p>Output: <code>src-tauri/target/release/bundle/appimage/Steam Manifest Downloader_&lt;version&gt;_amd64.AppImage</code></p>
+              <p>Output: <code>target/packages/steam-manifest-downloader_&lt;version&gt;_x64-setup.exe</code></p>
+
+              <h4 id="build-app-linux">Linux AppImage <a class="alink" href="#build-app-linux" aria-label="Permalink to Linux AppImage">#</a></h4>
+              <div class="snip">
+                <div class="snip__bar">
+                  <p class="snip__lang">bash</p>
+                  <button class="copy" type="button" aria-label="Copy the command that builds the AppImage"><span class="copy__label">Copy</span></button>
+                </div>
+                <pre tabindex="0"><code>NO_STRIP=true APPIMAGE_EXTRACT_AND_RUN=1 cargo packager --release -p smd-gui --formats appimage</code></pre>
+              </div>
+              <p>Output: <code>target/packages/steam-manifest-downloader_&lt;version&gt;_x86_64.AppImage</code></p>
               <div class="note">
                 <p class="note__tag">Tip</p>
-                <p><code>NO_STRIP=true</code> prevents stripping symbols from the embedded .NET binary. <code>APPIMAGE_EXTRACT_AND_RUN=1</code> is needed on some distributions for the AppImage bundler to work correctly.</p>
+                <p><code>NO_STRIP=true</code> keeps the AppImage tool from stripping the binary a second time, which fails on newer distributions. <code>APPIMAGE_EXTRACT_AND_RUN=1</code> is needed where FUSE is not available.</p>
               </div>
 
               <h3 id="build-terminal">Step 3: building the terminal version, optional <a class="alink" href="#build-terminal" aria-label="Permalink to Step 3: building the terminal version, optional">#</a></h3>
@@ -1348,7 +1335,7 @@ dotnet publish -c Release -r linux-x64 --self-contained true \
               <p>Output: <code>target/release/smd</code>, or <code>smd.exe</code> on Windows. For a fully static Linux binary, add <code>--target x86_64-unknown-linux-musl</code>, which needs <code>musl-tools</code>.</p>
 
               <h3 id="build-project-structure">Step 4: project structure, for reference <a class="alink" href="#build-project-structure" aria-label="Permalink to Step 4: project structure, for reference">#</a></h3>
-              <p>The shared logic lives in <code>src-core</code>, the desktop app in <code>src-tauri</code> with its interface in <code>public</code>, and the terminal version in <code>src-tui</code>.</p>
+              <p>The shared logic lives in <code>src-core</code>, the desktop app in <code>src-gui</code>, the translations both share in <code>locales</code>, and the terminal version in <code>src-tui</code>.</p>
               <p>The <code>include_bytes!</code> macro in <code>src-core/src/services/embedded_tools.rs</code> embeds the DDM binaries at compile time:</p>
               <ul class="rows">
                 <li>
@@ -1362,7 +1349,7 @@ dotnet publish -c Release -r linux-x64 --self-contained true \
               </ul>
               <div class="note note--key">
                 <p class="note__tag">Careful</p>
-                <p>The DDM binary files <strong>must be in place before</strong> you run <code>cargo tauri build</code> or <code>cargo build -p smd-tui</code>. The Rust compiler reads them via <code>include_bytes!</code> at compile time, so if the files are missing, the build fails.</p>
+                <p>The DDM binary files <strong>must be in place before</strong> you run <code>cargo build -p smd-gui</code> or <code>cargo build -p smd-tui</code>. The Rust compiler reads them via <code>include_bytes!</code> at compile time, so if the files are missing, the build fails.</p>
               </div>
             </div>
           </div>
@@ -1426,7 +1413,7 @@ dotnet publish -c Release -r linux-x64 --self-contained true \
               <details class="qa">
                 <summary><span>The app crashes or shows a white screen</span></summary>
                 <div class="qa__body">
-                  <p>On Windows, make sure the <strong>Microsoft Edge WebView2 Runtime</strong> is installed. It is included with Windows 10 1803 and later and with Windows 11. On Linux, the AppImage brings its own WebKitGTK. With the AUR packages, make sure <strong>webkit2gtk-4.1</strong> is up to date. If the window stays white on Wayland, try starting SMD with <code>WEBKIT_DISABLE_DMABUF_RENDERER=1</code>.</p>
+                  <p>The app draws its window with the graphics card. Make sure the graphics driver is up to date. On Linux, a Vulkan or OpenGL driver has to be installed, which every desktop normally brings. If the window still stays empty, start SMD with <code>WGPU_BACKEND=gl</code> to use OpenGL instead of Vulkan.</p>
                 </div>
               </details>
               <details class="qa">
@@ -1573,7 +1560,7 @@ dotnet publish -c Release -r linux-x64 --self-contained true \
   <div class="wrap foot__bar">
     <span>Version 1.5.0</span>
     <span>GPL-2.0</span>
-    <span>Rust and Tauri v2</span>
+    <span>Written in Rust</span>
   </div>
 </footer>
 

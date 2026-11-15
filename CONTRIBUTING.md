@@ -24,21 +24,22 @@ are reviewed.
 
 ## Development setup
 
-This is a [Tauri v2](https://v2.tauri.app/) app — Rust backend, vanilla JS
-frontend — plus a terminal version (`src-tui`). Both share the Rust core in
-`src-core`. DepotDownloaderMod is embedded as an optional download engine.
+The desktop app (`src-gui`) is written in Rust from the window down to the
+last button, with egui for drawing and taffy for the layout. There is also a
+terminal version (`src-tui`). Both share the Rust core in `src-core`.
+DepotDownloaderMod is embedded as an optional download engine.
 
 ### Prerequisites
 
 - **Rust** (latest stable) + Cargo — <https://rustup.rs/>
-- **Tauri CLI**:
-  ```bash
-  cargo install tauri-cli --version "^2.0"
-  ```
 - **Platform build deps**:
-  - Windows: Visual Studio Build Tools with C++ workload, WebView2.
-  - Linux: `webkit2gtk-4.1`, `libayatana-appindicator3`, `librsvg2`,
-    `build-essential`, `curl`, `wget`, `file`.
+  - Windows: Visual Studio Build Tools with C++ workload.
+  - Linux: `build-essential`.
+- **cargo-packager**, only to build an installer, AppImage or DMG:
+  ```bash
+  cargo install cargo-packager --locked
+  ```
+- **Python 3**, only if you change `src-gui/tools/index.html` (see below).
 - **.NET 9 runtime** *(optional)*, only to test the DepotDownloaderMod engine.
 
 See [the build guide in the docs](./docs/documentation/index.html#building-from-source)
@@ -47,18 +48,17 @@ for more detailed, up-to-date instructions.
 ### Run the app in dev mode
 
 ```bash
-cargo tauri dev
+cargo run -p smd-gui
 ```
-
-This compiles the Rust backend, serves the frontend from `public/`, and opens
-the app window with hot-reload for frontend changes. Rust changes trigger a
-rebuild automatically.
 
 ### Build a release binary
 
 ```bash
-cargo tauri build
+cargo build --release -p smd-gui
 ```
+
+The result is `target/release/steam-manifest-downloader`, one file that runs
+on its own.
 
 ---
 
@@ -122,7 +122,7 @@ Add `!` after the type and describe the break in the body:
 ```
 refactor!: remove KernelOS and PrintedWaste sources
 
-BREAKING CHANGE: the `search_alternative` Tauri command is gone; search now
+BREAKING CHANGE: the `search_alternative` command is gone; search now
 uses Internet Archive only.
 ```
 
@@ -133,27 +133,33 @@ uses Internet Archive only.
 ### Rust
 
 - Run `cargo fmt` and `cargo clippy` before committing.
-- Prefer `Result<T, String>` for errors surfaced to the frontend; reserve
+- Prefer `Result<T, String>` for errors surfaced to the interface; reserve
   panics for true invariants validated upstream.
-- Validate user-controlled values at the trust boundary (the `#[command]`
+- Validate user-controlled values at the trust boundary (the command
   entry point), not deep inside the pipeline.
-- When streaming external-process output to the frontend, use the existing
+- When streaming external-process output to the interface, use the existing
   `spawn_stream_forwarder` helper rather than hand-rolling a new loop.
 
-### Frontend (vanilla JS, no framework)
+### Desktop interface (`src-gui`)
 
-- The app logic lives in `public/js/app/`, one plain script per area
-  (`select.js`, `progress.js`, `history.js`, `emulator.js`, `settings.js`
-  and so on). They share one global scope and load in the order listed at
-  the end of `public/index.html`: `core.js` first with `state`, `els` and the
-  shared helpers, `main.js` last with the start-up code. Only declare
-  functions and constants at the top level of a file; code that runs on
-  start-up belongs in `main.js` or the `init*` functions it calls.
-- Always HTML-escape interpolated values before assigning to `innerHTML`.
-  Use the `escapeHtml` helper in `public/js/app/core.js`.
-- Prefer event delegation on containers over re-attaching listeners after
-  each re-render.
-- No `console.log` debug noise in merged code.
+- **Look**: the app reads `src-gui/assets/style.css` itself. Change colours,
+  spacing and sizes there, not in Rust.
+- **Structure**: screens and dialogs are described in
+  `src-gui/tools/index.html`.
+  After a change run `python3 src-gui/tools/gen_views.py`; it rewrites
+  `src-gui/src/app/view/`. Do not edit those files by hand.
+- **Behaviour**: what a button, field or dialog does lives in
+  `src-gui/src/app/logic/`, one module per area (`select.rs`, `progress.rs`,
+  `history.rs`, `emulator.rs`, `settings.rs` and so on). The modules work on
+  `app.ui`, a store of element state by id: `app.ui.show("id")`,
+  `app.ui.set_text("id", ..)`, `app.ui.set_class("id", "name", on)`.
+- **Lists and other dynamic content** are written as markup strings and
+  handed to `dom.markup(..)`. Always escape values with `escape_html` before
+  you put them into such a string.
+- **Texts** come from `locales/*.json` through `t!(app, "key")`. Every
+  text needs an English and a German entry.
+- **Backend calls** go through `app.tasks.call("command", args, |app, result| ..)`
+  so the window never blocks.
 
 ### General
 

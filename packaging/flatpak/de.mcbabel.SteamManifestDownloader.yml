@@ -6,9 +6,9 @@
 # It is GPL-2.0-or-later; the original LICENSE is shipped alongside the
 # project's own.
 id: de.mcbabel.SteamManifestDownloader
-runtime: org.gnome.Platform
-runtime-version: '50'
-sdk: org.gnome.Sdk
+runtime: org.freedesktop.Platform
+runtime-version: '25.08'
+sdk: org.freedesktop.Sdk
 sdk-extensions:
   - org.freedesktop.Sdk.Extension.rust-stable
 command: steam-manifest-downloader
@@ -34,8 +34,8 @@ modules:
   - name: steam-manifest-downloader
     buildsystem: simple
     build-commands:
-      - cd src-tauri && cargo build --release --frozen --offline --no-default-features
-      - install -Dm755 src-tauri/target/release/steam-manifest-downloader -t /app/bin/
+      - cargo build --release --frozen --offline --no-default-features -p smd-gui
+      - install -Dm755 target/release/steam-manifest-downloader -t /app/bin/
       - install -Dm644 assets/icon.svg /app/share/icons/hicolor/scalable/apps/de.mcbabel.SteamManifestDownloader.svg
       - install -Dm644 assets/icon.png /app/share/icons/hicolor/256x256/apps/de.mcbabel.SteamManifestDownloader.png
       - install -Dm644 de.mcbabel.SteamManifestDownloader.desktop -t /app/share/applications/

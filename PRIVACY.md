@@ -38,7 +38,8 @@ When telemetry is enabled, the app sends small events describing:
 - A random session UUID regenerated every time the app starts
 - **Event counters** for a fixed list of actions:
   - `app_start` — the app was launched, with the settings snapshot described
-    below
+    below and, from the desktop app, the fixed label `native` for the kind of
+    interface
   - `settings_opened` — you opened the Settings dialog
   - `theme_toggled` — you switched between dark / light theme
   - `search_performed` — you ran a search in Step 1, with whether anything was
@@ -304,10 +305,11 @@ goes wrong:
   `backend.noSources`. The text itself, which could contain a path or a game
   name, is not sent. Each message is counted once per session.
 - `crash` — the app crashed or hit a programming error. The code location
-  (like `src-core/src/ops/download.rs:812` or `emulator.js:1234`) and the first line
-  of the error are sent. Before anything leaves your computer, paths, anything
-  in quotes and all numbers are removed from that line. Crashes are saved on
-  disk and sent with the next start, at most five at a time.
+  (like `src-core/src/ops/download.rs:812` or `src-gui/src/app/logic/select.rs:40`)
+  and the first line of the error are sent. Before anything leaves your
+  computer, paths, anything in quotes and all numbers are removed from that
+  line. Crashes are saved on disk and sent with the next start, at most five
+  at a time.
 - `download_interrupted` — a download was still running when the app was
   killed, crashed or the PC turned off. A small marker file is kept while a
   download runs, and the next start reports the engine, the mode, the depot
@@ -352,6 +354,13 @@ the Steam network and `api.steampowered.com` for the sign-in itself. Your
 account name, SteamID and token are never sent to the maintainer, never
 written into the settings, the history or a log, and signing out revokes the
 sign-in at Steam. Branch passwords are only sent to Steam and never stored.
+
+## Interface state
+
+A few values of the desktop interface (light or dark theme, your ManifestHub
+key, the last emulator settings, dismissed notices, the skipped update version)
+are kept in `gui-state.json` in the app data directory. The file stays on your
+computer and is never sent anywhere.
 
 ## What is NEVER collected
 

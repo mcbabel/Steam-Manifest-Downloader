@@ -4,8 +4,8 @@ use std::sync::{OnceLock, RwLock};
 use serde_json::Value;
 
 const GUI_LOCALES: &[(&str, &str)] = &[
-    ("en", include_str!("../../public/locales/en.json")),
-    ("de", include_str!("../../public/locales/de.json")),
+    ("en", include_str!("../../locales/en.json")),
+    ("de", include_str!("../../locales/de.json")),
 ];
 const TUI_LOCALES: &[(&str, &str)] = &[
     ("en", include_str!("../locales/en.json")),

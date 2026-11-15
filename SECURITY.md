@@ -43,7 +43,7 @@ Please include:
 
 In scope:
 
-- The desktop application (Rust backend, JS frontend, Tauri shell).
+- The desktop application (Rust core and native interface).
 - The embedded DepotDownloaderMod packaging and invocation.
 - Build and release workflows in `.github/workflows/`.
 

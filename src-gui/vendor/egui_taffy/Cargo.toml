@@ -1,0 +1,19 @@
+[package]
+name = "egui_taffy"
+version = "0.16.0"
+edition = "2024"
+license = "MIT"
+authors = ["Pēteris Pakalns"]
+description = "Vendored copy of egui_taffy 0.16.0 with exact leaf measuring added for Steam Manifest Downloader"
+repository = "https://github.com/PPakalns/egui_taffy/"
+publish = false
+
+[dependencies]
+egui = { version = "0.37", default-features = false }
+log = { version = "0.4", default-features = false }
+parking_lot = { version = "0.12", features = ["arc_lock"] }
+stackbox = "0.2"
+taffy = { version = "0.15", default-features = false, features = ["taffy_tree", "detailed_layout_info", "block_layout", "content_size", "flexbox", "grid", "std"] }
+
+[lints.rust]
+unexpected_cfgs = "allow"

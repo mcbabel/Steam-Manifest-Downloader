@@ -17,7 +17,7 @@
     <p>
       Drop a .lua / .st file or search by App ID, pick the depots you want, and the app
       handles manifest fetching, depot key generation and the actual download in one step.
-      Built with Tauri v2, a Rust backend, and a vanilla JavaScript frontend.
+      Written in Rust with a native interface.
     </p>
     <p>Features:</p>
     <ul>

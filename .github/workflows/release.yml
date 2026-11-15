@@ -42,20 +42,20 @@ jobs:
 
       - name: Rust dependency cache
         uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-packager
+        uses: taiki-e/cache-cargo-install-action@v2
         with:
-          workspaces: src-tauri
+          tool: cargo-packager@0.11.8
 
-      - name: Install Tauri CLI (binstall = fast)
-        run: cargo install cargo-binstall --locked && cargo binstall tauri-cli --version "^2.0" -y
-
-      - name: Build Tauri app
+      - name: Build app
         env:
           SMD_BUILD_CHANNEL: stable
           SMD_GIT_SHA: ${{ github.sha }}
         shell: bash
         run: |
           export SMD_BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-          cargo tauri build
+          cargo build --release --locked -p smd-gui
 
       - name: Build terminal app
         env:
@@ -72,38 +72,40 @@ jobs:
           SIGNING_CERTIFICATE: ${{ secrets.SIGNING_CERTIFICATE }}
           SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.SIGNING_CERTIFICATE_PASSWORD }}
         shell: pwsh
+        run: packaging/windows-sign.ps1 "target\release\steam-manifest-downloader.exe" "target\release\smd.exe"
+
+      - name: Build installer
+        shell: bash
         run: |
-          $certBytes = [Convert]::FromBase64String($env:SIGNING_CERTIFICATE)
-          $certPath = Join-Path $env:RUNNER_TEMP "signing-cert.pfx"
-          [IO.File]::WriteAllBytes($certPath, $certBytes)
+          cargo packager --release -p smd-gui --formats nsis
+          VERSION=$(bash packaging/version.sh)
+          mkdir -p installer
+          mv target/packages/*-setup.exe "installer/Steam Manifest Downloader_${VERSION}_x64-setup.exe"
 
-          $signtool = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\signtool.exe" -Recurse | Sort-Object FullName -Descending | Select-Object -First 1
-          if (-not $signtool) { Write-Error "SignTool not found!"; exit 1 }
-
-          & $signtool.FullName sign /f $certPath /p $env:SIGNING_CERTIFICATE_PASSWORD /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 "src-tauri\target\release\steam-manifest-downloader.exe"
-          Get-ChildItem "src-tauri\target\release\bundle\nsis\*.exe" | ForEach-Object {
-            & $signtool.FullName sign /f $certPath /p $env:SIGNING_CERTIFICATE_PASSWORD /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 $_.FullName
-          }
-          & $signtool.FullName sign /f $certPath /p $env:SIGNING_CERTIFICATE_PASSWORD /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 "target\release\smd.exe"
-
-          Remove-Item $certPath -Force
+      - name: Sign installer with SignTool
+        if: env.SIGNING_CERTIFICATE != ''
+        env:
+          SIGNING_CERTIFICATE: ${{ secrets.SIGNING_CERTIFICATE }}
+          SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.SIGNING_CERTIFICATE_PASSWORD }}
+        shell: pwsh
+        run: packaging/windows-sign.ps1 (Get-ChildItem "installer\*.exe").FullName
 
       - name: Upload Windows NSIS installer
         uses: actions/upload-artifact@v7
         with:
           name: windows-nsis
-          path: src-tauri/target/release/bundle/nsis/*.exe
+          path: installer/*.exe
 
       - name: Upload portable EXE
         uses: actions/upload-artifact@v7
         with:
           name: windows-portable
-          path: src-tauri/target/release/steam-manifest-downloader.exe
+          path: target/release/steam-manifest-downloader.exe
 
       - name: Upload Windows terminal app
         shell: bash
         run: |
-          VERSION=$(grep -oP '"version":\s*"\K[^"]+' src-tauri/tauri.conf.json)
+          VERSION=$(bash packaging/version.sh)
           mkdir -p tui-dist
           cp target/release/smd.exe "tui-dist/Steam-Manifest-Downloader-Terminal_${VERSION}_windows-x64.exe"
 
@@ -126,7 +128,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          VERSION=$(grep -oP '"version":\s*"\K[^"]+' src-tauri/tauri.conf.json)
+          VERSION=$(bash packaging/version.sh)
           LABEL="$VERSION"
           bash packaging/windows-standalone/build.sh portable/steam-manifest-downloader.exe "$LABEL" standalone-dist
       - uses: actions/upload-artifact@v7
@@ -158,7 +160,7 @@ jobs:
         run: |
           export SMD_BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           cargo build --release --locked --target x86_64-unknown-linux-musl -p smd-tui
-          VERSION=$(grep -oP '"version":\s*"\K[^"]+' src-tauri/tauri.conf.json)
+          VERSION=$(bash packaging/version.sh)
           mkdir -p tui-dist
           cp target/x86_64-unknown-linux-musl/release/smd "tui-dist/Steam-Manifest-Downloader-Terminal_${VERSION}_linux-x64"
 

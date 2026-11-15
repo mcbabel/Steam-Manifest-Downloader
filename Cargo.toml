@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
-members = ["src-core", "src-tui"]
-exclude = ["src-tauri", "tools/telemetry-server"]
+members = ["src-core", "src-tui", "src-gui"]
+exclude = ["tools/telemetry-server"]
 
 [profile.release]
 opt-level = 3

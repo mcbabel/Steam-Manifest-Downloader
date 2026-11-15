@@ -47,9 +47,6 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: macos
-          workspaces: |
-            src-tauri
-            .
 
       - name: File label
         id: label
@@ -57,18 +54,16 @@ jobs:
           SUFFIX: ${{ inputs.label-suffix }}
           SHA: ${{ inputs.ref || github.sha }}
         run: |
-          VERSION=$(sed -nE 's/^ *"version": *"([^"]+)".*/\1/p' src-tauri/tauri.conf.json | head -1)
+          VERSION=$(bash packaging/version.sh)
           echo "label=${VERSION}${SUFFIX//@SHA@/${SHA:0:7}}" >> "$GITHUB_OUTPUT"
 
-      - name: Core and terminal app tests
+      - name: Tests
         run: cargo test --workspace --locked
 
-      - name: App tests
-        working-directory: src-tauri
-        run: cargo test --bin steam-manifest-downloader
-
-      - name: Install Tauri CLI
-        run: cargo install cargo-binstall --locked && cargo binstall tauri-cli --version "^2.0" -y
+      - name: Install cargo-packager
+        uses: taiki-e/cache-cargo-install-action@v2
+        with:
+          tool: cargo-packager@0.11.8
 
       - name: Build app
         env:
@@ -76,7 +71,15 @@ jobs:
           SMD_GIT_SHA: ${{ inputs.ref || github.sha }}
         run: |
           export SMD_BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-          cargo tauri build --target universal-apple-darwin --bundles app,dmg
+          cargo build --release --locked -p smd-gui --target aarch64-apple-darwin
+          cargo build --release --locked -p smd-gui --target x86_64-apple-darwin
+          mkdir -p target/universal-apple-darwin/release
+          lipo -create -output target/universal-apple-darwin/release/steam-manifest-downloader \
+            target/aarch64-apple-darwin/release/steam-manifest-downloader \
+            target/x86_64-apple-darwin/release/steam-manifest-downloader
+          cargo packager --release -p smd-gui --formats app,dmg \
+            --binaries-dir "$PWD/target/universal-apple-darwin/release" \
+            --out-dir "$PWD/target/packages"
 
       - name: Build terminal app
         env:
@@ -95,8 +98,8 @@ jobs:
       - name: Check bundle
         id: bundle
         run: |
-          BUNDLE=src-tauri/target/universal-apple-darwin/release/bundle
-          APP="$BUNDLE/macos/Steam Manifest Downloader.app"
+          BUNDLE=target/packages
+          APP="$BUNDLE/Steam Manifest Downloader.app"
           EXE=$(/usr/libexec/PlistBuddy -c "Print :CFBundleExecutable" "$APP/Contents/Info.plist")
           for bin in "$APP/Contents/MacOS/$EXE" tui-stage/smd; do
             ARCHS=$(lipo -archs "$bin")
@@ -106,7 +109,7 @@ jobs:
           codesign --verify --deep --strict --verbose=2 "$APP"
           codesign --verify --verbose=2 tui-stage/smd
           /usr/libexec/PlistBuddy -c "Print :LSMinimumSystemVersion" "$APP/Contents/Info.plist"
-          echo "dmg=$(ls "$BUNDLE"/dmg/*.dmg | head -1)" >> "$GITHUB_OUTPUT"
+          echo "dmg=$(ls "$BUNDLE"/*.dmg | head -1)" >> "$GITHUB_OUTPUT"
 
       - name: Name files
         env:

@@ -4,12 +4,12 @@ on:
   push:
     branches: [dev]
     paths:
-      - 'src-tauri/**'
+      - 'src-gui/**'
       - 'src-core/**'
       - 'src-tui/**'
       - 'Cargo.toml'
       - 'Cargo.lock'
-      - 'public/**'
+      - 'locales/**'
       - 'assets/**'
       - '.github/workflows/dev-build.yml'
       - '.github/workflows/build-macos.yml'
@@ -21,12 +21,12 @@ on:
   pull_request:
     branches: [dev]
     paths:
-      - 'src-tauri/**'
+      - 'src-gui/**'
       - 'src-core/**'
       - 'src-tui/**'
       - 'Cargo.toml'
       - 'Cargo.lock'
-      - 'public/**'
+      - 'locales/**'
       - 'assets/**'
       - '.github/workflows/dev-build.yml'
       - '.github/workflows/build-macos.yml'
@@ -77,16 +77,8 @@ jobs:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: |
-            src-tauri
-            .
 
       - name: Run tests
-        working-directory: src-tauri
-        run: cargo test --bin steam-manifest-downloader
-
-      - name: Run core and terminal app tests
         run: cargo test --workspace --locked
 
   build-windows:
@@ -97,11 +89,6 @@ jobs:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: src-tauri
-
-      - name: Install Tauri CLI
-        run: cargo install cargo-binstall --locked && cargo binstall tauri-cli --version "^2.0" -y
 
       - name: Build
         env:
@@ -110,13 +97,13 @@ jobs:
         shell: bash
         run: |
           export SMD_BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-          cargo tauri build
+          cargo build --release --locked -p smd-gui
 
       - name: Upload portable EXE
         uses: actions/upload-artifact@v7
         with:
           name: windows-portable
-          path: src-tauri/target/release/steam-manifest-downloader.exe
+          path: target/release/steam-manifest-downloader.exe
 
   build-windows-standalone:
     name: Windows standalone ZIP
@@ -133,7 +120,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          VERSION=$(grep -oP '"version":\s*"\K[^"]+' src-tauri/tauri.conf.json)
+          VERSION=$(bash packaging/version.sh)
           LABEL="${VERSION}-dev-$(echo "$GITHUB_SHA" | cut -c1-7)"
           bash packaging/windows-standalone/build.sh portable/steam-manifest-downloader.exe "$LABEL" standalone-dist
       - uses: actions/upload-artifact@v7
@@ -242,7 +229,7 @@ jobs:
       - name: Get version and commit info
         id: info
         run: |
-          VERSION=$(grep -oP '"version":\s*"\K[^"]+' src-tauri/tauri.conf.json)
+          VERSION=$(bash packaging/version.sh)
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "short_sha=$SHORT_SHA" >> "$GITHUB_OUTPUT"

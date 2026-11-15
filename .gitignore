@@ -3,13 +3,9 @@
 # =============================================================================
 
 # ---- Rust / Cargo ----
-src-tauri/target/
 target/
 
-# ---- Tauri auto-generated (rebuilt on every `cargo tauri build`) ----
-src-tauri/gen/
-
-# ---- Build output (Electron / Tauri bundles) ----
+# ---- Build output ----
 dist/
 
 # ---- Node.js ----
@@ -20,7 +16,7 @@ downloads/
 uploads/
 data/
 
-# ---- Old Node.js source (superseded by Tauri/Rust) ----
+# ---- Old Node.js source (superseded by Rust) ----
 /src/
 
 # ---- Development plans (internal) ----
@@ -63,9 +59,6 @@ assets/generate-*.js
 # Temp files
 RELEASE_NOTES.md
 
-# ---- Tauri signing keys ----
-src-tauri/tauri-signing-key.key
-src-tauri/tauri-signing-key.key.pub
 # ---- Remote file signing key ----
 *.key
 smd-remote.key*

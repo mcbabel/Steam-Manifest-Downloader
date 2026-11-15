@@ -8,7 +8,6 @@
 ![License](https://img.shields.io/badge/license-GPL--2.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS%20(beta)-0078D6?logo=windows)
 ![Built with](https://img.shields.io/badge/built_with-Rust-dea584?logo=rust)
-![Tauri](https://img.shields.io/badge/Tauri_v2-FFC131?logo=tauri&logoColor=white)
 ![Downloads](https://img.shields.io/github/downloads/MCbabel/Steam-Manifest-Downloader/total?color=brightgreen)
 [![Lines of Code](https://img.shields.io/endpoint?url=https%3A%2F%2Ftokei.kojix2.net%2Fbadge%2Fgithub%2FMCbabel%2FSteam-Manifest-Downloader%2Flines)](https://tokei.kojix2.net/github/MCbabel/Steam-Manifest-Downloader)
 [![Ask DeepWiki](https://img.shields.io/badge/Ask-DeepWiki-0b7285?logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjIuMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNMiA0aDZhNCA0IDAgMCAxIDQgNHYxM2EzIDMgMCAwIDAtMy0zSDJ6Ii8%2BPHBhdGggZD0iTTIyIDRoLTZhNCA0IDAgMCAwLTQgNHYxM2EzIDMgMCAwIDEgMy0zaDd6Ii8%2BPC9zdmc%2B)](https://deepwiki.com/MCbabel/Steam-Manifest-Downloader)
@@ -141,8 +140,8 @@ Then walk through the 5-step pipeline:
 |---|---|---|
 | 💻 | **Operating System** | Windows 10 / 11 (64-bit), a modern Linux distro (glibc ≥ 2.35) or macOS 11 Big Sur and newer (beta, Apple Silicon and Intel) |
 | ⚙️ | **Runtime (Windows)** | Nothing extra for the default built-in downloader. The optional DepotDownloaderMod engine needs the [.NET 9.0 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.16-windows-x64-installer) |
-| 📦 | **Runtime (Linux)** | Nothing extra for the AppImage, it brings WebKitGTK and everything else it needs. The AUR packages pull in `webkit2gtk-4.1` through pacman |
-| 🍎 | **Runtime (macOS)** | Nothing extra. The app uses the WebKit that comes with macOS |
+| 📦 | **Runtime (Linux)** | Nothing extra. The app is a single native program and uses the graphics driver, X11 or Wayland that your desktop already has |
+| 🍎 | **Runtime (macOS)** | Nothing extra |
 | 🌐 | **Network** | Internet connection |
 
 ---
@@ -189,7 +188,7 @@ Sources: [steam-manifest-downloader-bin](https://aur.archlinux.org/packages/stea
 
 Download the latest `.AppImage` from [**Releases**](../../releases).
 
-The AppImage brings WebKitGTK and the other libraries it needs, so nothing has to be installed. It runs on distributions from Ubuntu 22.04 / Debian 12 on.
+The AppImage is a single native program, so nothing has to be installed. It runs on distributions from Ubuntu 22.04 / Debian 12 on.
 
 Make it executable and launch it:
 
@@ -228,8 +227,8 @@ What is different on macOS:
 
 ## 🖥️ Terminal Version (TUI & CLI)
 
-`smd` is a single binary that brings the whole app into the terminal: no WebView,
-no browser engine, no installer. Run it without arguments for the interactive UI,
+`smd` is a single binary that brings the whole app into the terminal: no window,
+no installer. Run it without arguments for the interactive UI,
 or use the subcommands on a server, in Docker or in scripts.
 
 **Download:** `Steam-Manifest-Downloader-Terminal_<version>_linux-x64`, `Steam-Manifest-Downloader-Terminal_<version>_windows-x64.exe`
@@ -378,10 +377,9 @@ Build the image yourself from source with `docker build -t smd .`.
 ### Prerequisites
 
 - **Rust** (latest stable) + **Cargo** — [Install via rustup](https://rustup.rs/)
-- **Tauri CLI** — `cargo install tauri-cli`
+- **cargo-packager** *(only for installers, AppImage and DMG)* — `cargo install cargo-packager --locked`
 - **.NET 9.0 Desktop Runtime** *(optional)* — Only needed to run the optional DepotDownloaderMod engine on Windows ([Download](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.16-windows-x64-installer))
 - **Mono** *(Linux/macOS, optional)* — Only needed for step 5's DRM removal via Steamless: `pacman -S mono` / `apt install mono-runtime` / `brew install mono`
-- **Linux additional:** `libwebkit2gtk-4.1-dev`, `libappindicator3-dev`, `librsvg2-dev`, and for the AppImage build `patchelf`, `gstreamer1.0-plugins-base` and `gstreamer1.0-plugins-good`
 
 ---
 
@@ -433,37 +431,52 @@ Copy `publish-linux/DepotDownloaderMod` to `src-core/vendor/ddm-linux/DepotDownl
 
 ---
 
-### Step 2: Building the Tauri App
+### Step 2: Building the desktop app
 
-#### Windows
-
-```bash
-cargo tauri build
-```
-
-Output:
-- **NSIS installer:** `src-tauri/target/release/bundle/nsis/`
-- **Portable executable:** `src-tauri/target/release/steam-manifest-downloader.exe`
-
-#### Linux (Arch/CachyOS/etc.)
+The desktop app is the crate `src-gui`. It is written in Rust from the window down to the last button, there is no web view.
 
 ```bash
-NO_STRIP=true APPIMAGE_EXTRACT_AND_RUN=1 cargo tauri build
+cargo build --release -p smd-gui
 ```
 
-Output: `src-tauri/target/release/bundle/appimage/Steam Manifest Downloader_<version>_amd64.AppImage`
+Output: `target/release/steam-manifest-downloader` (`.exe` on Windows). This file is the whole app and runs on its own.
+
+To try it while developing, `cargo run -p smd-gui` is enough.
+
+#### Windows installer
+
+```bash
+cargo packager --release -p smd-gui --formats nsis
+```
+
+Output: `target/packages/steam-manifest-downloader_<version>_x64-setup.exe`
+
+#### Linux AppImage
+
+```bash
+NO_STRIP=true APPIMAGE_EXTRACT_AND_RUN=1 cargo packager --release -p smd-gui --formats appimage
+```
+
+Output: `target/packages/steam-manifest-downloader_<version>_x86_64.AppImage`
 
 > [!NOTE]
-> `NO_STRIP=true` prevents stripping symbols from the embedded .NET binary. `APPIMAGE_EXTRACT_AND_RUN=1` is needed on some distros for the AppImage bundler.
+> `NO_STRIP=true` keeps the AppImage tool from stripping the binary a second time, which fails on newer distros. `APPIMAGE_EXTRACT_AND_RUN=1` is needed where FUSE is not available.
 
 #### macOS
 
 ```bash
 rustup target add aarch64-apple-darwin x86_64-apple-darwin
-cargo tauri build --target universal-apple-darwin --bundles app,dmg
+cargo build --release -p smd-gui --target aarch64-apple-darwin
+cargo build --release -p smd-gui --target x86_64-apple-darwin
+mkdir -p target/universal-apple-darwin/release
+lipo -create -output target/universal-apple-darwin/release/steam-manifest-downloader \
+  target/aarch64-apple-darwin/release/steam-manifest-downloader \
+  target/x86_64-apple-darwin/release/steam-manifest-downloader
+cargo packager --release -p smd-gui --formats app,dmg \
+  --binaries-dir "$PWD/target/universal-apple-darwin/release" --out-dir "$PWD/target/packages"
 ```
 
-Output: `src-tauri/target/universal-apple-darwin/release/bundle/dmg/`. Step 1 is not needed on macOS, the app uses only the built-in downloader.
+Output: `target/packages/`. Step 1 is not needed on macOS, the app uses only the built-in downloader.
 
 ---
 
@@ -486,7 +499,7 @@ The `include_bytes!` macro in `src-core/src/services/embedded_tools.rs` embeds t
 - **Linux build** reads from `src-core/vendor/ddm-linux/`
 
 > [!IMPORTANT]
-> The DDM binary files **must be in place before** running `cargo tauri build` or `cargo build -p smd-tui`. The Rust compiler reads them via `include_bytes!` at compile time — if the files are missing, the build will fail.
+> The DDM binary files **must be in place before** running `cargo build -p smd-gui` or `cargo build -p smd-tui`. The Rust compiler reads them via `include_bytes!` at compile time — if the files are missing, the build will fail.
 
 </details>
 
@@ -497,19 +510,15 @@ The `include_bytes!` macro in `src-core/src/services/embedded_tools.rs` embeds t
 <div align="center">
 
 ![Rust](https://img.shields.io/badge/Rust-000000?logo=rust&logoColor=white)
-![Tauri](https://img.shields.io/badge/Tauri_v2-FFC131?logo=tauri&logoColor=white)
-![HTML5](https://img.shields.io/badge/HTML5-E34F26?logo=html5&logoColor=white)
-![CSS3](https://img.shields.io/badge/CSS3-1572B6?logo=css3&logoColor=white)
-![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?logo=javascript&logoColor=black)
+![egui](https://img.shields.io/badge/egui-native_UI-dea584)
 
 </div>
 
 | Layer | Technology |
 |---|---|
 | **Backend** | Rust, reqwest, tokio, serde |
-| **Frontend** | HTML / CSS / JS (vanilla) |
+| **Desktop UI** | Native Rust: egui / eframe for the window and drawing, taffy for the layout. The look comes from one stylesheet that the app reads itself, no web view |
 | **Terminal UI** | ratatui, crossterm, clap |
-| **Framework** | Tauri v2 |
 | **Downloader** | Built-in Rust engine (steam-vent), DepotDownloaderMod (.NET 9) as an option |
 | **Emulator** | gbe_fork (downloaded on demand from GitHub releases, bundled in the Windows standalone ZIP, the cached release is used when GitHub is unreachable) |
 | **DRM tooling** | Steamless v3.1.0.5 (CC-BY-NC-ND), Steam-API-Check-Bypass |
@@ -521,7 +530,7 @@ The `include_bytes!` macro in `src-core/src/services/embedded_tools.rs` embeds t
 
 ```
 Steam-Manifest-Downloader/
-├── public/                     # Desktop frontend (HTML/CSS/JS, locales)
+├── locales/                    # Translations (en, de), shared by the desktop app and the terminal version
 ├── src-core/                   # Shared Rust core (no UI dependencies)
 │   ├── src/
 │   │   ├── ops/                # High-level operations used by GUI and TUI
@@ -538,19 +547,26 @@ Steam-Manifest-Downloader/
 │   │   │   └── ...
 │   │   └── paths.rs            # Shared data directory
 │   └── vendor/                 # Embedded DepotDownloaderMod builds
-├── src-tauri/                  # Desktop app (Tauri v2)
+├── src-gui/                    # Desktop app, native Rust
 │   ├── src/
-│   │   ├── main.rs             # Tauri entry point
-│   │   └── commands/           # Thin Tauri command wrappers around smd-core
-│   ├── Cargo.toml
-│   └── tauri.conf.json         # Tauri configuration
+│   │   ├── main.rs             # Window and start-up
+│   │   ├── style/              # Reads the stylesheet: selectors, cascade, computed values
+│   │   ├── dom/                # Builds, lays out and paints elements like a browser would
+│   │   ├── app/
+│   │   │   ├── view/           # Screens and dialogs, generated from tools/index.html
+│   │   │   ├── logic/          # What every button, field and dialog does
+│   │   │   └── window.rs       # Move, resize, minimize, close
+│   │   ├── backend/            # Commands on top of smd-core
+│   │   └── platform.rs         # File dialogs, notifications, sound, taskbar progress
+│   ├── tools/                  # index.html describes every screen, gen_views.py turns it into src/app/view
+│   └── assets/                 # Stylesheet, fonts and icons
 ├── src-tui/                    # Terminal UI + headless CLI (`smd`)
 │   ├── src/
 │   │   ├── app/                # Screens, modals, state
 │   │   ├── ui/                 # Widgets, mouse/focus handling, file browser
 │   │   └── cli.rs              # download / search / history commands
-│   └── locales/                # TUI-only strings (rest shared with public/locales)
-├── Cargo.toml                  # Workspace for src-core + src-tui
+│   └── locales/                # TUI-only strings (rest shared with locales/)
+├── Cargo.toml                  # Workspace for src-core, src-gui and src-tui
 ├── assets/                     # App icons
 └── README.md
 ```
@@ -575,7 +591,8 @@ This project is licensed under the [GPL-2.0 License](LICENSE).
 
 - **[DepotDownloaderMod](https://github.com/SteamAutoCracks/DepotDownloaderMod)** — Steam depot downloading engine
 - **[Steam Store API](https://store.steampowered.com/api/)** — Game metadata & artwork
-- **[Tauri](https://v2.tauri.app/)** — Desktop application framework
+- **[egui](https://github.com/emilk/egui)** and **[taffy](https://github.com/DioxusLabs/taffy)** — window, drawing and layout of the desktop app
+- **[cargo-packager](https://github.com/crabnebula-dev/cargo-packager)** — installer, AppImage and DMG
 - **[gbe_fork](https://github.com/Detanup01/gbe_fork)** — Steamworks API emulator (downloaded on demand, bundled in the Windows standalone ZIP)
 - **[Steamless](https://github.com/atom0s/Steamless)** by atom0s — SteamStub DRM unpacker (downloaded on demand, bundled in the Windows standalone ZIP)
 - **[Steam API Check Bypass](https://github.com/SteamAutoCracks/Steam-API-Check-Bypass)** by SteamAutoCracks — bypasses Steam API DLL integrity checks (downloaded on demand, bundled in the Windows standalone ZIP)

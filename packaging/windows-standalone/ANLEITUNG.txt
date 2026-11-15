@@ -44,8 +44,7 @@ Tipps, wenn etwas nicht klappt
   Viren- & Bedrohungsschutz -> Schutzverlauf" wieder zulassen. Dafür können
   Administratorrechte nötig sein. Darfst du den Virenschutz auf diesem PC
   nicht ändern, lässt sich der Emulator hier leider nicht nutzen.
-- Die WebView2-Laufzeit von Microsoft ist bei Windows 10 und 11 normalerweise
-  schon installiert. Startet die App gar nicht, fehlt sie vermutlich. Hilfe
-  und Fehlermeldungen: https://github.com/mcbabel/Steam-Manifest-Downloader/issues
+- Startet die App gar nicht, aktualisiere den Grafiktreiber. Hilfe und
+  Fehlermeldungen: https://github.com/mcbabel/Steam-Manifest-Downloader/issues
 
 Lizenzen der enthaltenen Programme: siehe THIRD-PARTY-NOTICES.txt

@@ -356,6 +356,10 @@ fn share(events: &[Ev], field: impl Fn(&Ev) -> String) -> Vec<(String, usize)> {
     list
 }
 
+fn desktop_starts(events: &[Ev]) -> Vec<Ev> {
+    events.iter().filter(|e| e.kind == "app_start" && e.frontend == "gui").cloned().collect()
+}
+
 fn settings_share(events: &[Ev]) -> Vec<(String, usize, usize)> {
     let starts: Vec<Ev> = events
         .iter()
@@ -1114,6 +1118,7 @@ pub fn render(events: &[Ev], today: NaiveDate, days: i64) -> String {
         ("Version", share(events, |e| e.version.clone())),
         ("OS", share(events, |e| e.os.clone())),
         ("Frontend", share(events, |e| e.frontend.clone())),
+        ("Desktop interface", share(&desktop_starts(events), |e| e.props["ui"].as_str().unwrap_or("web view").to_string())),
         ("Package", share(events, |e| e.package.clone())),
     ] {
         render_share(&mut out, title, &list);
