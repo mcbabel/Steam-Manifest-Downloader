@@ -33,7 +33,7 @@ open = "5"
 dirs = "7"
 regex = "1"
 chrono = "0.4"
-rfd = { version = "0.15", default-features = false, features = ["xdg-portal", "tokio"] }
+rfd = { version = "0.16", default-features = false, features = ["xdg-portal", "tokio"] }
 
 notify-rust = { version = "4", default-features = false, features = ["z"] }
 raw-window-handle = "0.6"
