@@ -61,7 +61,7 @@ jobs:
         run: cargo test --workspace --locked
 
       - name: Install cargo-packager
-        uses: taiki-e/cache-cargo-install-action@v2
+        uses: taiki-e/cache-cargo-install-action@v3
         with:
           tool: cargo-packager@0.11.8
 
