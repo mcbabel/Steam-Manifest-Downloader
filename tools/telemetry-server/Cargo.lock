@@ -244,9 +244,9 @@ dependencies = [
 
 [[package]]
 name = "dryoc"
-version = "2.0.0"
+version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eeba0f94a1938c8e76118ca0263e05b24e82fa7378ba86197305b53de711cc8d"
+checksum = "ad3d4007e5ed8c528ec44bb8eed53bd89022e34103fed523d2eb0556b7183f31"
 dependencies = [
  "curve25519-dalek",
  "getrandom",
