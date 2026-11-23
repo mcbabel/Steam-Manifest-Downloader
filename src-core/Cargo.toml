@@ -37,7 +37,7 @@ sha2 = "0.11"
 hex = "0.4"
 lzma-rs = "0.3"
 protobuf = "3.5"
-qrcode = { version = "0.14", default-features = false, features = ["svg"] }
+qrcode = { version = "0.15", default-features = false, features = ["svg"] }
 byteorder = "1"
 futures = "0.3"
 base64 = "0.23"
