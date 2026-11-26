@@ -44,7 +44,7 @@ on:
 
 concurrency:
   group: dev-build-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   actions: write
@@ -257,7 +257,22 @@ jobs:
           done
 
       - name: Delete existing dev-latest release
-        run: gh release delete dev-latest --yes --cleanup-tag || true
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if out=$(gh release view dev-latest --json id 2>&1); then
+              gh release delete dev-latest --yes --cleanup-tag || true
+            elif grep -q "release not found" <<< "$out"; then
+              if out=$(gh api "repos/$GITHUB_REPOSITORY/git/refs/tags/dev-latest" 2>&1); then
+                gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/tags/dev-latest" || true
+              elif grep -q "Not Found" <<< "$out"; then
+                exit 0
+              fi
+            fi
+            echo "Checking that dev-latest is gone ($attempt/5)"
+            sleep $((attempt * 10))
+          done
+          echo "::error::The old dev-latest release or its tag could not be deleted"
+          exit 1
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
